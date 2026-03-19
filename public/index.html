@@ -16,17 +16,17 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1a202c;min-he
 .al h1{font-size:26px;font-weight:800;color:var(--p)}
 .al p{font-size:13px;color:var(--mu);margin-top:4px}
 .tabs{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--bd);margin-bottom:24px}
-.tab{flex:1;padding:10px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;border:none;color:var(--mu);transition:.2s}
+.tab{flex:1;padding:10px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;border:none;color:var(--mu)}
 .tab.on{background:var(--p);color:#fff}
 .fg{margin-bottom:14px}
 .fg label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:5px}
-.fg input,.fg select{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;background:#fafafa;transition:.2s;font-family:inherit}
+.fg input,.fg select{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;background:#fafafa;font-family:inherit}
 .fg input:focus,.fg select:focus{border-color:var(--p);background:#fff}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .rem{display:flex;align-items:center;gap:8px;margin-bottom:16px}
 .rem input{width:16px;height:16px;accent-color:var(--p)}
 .rem label{font-size:13px;color:var(--mu);cursor:pointer}
-.btn-p{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s}
+.btn-p{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
 .btn-p:hover{background:var(--pd)}
 .ebox{background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
 .ebox.on{display:block}
@@ -41,7 +41,6 @@ header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:1
 .rbadge{background:rgba(255,255,255,.2);border-radius:99px;padding:3px 9px;font-size:11px;font-weight:600}
 .hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
 .hbtn:hover{background:rgba(255,255,255,.25)}
-
 .wrap{max-width:680px;margin:0 auto;padding:16px 14px;flex:1}
 
 /* STATS */
@@ -57,23 +56,22 @@ header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:1
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .full{grid-column:1/-1}
 .card label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px}
-.card input,.card select,.card textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit;transition:.2s}
+.card input,.card select,.card textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit}
 .card input:focus,.card select:focus,.card textarea:focus{border-color:var(--p);background:#fff}
 .card textarea{resize:vertical;min-height:76px}
 .cf{margin-bottom:0}
 .btn-s{margin-top:12px;background:var(--p);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
-.btn-s:hover{background:var(--pd)}
-.uarea{border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:.2s;font-size:13px;color:var(--mu);display:block}
+.uarea{border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center;cursor:pointer;font-size:13px;color:var(--mu);display:block}
 .uarea:hover{border-color:var(--p)}
 .uarea input{display:none}
 
-/* TICKET CARD (TECH) */
+/* TECH CARDS */
 .tcard{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.09);margin-bottom:16px;overflow:hidden}
 .tcard-head{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .tcard-id{font-size:11px;color:var(--mu);font-weight:600;margin-bottom:3px}
 .tcard-title{font-size:15px;font-weight:700;line-height:1.3}
 .tcard-body{padding:14px 16px}
-.meta-row{display:flex;gap:8px;font-size:13px;color:#4a5568;margin-bottom:6px;align-items:flex-start}
+.mrow{display:flex;gap:8px;font-size:13px;color:#4a5568;margin-bottom:6px;align-items:flex-start}
 .mi{font-size:14px;min-width:18px;margin-top:1px}
 
 /* STEPS */
@@ -83,25 +81,23 @@ header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:1
 .snum.done{background:#d1fae5;color:#065f46}
 .snum.active{background:var(--p);color:#fff}
 .snum.idle{background:#e2e8f0;color:#718096}
-.slabel{font-size:14px;font-weight:600;flex:1}
-.sstatus{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px}
-.sstatus.done{background:#d1fae5;color:#065f46}
-.sstatus.active{background:#dbeafe;color:#1e40af}
-.sstatus.idle{background:#f1f5f9;color:#64748b}
+.slbl{font-size:14px;font-weight:600;flex:1}
+.sstat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px}
+.sstat.done{background:#d1fae5;color:#065f46}
+.sstat.active{background:#dbeafe;color:#1e40af}
+.sstat.idle{background:#f1f5f9;color:#64748b}
 .step-body{padding:14px 16px;border-top:1px solid var(--bd)}
 
-/* IMG SLOTS */
+/* IMG */
 .img-row{display:flex;gap:10px;margin-bottom:12px}
-.islot{flex:1;border:1.5px dashed var(--bd);border-radius:10px;padding:8px;text-align:center;font-size:12px;color:var(--mu);cursor:pointer;transition:.2s}
+.islot{flex:1;border:1.5px dashed var(--bd);border-radius:10px;padding:8px;text-align:center;font-size:12px;color:var(--mu);cursor:pointer}
 .islot:hover{border-color:var(--p)}
 .islot.has{border-color:var(--g);border-style:solid}
 .islot img{width:100%;height:80px;object-fit:cover;border-radius:8px;display:block}
-.islot input{display:none}
-.ilabel{margin-top:5px;font-size:11px}
+.ilbl{margin-top:5px;font-size:11px}
 
-/* ACTION BTNS */
+/* BTNS */
 .btn-accept{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
-.btn-accept:hover{background:var(--pd)}
 .btn-confirm{flex:2;padding:10px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
 .btn-reject{flex:1;padding:10px;background:#f1f5f9;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:#64748b}
 .btn-close{width:100%;padding:12px;background:var(--g);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
@@ -116,7 +112,6 @@ header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:1
 .badge.rejected{background:#fee2e2;color:#991b1b}
 .badge.urgent{background:#fee2e2;color:#991b1b}
 .badge.normal{background:#f0fdf4;color:#166534}
-.ph{font-weight:700;font-size:11px}
 .empty{text-align:center;color:var(--mu);padding:40px;font-size:14px}
 
 /* ADMIN TABLE */
@@ -125,13 +120,11 @@ th{text-align:left;padding:8px 10px;background:#f7fafc;color:#4a5568;font-weight
 td{padding:9px 10px;border-bottom:1px solid #f0f4f8;vertical-align:middle}
 tr:hover td{background:#f7fafc}
 .thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);cursor:pointer}
-.thumb:hover{opacity:.8}
 .noimg{font-size:11px;color:var(--mu)}
-.btn-sm{background:var(--p);color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer}
-.btn-sm:hover{opacity:.85}
 
 /* MODAL */
-.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.mo.on{display:flex}
 .mb{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .mb h3{font-size:16px;font-weight:700;margin-bottom:16px}
 .mc{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);line-height:1;margin-top:-4px}
@@ -151,8 +144,8 @@ tr:hover td{background:#f7fafc}
   <div class="ac">
     <div class="al"><h1>🏙️ ResolveNow</h1><p>ระบบรับแจ้งเรื่องร้องเรียน</p></div>
     <div class="tabs">
-      <button class="tab on" id="tab-login" onclick="switchTab('login')">เข้าสู่ระบบ</button>
-      <button class="tab"    id="tab-reg"   onclick="switchTab('reg')">สมัครสมาชิก</button>
+      <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+      <button class="tab"    id="tabReg"   onclick="switchTab('reg')">สมัครสมาชิก</button>
     </div>
     <div class="ebox" id="authErr"></div>
     <div id="fLogin">
@@ -160,7 +153,7 @@ tr:hover td{background:#f7fafc}
       <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="rem"><input type="checkbox" id="rem"/><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
       <button class="btn-p" onclick="doLogin()">เข้าสู่ระบบ</button>
-      <p style="text-align:center;font-size:12px;color:var(--mu);margin-top:12px">Admin: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c5a4a1a8acab85b7a0b6aaa9b3a0abaab2ebb1ad">[email&#160;protected]</a> / admin1234</p>
+      <p style="text-align:center;font-size:12px;color:var(--mu);margin-top:12px">Admin: admin@resolvenow.th / admin1234</p>
     </div>
     <div id="fReg" style="display:none">
       <div class="row2">
@@ -172,8 +165,8 @@ tr:hover td{background:#f7fafc}
       <div class="fg">
         <label>ประเภทผู้ใช้</label>
         <select id="rRole">
-          <option value="citizen">👤 ประชาชน (Citizen)</option>
-          <option value="technician">🔧 ช่างเทคนิค (Technician)</option>
+          <option value="citizen">👤 ประชาชน</option>
+          <option value="technician">🔧 ช่างเทคนิค</option>
         </select>
       </div>
       <button class="btn-p" onclick="doRegister()">สมัครสมาชิก</button>
@@ -195,7 +188,6 @@ tr:hover td{background:#f7fafc}
       <button class="hbtn" onclick="doLogout()">ออกจากระบบ</button>
     </div>
   </header>
-
   <div class="wrap">
     <div class="stats">
       <div class="sc"><div class="sl">ทั้งหมด</div><div class="sv bv" id="stT">0</div></div>
@@ -204,26 +196,32 @@ tr:hover td{background:#f7fafc}
       <div class="sc"><div class="sl">เสร็จสิ้น</div><div class="sv gv" id="stD">0</div></div>
     </div>
 
-    <!-- CITIZEN: form + my tickets -->
-    <div id="citizenSection" style="display:none">
-      <div class="card" id="newCard">
+    <!-- CITIZEN -->
+    <div id="secCitizen" style="display:none">
+      <div class="card">
         <h2>📝 แจ้งเรื่องร้องเรียนใหม่</h2>
         <div class="g2">
-          <div class="cf"><label>ประเภทปัญหา</label>
+          <div class="cf">
+            <label>ประเภทปัญหา</label>
             <select id="tCat">
-              <option value="Road">ถนน (Road)</option>
-              <option value="Water">น้ำประปา (Water)</option>
-              <option value="Electricity">ไฟฟ้า (Electricity)</option>
-              <option value="Sanitation">สุขาภิบาล (Sanitation)</option>
+              <option value="Road">ถนน</option>
+              <option value="Water">น้ำประปา</option>
+              <option value="Electricity">ไฟฟ้า</option>
+              <option value="Sanitation">สุขาภิบาล</option>
               <option value="Other">อื่นๆ</option>
             </select>
           </div>
           <div class="cf"><label>สถานที่</label><input type="text" id="tLoc" placeholder="เช่น ถนนสุขุมวิท"/></div>
-          <div class="cf full"><label>รายละเอียด</label><textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..."></textarea></div>
+          <div class="cf full"><label>รายละเอียด</label><textarea id="tDesc" placeholder="อธิบายปัญหา..."></textarea></div>
           <div class="cf full">
             <label>รูปภาพ <span style="font-weight:400;color:var(--mu)">(ไม่บังคับ)</span></label>
-            <label class="uarea"><input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)"/>
-              <div id="cImgPrev"><div style="font-size:26px;margin-bottom:4px">📷</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px">PNG, JPG (ไม่เกิน 5MB)</div></div>
+            <label class="uarea" id="cImgLabel">
+              <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)"/>
+              <div id="cImgPrev">
+                <div style="font-size:26px;margin-bottom:4px">📷</div>
+                <div>คลิกเพื่อแนบรูปภาพ</div>
+                <div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>
+              </div>
             </label>
           </div>
         </div>
@@ -235,22 +233,23 @@ tr:hover td{background:#f7fafc}
       </div>
     </div>
 
-    <!-- TECH: card steps -->
-    <div id="techSection" style="display:none">
+    <!-- TECH -->
+    <div id="secTech" style="display:none">
       <div style="font-size:13px;color:var(--mu);margin-bottom:12px;font-weight:500" id="techSub"></div>
       <div id="techCards"></div>
     </div>
 
-    <!-- ADMIN: table -->
-    <div id="adminSection" style="display:none">
+    <!-- ADMIN -->
+    <div id="secAdmin" style="display:none">
       <div class="card">
-        <h2>📋 Ticket ทั้งหมดในระบบ</h2>
+        <h2>📋 Ticket ทั้งหมด</h2>
         <div style="overflow-x:auto">
           <table>
             <thead><tr>
               <th>ID</th><th>ผู้แจ้ง</th><th>ประเภท</th><th>รายละเอียด</th>
-              <th>Priority</th><th>สถานะ</th><th>รูปผู้แจ้ง</th>
-              <th>รูปก่อน</th><th>รูปหลัง</th><th>อัปเดต</th><th>วันที่</th>
+              <th>Priority</th><th>สถานะ</th>
+              <th>รูปผู้แจ้ง</th><th>รูปก่อน</th><th>รูปหลัง</th>
+              <th>อัปเดต</th><th>วันที่</th>
             </tr></thead>
             <tbody id="tBody"><tr><td colspan="11" class="empty">กำลังโหลด...</td></tr></tbody>
           </table>
@@ -261,7 +260,7 @@ tr:hover td{background:#f7fafc}
 </div>
 
 <!-- MODAL: เปลี่ยนรหัสผ่าน -->
-<div class="mo" id="mChPw" style="display:none">
+<div class="mo" id="mChPw">
   <div class="mb">
     <button class="mc" onclick="closeChPw()">✕</button>
     <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
@@ -273,8 +272,8 @@ tr:hover td{background:#f7fafc}
   </div>
 </div>
 
-<!-- MODAL: ดูรูป -->
-<div class="mo" id="mImg" style="display:none" onclick="closeMImg()">
+<!-- MODAL: ดูรูปใหญ่ -->
+<div class="mo" id="mImg" onclick="closeMImg()">
   <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
     <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
     <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:12px" src="" alt=""/>
@@ -282,319 +281,403 @@ tr:hover td{background:#f7fafc}
   </div>
 </div>
 
+<!-- Hidden file input สำหรับ tech upload -->
+<input type="file" id="techFileInput" accept="image/*" style="display:none" onchange="onTechFileSelected(event)"/>
+
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-let CU=null;
-const $=id=>document.getElementById(id);
+<script>
+let CU = null;
+let techUploadTicketId = null;
+let techUploadType = null;
 
-function toast(msg,err=false){
-  const t=$('toast');t.textContent=msg;
-  t.className='toast on'+(err?' err':'');
-  setTimeout(()=>t.className='toast',3000);
+function ge(id){ return document.getElementById(id); }
+
+function toast(msg, err) {
+  var t = ge('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (err ? ' err' : '');
+  setTimeout(function(){ t.className = 'toast'; }, 3000);
 }
-function showE(id,msg){const e=$(id);e.textContent=msg;e.classList.add('on');}
-function hideE(id){$(id).classList.remove('on');}
 
-function switchTab(t){
-  hideE('authErr');
-  $('fLogin').style.display=t==='login'?'block':'none';
-  $('fReg').style.display=t==='reg'?'block':'none';
-  $('tab-login').className='tab'+(t==='login'?' on':'');
-  $('tab-reg').className='tab'+(t==='reg'?' on':'');
+function showE(id, msg){ var e=ge(id); e.textContent=msg; e.classList.add('on'); }
+function hideE(id){ ge(id).classList.remove('on'); }
+
+function stTH(s){
+  var m = {pending:'รอดำเนินการ',assigned:'รับงานแล้ว',in_progress:'กำลังดำเนินการ',completed:'เสร็จสิ้น',rejected:'ปฏิเสธ'};
+  return m[s] || s;
 }
 
 function pLabel(s){
-  if(s>=70)return`<span class="ph" style="color:var(--r)">🔴 ${s}</span>`;
-  if(s>=40)return`<span class="ph" style="color:var(--w)">🟡 ${s}</span>`;
-  return`<span class="ph" style="color:var(--g)">🟢 ${s}</span>`;
+  if(s >= 70) return '<span style="font-weight:700;font-size:11px;color:var(--r)">🔴 '+s+'</span>';
+  if(s >= 40) return '<span style="font-weight:700;font-size:11px;color:var(--w)">🟡 '+s+'</span>';
+  return '<span style="font-weight:700;font-size:11px;color:var(--g)">🟢 '+s+'</span>';
 }
-function stTH(s){return{pending:'รอดำเนินการ',assigned:'รับงานแล้ว',in_progress:'กำลังดำเนินการ',completed:'เสร็จสิ้น',rejected:'ปฏิเสธ'}[s]||s;}
 
-// AUTH
-async function doRegister(){
+/* ── TAB ── */
+function switchTab(t) {
   hideE('authErr');
-  const body={firstName:$('rFirst').value.trim(),lastName:$('rLast').value.trim(),email:$('rEmail').value.trim(),password:$('rPass').value,role:$('rRole').value};
-  if(!body.firstName||!body.lastName||!body.email||!body.password)return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
-  try{
-    const res=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const data=await res.json();
-    if(!res.ok)return showE('authErr',data.error||'เกิดข้อผิดพลาด');
-    CU=data.user;enterApp();
-  }catch(e){showE('authErr','ไม่สามารถเชื่อมต่อ server');}
+  ge('fLogin').style.display = t==='login' ? 'block' : 'none';
+  ge('fReg').style.display   = t==='reg'   ? 'block' : 'none';
+  ge('tabLogin').className = 'tab' + (t==='login' ? ' on' : '');
+  ge('tabReg').className   = 'tab' + (t==='reg'   ? ' on' : '');
 }
 
-async function doLogin(){
+/* ── AUTH ── */
+async function doRegister() {
   hideE('authErr');
-  const email=$('lEmail').value.trim(),pass=$('lPass').value;
-  if(!email||!pass)return showE('authErr','กรุณากรอก Email และ Password');
-  try{
-    const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,remember:$('rem').checked})});
-    const data=await res.json();
-    if(!res.ok)return showE('authErr',data.error||'เกิดข้อผิดพลาด');
-    CU=data.user;enterApp();
-  }catch(e){showE('authErr','ไม่สามารถเชื่อมต่อ server');}
+  var body = {
+    firstName: ge('rFirst').value.trim(),
+    lastName:  ge('rLast').value.trim(),
+    email:     ge('rEmail').value.trim(),
+    password:  ge('rPass').value,
+    role:      ge('rRole').value
+  };
+  if(!body.firstName||!body.lastName||!body.email||!body.password)
+    return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
+  try {
+    var res  = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var data = await res.json();
+    if(!res.ok) return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+    CU = data.user; enterApp();
+  } catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ server'); }
 }
 
-async function doLogout(){
+async function doLogin() {
+  hideE('authErr');
+  var email = ge('lEmail').value.trim();
+  var pass  = ge('lPass').value;
+  if(!email||!pass) return showE('authErr','กรุณากรอก Email และ Password');
+  try {
+    var res  = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,remember:ge('rem').checked})});
+    var data = await res.json();
+    if(!res.ok) return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+    CU = data.user; enterApp();
+  } catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ server'); }
+}
+
+async function doLogout() {
   await fetch('/api/auth/logout',{method:'POST'});
-  CU=null;$('app').classList.remove('on');$('authPage').style.display='flex';switchTab('login');
+  CU = null;
+  ge('app').classList.remove('on');
+  ge('authPage').style.display = 'flex';
+  switchTab('login');
 }
 
-function enterApp(){
-  $('authPage').style.display='none';$('app').classList.add('on');
-  $('hAv').textContent=(CU.firstName[0]+CU.lastName[0]).toUpperCase();
-  $('hName').textContent=`${CU.firstName} ${CU.lastName}`;
-  $('hRole').textContent={citizen:'👤 ประชาชน',admin:'🛡️ Admin',technician:'🔧 ช่าง'}[CU.role]||CU.role;
-  $('citizenSection').style.display=CU.role==='citizen'?'block':'none';
-  $('techSection').style.display=CU.role==='technician'?'block':'none';
-  $('adminSection').style.display=CU.role==='admin'?'block':'none';
+function enterApp() {
+  ge('authPage').style.display = 'none';
+  ge('app').classList.add('on');
+  ge('hAv').textContent   = (CU.firstName[0]+CU.lastName[0]).toUpperCase();
+  ge('hName').textContent = CU.firstName + ' ' + CU.lastName;
+  var roles = {citizen:'👤 ประชาชน', admin:'🛡️ Admin', technician:'🔧 ช่าง'};
+  ge('hRole').textContent = roles[CU.role] || CU.role;
+
+  ge('secCitizen').style.display = CU.role === 'citizen'    ? 'block' : 'none';
+  ge('secTech').style.display    = CU.role === 'technician' ? 'block' : 'none';
+  ge('secAdmin').style.display   = CU.role === 'admin'      ? 'block' : 'none';
+
   loadTickets();
-  setInterval(loadTickets,8000);
+  setInterval(loadTickets, 8000);
 }
 
-// CHANGE PW
-function openChPw(){hideE('chErr');['curP','newP','conP'].forEach(i=>$(i).value='');$('mChPw').style.display='flex';}
-function closeChPw(){$('mChPw').style.display='none';}
-async function doChPw(){
+/* ── CHANGE PASSWORD ── */
+function openChPw(){ hideE('chErr'); ['curP','newP','conP'].forEach(function(i){ge(i).value=''}); ge('mChPw').classList.add('on'); }
+function closeChPw(){ ge('mChPw').classList.remove('on'); }
+
+async function doChPw() {
   hideE('chErr');
-  const cur=$('curP').value,nw=$('newP').value,con=$('conP').value;
-  if(!cur||!nw||!con)return showE('chErr','กรุณากรอกข้อมูลให้ครบ');
-  if(nw!==con)return showE('chErr','รหัสผ่านใหม่ไม่ตรงกัน');
-  try{
-    const res=await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
-    const data=await res.json();
-    if(!res.ok)return showE('chErr',data.error||'เกิดข้อผิดพลาด');
-    closeChPw();toast('✅ เปลี่ยนรหัสผ่านสำเร็จ');
-  }catch(e){showE('chErr','เกิดข้อผิดพลาด');}
+  var cur=ge('curP').value, nw=ge('newP').value, con=ge('conP').value;
+  if(!cur||!nw||!con) return showE('chErr','กรุณากรอกข้อมูลให้ครบ');
+  if(nw!==con) return showE('chErr','รหัสผ่านใหม่ไม่ตรงกัน');
+  try {
+    var res  = await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    var data = await res.json();
+    if(!res.ok) return showE('chErr', data.error || 'เกิดข้อผิดพลาด');
+    closeChPw(); toast('✅ เปลี่ยนรหัสผ่านสำเร็จ');
+  } catch(e){ showE('chErr','เกิดข้อผิดพลาด'); }
 }
 
-// LOAD TICKETS
-async function loadTickets(){
-  try{
-    const res=await fetch('/api/tickets');if(!res.ok)return;
-    const data=await res.json();
-    $('stT').textContent=data.length;
-    $('stP').textContent=data.filter(t=>t.status==='pending').length;
-    $('stI').textContent=data.filter(t=>t.status==='in_progress').length;
-    $('stD').textContent=data.filter(t=>t.status==='completed').length;
-    if(CU.role==='technician')renderTech(data);
-    else if(CU.role==='admin')renderAdmin(data);
+/* ── VIEW IMAGE ── */
+function viewImg(src, title) {
+  ge('mImgSrc').src = src;
+  ge('mImgTitle').textContent = title;
+  ge('mImg').classList.add('on');
+}
+function closeMImg(){ ge('mImg').classList.remove('on'); }
+
+/* ── LOAD TICKETS ── */
+async function loadTickets() {
+  try {
+    var res = await fetch('/api/tickets');
+    if(!res.ok) return;
+    var data = await res.json();
+    ge('stT').textContent = data.length;
+    ge('stP').textContent = data.filter(function(t){return t.status==='pending';}).length;
+    ge('stI').textContent = data.filter(function(t){return t.status==='in_progress';}).length;
+    ge('stD').textContent = data.filter(function(t){return t.status==='completed';}).length;
+
+    if(CU.role === 'technician') renderTech(data);
+    else if(CU.role === 'admin') renderAdmin(data);
     else renderCitizen(data);
-  }catch(e){console.error(e);}
+  } catch(e){ console.error(e); }
 }
 
-// ═══ TECH CARD RENDER ═══════════════════════════════════════
-function renderTech(data){
-  const el=$('techCards');
-  const active=data.filter(t=>t.status!=='completed'&&t.status!=='rejected');
-  const done=data.filter(t=>t.status==='completed'||t.status==='rejected');
-  $('techSub').textContent=`งานทั้งหมด ${data.length} รายการ | ค้างอยู่ ${active.length} รายการ`;
-  if(!data.length){el.innerHTML='<div class="empty">🎉 ไม่มีงานในระบบ</div>';return;}
-
-  el.innerHTML=[...active,...done].map(t=>{
-    const urgent=t.priorityScore>=70;
-    const isDone=t.status==='completed'||t.status==='rejected';
-
-    const s1=t.status==='pending'?'active':'done';
-    const s2=t.status==='pending'?'idle':t.status==='assigned'?'active':'done';
-    const s3=t.status==='in_progress'?'active':t.status==='completed'?'done':'idle';
-
-    return`<div class="tcard">
-      <div class="tcard-head">
-        <div>
-          <div class="tcard-id">TICKET #${t.ticketId}</div>
-          <div class="tcard-title">${t.category} – ${t.location}</div>
-        </div>
-        <span class="badge ${urgent?'urgent':'normal'}">${urgent?'⚡ เร่งด่วน':'ปกติ'} ${pLabel(t.priorityScore)}</span>
-      </div>
-      <div class="tcard-body">
-        <div style="margin-bottom:12px">
-          <div class="meta-row"><span class="mi">⚠️</span><span>${t.description}</span></div>
-          <div class="meta-row"><span class="mi">📍</span><span>${t.location}</span></div>
-          <div class="meta-row"><span class="mi">👤</span><span>ผู้แจ้ง: ${t.citizenName}</span></div>
-          <div class="meta-row"><span class="mi">🕐</span><span>${t.createdAt}</span></div>
-        </div>
-
-        ${t.citizenImage?`<div style="margin-bottom:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--mu);margin-bottom:6px">📎 รูปจากผู้แจ้ง</div>
-          <img src="${t.citizenImage}" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer" onclick="viewImg('${t.citizenImage}','รูปจากประชาชน')"/>
-        </div>`:''}
-
-        ${isDone?`
-          <div style="background:${t.status==='completed'?'#f0fdf4':'#fef2f2'};border:1px solid ${t.status==='completed'?'#bbf7d0':'#fecaca'};border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:600;color:${t.status==='completed'?'#065f46':'#991b1b'}">
-            ${t.status==='completed'?'✅ งานนี้เสร็จสิ้นแล้ว':'❌ งานนี้ถูกปฏิเสธ'}
-          </div>
-          ${t.beforeImage||t.afterImage?`<div class="img-row" style="margin-top:10px">
-            ${t.beforeImage?`<div class="islot has" onclick="viewImg('${t.beforeImage}','รูปก่อนซ่อม')"><img src="${t.beforeImage}"/><div class="ilabel">ก่อนซ่อม</div></div>`:''}
-            ${t.afterImage?`<div class="islot has" onclick="viewImg('${t.afterImage}','รูปหลังซ่อม')"><img src="${t.afterImage}"/><div class="ilabel">หลังซ่อม</div></div>`:''}
-          </div>`:''}
-        `:`
-        <div>
-          <!-- Step 1 -->
-          <div class="step">
-            <div class="step-head">
-              <div class="snum ${s1}">${s1==='done'?'✓':'1'}</div>
-              <div class="slabel">ข้อมูลการร้องเรียน</div>
-              <span class="sstatus ${s1}">${s1==='done'?'เสร็จแล้ว':'รอดำเนินการ'}</span>
-            </div>
-            ${t.status==='pending'?`<div class="step-body">
-              <p style="font-size:13px;color:#4a5568;margin-bottom:12px">กดรับงานเพื่อเริ่มลงพื้นที่ตรวจสอบ</p>
-              <button class="btn-accept" onclick="acceptJob('${t.ticketId}')">🔧 รับเรื่องและลงพื้นที่</button>
-            </div>`:''}
-          </div>
-
-          <!-- Step 2 -->
-          <div class="step">
-            <div class="step-head">
-              <div class="snum ${s2}">${s2==='done'?'✓':'2'}</div>
-              <div class="slabel">ยืนยันการเข้าตรวจสอบ</div>
-              <span class="sstatus ${s2}">${s2==='done'?'เสร็จแล้ว':s2==='active'?'กำลังดำเนินการ':'รอดำเนินการ'}</span>
-            </div>
-            ${s2==='active'?`<div class="step-body">
-              <p style="font-size:13px;color:var(--mu);margin-bottom:10px">📷 ถ่ายรูปสภาพก่อนซ่อม (AI ช่วยตรวจสอบ)</p>
-              <div class="islot ${t.beforeImage?'has':''}" style="display:block;margin-bottom:12px;cursor:pointer" onclick="triggerUpload('${t.ticketId}','before')">
-                ${t.beforeImage
-                  ?`<img src="${t.beforeImage}" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/><div class="ilabel" style="color:var(--g);margin-top:6px">✅ อัปโหลดแล้ว — คลิกเพื่อเปลี่ยน</div>`
-                  :`<div style="padding:18px 0"><div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>`
-                }
-              </div>
-              <div style="margin-bottom:12px">
-                <label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บันทึกเพิ่มเติมสำหรับ AI (ไม่บังคับ)</label>
-                <textarea id="note_${t.ticketId}" style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="บรรยายสภาพปัญหาที่พบ..."></textarea>
-              </div>
-              <div style="display:flex;gap:8px">
-                <button class="btn-reject" onclick="rejectJob('${t.ticketId}')">ปฏิเสธ</button>
-                <button class="btn-confirm" onclick="startWork('${t.ticketId}')">✅ ยืนยันเริ่มซ่อม</button>
-              </div>
-            </div>`:''}
-          </div>
-
-          <!-- Step 3 -->
-          <div class="step">
-            <div class="step-head">
-              <div class="snum ${s3}">${s3==='done'?'✓':'3'}</div>
-              <div class="slabel">หลักฐานหลังการดำเนินการ</div>
-              <span class="sstatus ${s3}">${s3==='done'?'เสร็จแล้ว':s3==='active'?'กำลังดำเนินการ':'รอดำเนินการ'}</span>
-            </div>
-            ${s3==='active'?`<div class="step-body">
-              <p style="font-size:13px;color:var(--mu);margin-bottom:10px">📷 ถ่ายรูปหลังซ่อมเสร็จเพื่อให้ AI ตรวจสอบคุณภาพ</p>
-              <div class="img-row">
-                <div class="islot ${t.beforeImage?'has':''}" onclick="${t.beforeImage?`viewImg('${t.beforeImage}','รูปก่อนซ่อม')`:''}">
-                  ${t.beforeImage?`<img src="${t.beforeImage}"/>`:`<div style="padding:14px 0;font-size:22px">📷</div>`}
-                  <div class="ilabel">ก่อนซ่อม</div>
-                </div>
-                <div class="islot ${t.afterImage?'has':''}" style="cursor:pointer" onclick="triggerUpload('${t.ticketId}','after')">
-                  ${t.afterImage?`<img src="${t.afterImage}"/>`:`<div style="padding:14px 0;font-size:22px">📷</div>`}
-                  <div class="ilabel">${t.afterImage?'✅ หลังซ่อม':'คลิกถ่ายรูปหลังซ่อม'}</div>
-                </div>
-              </div>
-              <div style="margin-bottom:12px">
-                <label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บรรยายงานที่ทำ</label>
-                <textarea id="done_${t.ticketId}" style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="อธิบายงานที่แก้ไขเสร็จแล้ว..."></textarea>
-              </div>
-              <button class="btn-close" ${!t.afterImage?'disabled':''} onclick="completeJob('${t.ticketId}')">
-                📨 ยืนยันปิดเรื่องร้องเรียนทุกข์
-              </button>
-              ${!t.afterImage?`<p style="font-size:12px;color:var(--mu);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>`:''}
-            </div>`:''}
-          </div>
-        </div>`}
-      </div>
-    </div>`;
-  }).join('');
+/* ── CITIZEN RENDER ── */
+function renderCitizen(data) {
+  var el = ge('citizenCards');
+  if(!data.length){ el.innerHTML = '<div class="empty">ยังไม่มีเรื่องร้องเรียน</div>'; return; }
+  var html = '';
+  data.forEach(function(t) {
+    html += '<div style="border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+    html += '<div><div style="font-size:11px;color:var(--mu);font-weight:600">'+t.ticketId+'</div>';
+    html += '<div style="font-size:14px;font-weight:700">'+t.category+' – '+t.location+'</div></div>';
+    html += '<span class="badge '+t.status+'">'+stTH(t.status)+'</span></div>';
+    html += '<div style="font-size:13px;color:#4a5568;margin-bottom:4px">'+t.description+'</div>';
+    html += '<div style="font-size:12px;color:var(--mu)">'+t.createdAt+' · '+pLabel(t.priorityScore)+'</div>';
+    if(t.citizenImage) {
+      html += '<img src="'+t.citizenImage+'" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer" onclick="viewImg(\''+t.citizenImage+'\',\'รูปที่แนบ\')"/>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
 }
 
-// ═══ CITIZEN RENDER ═════════════════════════════════════════
-function renderCitizen(data){
-  const el=$('citizenCards');
-  if(!data.length){el.innerHTML='<div class="empty">ยังไม่มีเรื่องร้องเรียน</div>';return;}
-  el.innerHTML=data.map(t=>`
-    <div style="border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div><div style="font-size:11px;color:var(--mu);font-weight:600">${t.ticketId}</div>
-        <div style="font-size:14px;font-weight:700">${t.category} – ${t.location}</div></div>
-        <span class="badge ${t.status}">${stTH(t.status)}</span>
-      </div>
-      <div style="font-size:13px;color:#4a5568;margin-bottom:4px">${t.description}</div>
-      <div style="font-size:12px;color:var(--mu)">${t.createdAt} · ${pLabel(t.priorityScore)}</div>
-      ${t.citizenImage?`<img src="${t.citizenImage}" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer" onclick="viewImg('${t.citizenImage}','รูปที่แนบ')"/>`:''}
-    </div>`).join('');
+/* ── ADMIN RENDER ── */
+function renderAdmin(data) {
+  if(!data.length){ ge('tBody').innerHTML = '<tr><td colspan="11" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
+  var html = '';
+  data.forEach(function(t) {
+    html += '<tr>';
+    html += '<td><strong>'+t.ticketId+'</strong></td>';
+    html += '<td>'+t.citizenName+'</td>';
+    html += '<td>'+t.category+'</td>';
+    html += '<td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.description+'</td>';
+    html += '<td>'+pLabel(t.priorityScore||0)+'</td>';
+    html += '<td><span class="badge '+t.status+'">'+stTH(t.status)+'</span></td>';
+    html += '<td>'+(t.citizenImage ? '<img class="thumb" src="'+t.citizenImage+'" onclick="viewImg(\''+t.citizenImage+'\',\'รูปผู้แจ้ง\')">' : '<span class="noimg">-</span>')+'</td>';
+    html += '<td>'+(t.beforeImage  ? '<img class="thumb" src="'+t.beforeImage+'"  onclick="viewImg(\''+t.beforeImage+'\',\'รูปก่อน\')">'   : '<span class="noimg">-</span>')+'</td>';
+    html += '<td>'+(t.afterImage   ? '<img class="thumb" src="'+t.afterImage+'"   onclick="viewImg(\''+t.afterImage+'\',\'รูปหลัง\')">'    : '<span class="noimg">-</span>')+'</td>';
+    html += '<td><select onchange="adminUpdateStatus(\''+t.ticketId+'\',this.value)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">';
+    ['pending','assigned','in_progress','completed','rejected'].forEach(function(s){
+      html += '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+stTH(s)+'</option>';
+    });
+    html += '</select></td>';
+    html += '<td style="color:var(--mu);font-size:12px;white-space:nowrap">'+t.createdAt+'</td>';
+    html += '</tr>';
+  });
+  ge('tBody').innerHTML = html;
 }
 
-// ═══ ADMIN RENDER ═══════════════════════════════════════════
-function renderAdmin(data){
-  if(!data.length){$('tBody').innerHTML='<tr><td colspan="11" class="empty">ยังไม่มี Ticket</td></tr>';return;}
-  $('tBody').innerHTML=data.map(t=>`<tr>
-    <td><strong>${t.ticketId}</strong></td>
-    <td>${t.citizenName}</td><td>${t.category}</td>
-    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.description}">${t.description}</td>
-    <td>${pLabel(t.priorityScore||0)}</td>
-    <td><span class="badge ${t.status}">${stTH(t.status)}</span></td>
-    <td>${t.citizenImage?`<img class="thumb" src="${t.citizenImage}" onclick="viewImg('${t.citizenImage}','รูปผู้แจ้ง')"/>`:'<span class="noimg">-</span>'}</td>
-    <td>${t.beforeImage?`<img class="thumb" src="${t.beforeImage}" onclick="viewImg('${t.beforeImage}','รูปก่อน')"/>`:'<span class="noimg">-</span>'}</td>
-    <td>${t.afterImage?`<img class="thumb" src="${t.afterImage}" onclick="viewImg('${t.afterImage}','รูปหลัง')"/>`:'<span class="noimg">-</span>'}</td>
-    <td><select onchange="doUpdateStatus('${t.ticketId}',this.value)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">
-      ${['pending','assigned','in_progress','completed','rejected'].map(s=>`<option value="${s}"${t.status===s?' selected':''}>${stTH(s)}</option>`).join('')}
-    </select></td>
-    <td style="color:var(--mu);font-size:12px;white-space:nowrap">${t.createdAt}</td>
-  </tr>`).join('');
+/* ── TECH RENDER ── */
+function renderTech(data) {
+  var el = ge('techCards');
+  var active = data.filter(function(t){ return t.status!=='completed' && t.status!=='rejected'; });
+  ge('techSub').textContent = 'งานทั้งหมด '+data.length+' รายการ | ค้างอยู่ '+active.length+' รายการ';
+
+  if(!data.length){ el.innerHTML = '<div class="empty">🎉 ไม่มีงานในระบบ</div>'; return; }
+
+  var sorted = active.concat(data.filter(function(t){ return t.status==='completed'||t.status==='rejected'; }));
+  var html = '';
+
+  sorted.forEach(function(t) {
+    var urgent = t.priorityScore >= 70;
+    var isDone = t.status === 'completed' || t.status === 'rejected';
+    var s1 = t.status === 'pending' ? 'active' : 'done';
+    var s2 = t.status === 'pending' ? 'idle' : t.status === 'assigned' ? 'active' : 'done';
+    var s3 = t.status === 'in_progress' ? 'active' : t.status === 'completed' ? 'done' : 'idle';
+
+    html += '<div class="tcard">';
+
+    /* HEAD */
+    html += '<div class="tcard-head">';
+    html += '<div><div class="tcard-id">TICKET #'+t.ticketId+'</div>';
+    html += '<div class="tcard-title">'+t.category+' – '+t.location+'</div></div>';
+    html += '<span class="badge '+(urgent?'urgent':'normal')+'">'+(urgent?'⚡ เร่งด่วน':'ปกติ')+' '+pLabel(t.priorityScore)+'</span>';
+    html += '</div>';
+
+    /* BODY */
+    html += '<div class="tcard-body">';
+    html += '<div class="mrow"><span class="mi">⚠️</span><span>'+t.description+'</span></div>';
+    html += '<div class="mrow"><span class="mi">📍</span><span>'+t.location+'</span></div>';
+    html += '<div class="mrow"><span class="mi">👤</span><span>ผู้แจ้ง: '+t.citizenName+'</span></div>';
+    html += '<div class="mrow" style="margin-bottom:12px"><span class="mi">🕐</span><span>'+t.createdAt+'</span></div>';
+
+    if(t.citizenImage) {
+      html += '<div style="margin-bottom:14px">';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--mu);margin-bottom:6px">📎 รูปจากผู้แจ้ง</div>';
+      html += '<img src="'+t.citizenImage+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer" onclick="viewImg(\''+t.citizenImage+'\',\'รูปจากประชาชน\')"/>';
+      html += '</div>';
+    }
+
+    if(isDone) {
+      var doneColor = t.status==='completed' ? '#065f46' : '#991b1b';
+      var doneBg    = t.status==='completed' ? '#f0fdf4' : '#fef2f2';
+      var doneBd    = t.status==='completed' ? '#bbf7d0' : '#fecaca';
+      var doneMsg   = t.status==='completed' ? '✅ งานนี้เสร็จสิ้นแล้ว' : '❌ งานนี้ถูกปฏิเสธ';
+      html += '<div style="background:'+doneBg+';border:1px solid '+doneBd+';border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:600;color:'+doneColor+'">'+doneMsg+'</div>';
+      if(t.beforeImage || t.afterImage) {
+        html += '<div class="img-row" style="margin-top:10px">';
+        if(t.beforeImage) html += '<div class="islot has" onclick="viewImg(\''+t.beforeImage+'\',\'รูปก่อนซ่อม\')"><img src="'+t.beforeImage+'"/><div class="ilbl">ก่อนซ่อม</div></div>';
+        if(t.afterImage)  html += '<div class="islot has" onclick="viewImg(\''+t.afterImage+'\',\'รูปหลังซ่อม\')"><img src="'+t.afterImage+'"/><div class="ilbl">หลังซ่อม</div></div>';
+        html += '</div>';
+      }
+    } else {
+      /* STEP 1 */
+      html += '<div class="step">';
+      html += '<div class="step-head"><div class="snum '+s1+'">'+(s1==='done'?'✓':'1')+'</div><div class="slbl">ข้อมูลการร้องเรียน</div><span class="sstat '+s1+'">'+(s1==='done'?'เสร็จแล้ว':'รอดำเนินการ')+'</span></div>';
+      if(t.status === 'pending') {
+        html += '<div class="step-body">';
+        html += '<p style="font-size:13px;color:#4a5568;margin-bottom:12px">กดรับงานเพื่อเริ่มลงพื้นที่ตรวจสอบ</p>';
+        html += '<button class="btn-accept" onclick="acceptJob(\''+t.ticketId+'\')">🔧 รับเรื่องและลงพื้นที่</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+
+      /* STEP 2 */
+      html += '<div class="step">';
+      html += '<div class="step-head"><div class="snum '+s2+'">'+(s2==='done'?'✓':'2')+'</div><div class="slbl">ยืนยันการเข้าตรวจสอบ</div><span class="sstat '+s2+'">'+(s2==='done'?'เสร็จแล้ว':s2==='active'?'กำลังดำเนินการ':'รอดำเนินการ')+'</span></div>';
+      if(s2 === 'active') {
+        html += '<div class="step-body">';
+        html += '<p style="font-size:13px;color:var(--mu);margin-bottom:10px">📷 ถ่ายรูปสภาพก่อนซ่อม</p>';
+        if(t.beforeImage) {
+          html += '<div class="islot has" style="display:block;margin-bottom:12px;cursor:pointer" onclick="triggerTechUpload(\''+t.ticketId+'\',\'before\')">';
+          html += '<img src="'+t.beforeImage+'" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/>';
+          html += '<div class="ilbl" style="color:var(--g)">✅ อัปโหลดแล้ว — คลิกเพื่อเปลี่ยน</div></div>';
+        } else {
+          html += '<div class="islot" style="display:block;margin-bottom:12px;cursor:pointer;padding:20px" onclick="triggerTechUpload(\''+t.ticketId+'\',\'before\')">';
+          html += '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
+        }
+        html += '<div style="margin-bottom:12px">';
+        html += '<label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บันทึกเพิ่มเติม (ไม่บังคับ)</label>';
+        html += '<textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="บรรยายสภาพปัญหา..."></textarea>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:8px">';
+        html += '<button class="btn-reject" onclick="rejectJob(\''+t.ticketId+'\')">ปฏิเสธ</button>';
+        html += '<button class="btn-confirm" onclick="startWork(\''+t.ticketId+'\')">✅ ยืนยันเริ่มซ่อม</button>';
+        html += '</div></div>';
+      }
+      html += '</div>';
+
+      /* STEP 3 */
+      html += '<div class="step">';
+      html += '<div class="step-head"><div class="snum '+s3+'">'+(s3==='done'?'✓':'3')+'</div><div class="slbl">หลักฐานหลังการดำเนินการ</div><span class="sstat '+s3+'">'+(s3==='done'?'เสร็จแล้ว':s3==='active'?'กำลังดำเนินการ':'รอดำเนินการ')+'</span></div>';
+      if(s3 === 'active') {
+        html += '<div class="step-body">';
+        html += '<p style="font-size:13px;color:var(--mu);margin-bottom:10px">📷 ถ่ายรูปหลังซ่อมเพื่อให้ AI ตรวจสอบ</p>';
+        html += '<div class="img-row">';
+
+        /* before slot (view only) */
+        if(t.beforeImage) {
+          html += '<div class="islot has" onclick="viewImg(\''+t.beforeImage+'\',\'รูปก่อนซ่อม\')">';
+          html += '<img src="'+t.beforeImage+'"/><div class="ilbl">ก่อนซ่อม</div></div>';
+        } else {
+          html += '<div class="islot"><div style="padding:12px 0;font-size:20px">📷</div><div class="ilbl">ก่อนซ่อม</div></div>';
+        }
+
+        /* after slot (upload) */
+        if(t.afterImage) {
+          html += '<div class="islot has" onclick="triggerTechUpload(\''+t.ticketId+'\',\'after\')">';
+          html += '<img src="'+t.afterImage+'"/><div class="ilbl" style="color:var(--g)">✅ คลิกเปลี่ยน</div></div>';
+        } else {
+          html += '<div class="islot" style="cursor:pointer" onclick="triggerTechUpload(\''+t.ticketId+'\',\'after\')">';
+          html += '<div style="padding:12px 0;font-size:20px">📷</div><div class="ilbl">คลิกถ่ายรูปหลังซ่อม</div></div>';
+        }
+        html += '</div>';
+
+        html += '<div style="margin-bottom:12px">';
+        html += '<label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บรรยายงานที่ทำ</label>';
+        html += '<textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea>';
+        html += '</div>';
+        html += '<button class="btn-close"'+(t.afterImage?'':' disabled')+' onclick="completeJob(\''+t.ticketId+'\')">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
+        if(!t.afterImage) html += '<p style="font-size:12px;color:var(--mu);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
 }
 
-// ═══ TECH ACTIONS ════════════════════════════════════════════
-async function acceptJob(id){await doUpdateStatus(id,'assigned');toast('✅ รับงานสำเร็จ!');}
-async function startWork(id){await doUpdateStatus(id,'in_progress');toast('🔧 เริ่มดำเนินการ!');}
-async function rejectJob(id){await doUpdateStatus(id,'rejected');toast('ปฏิเสธงานแล้ว',true);}
-async function completeJob(id){await doUpdateStatus(id,'completed');toast('🎉 ปิดงานสำเร็จ!');}
+/* ── TECH UPLOAD (central input) ── */
+function triggerTechUpload(ticketId, type) {
+  techUploadTicketId = ticketId;
+  techUploadType = type;
+  var inp = ge('techFileInput');
+  inp.value = '';
+  inp.click();
+}
 
-async function doUpdateStatus(id,status){
-  await fetch(`/api/tickets/${id}/status`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+async function onTechFileSelected(e) {
+  var f = e.target.files[0];
+  if(!f) return;
+  var fd = new FormData();
+  fd.append('image', f);
+  try {
+    var res  = await fetch('/api/tickets/'+techUploadTicketId+'/upload/'+techUploadType, {method:'POST', body:fd});
+    var data = await res.json();
+    if(!res.ok) return toast(data.error || 'อัปโหลดไม่สำเร็จ', true);
+    toast('✅ อัปโหลดรูป'+(techUploadType==='before'?'ก่อน':'หลัง')+'สำเร็จ');
+    loadTickets();
+  } catch(e){ toast('อัปโหลดไม่สำเร็จ', true); }
+}
+
+/* ── TECH ACTIONS ── */
+async function acceptJob(id)   { await apiStatus(id,'assigned');    toast('✅ รับงานสำเร็จ!'); }
+async function startWork(id)   { await apiStatus(id,'in_progress'); toast('🔧 เริ่มดำเนินการ!'); }
+async function rejectJob(id)   { await apiStatus(id,'rejected');    toast('ปฏิเสธงานแล้ว',true); }
+async function completeJob(id) { await apiStatus(id,'completed');   toast('🎉 ปิดงานสำเร็จ!'); }
+async function adminUpdateStatus(id,s) { await apiStatus(id,s); toast('✅ อัปเดตแล้ว'); }
+
+async function apiStatus(id, status) {
+  await fetch('/api/tickets/'+id+'/status', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:status})});
   loadTickets();
 }
 
-let _upTicketId=null,_upType=null;
-function triggerUpload(ticketId,type){
-  _upTicketId=ticketId; _upType=type;
-  const inp=document.getElementById('_centralFile');
-  inp.value=''; inp.click();
-}
-async function _onCentralFile(e){
-  const f=e.target.files[0]; if(!f)return;
-  const fd=new FormData(); fd.append('image',f);
-  try{
-    const res=await fetch(`/api/tickets/${_upTicketId}/upload/${_upType}`,{method:'POST',body:fd});
-    const data=await res.json();
-    if(!res.ok)return toast(data.error||'อัปโหลดไม่สำเร็จ',true);
-    toast(`✅ อัปโหลดรูป${_upType==='before'?'ก่อน':'หลัง'}สำเร็จ`);
+/* ── CITIZEN SUBMIT ── */
+async function submitTicket() {
+  var loc  = ge('tLoc').value.trim();
+  var desc = ge('tDesc').value.trim();
+  if(!loc||!desc) return toast('⚠️ กรุณากรอกสถานที่และรายละเอียด', true);
+  try {
+    var fd = new FormData();
+    fd.append('category',    ge('tCat').value);
+    fd.append('location',    loc);
+    fd.append('description', desc);
+    var f = ge('cImg').files[0];
+    if(f) fd.append('image', f);
+    var res  = await fetch('/api/tickets', {method:'POST', body:fd});
+    var data = await res.json();
+    if(!res.ok) return toast(data.error || 'เกิดข้อผิดพลาด', true);
+    toast('✅ ส่งสำเร็จ! '+data.ticketId);
+    ge('tLoc').value = '';
+    ge('tDesc').value = '';
+    ge('cImg').value = '';
+    ge('cImgPrev').innerHTML = '<div style="font-size:26px;margin-bottom:4px">📷</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
     loadTickets();
-  }catch(e){toast('อัปโหลดไม่สำเร็จ',true);}
+  } catch(e){ toast('เกิดข้อผิดพลาด', true); }
 }
 
-// CITIZEN SUBMIT
-async function submitTicket(){
-  const loc=$('tLoc').value.trim(),desc=$('tDesc').value.trim();
-  if(!loc||!desc)return toast('⚠️ กรุณากรอกสถานที่และรายละเอียด',true);
-  try{
-    const fd=new FormData();
-    fd.append('category',$('tCat').value);
-    fd.append('location',loc);
-    fd.append('description',desc);
-    const f=$('cImg').files[0];if(f)fd.append('image',f);
-    const res=await fetch('/api/tickets',{method:'POST',body:fd});
-    const data=await res.json();
-    if(!res.ok)return toast(data.error||'เกิดข้อผิดพลาด',true);
-    toast(`✅ ส่งสำเร็จ! ${data.ticketId}`);
-    $('tLoc').value='';$('tDesc').value='';$('cImg').value='';
-    $('cImgPrev').innerHTML='<div style="font-size:26px;margin-bottom:4px">📷</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px">PNG, JPG (ไม่เกิน 5MB)</div>';
-    loadTickets();
-  }catch(e){toast('เกิดข้อผิดพลาด',true);}
-}
-
-function prevCitizenImg(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{$('cImgPrev').innerHTML=`<img src="${ev.target.result}" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">${f.name}</div>`;};
+function prevCitizenImg(e) {
+  var f = e.target.files[0];
+  if(!f) return;
+  var r = new FileReader();
+  r.onload = function(ev){
+    ge('cImgPrev').innerHTML = '<img src="'+ev.target.result+'" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">'+f.name+'</div>';
+  };
   r.readAsDataURL(f);
 }
 
-function viewImg(src,title){$('mImgSrc').src=src;$('mImgTitle').textContent=title;$('mImgModal').style.display='block';}
+/* ── SESSION CHECK ── */
+(async function(){
+  try {
+    var res = await fetch('/api/auth/me');
+    if(res.ok){ CU = await res.json(); enterApp(); }
+  } catch(e){}
+})();
+</script>
+</body>
+</html>
