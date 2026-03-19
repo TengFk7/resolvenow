@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ResolveNow</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#1a56db;--pd:#1746b0;--g:#0e9f6e;--r:#e53e3e;--w:#d97706;--bg:#f0f4f8;--bd:#e2e8f0;--mu:#718096}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1a202c;min-height:100vh}
+
+/* AUTH */
+.aw{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--p),var(--g));padding:20px}
+.ac{background:#fff;border-radius:20px;padding:36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.al{text-align:center;margin-bottom:24px}
+.al h1{font-size:26px;font-weight:800;color:var(--p)}
+.al p{font-size:13px;color:var(--mu);margin-top:4px}
+.tabs{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--bd);margin-bottom:24px}
+.tab{flex:1;padding:10px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;border:none;color:var(--mu);transition:.2s}
+.tab.on{background:var(--p);color:#fff}
+.fg{margin-bottom:14px}
+.fg label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:5px}
+.fg input,.fg select{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;background:#fafafa;transition:.2s;font-family:inherit}
+.fg input:focus,.fg select:focus{border-color:var(--p);background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rem{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.rem input{width:16px;height:16px;accent-color:var(--p)}
+.rem label{font-size:13px;color:var(--mu);cursor:pointer}
+.btn-p{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s}
+.btn-p:hover{background:var(--pd)}
+.ebox{background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.ebox.on{display:block}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.on{display:flex}
+header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:19px;font-weight:800}
+.uinfo{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
+.av{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.rbadge{background:rgba(255,255,255,.2);border-radius:99px;padding:3px 9px;font-size:11px;font-weight:600}
+.hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer}
+.hbtn:hover{background:rgba(255,255,255,.25)}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px 14px;flex:1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.sc{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.sc .sl{font-size:12px;color:var(--mu);margin-bottom:3px}
+.sc .sv{font-size:26px;font-weight:800}
+.bv{color:var(--p)}.yv{color:var(--w)}.gv{color:var(--g)}
+
+.card{background:#fff;border-radius:14px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:18px}
+.card h2{font-size:15px;font-weight:700;margin-bottom:14px;color:#2d3748}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.card label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px}
+.card input,.card select,.card textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit;transition:.2s}
+.card input:focus,.card select:focus,.card textarea:focus{border-color:var(--p);background:#fff}
+.card textarea{resize:vertical;min-height:76px}
+.cf{margin-bottom:0}
+.btn-s{margin-top:12px;background:var(--p);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer}
+.btn-s:hover{background:var(--pd)}
+.btn-sm{background:var(--p);color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-sm.gr{background:var(--g)}
+.btn-sm:hover{opacity:.85}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;background:#f7fafc;color:#4a5568;font-weight:600;border-bottom:2px solid var(--bd)}
+td{padding:9px 10px;border-bottom:1px solid #f0f4f8;vertical-align:middle}
+tr:hover td{background:#f7fafc}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.badge.pending{background:#fef3c7;color:#92400e}
+.badge.assigned{background:#dbeafe;color:#1e40af}
+.badge.in_progress{background:#e0e7ff;color:#3730a3}
+.badge.completed{background:#d1fae5;color:#065f46}
+.badge.rejected{background:#fee2e2;color:#991b1b}
+.ph{font-weight:700;font-size:12px}
+.ph{color:var(--r)}.pm{color:var(--w)}.pl{color:var(--g)}
+.empty{text-align:center;color:var(--mu);padding:32px;font-size:14px}
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);cursor:pointer}
+.thumb:hover{opacity:.8}
+.noimg{font-size:11px;color:var(--mu)}
+
+/* UPLOAD AREA */
+.uarea{border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:.2s;font-size:13px;color:var(--mu);display:block}
+.uarea:hover{border-color:var(--p)}
+.uarea input{display:none}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.mb{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.mb h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.mc{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);line-height:1;margin-top:-4px}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--g);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none;z-index:999}
+.toast.on{opacity:1;transform:translateY(0)}
+.toast.err{background:var(--r)}
+
+@media(max-width:580px){.row2,.g2{grid-template-columns:1fr}.uinfo{gap:6px}}
+</style>
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div class="aw" id="authPage">
+  <div class="ac">
+    <div class="al">
+      <h1>🏙️ ResolveNow</h1>
+      <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
+    </div>
+    <div class="tabs">
+      <button class="tab on" id="tab-login" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+      <button class="tab"    id="tab-reg"   onclick="switchTab('reg')">สมัครสมาชิก</button>
+    </div>
+    <div class="ebox" id="authErr"></div>
+
+    <!-- Login -->
+    <div id="fLogin">
+      <div class="fg"><label>Gmail</label><input type="email" id="lEmail" placeholder="example@gmail.com"/></div>
+      <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="rem"><input type="checkbox" id="rem"/><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
+      <button class="btn-p" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <p style="text-align:center;font-size:12px;color:var(--mu);margin-top:12px">Admin: admin@resolvenow.th / admin1234</p>
+    </div>
+
+    <!-- Register -->
+    <div id="fReg" style="display:none">
+      <div class="row2">
+        <div class="fg"><label>ชื่อ</label><input type="text" id="rFirst" placeholder="ชื่อ"/></div>
+        <div class="fg"><label>นามสกุล</label><input type="text" id="rLast" placeholder="นามสกุล"/></div>
+      </div>
+      <div class="fg"><label>Gmail</label><input type="email" id="rEmail" placeholder="example@gmail.com"/></div>
+      <div class="fg"><label>Password</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
+      <div class="fg">
+        <label>ประเภทผู้ใช้</label>
+        <select id="rRole">
+          <option value="citizen">👤 ประชาชน (Citizen)</option>
+          <option value="technician">🔧 ช่างเทคนิค (Technician)</option>
+        </select>
+      </div>
+      <button class="btn-p" onclick="doRegister()">สมัครสมาชิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo">🏙️ ResolveNow</div>
+    <div class="uinfo">
+      <div class="av" id="hAv">?</div>
+      <div>
+        <div id="hName" style="font-weight:600;font-size:13px"></div>
+        <div id="hRole" class="rbadge"></div>
+      </div>
+      <button class="hbtn" onclick="openChPw()">🔒 เปลี่ยนรหัสผ่าน</button>
+      <button class="hbtn" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="sc"><div class="sl">Ticket ทั้งหมด</div><div class="sv bv" id="stT">0</div></div>
+      <div class="sc"><div class="sl">รอดำเนินการ</div>  <div class="sv yv" id="stP">0</div></div>
+      <div class="sc"><div class="sl">กำลังดำเนินการ</div><div class="sv bv" id="stI">0</div></div>
+      <div class="sc"><div class="sl">เสร็จสิ้น</div>    <div class="sv gv" id="stD">0</div></div>
+    </div>
+
+    <!-- New Ticket (citizen only) -->
+    <div class="card" id="newCard">
+      <h2>📝 แจ้งเรื่องร้องเรียนใหม่</h2>
+      <div class="g2">
+        <div class="cf">
+          <label>ประเภทปัญหา</label>
+          <select id="tCat">
+            <option value="Road">ถนน (Road)</option>
+            <option value="Water">น้ำประปา (Water)</option>
+            <option value="Electricity">ไฟฟ้า (Electricity)</option>
+            <option value="Sanitation">สุขาภิบาล (Sanitation)</option>
+            <option value="Other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="cf"><label>สถานที่</label><input type="text" id="tLoc" placeholder="เช่น ถนนสุขุมวิท กรุงเทพฯ"/></div>
+        <div class="cf full"><label>รายละเอียด</label><textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..."></textarea></div>
+        <div class="cf full">
+          <label>รูปภาพปัญหา <span style="font-weight:400;color:var(--mu)">(ไม่บังคับ)</span></label>
+          <label class="uarea">
+            <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)"/>
+            <div id="cImgPrev">
+              <div style="font-size:26px;margin-bottom:4px">📷</div>
+              <div>คลิกเพื่อแนบรูปภาพ</div>
+              <div style="font-size:11px;margin-top:3px">PNG, JPG (ไม่เกิน 5MB)</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <button class="btn-s" onclick="submitTicket()">📤 ส่งเรื่องร้องเรียน</button>
+    </div>
+
+    <!-- Ticket Table -->
+    <div class="card">
+      <h2 id="tTitle">📋 รายการ Ticket</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th class="cadm">ผู้แจ้ง</th>
+              <th>ประเภท</th>
+              <th>รายละเอียด</th>
+              <th>สถานที่</th>
+              <th>Priority</th>
+              <th>สถานะ</th>
+              <th>รูปผู้แจ้ง</th>
+              <th class="ctech">รูปก่อนซ่อม</th>
+              <th class="ctech">รูปหลังซ่อม</th>
+              <th class="cadm">อัปเดต</th>
+              <th>วันที่</th>
+            </tr>
+          </thead>
+          <tbody id="tBody">
+            <tr><td colspan="12" class="empty">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: เปลี่ยนรหัสผ่าน -->
+<div class="mo" id="mChPw" style="display:none">
+  <div class="mb">
+    <button class="mc" onclick="closeChPw()">✕</button>
+    <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
+    <div class="ebox" id="chErr"></div>
+    <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" placeholder="รหัสผ่านปัจจุบัน"/></div>
+    <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
+    <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" placeholder="พิมพ์อีกครั้ง"/></div>
+    <button class="btn-p" onclick="doChPw()">บันทึก</button>
+  </div>
+</div>
+
+<!-- MODAL: อัปโหลดรูปช่าง -->
+<div class="mo" id="mUpload" style="display:none">
+  <div class="mb">
+    <button class="mc" onclick="closeMUpload()">✕</button>
+    <h3 id="mUpTitle">อัปโหลดรูปภาพ</h3>
+    <p id="mUpSub" style="font-size:13px;color:var(--mu);margin-bottom:14px"></p>
+    <div class="ebox" id="upErr"></div>
+    <label class="uarea">
+      <input type="file" id="upFile" accept="image/*" onchange="prevUpload(event)"/>
+      <div id="upPrev">
+        <div style="font-size:26px;margin-bottom:4px">📷</div>
+        <div>คลิกเพื่อเลือกรูปภาพ</div>
+        <div style="font-size:11px;margin-top:3px">PNG, JPG (ไม่เกิน 5MB)</div>
+      </div>
+    </label>
+    <button class="btn-p" style="margin-top:14px" onclick="doUpload()">อัปโหลด</button>
+  </div>
+</div>
+
+<!-- MODAL: ดูรูปขนาดใหญ่ -->
+<div class="mo" id="mImg" style="display:none" onclick="closeMImg()">
+  <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
+    <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
+    <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:12px" src="" alt=""/>
+    <p style="color:rgba(255,255,255,.6);font-size:12px;margin-top:8px">คลิกพื้นหลังเพื่อปิด</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let CU = null; // currentUser
+let upTarget = null; // { ticketId, type }
+
+const $ = id => document.getElementById(id);
+
+function toast(msg, err=false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (err?' err':'');
+  setTimeout(()=>t.className='toast', 3000);
+}
+function showE(id,msg){ const e=$(id); e.textContent=msg; e.classList.add('on'); }
+function hideE(id){ $(id).classList.remove('on'); }
+
+// ── Tab switch ──────────────────────────────────────────────
+function switchTab(t) {
+  hideE('authErr');
+  $('fLogin').style.display = t==='login' ? 'block' : 'none';
+  $('fReg').style.display   = t==='reg'   ? 'block' : 'none';
+  $('tab-login').className  = 'tab' + (t==='login'?' on':'');
+  $('tab-reg').className    = 'tab' + (t==='reg'  ?' on':'');
+}
+
+// ── Priority label ──────────────────────────────────────────
+function pLabel(s) {
+  if (s>=70) return `<span class="ph" style="color:var(--r)">🔴 ${s} สูง</span>`;
+  if (s>=40) return `<span class="ph" style="color:var(--w)">🟡 ${s} กลาง</span>`;
+  return `<span class="ph" style="color:var(--g)">🟢 ${s} ต่ำ</span>`;
+}
+
+// ── Register ────────────────────────────────────────────────
+async function doRegister() {
+  hideE('authErr');
+  const body = {
+    firstName: $('rFirst').value.trim(),
+    lastName:  $('rLast').value.trim(),
+    email:     $('rEmail').value.trim(),
+    password:  $('rPass').value,
+    role:      $('rRole').value
+  };
+  if (!body.firstName||!body.lastName||!body.email||!body.password)
+    return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
+  try {
+    const res  = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data = await res.json();
+    if (!res.ok) return showE('authErr', data.error||'เกิดข้อผิดพลาด');
+    CU = data.user; enterApp();
+  } catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ server ได้'); }
+}
+
+// ── Login ───────────────────────────────────────────────────
+async function doLogin() {
+  hideE('authErr');
+  const email = $('lEmail').value.trim();
+  const pass  = $('lPass').value;
+  if (!email||!pass) return showE('authErr','กรุณากรอก Email และ Password');
+  try {
+    const res  = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,remember:$('rem').checked})});
+    const data = await res.json();
+    if (!res.ok) return showE('authErr', data.error||'เกิดข้อผิดพลาด');
+    CU = data.user; enterApp();
+  } catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ server ได้'); }
+}
+
+// ── Logout ──────────────────────────────────────────────────
+async function doLogout() {
+  await fetch('/api/auth/logout',{method:'POST'});
+  CU = null;
+  $('app').classList.remove('on');
+  $('authPage').style.display='flex';
+  switchTab('login');
+}
+
+// ── Enter App ───────────────────────────────────────────────
+function enterApp() {
+  $('authPage').style.display='none';
+  $('app').classList.add('on');
+  $('hAv').textContent  = (CU.firstName[0]+CU.lastName[0]).toUpperCase();
+  $('hName').textContent= `${CU.firstName} ${CU.lastName}`;
+  $('hRole').textContent= {citizen:'👤 ประชาชน',admin:'🛡️ Admin',technician:'🔧 ช่าง'}[CU.role]||CU.role;
+
+  const isAdm  = CU.role==='admin';
+  const isTech = CU.role==='technician'||CU.role==='admin';
+  document.querySelectorAll('.cadm').forEach(e=>e.style.display=isAdm?'':'none');
+  document.querySelectorAll('.ctech').forEach(e=>e.style.display=isTech?'':'none');
+  $('newCard').style.display = CU.role==='citizen'?'block':'none';
+  if (isTech) $('tTitle').textContent='📋 Ticket ทั้งหมดในระบบ';
+  loadTickets();
+  setInterval(loadTickets,8000);
+}
+
+// ── Change Password ─────────────────────────────────────────
+function openChPw(){ hideE('chErr'); ['curP','newP','conP'].forEach(i=>$(i).value=''); $('mChPw').style.display='flex'; }
+function closeChPw(){ $('mChPw').style.display='none'; }
+async function doChPw(){
+  hideE('chErr');
+  const cur=$('curP').value, nw=$('newP').value, con=$('conP').value;
+  if(!cur||!nw||!con) return showE('chErr','กรุณากรอกข้อมูลให้ครบ');
+  if(nw!==con) return showE('chErr','รหัสผ่านใหม่ไม่ตรงกัน');
+  try {
+    const res  = await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    const data = await res.json();
+    if(!res.ok) return showE('chErr',data.error||'เกิดข้อผิดพลาด');
+    closeChPw(); toast('✅ เปลี่ยนรหัสผ่านสำเร็จ');
+  } catch(e){ showE('chErr','เกิดข้อผิดพลาด'); }
+}
+
+// ── Load Tickets ────────────────────────────────────────────
+async function loadTickets(){
+  try {
+    const res = await fetch('/api/tickets');
+    if(!res.ok) return;
+    const data = await res.json();
+    $('stT').textContent = data.length;
+    $('stP').textContent = data.filter(t=>t.status==='pending').length;
+    $('stI').textContent = data.filter(t=>t.status==='in_progress').length;
+    $('stD').textContent = data.filter(t=>t.status==='completed').length;
+
+    const isAdm  = CU.role==='admin';
+    const isTech = CU.role==='technician'||CU.role==='admin';
+
+    if(!data.length){
+      $('tBody').innerHTML='<tr><td colspan="12" class="empty">ยังไม่มี Ticket — แจ้งเรื่องแรกได้เลย!</td></tr>';
+      return;
+    }
+    $('tBody').innerHTML = data.map(t=>`
+      <tr>
+        <td><strong>${t.ticketId}</strong></td>
+        ${isAdm?`<td>${t.citizenName}</td>`:''}
+        <td>${t.category}</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.description}">${t.description}</td>
+        <td>${t.location}</td>
+        <td>${pLabel(t.priorityScore||0)}</td>
+        <td><span class="badge ${t.status}">${t.status}</span></td>
+        <td>${t.citizenImage?`<img class="thumb" src="${t.citizenImage}" onclick="viewImg('${t.citizenImage}','รูปจากประชาชน')"/>`:'<span class="noimg">ไม่มี</span>'}</td>
+        ${isTech?`
+        <td>${t.beforeImage?`<img class="thumb" src="${t.beforeImage}" onclick="viewImg('${t.beforeImage}','รูปก่อนซ่อม')"/>`:`<button class="btn-sm" onclick="openUpload('${t.ticketId}','before')">📷 อัปโหลด</button>`}</td>
+        <td>${t.afterImage?`<img class="thumb" src="${t.afterImage}" onclick="viewImg('${t.afterImage}','รูปหลังซ่อม')"/>`:`<button class="btn-sm gr" onclick="openUpload('${t.ticketId}','after')">📷 อัปโหลด</button>`}</td>`:''}
+        ${isAdm?`<td><select onchange="updateStatus('${t.ticketId}',this.value)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">
+          ${['pending','assigned','in_progress','completed','rejected'].map(s=>`<option value="${s}"${t.status===s?' selected':''}>${s}</option>`).join('')}
+        </select></td>`:''}
+        <td style="color:var(--mu);font-size:12px;white-space:nowrap">${t.createdAt}</td>
+      </tr>`).join('');
+  } catch(e){ console.error(e); }
+}
+
+// ── Submit Ticket ───────────────────────────────────────────
+async function submitTicket(){
+  const loc  = $('tLoc').value.trim();
+  const desc = $('tDesc').value.trim();
+  if(!loc||!desc) return toast('⚠️ กรุณากรอกสถานที่และรายละเอียด',true);
+  try {
+    const fd = new FormData();
+    fd.append('category', $('tCat').value);
+    fd.append('location',  loc);
+    fd.append('description', desc);
+    const f = $('cImg').files[0];
+    if(f) fd.append('image',f);
+    const res  = await fetch('/api/tickets',{method:'POST',body:fd});
+    const data = await res.json();
+    if(!res.ok) return toast(data.error||'เกิดข้อผิดพลาด',true);
+    toast(`✅ ส่งสำเร็จ! ${data.ticketId} (Priority: ${data.priorityScore})`);
+    $('tLoc').value=''; $('tDesc').value=''; $('cImg').value='';
+    $('cImgPrev').innerHTML='<div style="font-size:26px;margin-bottom:4px">📷</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px">PNG, JPG (ไม่เกิน 5MB)</div>';
+    loadTickets();
+  } catch(e){ toast('เกิดข้อผิดพลาด',true); }
+}
+
+function prevCitizenImg(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ $('cImgPrev').innerHTML=`<img src="${ev.target.result}" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">${f.name}</div>`; };
+  r.readAsDataURL(f);
+}
+
+// ── Update Status ───────────────────────────────────────────
+async function updateStatus(id,status){
+  await fetch(`/api/tickets/${id}/status`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  toast(`✅ อัปเดต ${id} → ${status}`);
+  loadTickets();
+}
+
+// ── Upload Modal ────────────────────────────────────────────
+function openUpload(ticketId,type){
+  upTarget={ticketId,type};
+  hideE('upErr'); $('upFile').value='';
+  $('upPrev').innerHTML='<div style="font-size:26px;margin-bottom:4px">📷</div><div>คลิกเพื่อเลือกรูปภาพ</div><div style="font-size:11px;margin-top:3px">PNG, JPG (ไม่เกิน 5MB)</div>';
+  $('mUpTitle').textContent = type==='before'?'📷 รูปก่อนดำเนินการ':'📷 รูปหลังดำเนินการ';
+  $('mUpSub').textContent   = `Ticket: ${ticketId}`;
+  $('mUpload').style.display='flex';
+}
+function closeMUpload(){ $('mUpload').style.display='none'; }
+function prevUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ $('upPrev').innerHTML=`<img src="${ev.target.result}" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">${f.name}</div>`; };
+  r.readAsDataURL(f);
+}
+async function doUpload(){
+  hideE('upErr');
+  const f=$('upFile').files[0];
+  if(!f) return showE('upErr','กรุณาเลือกไฟล์รูปภาพ');
+  try {
+    const fd=new FormData(); fd.append('image',f);
+    const res  = await fetch(`/api/tickets/${upTarget.ticketId}/upload/${upTarget.type}`,{method:'POST',body:fd});
+    const data = await res.json();
+    if(!res.ok) return showE('upErr',data.error||'เกิดข้อผิดพลาด');
+    closeMUpload();
+    toast(`✅ อัปโหลดรูป${upTarget.type==='before'?'ก่อน':'หลัง'}ดำเนินการสำเร็จ`);
+    loadTickets();
+  } catch(e){ showE('upErr','เกิดข้อผิดพลาด'); }
+}
+
+// ── View Image ──────────────────────────────────────────────
+function viewImg(src,title){ $('mImgSrc').src=src; $('mImgTitle').textContent=title; $('mImg').style.display='flex'; }
+function closeMImg(){ $('mImg').style.display='none'; }
+
+// ── Check session on load ───────────────────────────────────
+(async()=>{
+  try {
+    const res=await fetch('/api/auth/me');
+    if(res.ok){ CU=await res.json(); enterApp(); }
+  } catch(e){}
+})();
+</script>
+</body>
+</html>
