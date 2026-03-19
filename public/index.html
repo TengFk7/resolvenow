@@ -160,7 +160,7 @@ tr:hover td{background:#f7fafc}
       <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="rem"><input type="checkbox" id="rem"/><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
       <button class="btn-p" onclick="doLogin()">เข้าสู่ระบบ</button>
-      <p style="text-align:center;font-size:12px;color:var(--mu);margin-top:12px">Admin: admin@resolvenow.th / admin1234</p>
+      <p style="text-align:center;font-size:12px;color:var(--mu);margin-top:12px">Admin: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c5a4a1a8acab85b7a0b6aaa9b3a0abaab2ebb1ad">[email&#160;protected]</a> / admin1234</p>
     </div>
     <div id="fReg" style="display:none">
       <div class="row2">
@@ -284,7 +284,7 @@ tr:hover td{background:#f7fafc}
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 let CU=null;
 const $=id=>document.getElementById(id);
 
@@ -453,13 +453,12 @@ function renderTech(data){
             </div>
             ${s2==='active'?`<div class="step-body">
               <p style="font-size:13px;color:var(--mu);margin-bottom:10px">📷 ถ่ายรูปสภาพก่อนซ่อม (AI ช่วยตรวจสอบ)</p>
-              <label class="islot ${t.beforeImage?'has':''}" style="display:block;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('bf_${t.ticketId}').click()">
-                <input type="file" id="bf_${t.ticketId}" accept="image/*" style="display:none" onchange="uploadImg(event,'${t.ticketId}','before')"/>
+              <div class="islot ${t.beforeImage?'has':''}" style="display:block;margin-bottom:12px;cursor:pointer" onclick="triggerUpload('${t.ticketId}','before')">
                 ${t.beforeImage
                   ?`<img src="${t.beforeImage}" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/><div class="ilabel" style="color:var(--g);margin-top:6px">✅ อัปโหลดแล้ว — คลิกเพื่อเปลี่ยน</div>`
                   :`<div style="padding:18px 0"><div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>`
                 }
-              </label>
+              </div>
               <div style="margin-bottom:12px">
                 <label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บันทึกเพิ่มเติมสำหรับ AI (ไม่บังคับ)</label>
                 <textarea id="note_${t.ticketId}" style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="บรรยายสภาพปัญหาที่พบ..."></textarea>
@@ -485,11 +484,10 @@ function renderTech(data){
                   ${t.beforeImage?`<img src="${t.beforeImage}"/>`:`<div style="padding:14px 0;font-size:22px">📷</div>`}
                   <div class="ilabel">ก่อนซ่อม</div>
                 </div>
-                <label class="islot ${t.afterImage?'has':''}" onclick="document.getElementById('af_${t.ticketId}').click()">
-                  <input type="file" id="af_${t.ticketId}" accept="image/*" style="display:none" onchange="uploadImg(event,'${t.ticketId}','after')"/>
+                <div class="islot ${t.afterImage?'has':''}" style="cursor:pointer" onclick="triggerUpload('${t.ticketId}','after')">
                   ${t.afterImage?`<img src="${t.afterImage}"/>`:`<div style="padding:14px 0;font-size:22px">📷</div>`}
                   <div class="ilabel">${t.afterImage?'✅ หลังซ่อม':'คลิกถ่ายรูปหลังซ่อม'}</div>
-                </label>
+                </div>
               </div>
               <div style="margin-bottom:12px">
                 <label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บรรยายงานที่ทำ</label>
@@ -554,14 +552,20 @@ async function doUpdateStatus(id,status){
   loadTickets();
 }
 
-async function uploadImg(e,ticketId,type){
-  const f=e.target.files[0];if(!f)return;
-  const fd=new FormData();fd.append('image',f);
+let _upTicketId=null,_upType=null;
+function triggerUpload(ticketId,type){
+  _upTicketId=ticketId; _upType=type;
+  const inp=document.getElementById('_centralFile');
+  inp.value=''; inp.click();
+}
+async function _onCentralFile(e){
+  const f=e.target.files[0]; if(!f)return;
+  const fd=new FormData(); fd.append('image',f);
   try{
-    const res=await fetch(`/api/tickets/${ticketId}/upload/${type}`,{method:'POST',body:fd});
+    const res=await fetch(`/api/tickets/${_upTicketId}/upload/${_upType}`,{method:'POST',body:fd});
     const data=await res.json();
     if(!res.ok)return toast(data.error||'อัปโหลดไม่สำเร็จ',true);
-    toast(`✅ อัปโหลดรูป${type==='before'?'ก่อน':'หลัง'}สำเร็จ`);
+    toast(`✅ อัปโหลดรูป${_upType==='before'?'ก่อน':'หลัง'}สำเร็จ`);
     loadTickets();
   }catch(e){toast('อัปโหลดไม่สำเร็จ',true);}
 }
@@ -593,12 +597,4 @@ function prevCitizenImg(e){
   r.readAsDataURL(f);
 }
 
-function viewImg(src,title){$('mImgSrc').src=src;$('mImgTitle').textContent=title;$('mImg').style.display='flex';}
-function closeMImg(){$('mImg').style.display='none';}
-
-(async()=>{
-  try{const res=await fetch('/api/auth/me');if(res.ok){CU=await res.json();enterApp();}}catch(e){}
-})();
-</script>
-</body>
-</html>
+function viewImg(src,title){$('mImgSrc').src=src;$('mImgTitle').textContent=title;$
