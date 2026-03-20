@@ -6,12 +6,14 @@
 <title>ResolveNow</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#1a56db;--pd:#1746b0;--g:#0e9f6e;--r:#e53e3e;--w:#d97706;--bg:#f0f4f8;--bd:#e2e8f0;--mu:#718096}
+:root{--p:#1a56db;--pd:#1746b0;--g:#0e9f6e;--r:#e53e3e;--w:#d97706;--or:#ea580c;--bg:#f1f5f9;--bd:#e2e8f0;--mu:#718096;--sidebar:#1e293b;--sidebar2:#0f172a}
 body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1a202c;min-height:100vh}
-.aw{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--p),var(--g));padding:20px}
-.ac{background:#fff;border-radius:20px;padding:36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+
+/* ── AUTH ── */
+.aw{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--sidebar2),var(--p));padding:20px}
+.ac{background:#fff;border-radius:20px;padding:36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .al{text-align:center;margin-bottom:24px}
-.al h1{font-size:26px;font-weight:800;color:var(--p)}
+.al h1{font-size:24px;font-weight:800;color:var(--p)}
 .al p{font-size:13px;color:var(--mu);margin-top:4px}
 .tabs{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--bd);margin-bottom:24px}
 .tab{flex:1;padding:10px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;border:none;color:var(--mu)}
@@ -28,39 +30,138 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1a202c;min-he
 .btnp:hover{background:var(--pd)}
 .ebox{background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
 .ebox.on{display:block}
-#app{display:none;flex-direction:column;min-height:100vh}
-#app.on{display:flex}
-header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:800}
-.uinfo{display:flex;align-items:center;gap:8px;font-size:13px}
-.av{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+
+/* ── ADMIN LAYOUT ── */
+#adminApp{display:none;min-height:100vh}
+#adminApp.on{display:flex}
+.sidebar{width:220px;min-height:100vh;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sb-logo{padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo h1{font-size:16px;font-weight:800;color:#fff}
+.sb-logo p{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+.sb-nav{padding:12px 0;flex:1}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);cursor:pointer;border-left:3px solid transparent;transition:.15s}
+.sb-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.sb-item.on{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--p)}
+.sb-item .ico{width:18px;text-align:center;font-size:14px}
+.sb-logout{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08)}
+.sb-logout button{width:100%;padding:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);border-radius:8px;font-size:13px;cursor:pointer}
+.sb-logout button:hover{background:rgba(255,255,255,.12);color:#fff}
+
+.main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--bd);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title h2{font-size:18px;font-weight:700}
+.topbar-title p{font-size:12px;color:var(--mu);margin-top:1px}
+.topbar-user{display:flex;align-items:center;gap:10px}
+.uav{width:36px;height:36px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
+.uname{font-size:13px;font-weight:600}
+.ustatus{font-size:11px;color:var(--g);font-weight:600}
+.content{padding:20px 24px;flex:1}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.scard{border-radius:14px;padding:16px 18px;color:#fff;position:relative;overflow:hidden}
+.scard.red{background:#e53e3e}
+.scard.or{background:#ea580c}
+.scard.blue{background:#1a56db}
+.scard.gray{background:#fff;color:#1a202c;border:1px solid var(--bd)}
+.scard.white{background:#fff;color:#1a202c;border:1px solid var(--bd)}
+.scard .slabel{font-size:11px;opacity:.85;margin-bottom:4px;font-weight:500}
+.scard .sval{font-size:32px;font-weight:800;line-height:1}
+.scard .ssub{font-size:11px;opacity:.7;margin-top:4px}
+
+/* ── MAIN GRID ── */
+.dash-grid{display:grid;grid-template-columns:1fr 280px;gap:16px}
+
+/* ── QUEUE TABLE ── */
+.panel{background:#fff;border-radius:14px;border:1px solid var(--bd);overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.panel-head h3{font-size:14px;font-weight:700}
+.live-badge{background:#dcfce7;color:#15803d;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;display:flex;align-items:center;gap:4px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#15803d;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.queue-table{width:100%;border-collapse:collapse}
+.queue-table th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--mu);border-bottom:1px solid var(--bd);background:#f8fafc;text-transform:uppercase;letter-spacing:.05em}
+.queue-table td{padding:12px 16px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:13px}
+.queue-table tr:last-child td{border-bottom:none}
+.queue-table tr:hover td{background:#f8fafc}
+
+.priority-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.priority-badge.urgent{background:#fee2e2;color:#991b1b}
+.priority-badge.medium{background:#fef3c7;color:#92400e}
+.priority-badge.normal{background:#f0fdf4;color:#166534}
+
+.action-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn-approve{background:#0e9f6e;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-approve:hover{background:#0a7a55}
+.btn-reject{background:#e53e3e;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-reject:hover{background:#c53030}
+.tech-select{border:1px solid var(--bd);border-radius:7px;padding:5px 8px;font-size:12px;outline:none;background:#fafafa;color:#1a202c;cursor:pointer;min-width:140px}
+.tech-select:focus{border-color:var(--p)}
+.ai-label{font-size:10px;color:var(--p);font-weight:600;margin-bottom:3px}
+
+/* ── RIGHT PANEL ── */
+.right-col{display:flex;flex-direction:column;gap:14px}
+
+/* PIE CHART */
+.pie-wrap{padding:16px 18px}
+.pie-canvas-wrap{display:flex;justify-content:center;margin:12px 0}
+canvas#pieChart{max-width:140px}
+.pie-legend{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.pie-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* TECH STATUS */
+.tech-list{padding:14px 18px}
+.tech-item{margin-bottom:14px}
+.tech-item:last-child{margin-bottom:0}
+.tech-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.tech-name{font-size:13px;font-weight:600}
+.tech-spec{font-size:11px;color:var(--mu)}
+.status-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.status-pill.READY{background:#dcfce7;color:#15803d}
+.status-pill.BUSY{background:#fef3c7;color:#92400e}
+.status-pill.FULL{background:#fee2e2;color:#991b1b}
+.prog-bar{height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:.4s}
+.prog-fill.READY{background:#0e9f6e}
+.prog-fill.BUSY{background:#d97706}
+.prog-fill.FULL{background:#e53e3e}
+.prog-label{font-size:10px;color:var(--mu);margin-top:3px}
+
+/* ── NON-ADMIN LAYOUT ── */
+#normalApp{display:none;min-height:100vh;flex-direction:column}
+#normalApp.on{display:flex}
+.nheader{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nlogo{font-size:18px;font-weight:800}
+.nuinfo{display:flex;align-items:center;gap:8px;font-size:13px}
+.nav2{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
 .rbadge{background:rgba(255,255,255,.2);border-radius:99px;padding:3px 9px;font-size:11px;font-weight:600}
 .hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
-.hbtn:hover{background:rgba(255,255,255,.25)}
-.wrap{max-width:680px;margin:0 auto;padding:16px 14px;flex:1}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-.sc{background:#fff;border-radius:12px;padding:10px 8px;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center}
-.sc .sl{font-size:10px;color:var(--mu);margin-bottom:2px}
-.sc .sv{font-size:22px;font-weight:800}
+.nwrap{max-width:680px;margin:0 auto;padding:16px 14px;flex:1}
+.nstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.nsc{background:#fff;border-radius:12px;padding:10px 8px;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center}
+.nsc .sl{font-size:10px;color:var(--mu);margin-bottom:2px}
+.nsc .sv{font-size:22px;font-weight:800}
 .bv{color:var(--p)}.yv{color:var(--w)}.gv{color:var(--g)}
-.card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px}
-.card h2{font-size:15px;font-weight:700;margin-bottom:14px;color:#2d3748}
+.ncard{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px}
+.ncard h2{font-size:15px;font-weight:700;margin-bottom:14px;color:#2d3748}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .full{grid-column:1/-1}
-.card label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px}
-.card input,.card select,.card textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit}
-.card input:focus,.card select:focus,.card textarea:focus{border-color:var(--p);background:#fff}
-.card textarea{resize:vertical;min-height:76px}
+.ncard label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px}
+.ncard input,.ncard select,.ncard textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit}
+.ncard textarea{resize:vertical;min-height:76px}
 .cf{margin-bottom:0}
 .btns{margin-top:12px;background:var(--p);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
 .uarea{border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center;cursor:pointer;font-size:13px;color:var(--mu);display:block}
-.uarea:hover{border-color:var(--p)}
 .uarea input{display:none}
+
+/* TECH CARDS */
 .tcard{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.09);margin-bottom:16px;overflow:hidden}
-.thead{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.tid{font-size:11px;color:var(--mu);font-weight:600;margin-bottom:3px}
-.ttitle{font-size:15px;font-weight:700;line-height:1.3}
-.tbody2{padding:14px 16px}
+.tchead{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.tcid{font-size:11px;color:var(--mu);font-weight:600;margin-bottom:3px}
+.tctitle{font-size:15px;font-weight:700;line-height:1.3}
+.tcbody{padding:14px 16px}
 .mrow{display:flex;gap:8px;font-size:13px;color:#4a5568;margin-bottom:6px;align-items:flex-start}
 .mi{font-size:14px;min-width:18px;margin-top:1px}
 .step{border:1.5px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden}
@@ -77,15 +178,16 @@ header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:1
 .sbody{padding:14px 16px;border-top:1px solid var(--bd)}
 .irow{display:flex;gap:10px;margin-bottom:12px}
 .islot{flex:1;border:1.5px dashed var(--bd);border-radius:10px;padding:8px;text-align:center;font-size:12px;color:var(--mu);cursor:pointer}
-.islot:hover{border-color:var(--p)}
 .islot.has{border-color:var(--g);border-style:solid}
 .islot img{width:100%;height:80px;object-fit:cover;border-radius:8px;display:block}
 .ilbl{margin-top:5px;font-size:11px}
 .btnaccept{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
 .btnconfirm{flex:2;padding:10px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
-.btnreject{flex:1;padding:10px;background:#f1f5f9;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:#64748b}
+.btnreject2{flex:1;padding:10px;background:#f1f5f9;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:#64748b}
 .btnclose{width:100%;padding:12px;background:var(--g);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
 .btnclose:disabled{background:#9ca3af;cursor:not-allowed}
+
+/* SHARED */
 .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
 .badge.pending{background:#fef3c7;color:#92400e}
 .badge.assigned{background:#dbeafe;color:#1e40af}
@@ -95,21 +197,16 @@ header{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:1
 .badge.urgent{background:#fee2e2;color:#991b1b}
 .badge.normal{background:#f0fdf4;color:#166534}
 .empty{text-align:center;color:var(--mu);padding:40px;font-size:14px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px 10px;background:#f7fafc;color:#4a5568;font-weight:600;border-bottom:2px solid var(--bd)}
-td{padding:9px 10px;border-bottom:1px solid #f0f4f8;vertical-align:middle}
-tr:hover td{background:#f7fafc}
-.thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--bd);cursor:pointer}
-.noimg{font-size:11px;color:var(--mu)}
-.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
 .mo.on{display:flex}
 .mb{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .mb h3{font-size:16px;font-weight:700;margin-bottom:16px}
 .mc{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);line-height:1;margin-top:-4px}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--g);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none;z-index:999}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--g);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none;z-index:9999}
 .toast.on{opacity:1;transform:translateY(0)}
 .toast.err{background:var(--r)}
-@media(max-width:480px){.row2,.g2{grid-template-columns:1fr}}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr}.right-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}.stat-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.sidebar{display:none}.main{margin-left:0}.stat-grid{grid-template-columns:repeat(2,1fr)}.row2,.g2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -128,7 +225,7 @@ tr:hover td{background:#f7fafc}
       <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="rem"><input type="checkbox" id="rem"/><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
       <button class="btnp" onclick="doLogin()">เข้าสู่ระบบ</button>
-      <p style="text-align:center;font-size:12px;color:var(--mu);margin-top:12px">Admin: admin&#64;ไม่บอก / ไม่บอกกกกก</p>
+      <p style="text-align:center;font-size:11px;color:var(--mu);margin-top:12px">Admin: admin&#64;resolvenow.th / admin1234<br/>Tech: tech1&#64;resolvenow.th / tech1234</p>
     </div>
     <div id="fReg" style="display:none">
       <div class="row2">
@@ -137,93 +234,156 @@ tr:hover td{background:#f7fafc}
       </div>
       <div class="fg"><label>Gmail</label><input type="email" id="rEmail" placeholder="example@gmail.com"/></div>
       <div class="fg"><label>Password</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
-      <div class="fg">
-        <label>ประเภทผู้ใช้</label>
-        <select id="rRole">
-          <option value="citizen">ประชาชน</option>
-          <option value="technician">ช่างเทคนิค</option>
-        </select>
+      <div class="fg"><label>ประเภทผู้ใช้</label>
+        <select id="rRole"><option value="citizen">ประชาชน</option><option value="technician">ช่างเทคนิค</option></select>
       </div>
       <button class="btnp" onclick="doRegister()">สมัครสมาชิก</button>
     </div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <header>
-    <div class="logo">&#127961;&#65039; ResolveNow</div>
-    <div class="uinfo">
-      <div class="av" id="hAv">?</div>
-      <div>
-        <div id="hName" style="font-weight:600;font-size:13px"></div>
-        <div id="hRole" class="rbadge"></div>
+<!-- ADMIN APP -->
+<div id="adminApp">
+  <div class="sidebar">
+    <div class="sb-logo">
+      <h1>&#127961;&#65039; ResolveNow</h1>
+      <p>Smart Dispatcher System</p>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-item on" onclick="showPage('dashboard')"><span class="ico">&#128200;</span> Dashboard ฝ่ายธุรการ</div>
+      <div class="sb-item" onclick="showPage('queue')"><span class="ico">&#128203;</span> รายการรับแจ้งเรื่อง</div>
+      <div class="sb-item" onclick="showPage('techs')"><span class="ico">&#128295;</span> สถานะทีมช่างทั้งหมด</div>
+    </div>
+    <div class="sb-logout"><button onclick="doLogout()">&#10148;&#65039; ออกจากระบบ</button></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <h2 id="pageTitle">ศูนย์คัดกรองงานและจ่ายงาน</h2>
+        <p>จัดการผู้งานและอนุมัติช่างด้วย AI </p>
       </div>
+      <div class="topbar-user">
+        <div class="uav" id="adminAv">A</div>
+        <div>
+          <div class="uname" id="adminName">Admin</div>
+          <div class="ustatus">&#9679; SYSTEM ONLINE</div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- STATS -->
+      <div class="stat-grid" id="adminStats">
+        <div class="scard red"><div class="slabel">งานด่วนมาก</div><div class="sval" id="sUrgent">0</div></div>
+        <div class="scard or"><div class="slabel">งานด่วน</div><div class="sval" id="sMed">0</div></div>
+        <div class="scard blue"><div class="slabel">งานปกติ</div><div class="sval" id="sNorm">0</div></div>
+        <div class="scard gray"><div class="slabel">ช่างที่พร้อม</div><div class="sval" id="sTechReady" style="color:var(--g)">0</div><div class="ssub" id="sTechTotal" style="color:var(--mu)">/ 0</div></div>
+        <div class="scard white"><div class="slabel">ยอดวันนี้</div><div class="sval" id="sToday" style="color:var(--p)">0</div></div>
+      </div>
+
+      <!-- PAGES -->
+      <div id="pageDashboard">
+        <div class="dash-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>&#128203; รายการงานรอการอนุมัติ (SMART QUEUE)</h3>
+                <div class="live-badge"><div class="live-dot"></div> อัปเดต Real-time</div>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="queue-table">
+                  <thead><tr>
+                    <th>TICKET ID</th>
+                    <th>ระดับความด่วน</th>
+                    <th>รายละเอียดเรื่องร้องเรียน</th>
+                    <th>จัดการและส่งมอบช่าง</th>
+                  </tr></thead>
+                  <tbody id="queueBody"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="right-col">
+            <div class="panel">
+              <div class="panel-head"><h3>&#128200; การรวจงานรอจัดการ</h3></div>
+              <div class="pie-wrap">
+                <div class="pie-canvas-wrap"><canvas id="pieChart" width="140" height="140"></canvas></div>
+                <div class="pie-legend" id="pieLegend"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>&#9889; สถานะทีมช่าง</h3>
+                <span style="font-size:11px;font-weight:600;color:var(--g)">LIVE STATUS</span>
+              </div>
+              <div class="tech-list" id="techStatusList"><div class="empty">กำลังโหลด...</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pageQueue" style="display:none">
+        <div class="panel">
+          <div class="panel-head"><h3>&#128203; รายการรับแจ้งทั้งหมด</h3></div>
+          <div style="overflow-x:auto">
+            <table class="queue-table">
+              <thead><tr><th>ID</th><th>ผู้แจ้ง</th><th>ประเภท</th><th>รายละเอียด</th><th>Priority</th><th>สถานะ</th><th>ช่าง</th><th>อัปเดต</th><th>วันที่</th></tr></thead>
+              <tbody id="allQueueBody"><tr><td colspan="9" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="pageTechs" style="display:none">
+        <div class="panel">
+          <div class="panel-head"><h3>&#128295; สถานะทีมช่างทั้งหมด</h3></div>
+          <div id="techFullList" style="padding:16px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NON-ADMIN APP (citizen + tech) -->
+<div id="normalApp">
+  <header class="nheader">
+    <div class="nlogo">&#127961;&#65039; ResolveNow</div>
+    <div class="nuinfo">
+      <div class="nav2" id="hAv">?</div>
+      <div><div id="hName" style="font-weight:600;font-size:13px"></div><div id="hRole" class="rbadge"></div></div>
       <button class="hbtn" onclick="openChPw()">&#128274;</button>
       <button class="hbtn" onclick="doLogout()">ออกจากระบบ</button>
     </div>
   </header>
-  <div class="wrap">
-    <div class="stats">
-      <div class="sc"><div class="sl">ทั้งหมด</div><div class="sv bv" id="stT">0</div></div>
-      <div class="sc"><div class="sl">รอดำเนินการ</div><div class="sv yv" id="stP">0</div></div>
-      <div class="sc"><div class="sl">กำลังซ่อม</div><div class="sv bv" id="stI">0</div></div>
-      <div class="sc"><div class="sl">เสร็จสิ้น</div><div class="sv gv" id="stD">0</div></div>
+  <div class="nwrap">
+    <div class="nstats">
+      <div class="nsc"><div class="sl">ทั้งหมด</div><div class="sv bv" id="stT">0</div></div>
+      <div class="nsc"><div class="sl">รอดำเนินการ</div><div class="sv yv" id="stP">0</div></div>
+      <div class="nsc"><div class="sl">กำลังซ่อม</div><div class="sv bv" id="stI">0</div></div>
+      <div class="nsc"><div class="sl">เสร็จสิ้น</div><div class="sv gv" id="stD">0</div></div>
     </div>
     <div id="secCitizen" style="display:none">
-      <div class="card">
+      <div class="ncard">
         <h2>&#128221; แจ้งเรื่องร้องเรียนใหม่</h2>
         <div class="g2">
-          <div class="cf">
-            <label>ประเภทปัญหา</label>
-            <select id="tCat">
-              <option value="Road">ถนน</option>
-              <option value="Water">น้ำประปา</option>
-              <option value="Electricity">ไฟฟ้า</option>
-              <option value="Sanitation">สุขาภิบาล</option>
-              <option value="Other">อื่นๆ</option>
-            </select>
+          <div class="cf"><label>ประเภทปัญหา</label>
+            <select id="tCat"><option value="Road">ถนน</option><option value="Water">น้ำประปา</option><option value="Electricity">ไฟฟ้า</option><option value="Sanitation">สุขาภิบาล</option><option value="Other">อื่นๆ</option></select>
           </div>
           <div class="cf"><label>สถานที่</label><input type="text" id="tLoc" placeholder="เช่น ถนนสุขุมวิท"/></div>
           <div class="cf full"><label>รายละเอียด</label><textarea id="tDesc" placeholder="อธิบายปัญหา..."></textarea></div>
           <div class="cf full">
             <label>รูปภาพ <span style="font-weight:400;color:var(--mu)">(ไม่บังคับ)</span></label>
-            <label class="uarea">
-              <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)"/>
-              <div id="cImgPrev">
-                <div style="font-size:26px;margin-bottom:4px">&#128247;</div>
-                <div>คลิกเพื่อแนบรูปภาพ</div>
-                <div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>
-              </div>
+            <label class="uarea"><input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)"/>
+              <div id="cImgPrev"><div style="font-size:26px;margin-bottom:4px">&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div></div>
             </label>
           </div>
         </div>
         <button class="btns" onclick="submitTicket()">&#128228; ส่งเรื่องร้องเรียน</button>
       </div>
-      <div class="card">
-        <h2>&#128203; เรื่องร้องเรียนของฉัน</h2>
-        <div id="citizenCards"><div class="empty">ยังไม่มีเรื่องร้องเรียน</div></div>
-      </div>
+      <div class="ncard"><h2>&#128203; เรื่องร้องเรียนของฉัน</h2><div id="citizenCards"><div class="empty">ยังไม่มีเรื่องร้องเรียน</div></div></div>
     </div>
     <div id="secTech" style="display:none">
       <div style="font-size:13px;color:var(--mu);margin-bottom:12px;font-weight:500" id="techSub"></div>
       <div id="techCards"></div>
-    </div>
-    <div id="secAdmin" style="display:none">
-      <div class="card">
-        <h2>&#128203; Ticket ทั้งหมด</h2>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr>
-              <th>ID</th><th>ผู้แจ้ง</th><th>ประเภท</th><th>รายละเอียด</th>
-              <th>Priority</th><th>สถานะ</th>
-              <th>รูปผู้แจ้ง</th><th>รูปก่อน</th><th>รูปหลัง</th>
-              <th>อัปเดต</th><th>วันที่</th>
-            </tr></thead>
-            <tbody id="tBody"><tr><td colspan="11" class="empty">กำลังโหลด...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -234,9 +394,9 @@ tr:hover td{background:#f7fafc}
     <button class="mc" onclick="closeChPw()">&#10005;</button>
     <h3>&#128274; เปลี่ยนรหัสผ่าน</h3>
     <div class="ebox" id="chErr"></div>
-    <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" placeholder="รหัสผ่านปัจจุบัน"/></div>
-    <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
-    <div class="fg"><label>ยืนยัน</label><input type="password" id="conP" placeholder="พิมพ์อีกครั้ง"/></div>
+    <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP"/></div>
+    <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"/></div>
+    <div class="fg"><label>ยืนยัน</label><input type="password" id="conP"/></div>
     <button class="btnp" onclick="doChPw()">บันทึก</button>
   </div>
 </div>
@@ -250,175 +410,386 @@ tr:hover td{background:#f7fafc}
   </div>
 </div>
 
-<!-- hidden file input for tech upload -->
 <input type="file" id="techFile" accept="image/*" style="display:none"/>
-
 <div class="toast" id="toast"></div>
 
 <script>
 var CU = null;
 var upId = null;
 var upType = null;
+var techList = [];
+var currentPage = 'dashboard';
 
-function ge(id) { return document.getElementById(id); }
+function ge(id){ return document.getElementById(id); }
 
-function showToast(msg, isErr) {
+function showToast(msg, isErr){
   var t = ge('toast');
   t.textContent = msg;
   t.className = 'toast on' + (isErr ? ' err' : '');
-  setTimeout(function() { t.className = 'toast'; }, 3000);
+  setTimeout(function(){ t.className = 'toast'; }, 3000);
 }
+function showE(id, msg){ ge(id).textContent = msg; ge(id).classList.add('on'); }
+function hideE(id){ ge(id).classList.remove('on'); }
 
-function showE(id, msg) { ge(id).textContent = msg; ge(id).classList.add('on'); }
-function hideE(id) { ge(id).classList.remove('on'); }
-
-function stTH(s) {
-  var m = { pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ' };
+function stTH(s){
+  var m = { pending:'รอดำเนินการ', assigned:'รับงานแล้ว', in_progress:'กำลังดำเนินการ', completed:'เสร็จสิ้น', rejected:'ปฏิเสธ' };
   return m[s] || s;
 }
-
-function pLabel(s) {
-  if (s >= 70) return '<span style="font-weight:700;font-size:11px;color:var(--r)">&#128308; ' + s + '</span>';
-  if (s >= 40) return '<span style="font-weight:700;font-size:11px;color:var(--w)">&#128992; ' + s + '</span>';
-  return '<span style="font-weight:700;font-size:11px;color:var(--g)">&#128994; ' + s + '</span>';
+function pLabel(s){
+  if(s >= 70) return '<span style="font-weight:700;font-size:11px;color:var(--r)">&#128308; '+s+'</span>';
+  if(s >= 40) return '<span style="font-weight:700;font-size:11px;color:var(--w)">&#128992; '+s+'</span>';
+  return '<span style="font-weight:700;font-size:11px;color:var(--g)">&#128994; '+s+'</span>';
 }
 
-function switchTab(t) {
+function switchTab(t){
   hideE('authErr');
-  ge('fLogin').style.display = t === 'login' ? 'block' : 'none';
-  ge('fReg').style.display = t === 'reg' ? 'block' : 'none';
-  ge('tabLogin').className = 'tab' + (t === 'login' ? ' on' : '');
-  ge('tabReg').className = 'tab' + (t === 'reg' ? ' on' : '');
+  ge('fLogin').style.display = t==='login' ? 'block' : 'none';
+  ge('fReg').style.display   = t==='reg'   ? 'block' : 'none';
+  ge('tabLogin').className = 'tab'+(t==='login'?' on':'');
+  ge('tabReg').className   = 'tab'+(t==='reg'  ?' on':'');
 }
 
 /* ── AUTH ── */
-async function doRegister() {
+async function doRegister(){
   hideE('authErr');
-  var body = {
-    firstName: ge('rFirst').value.trim(),
-    lastName: ge('rLast').value.trim(),
-    email: ge('rEmail').value.trim(),
-    password: ge('rPass').value,
-    role: ge('rRole').value
-  };
-  if (!body.firstName || !body.lastName || !body.email || !body.password)
-    return showE('authErr', 'กรุณากรอกข้อมูลให้ครบ');
+  var body = { firstName:ge('rFirst').value.trim(), lastName:ge('rLast').value.trim(), email:ge('rEmail').value.trim(), password:ge('rPass').value, role:ge('rRole').value };
+  if(!body.firstName||!body.lastName||!body.email||!body.password) return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
   try {
-    var res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var res = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var data = await res.json();
-    if (!res.ok) return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+    if(!res.ok) return showE('authErr', data.error||'เกิดข้อผิดพลาด');
     CU = data.user; enterApp();
-  } catch (e) { showE('authErr', 'ไม่สามารถเชื่อมต่อ server'); }
+  } catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ server'); }
 }
 
-async function doLogin() {
+async function doLogin(){
   hideE('authErr');
   var email = ge('lEmail').value.trim();
-  var pass = ge('lPass').value;
-  if (!email || !pass) return showE('authErr', 'กรุณากรอก Email และ Password');
+  var pass  = ge('lPass').value;
+  if(!email||!pass) return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
   try {
-    var res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: pass, remember: ge('rem').checked }) });
+    var res = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,remember:ge('rem').checked})});
     var data = await res.json();
-    if (!res.ok) return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+    if(!res.ok) return showE('authErr', data.error||'เกิดข้อผิดพลาด');
     CU = data.user; enterApp();
-  } catch (e) { showE('authErr', 'ไม่สามารถเชื่อมต่อ server'); }
+  } catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ server'); }
 }
 
-async function doLogout() {
-  await fetch('/api/auth/logout', { method: 'POST' });
+async function doLogout(){
+  await fetch('/api/auth/logout',{method:'POST'});
   CU = null;
-  ge('app').classList.remove('on');
+  ge('adminApp').classList.remove('on');
+  ge('normalApp').classList.remove('on');
   ge('authPage').style.display = 'flex';
   switchTab('login');
 }
 
-function enterApp() {
+function enterApp(){
   ge('authPage').style.display = 'none';
-  ge('app').classList.add('on');
-  ge('hAv').textContent = (CU.firstName[0] + CU.lastName[0]).toUpperCase();
-  ge('hName').textContent = CU.firstName + ' ' + CU.lastName;
-  var roles = { citizen: 'ประชาชน', admin: 'Admin', technician: 'ช่าง' };
-  ge('hRole').textContent = roles[CU.role] || CU.role;
-  ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
-  ge('secTech').style.display = CU.role === 'technician' ? 'block' : 'none';
-  ge('secAdmin').style.display = CU.role === 'admin' ? 'block' : 'none';
-  loadTickets();
-  setInterval(loadTickets, 8000);
+  if(CU.role === 'admin'){
+    ge('adminApp').classList.add('on');
+    ge('adminAv').textContent  = (CU.firstName[0]+CU.lastName[0]).toUpperCase();
+    ge('adminName').textContent = CU.firstName+' '+CU.lastName;
+    loadAdmin();
+    setInterval(loadAdmin, 6000);
+  } else {
+    ge('normalApp').classList.add('on');
+    ge('hAv').textContent  = (CU.firstName[0]+CU.lastName[0]).toUpperCase();
+    ge('hName').textContent = CU.firstName+' '+CU.lastName;
+    ge('hRole').textContent = CU.role === 'technician' ? 'ช่างเทคนิค' : 'ประชาชน';
+    ge('secCitizen').style.display = CU.role==='citizen'    ? 'block' : 'none';
+    ge('secTech').style.display    = CU.role==='technician' ? 'block' : 'none';
+    loadTickets();
+    setInterval(loadTickets, 8000);
+  }
+}
+
+/* ── ADMIN PAGE SWITCH ── */
+function showPage(page){
+  currentPage = page;
+  ge('pageDashboard').style.display = page==='dashboard' ? 'block' : 'none';
+  ge('pageQueue').style.display     = page==='queue'     ? 'block' : 'none';
+  ge('pageTechs').style.display     = page==='techs'     ? 'block' : 'none';
+  var titles = { dashboard:'ศูนย์คัดกรองงานและจ่ายงาน (Smart Dispatcher)', queue:'รายการรับแจ้งทั้งหมด', techs:'สถานะทีมช่างทั้งหมด' };
+  ge('pageTitle').textContent = titles[page];
+  document.querySelectorAll('.sb-item').forEach(function(el){ el.classList.remove('on'); });
+  var idx = { dashboard:0, queue:1, techs:2 }[page];
+  document.querySelectorAll('.sb-item')[idx].classList.add('on');
+}
+
+/* ── ADMIN LOAD ── */
+async function loadAdmin(){
+  try {
+    var r1 = await fetch('/api/tickets');
+    var r2 = await fetch('/api/technicians');
+    var tickets = await r1.json();
+    techList = await r2.json();
+
+    // Stats
+    var urgent = tickets.filter(function(t){ return t.priorityScore>=70 && t.status!=='completed' && t.status!=='rejected'; }).length;
+    var med    = tickets.filter(function(t){ return t.priorityScore>=40 && t.priorityScore<70 && t.status!=='completed' && t.status!=='rejected'; }).length;
+    var norm   = tickets.filter(function(t){ return t.priorityScore<40 && t.status!=='completed' && t.status!=='rejected'; }).length;
+    var ready  = techList.filter(function(t){ return t.statusLabel==='READY'; }).length;
+    ge('sUrgent').textContent = urgent;
+    ge('sMed').textContent    = med;
+    ge('sNorm').textContent   = norm;
+    ge('sTechReady').textContent = ready;
+    ge('sTechTotal').textContent = '/ '+techList.length;
+    ge('sToday').textContent  = tickets.length;
+
+    // Pie chart
+    var pending  = tickets.filter(function(t){ return t.status==='pending'; }).length;
+    var inprog   = tickets.filter(function(t){ return t.status==='in_progress'||t.status==='assigned'; }).length;
+    var done     = tickets.filter(function(t){ return t.status==='completed'; }).length;
+    drawPie(pending, inprog, done);
+
+    // Tech status list
+    renderTechStatus(techList);
+
+    // Queue
+    var pending_tickets = tickets.filter(function(t){ return t.status==='pending'; });
+    pending_tickets.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
+    renderQueue(pending_tickets, techList);
+
+    // All queue
+    if(currentPage === 'queue') renderAllQueue(tickets);
+    if(currentPage === 'techs') renderTechFull(techList);
+  } catch(e){ console.error(e); }
+}
+
+/* ── PIE CHART ── */
+function drawPie(pending, inprog, done){
+  var canvas = ge('pieChart');
+  var ctx = canvas.getContext('2d');
+  var total = pending + inprog + done || 1;
+  var data = [
+    { val: pending, color:'#e53e3e', label:'ด่วนมาก' },
+    { val: inprog,  color:'#ea580c', label:'ด่วน' },
+    { val: done,    color:'#1a56db', label:'ปกติ' }
+  ];
+  ctx.clearRect(0,0,140,140);
+  var start = -Math.PI/2;
+  var cx=70, cy=70, r=60;
+  for(var i=0;i<data.length;i++){
+    var slice = (data[i].val/total) * Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+slice);
+    ctx.closePath(); ctx.fillStyle=data[i].color; ctx.fill();
+    start += slice;
+  }
+  // hole
+  ctx.beginPath(); ctx.arc(cx,cy,30,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+
+  // legend
+  var lg = ge('pieLegend');
+  lg.innerHTML = '';
+  for(var j=0;j<data.length;j++){
+    lg.innerHTML += '<div class="pie-item"><div class="pie-dot" style="background:'+data[j].color+'"></div><span>'+data[j].label+' ('+data[j].val+')</span></div>';
+  }
+}
+
+/* ── TECH STATUS PANEL ── */
+function renderTechStatus(techs){
+  var el = ge('techStatusList');
+  if(!techs.length){ el.innerHTML='<div class="empty">ไม่มีช่าง</div>'; return; }
+  var h = '';
+  for(var i=0;i<techs.length;i++){
+    var t = techs[i];
+    h += '<div class="tech-item">';
+    h += '<div class="tech-row"><div><div class="tech-name">'+t.name+'</div><div class="tech-spec">('+t.specialty+')</div></div>';
+    h += '<span class="status-pill '+t.statusLabel+'">'+t.statusLabel+'</span></div>';
+    h += '<div class="prog-bar"><div class="prog-fill '+t.statusLabel+'" style="width:'+t.capacity+'%"></div></div>';
+    h += '<div class="prog-label">LOAD CAPACITY '+t.capacity+'%</div></div>';
+  }
+  el.innerHTML = h;
+}
+
+/* ── QUEUE TABLE (pending only) ── */
+function renderQueue(tickets, techs){
+  var el = ge('queueBody');
+  if(!tickets.length){ el.innerHTML='<tr><td colspan="4" class="empty">ไม่มีงานรอการอนุมัติ &#127881;</td></tr>'; return; }
+  var h = '';
+  for(var i=0;i<tickets.length;i++){
+    var t = tickets[i];
+    var urgent = t.priorityScore >= 70;
+    var pClass = urgent ? 'urgent' : (t.priorityScore>=40 ? 'medium' : 'normal');
+    var pText  = urgent ? 'ด่วนมาก' : (t.priorityScore>=40 ? 'ด่วน' : 'ปกติ');
+
+    // Tech options
+    var opts = '<option value="">-- เลือกช่าง --</option>';
+    for(var j=0;j<techs.length;j++){
+      var tc = techs[j];
+      opts += '<option value="'+tc.id+'" '+(tc.statusLabel==='FULL'?'disabled':'')+'>'+tc.name+' ('+tc.specialty+') - '+tc.statusLabel+'</option>';
+    }
+
+    h += '<tr>';
+    h += '<td><strong>#'+t.ticketId+'</strong><br/><span style="font-size:11px;color:var(--mu)">'+t.citizenName+'</span></td>';
+    h += '<td><span class="priority-badge '+pClass+'">'+pText+'</span><br/><span style="font-size:11px;color:var(--mu)">'+pLabel(t.priorityScore)+'</span></td>';
+    h += '<td><div style="font-weight:600;font-size:13px">'+t.category+' - '+t.location+'</div>';
+    h += '<div style="font-size:12px;color:#4a5568;margin-top:2px">'+t.description+'</div>';
+    if(t.citizenImage) h += '<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" style="width:60px;height:40px;object-fit:cover;border-radius:6px;margin-top:4px;cursor:pointer"/>';
+    h += '</td>';
+    h += '<td>';
+    h += '<div class="ai-label">&#129302; AI RECOMMEND</div>';
+    h += '<select class="tech-select" id="techSel_'+t.ticketId+'">'+opts+'</select>';
+    h += '<div class="action-row" style="margin-top:8px">';
+    h += '<button class="btn-approve" data-id="'+t.ticketId+'" onclick="approveTicket(this)">APPROVE</button>';
+    h += '<button class="btn-reject"  data-id="'+t.ticketId+'" onclick="rejectTicket(this)">REJECT</button>';
+    h += '</div></td>';
+    h += '</tr>';
+  }
+  el.innerHTML = h;
+
+  // AI auto-select best tech
+  for(var k=0;k<tickets.length;k++){
+    autoSelectTech(tickets[k], techs);
+  }
+}
+
+function autoSelectTech(ticket, techs){
+  var sel = ge('techSel_'+ticket.ticketId);
+  if(!sel) return;
+  // Find specialist with lowest load
+  var specialists = techs.filter(function(t){ return t.specialty===ticket.category && t.statusLabel!=='FULL'; });
+  var pool = specialists.length ? specialists : techs.filter(function(t){ return t.statusLabel!=='FULL'; });
+  if(!pool.length) return;
+  pool.sort(function(a,b){ return a.activeJobs - b.activeJobs; });
+  sel.value = pool[0].id;
+}
+
+async function approveTicket(btn){
+  var id = btn.getAttribute('data-id');
+  var sel = ge('techSel_'+id);
+  var techId = sel ? sel.value : '';
+  if(!techId) return showToast('กรุณาเลือกช่างก่อน Approve', true);
+  try {
+    var res = await fetch('/api/tickets/'+id+'/assign',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({technicianId:techId})});
+    if(!res.ok){ var d=await res.json(); return showToast(d.error||'เกิดข้อผิดพลาด',true); }
+    showToast('Approve และส่งงานให้ช่างแล้ว');
+    loadAdmin();
+  } catch(e){ showToast('เกิดข้อผิดพลาด',true); }
+}
+
+async function rejectTicket(btn){
+  var id = btn.getAttribute('data-id');
+  await fetch('/api/tickets/'+id+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejected'})});
+  showToast('ปฏิเสธ Ticket แล้ว', true);
+  loadAdmin();
+}
+
+/* ── ALL QUEUE TABLE ── */
+function renderAllQueue(tickets){
+  var el = ge('allQueueBody');
+  if(!tickets.length){ el.innerHTML='<tr><td colspan="9" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
+  var h = '';
+  tickets.sort(function(a,b){ return b.priorityScore-a.priorityScore; });
+  for(var i=0;i<tickets.length;i++){
+    var t = tickets[i];
+    h += '<tr>';
+    h += '<td><strong>'+t.ticketId+'</strong></td>';
+    h += '<td>'+t.citizenName+'</td>';
+    h += '<td>'+t.category+'</td>';
+    h += '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.description+'</td>';
+    h += '<td>'+pLabel(t.priorityScore)+'</td>';
+    h += '<td><span class="badge '+t.status+'">'+stTH(t.status)+'</span></td>';
+    h += '<td style="font-size:12px">'+(t.assignedName||'-')+'</td>';
+    h += '<td><select data-id="'+t.ticketId+'" onchange="adminChangeStatus(this)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">';
+    var ss = ['pending','assigned','in_progress','completed','rejected'];
+    for(var j=0;j<ss.length;j++) h += '<option value="'+ss[j]+'"'+(t.status===ss[j]?' selected':'')+'>'+stTH(ss[j])+'</option>';
+    h += '</select></td>';
+    h += '<td style="font-size:11px;color:var(--mu);white-space:nowrap">'+t.createdAt+'</td>';
+    h += '</tr>';
+  }
+  el.innerHTML = h;
+}
+
+function adminChangeStatus(sel){
+  fetch('/api/tickets/'+sel.getAttribute('data-id')+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:sel.value})})
+    .then(function(){ showToast('อัปเดตแล้ว'); loadAdmin(); });
+}
+
+/* ── TECH FULL LIST ── */
+function renderTechFull(techs){
+  var el = ge('techFullList');
+  if(!techs.length){ el.innerHTML='<div class="empty">ไม่มีข้อมูลช่าง</div>'; return; }
+  var h = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">';
+  for(var i=0;i<techs.length;i++){
+    var t = techs[i];
+    h += '<div style="border:1px solid var(--bd);border-radius:12px;padding:16px">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    h += '<div><div style="font-size:15px;font-weight:700">'+t.name+'</div><div style="font-size:12px;color:var(--mu)">'+t.specialty+'</div></div>';
+    h += '<span class="status-pill '+t.statusLabel+'">'+t.statusLabel+'</span></div>';
+    h += '<div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill '+t.statusLabel+'" style="width:'+t.capacity+'%"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mu)">';
+    h += '<span>งานค้าง: '+t.activeJobs+'</span><span>รวม: '+t.totalJobs+' งาน</span></div></div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
 }
 
 /* ── CHANGE PW ── */
-function openChPw() { hideE('chErr'); ['curP', 'newP', 'conP'].forEach(function(i) { ge(i).value = ''; }); ge('mChPw').classList.add('on'); }
-function closeChPw() { ge('mChPw').classList.remove('on'); }
-
-async function doChPw() {
+function openChPw(){ hideE('chErr'); ['curP','newP','conP'].forEach(function(i){ ge(i).value=''; }); ge('mChPw').classList.add('on'); }
+function closeChPw(){ ge('mChPw').classList.remove('on'); }
+async function doChPw(){
   hideE('chErr');
-  var cur = ge('curP').value, nw = ge('newP').value, con = ge('conP').value;
-  if (!cur || !nw || !con) return showE('chErr', 'กรุณากรอกข้อมูลให้ครบ');
-  if (nw !== con) return showE('chErr', 'รหัสผ่านใหม่ไม่ตรงกัน');
+  var cur=ge('curP').value, nw=ge('newP').value, con=ge('conP').value;
+  if(!cur||!nw||!con) return showE('chErr','กรุณากรอกข้อมูลให้ครบ');
+  if(nw!==con) return showE('chErr','รหัสผ่านใหม่ไม่ตรงกัน');
   try {
-    var res = await fetch('/api/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: cur, newPassword: nw }) });
+    var res = await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
     var data = await res.json();
-    if (!res.ok) return showE('chErr', data.error || 'เกิดข้อผิดพลาด');
+    if(!res.ok) return showE('chErr', data.error||'เกิดข้อผิดพลาด');
     closeChPw(); showToast('เปลี่ยนรหัสผ่านสำเร็จ');
-  } catch (e) { showE('chErr', 'เกิดข้อผิดพลาด'); }
+  } catch(e){ showE('chErr','เกิดข้อผิดพลาด'); }
 }
 
 /* ── VIEW IMG ── */
-function viewImg(src, title) { ge('mImgSrc').src = src; ge('mImgTitle').textContent = title; ge('mImg').classList.add('on'); }
-function closeMImg() { ge('mImg').classList.remove('on'); }
+function viewImg(src, title){ ge('mImgSrc').src=src; ge('mImgTitle').textContent=title; ge('mImg').classList.add('on'); }
+function closeMImg(){ ge('mImg').classList.remove('on'); }
 
-/* ── LOAD ── */
-async function loadTickets() {
+/* ── LOAD TICKETS (non-admin) ── */
+async function loadTickets(){
   try {
     var res = await fetch('/api/tickets');
-    if (!res.ok) return;
+    if(!res.ok) return;
     var data = await res.json();
     ge('stT').textContent = data.length;
-    ge('stP').textContent = data.filter(function(t) { return t.status === 'pending'; }).length;
-    ge('stI').textContent = data.filter(function(t) { return t.status === 'in_progress'; }).length;
-    ge('stD').textContent = data.filter(function(t) { return t.status === 'completed'; }).length;
-    if (CU.role === 'technician') renderTech(data);
-    else if (CU.role === 'admin') renderAdmin(data);
+    ge('stP').textContent = data.filter(function(t){ return t.status==='pending'; }).length;
+    ge('stI').textContent = data.filter(function(t){ return t.status==='in_progress'; }).length;
+    ge('stD').textContent = data.filter(function(t){ return t.status==='completed'; }).length;
+    if(CU.role==='technician') renderTech(data);
     else renderCitizen(data);
-  } catch (e) { console.error(e); }
+  } catch(e){ console.error(e); }
 }
 
 /* ── CITIZEN RENDER ── */
-function renderCitizen(data) {
+function renderCitizen(data){
   var el = ge('citizenCards');
-  if (!data.length) { el.innerHTML = '<div class="empty">ยังไม่มีเรื่องร้องเรียน</div>'; return; }
+  if(!data.length){ el.innerHTML='<div class="empty">ยังไม่มีเรื่องร้องเรียน</div>'; return; }
   var h = '';
-  for (var i = 0; i < data.length; i++) {
+  for(var i=0;i<data.length;i++){
     var t = data[i];
-    var done = t.status === 'completed';
+    var done = t.status==='completed';
     var bc = done ? 'var(--g)' : 'var(--bd)';
-    h += '<div style="border:1.5px solid ' + bc + ';border-radius:12px;padding:14px;margin-bottom:10px">';
+    h += '<div style="border:1.5px solid '+bc+';border-radius:12px;padding:14px;margin-bottom:10px">';
     h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
-    h += '<div><div style="font-size:11px;color:var(--mu);font-weight:600">' + t.ticketId + '</div>';
-    h += '<div style="font-size:14px;font-weight:700">' + t.category + ' - ' + t.location + '</div></div>';
-    h += '<span class="badge ' + t.status + '">' + stTH(t.status) + '</span></div>';
-    h += '<div style="font-size:13px;color:#4a5568;margin-bottom:4px">' + t.description + '</div>';
-    h += '<div style="font-size:12px;color:var(--mu);margin-bottom:8px">' + t.createdAt + '</div>';
-    if (t.citizenImage) {
-      h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปที่แนบ\')" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;cursor:pointer"/>';
-    }
-    if (done && (t.beforeImage || t.afterImage)) {
+    h += '<div><div style="font-size:11px;color:var(--mu);font-weight:600">'+t.ticketId+'</div>';
+    h += '<div style="font-size:14px;font-weight:700">'+t.category+' - '+t.location+'</div></div>';
+    h += '<span class="badge '+t.status+'">'+stTH(t.status)+'</span></div>';
+    h += '<div style="font-size:13px;color:#4a5568;margin-bottom:4px">'+t.description+'</div>';
+    h += '<div style="font-size:12px;color:var(--mu);margin-bottom:8px">'+t.createdAt+'</div>';
+    if(t.citizenImage) h += '<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปที่แนบ\')" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;cursor:pointer"/>';
+    if(done && (t.beforeImage||t.afterImage)){
       h += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px">';
       h += '<div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">&#9989; ช่างดำเนินการเสร็จแล้ว</div>';
       h += '<div style="display:flex;gap:8px">';
-      if (t.beforeImage) {
-        h += '<div style="flex:1;text-align:center"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปก่อนซ่อม\')" style="width:100%;height:90px;object-fit:cover;border-radius:8px;cursor:pointer"/>';
-        h += '<div style="font-size:11px;color:#065f46;margin-top:4px;font-weight:600">ก่อนซ่อม</div></div>';
-      }
-      if (t.afterImage) {
-        h += '<div style="flex:1;text-align:center"><img src="' + t.afterImage + '" onclick="viewImg(this.src,\'รูปหลังซ่อม\')" style="width:100%;height:90px;object-fit:cover;border-radius:8px;cursor:pointer"/>';
-        h += '<div style="font-size:11px;color:#065f46;margin-top:4px;font-weight:600">หลังซ่อม</div></div>';
-      }
+      if(t.beforeImage) h += '<div style="flex:1;text-align:center"><img src="'+t.beforeImage+'" onclick="viewImg(this.src,\'ก่อนซ่อม\')" style="width:100%;height:90px;object-fit:cover;border-radius:8px;cursor:pointer"/><div style="font-size:11px;color:#065f46;margin-top:4px;font-weight:600">ก่อนซ่อม</div></div>';
+      if(t.afterImage)  h += '<div style="flex:1;text-align:center"><img src="'+t.afterImage+'"  onclick="viewImg(this.src,\'หลังซ่อม\')" style="width:100%;height:90px;object-fit:cover;border-radius:8px;cursor:pointer"/><div style="font-size:11px;color:#065f46;margin-top:4px;font-weight:600">หลังซ่อม</div></div>';
       h += '</div></div>';
-    } else if (!done && t.status !== 'pending' && t.status !== 'rejected' && t.beforeImage) {
+    } else if(!done && t.status!=='pending' && t.status!=='rejected' && t.beforeImage){
       h += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px">';
       h += '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px">&#128295; ช่างกำลังดำเนินการ</div>';
-      h += '<img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปสภาพปัญหา\')" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;cursor:pointer"/>';
+      h += '<img src="'+t.beforeImage+'" onclick="viewImg(this.src,\'รูปปัญหา\')" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;cursor:pointer"/>';
       h += '</div>';
     }
     h += '</div>';
@@ -426,141 +797,60 @@ function renderCitizen(data) {
   el.innerHTML = h;
 }
 
-/* ── ADMIN RENDER ── */
-function renderAdmin(data) {
-  if (!data.length) { ge('tBody').innerHTML = '<tr><td colspan="11" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
-  var h = '';
-  for (var i = 0; i < data.length; i++) {
-    var t = data[i];
-    h += '<tr>';
-    h += '<td><strong>' + t.ticketId + '</strong></td>';
-    h += '<td>' + t.citizenName + '</td>';
-    h += '<td>' + t.category + '</td>';
-    h += '<td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + t.description + '</td>';
-    h += '<td>' + pLabel(t.priorityScore || 0) + '</td>';
-    h += '<td><span class="badge ' + t.status + '">' + stTH(t.status) + '</span></td>';
-    h += '<td>' + (t.citizenImage ? '<img class="thumb" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/>' : '<span class="noimg">-</span>') + '</td>';
-    h += '<td>' + (t.beforeImage ? '<img class="thumb" src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปก่อน\')"/>' : '<span class="noimg">-</span>') + '</td>';
-    h += '<td>' + (t.afterImage ? '<img class="thumb" src="' + t.afterImage + '" onclick="viewImg(this.src,\'รูปหลัง\')"/>' : '<span class="noimg">-</span>') + '</td>';
-    h += '<td><select data-id="' + t.ticketId + '" onchange="adminChangeStatus(this)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">';
-    var statuses = ['pending', 'assigned', 'in_progress', 'completed', 'rejected'];
-    for (var j = 0; j < statuses.length; j++) {
-      h += '<option value="' + statuses[j] + '"' + (t.status === statuses[j] ? ' selected' : '') + '>' + stTH(statuses[j]) + '</option>';
-    }
-    h += '</select></td>';
-    h += '<td style="color:var(--mu);font-size:12px;white-space:nowrap">' + t.createdAt + '</td>';
-    h += '</tr>';
-  }
-  ge('tBody').innerHTML = h;
-}
-
-function adminChangeStatus(sel) {
-  apiStatus(sel.getAttribute('data-id'), sel.value);
-  showToast('อัปเดตแล้ว');
-}
-
 /* ── TECH RENDER ── */
-function renderTech(data) {
+function renderTech(data){
   var el = ge('techCards');
-  var active = data.filter(function(t) { return t.status !== 'completed' && t.status !== 'rejected'; });
-  ge('techSub').textContent = 'งานทั้งหมด ' + data.length + ' | ค้างอยู่ ' + active.length;
-  if (!data.length) { el.innerHTML = '<div class="empty">ไม่มีงานในระบบ</div>'; return; }
-  var sorted = active.concat(data.filter(function(t) { return t.status === 'completed' || t.status === 'rejected'; }));
+  var active = data.filter(function(t){ return t.status!=='completed'&&t.status!=='rejected'; });
+  ge('techSub').textContent = 'งานทั้งหมด '+data.length+' | ค้างอยู่ '+active.length;
+  if(!data.length){ el.innerHTML='<div class="empty">ไม่มีงาน</div>'; return; }
+  var sorted = active.concat(data.filter(function(t){ return t.status==='completed'||t.status==='rejected'; }));
   var h = '';
-  for (var i = 0; i < sorted.length; i++) {
+  for(var i=0;i<sorted.length;i++){
     var t = sorted[i];
-    var urgent = t.priorityScore >= 70;
-    var isDone = t.status === 'completed' || t.status === 'rejected';
-    var s1 = t.status === 'pending' ? 'active' : 'done';
-    var s2 = t.status === 'pending' ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
-    var s3 = t.status === 'in_progress' ? 'active' : (t.status === 'completed' ? 'done' : 'idle');
-
+    var urgent = t.priorityScore>=70;
+    var isDone = t.status==='completed'||t.status==='rejected';
+    var s1 = t.status==='pending'?'active':'done';
+    var s2 = t.status==='pending'?'idle':(t.status==='assigned'?'active':'done');
+    var s3 = t.status==='in_progress'?'active':(t.status==='completed'?'done':'idle');
     h += '<div class="tcard">';
-    h += '<div class="thead">';
-    h += '<div><div class="tid">TICKET #' + t.ticketId + '</div>';
-    h += '<div class="ttitle">' + t.category + ' - ' + t.location + '</div></div>';
-    h += '<span class="badge ' + (urgent ? 'urgent' : 'normal') + '">' + (urgent ? 'เร่งด่วน' : 'ปกติ') + ' ' + pLabel(t.priorityScore) + '</span>';
-    h += '</div>';
-    h += '<div class="tbody2">';
-    h += '<div class="mrow"><span class="mi">&#9888;&#65039;</span><span>' + t.description + '</span></div>';
-    h += '<div class="mrow"><span class="mi">&#128205;</span><span>' + t.location + '</span></div>';
-    h += '<div class="mrow"><span class="mi">&#128100;</span><span>' + t.citizenName + '</span></div>';
-    h += '<div class="mrow" style="margin-bottom:12px"><span class="mi">&#128336;</span><span>' + t.createdAt + '</span></div>';
-    if (t.citizenImage) {
-      h += '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:var(--mu);margin-bottom:6px">รูปจากผู้แจ้ง</div>';
-      h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปจากประชาชน\')" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer"/></div>';
-    }
-    if (isDone) {
-      var dc = t.status === 'completed' ? '#065f46' : '#991b1b';
-      var db = t.status === 'completed' ? '#f0fdf4' : '#fef2f2';
-      var dd = t.status === 'completed' ? '#bbf7d0' : '#fecaca';
-      var dm = t.status === 'completed' ? 'งานนี้เสร็จสิ้นแล้ว' : 'งานนี้ถูกปฏิเสธ';
-      h += '<div style="background:' + db + ';border:1px solid ' + dd + ';border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:600;color:' + dc + '">' + dm + '</div>';
-      if (t.beforeImage || t.afterImage) {
+    h += '<div class="tchead"><div><div class="tcid">TICKET #'+t.ticketId+'</div><div class="tctitle">'+t.category+' - '+t.location+'</div></div>';
+    h += '<span class="badge '+(urgent?'urgent':'normal')+'">'+(urgent?'เร่งด่วน':'ปกติ')+' '+pLabel(t.priorityScore)+'</span></div>';
+    h += '<div class="tcbody">';
+    h += '<div class="mrow"><span class="mi">&#9888;&#65039;</span><span>'+t.description+'</span></div>';
+    h += '<div class="mrow"><span class="mi">&#128205;</span><span>'+t.location+'</span></div>';
+    h += '<div class="mrow"><span class="mi">&#128100;</span><span>'+t.citizenName+'</span></div>';
+    h += '<div class="mrow" style="margin-bottom:12px"><span class="mi">&#128336;</span><span>'+t.createdAt+'</span></div>';
+    if(t.citizenImage) h += '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:var(--mu);margin-bottom:6px">รูปจากผู้แจ้ง</div><img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปจากประชาชน\')" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer"/></div>';
+    if(isDone){
+      var dc=t.status==='completed'?'#065f46':'#991b1b', db=t.status==='completed'?'#f0fdf4':'#fef2f2', dd=t.status==='completed'?'#bbf7d0':'#fecaca';
+      h += '<div style="background:'+db+';border:1px solid '+dd+';border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:600;color:'+dc+'">'+(t.status==='completed'?'เสร็จสิ้นแล้ว':'ถูกปฏิเสธ')+'</div>';
+      if(t.beforeImage||t.afterImage){
         h += '<div class="irow" style="margin-top:10px">';
-        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อนซ่อม\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-        if (t.afterImage)  h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage  + '\',\'หลังซ่อม\')"><img src="' + t.afterImage  + '"/><div class="ilbl">หลังซ่อม</div></div>';
+        if(t.beforeImage) h += '<div class="islot has" onclick="viewImg(\''+t.beforeImage+'\',\'ก่อน\')"><img src="'+t.beforeImage+'"/><div class="ilbl">ก่อน</div></div>';
+        if(t.afterImage)  h += '<div class="islot has" onclick="viewImg(\''+t.afterImage+'\',\'หลัง\')"><img src="'+t.afterImage+'"/><div class="ilbl">หลัง</div></div>';
         h += '</div>';
       }
     } else {
-      /* STEP 1 */
-      h += '<div class="step"><div class="shead">';
-      h += '<div class="snum ' + s1 + '">' + (s1 === 'done' ? '&#10003;' : '1') + '</div>';
-      h += '<div class="slbl">ข้อมูลการร้องเรียน</div>';
-      h += '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จแล้ว' : 'รอดำเนินการ') + '</span></div>';
-      if (t.status === 'pending') {
-        h += '<div class="sbody"><p style="font-size:13px;color:#4a5568;margin-bottom:12px">กดรับงานเพื่อเริ่มลงพื้นที่</p>';
-        h += '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)">รับเรื่องและลงพื้นที่</button></div>';
-      }
+      h += '<div class="step"><div class="shead"><div class="snum '+s1+'">'+(s1==='done'?'&#10003;':'1')+'</div><div class="slbl">ข้อมูลการร้องเรียน</div><span class="sstat '+s1+'">'+(s1==='done'?'เสร็จ':'รอ')+'</span></div>';
+      if(t.status==='pending') h += '<div class="sbody"><p style="font-size:13px;color:#4a5568;margin-bottom:12px">กดรับงานเพื่อเริ่มลงพื้นที่</p><button class="btnaccept" data-id="'+t.ticketId+'" onclick="acceptJob(this)">รับเรื่องและลงพื้นที่</button></div>';
       h += '</div>';
-
-      /* STEP 2 */
-      h += '<div class="step"><div class="shead">';
-      h += '<div class="snum ' + s2 + '">' + (s2 === 'done' ? '&#10003;' : '2') + '</div>';
-      h += '<div class="slbl">ยืนยันการเข้าตรวจสอบ</div>';
-      h += '<span class="sstat ' + s2 + '">' + (s2 === 'done' ? 'เสร็จแล้ว' : (s2 === 'active' ? 'กำลังดำเนินการ' : 'รอดำเนินการ')) + '</span></div>';
-      if (s2 === 'active') {
+      h += '<div class="step"><div class="shead"><div class="snum '+s2+'">'+(s2==='done'?'&#10003;':'2')+'</div><div class="slbl">ยืนยันการเข้าตรวจสอบ</div><span class="sstat '+s2+'">'+(s2==='done'?'เสร็จ':(s2==='active'?'กำลังทำ':'รอ'))+'</span></div>';
+      if(s2==='active'){
         h += '<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปก่อนซ่อม</p>';
-        if (t.beforeImage) {
-          h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">';
-          h += '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/>';
-          h += '<div class="ilbl" style="color:var(--g)">อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
-        } else {
-          h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">';
-          h += '<div style="font-size:28px">&#128247;</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
-        }
-        h += '<div style="margin-bottom:12px"><label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บันทึกเพิ่มเติม (ไม่บังคับ)</label>';
-        h += '<textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
-        h += '<div style="display:flex;gap:8px">';
-        h += '<button class="btnreject" data-id="' + t.ticketId + '" onclick="rejectJob(this)">ปฏิเสธ</button>';
-        h += '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">ยืนยันเริ่มซ่อม</button>';
-        h += '</div></div>';
+        if(t.beforeImage) h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="'+t.ticketId+'" data-type="before" onclick="triggerUpload(this)"><img src="'+t.beforeImage+'" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/><div class="ilbl" style="color:var(--g)">อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
+        else h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="'+t.ticketId+'" data-type="before" onclick="triggerUpload(this)"><div style="font-size:28px">&#128247;</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
+        h += '<div style="display:flex;gap:8px"><button class="btnreject2" data-id="'+t.ticketId+'" onclick="rejectJob(this)">ปฏิเสธ</button><button class="btnconfirm" data-id="'+t.ticketId+'" onclick="startWork(this)">ยืนยันเริ่มซ่อม</button></div></div>';
       }
       h += '</div>';
-
-      /* STEP 3 */
-      h += '<div class="step"><div class="shead">';
-      h += '<div class="snum ' + s3 + '">' + (s3 === 'done' ? '&#10003;' : '3') + '</div>';
-      h += '<div class="slbl">หลักฐานหลังการดำเนินการ</div>';
-      h += '<span class="sstat ' + s3 + '">' + (s3 === 'done' ? 'เสร็จแล้ว' : (s3 === 'active' ? 'กำลังดำเนินการ' : 'รอดำเนินการ')) + '</span></div>';
-      if (s3 === 'active') {
-        h += '<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปหลังซ่อม</p>';
-        h += '<div class="irow">';
-        if (t.beforeImage) {
-          h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อนซ่อม\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-        } else {
-          h += '<div class="islot"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">ก่อนซ่อม</div></div>';
-        }
-        if (t.afterImage) {
-          h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl" style="color:var(--g)">คลิกเปลี่ยน</div></div>';
-        } else {
-          h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายรูปหลังซ่อม</div></div>';
-        }
-        h += '</div>';
-        h += '<div style="margin-bottom:12px"><label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บรรยายงานที่ทำ</label>';
-        h += '<textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
-        h += '<button class="btnclose" ' + (t.afterImage ? '' : 'disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">ยืนยันปิดเรื่องร้องเรียน</button>';
-        if (!t.afterImage) h += '<p style="font-size:12px;color:var(--mu);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
+      h += '<div class="step"><div class="shead"><div class="snum '+s3+'">'+(s3==='done'?'&#10003;':'3')+'</div><div class="slbl">หลักฐานหลังการดำเนินการ</div><span class="sstat '+s3+'">'+(s3==='done'?'เสร็จ':(s3==='active'?'กำลังทำ':'รอ'))+'</span></div>';
+      if(s3==='active'){
+        h += '<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปหลังซ่อม</p><div class="irow">';
+        if(t.beforeImage) h += '<div class="islot has" onclick="viewImg(\''+t.beforeImage+'\',\'ก่อน\')"><img src="'+t.beforeImage+'"/><div class="ilbl">ก่อน</div></div>';
+        else h += '<div class="islot"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">ก่อน</div></div>';
+        if(t.afterImage) h += '<div class="islot has" data-id="'+t.ticketId+'" data-type="after" onclick="triggerUpload(this)"><img src="'+t.afterImage+'"/><div class="ilbl" style="color:var(--g)">คลิกเปลี่ยน</div></div>';
+        else h += '<div class="islot" data-id="'+t.ticketId+'" data-type="after" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายรูปหลังซ่อม</div></div>';
+        h += '</div><button class="btnclose"'+(t.afterImage?'':' disabled')+' data-id="'+t.ticketId+'" onclick="completeJob(this)">ยืนยันปิดเรื่องร้องเรียน</button>';
+        if(!t.afterImage) h += '<p style="font-size:12px;color:var(--mu);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
         h += '</div>';
       }
       h += '</div>';
@@ -570,82 +860,64 @@ function renderTech(data) {
   el.innerHTML = h;
 }
 
-/* ── TECH ACTIONS (ใช้ data-id จาก element แทน string) ── */
-function acceptJob(btn)   { apiStatus(btn.getAttribute('data-id'), 'assigned');    showToast('รับงานสำเร็จ'); }
-function startWork(btn)   { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('เริ่มดำเนินการ'); }
-function rejectJob(btn)   { apiStatus(btn.getAttribute('data-id'), 'rejected');    showToast('ปฏิเสธงานแล้ว', true); }
-function completeJob(btn) { apiStatus(btn.getAttribute('data-id'), 'completed');   showToast('ปิดงานสำเร็จ'); }
+/* ── TECH ACTIONS ── */
+function acceptJob(btn)   { apiStatus(btn.getAttribute('data-id'),'assigned');    showToast('รับงานสำเร็จ'); }
+function startWork(btn)   { apiStatus(btn.getAttribute('data-id'),'in_progress'); showToast('เริ่มดำเนินการ'); }
+function rejectJob(btn)   { apiStatus(btn.getAttribute('data-id'),'rejected');    showToast('ปฏิเสธแล้ว',true); }
+function completeJob(btn) { apiStatus(btn.getAttribute('data-id'),'completed');   showToast('ปิดงานสำเร็จ'); }
 
-async function apiStatus(id, status) {
-  await fetch('/api/tickets/' + id + '/status', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: status }) });
+async function apiStatus(id, status){
+  await fetch('/api/tickets/'+id+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})});
   loadTickets();
 }
 
-/* ── UPLOAD (ใช้ data-id, data-type จาก element) ── */
-function triggerUpload(el) {
-  upId = el.getAttribute('data-id');
+/* ── UPLOAD ── */
+function triggerUpload(el){
+  upId   = el.getAttribute('data-id');
   upType = el.getAttribute('data-type');
   var inp = ge('techFile');
   inp.value = '';
-  inp.onchange = function(e) {
+  inp.onchange = function(e){
     var f = e.target.files[0];
-    if (!f) return;
-    var fd = new FormData();
-    fd.append('image', f);
-    fetch('/api/tickets/' + upId + '/upload/' + upType, { method: 'POST', body: fd })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.error) return showToast(data.error, true);
-        showToast('อัปโหลดสำเร็จ');
-        loadTickets();
-      })
-      .catch(function() { showToast('อัปโหลดไม่สำเร็จ', true); });
+    if(!f) return;
+    var fd = new FormData(); fd.append('image',f);
+    fetch('/api/tickets/'+upId+'/upload/'+upType,{method:'POST',body:fd})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(d.error) return showToast(d.error,true); showToast('อัปโหลดสำเร็จ'); loadTickets(); })
+      .catch(function(){ showToast('อัปโหลดไม่สำเร็จ',true); });
   };
   inp.click();
 }
 
 /* ── CITIZEN SUBMIT ── */
-async function submitTicket() {
-  var loc = ge('tLoc').value.trim();
-  var desc = ge('tDesc').value.trim();
-  if (!loc || !desc) return showToast('กรุณากรอกสถานที่และรายละเอียด', true);
+async function submitTicket(){
+  var loc=ge('tLoc').value.trim(), desc=ge('tDesc').value.trim();
+  if(!loc||!desc) return showToast('กรุณากรอกสถานที่และรายละเอียด',true);
   try {
     var fd = new FormData();
-    fd.append('category', ge('tCat').value);
-    fd.append('location', loc);
-    fd.append('description', desc);
-    var f = ge('cImg').files[0];
-    if (f) fd.append('image', f);
-    var res = await fetch('/api/tickets', { method: 'POST', body: fd });
+    fd.append('category',ge('tCat').value); fd.append('location',loc); fd.append('description',desc);
+    var f=ge('cImg').files[0]; if(f) fd.append('image',f);
+    var res = await fetch('/api/tickets',{method:'POST',body:fd});
     var data = await res.json();
-    if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', true);
-    showToast('ส่งสำเร็จ! ' + data.ticketId);
-    ge('tLoc').value = '';
-    ge('tDesc').value = '';
-    ge('cImg').value = '';
-    ge('cImgPrev').innerHTML = '<div style="font-size:26px;margin-bottom:4px">&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
+    if(!res.ok) return showToast(data.error||'เกิดข้อผิดพลาด',true);
+    showToast('ส่งสำเร็จ! '+data.ticketId);
+    ge('tLoc').value=''; ge('tDesc').value=''; ge('cImg').value='';
+    ge('cImgPrev').innerHTML='<div style="font-size:26px;margin-bottom:4px">&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
     loadTickets();
-  } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
+  } catch(e){ showToast('เกิดข้อผิดพลาด',true); }
 }
 
-function prevCitizenImg(e) {
-  var f = e.target.files[0];
-  if (!f) return;
-  var r = new FileReader();
-  r.onload = function(ev) {
-    ge('cImgPrev').innerHTML = '<img src="' + ev.target.result + '" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">' + f.name + '</div>';
-  };
+function prevCitizenImg(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(ev){ ge('cImgPrev').innerHTML='<img src="'+ev.target.result+'" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">'+f.name+'</div>'; };
   r.readAsDataURL(f);
 }
 
 /* ── SESSION CHECK ── */
-(function() {
-  fetch('/api/auth/me').then(function(r) {
-    if (r.ok) return r.json();
-    throw new Error('not logged in');
-  }).then(function(data) {
-    CU = data; enterApp();
-  }).catch(function() {});
+(function(){
+  fetch('/api/auth/me').then(function(r){ if(r.ok) return r.json(); throw new Error('no'); })
+    .then(function(d){ CU=d; enterApp(); }).catch(function(){});
 })();
 </script>
 </body>
