@@ -1,891 +1,400 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>ResolveNow</title>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#1a56db;--pd:#1746b0;--g:#0e9f6e;--r:#e53e3e;--w:#d97706;--or:#ea580c;--bg:#f1f5f9;--bd:#e2e8f0;--mu:#718096;--sidebar:#1e293b}
-body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#1a202c;min-height:100vh}
-
-/* AUTH */
-.aw{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a,var(--p));padding:20px}
-.ac{background:#fff;border-radius:20px;padding:36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.al{text-align:center;margin-bottom:24px}
-.al h1{font-size:24px;font-weight:800;color:var(--p)}
-.al p{font-size:13px;color:var(--mu);margin-top:4px}
-.tabs{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--bd);margin-bottom:24px}
-.tab{flex:1;padding:10px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;border:none;color:var(--mu)}
-.tab.on{background:var(--p);color:#fff}
-.fg{margin-bottom:14px}
-.fg label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:5px}
-.fg input,.fg select{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;background:#fafafa;font-family:inherit}
-.fg input:focus{border-color:var(--p);background:#fff}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.rem{display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.rem input{width:16px;height:16px;accent-color:var(--p)}
-.rem label{font-size:13px;color:var(--mu);cursor:pointer}
-.btnp{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
-.btnp:hover{background:var(--pd)}
-.ebox{background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
-.ebox.on{display:block}
-
-/* ADMIN */
-#adminApp{display:none;min-height:100vh}
-#adminApp.on{display:flex}
-.sidebar{width:220px;min-height:100vh;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
-.sb-logo{padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
-.sb-logo h1{font-size:16px;font-weight:800}
-.sb-logo p{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
-.sb-nav{padding:12px 0;flex:1}
-.sb-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);cursor:pointer;border-left:3px solid transparent}
-.sb-item:hover{background:rgba(255,255,255,.06);color:#fff}
-.sb-item.on{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--p)}
-.sb-logout{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08)}
-.sb-logout button{width:100%;padding:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);border-radius:8px;font-size:13px;cursor:pointer}
-.main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:#fff;border-bottom:1px solid var(--bd);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
-.topbar-title h2{font-size:18px;font-weight:700}
-.topbar-title p{font-size:12px;color:var(--mu);margin-top:1px}
-.topbar-user{display:flex;align-items:center;gap:10px}
-.uav{width:36px;height:36px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
-.uname{font-size:13px;font-weight:600}
-.ustatus{font-size:11px;color:var(--g);font-weight:600}
-.content{padding:20px 24px;flex:1}
-.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
-.scard{border-radius:14px;padding:16px 18px;color:#fff}
-.scard.red{background:#e53e3e}.scard.or{background:#ea580c}.scard.blue{background:#1a56db}
-.scard.gray{background:#fff;color:#1a202c;border:1px solid var(--bd)}.scard.white{background:#fff;color:#1a202c;border:1px solid var(--bd)}
-.scard .slabel{font-size:11px;opacity:.85;margin-bottom:4px;font-weight:500}
-.scard .sval{font-size:32px;font-weight:800;line-height:1}
-.dash-grid{display:grid;grid-template-columns:1fr 280px;gap:16px}
-.panel{background:#fff;border-radius:14px;border:1px solid var(--bd);overflow:hidden}
-.panel-head{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.panel-head h3{font-size:14px;font-weight:700}
-.live-badge{background:#dcfce7;color:#15803d;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;display:flex;align-items:center;gap:4px}
-.live-dot{width:6px;height:6px;border-radius:50%;background:#15803d;animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.queue-table{width:100%;border-collapse:collapse}
-.queue-table th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--mu);border-bottom:1px solid var(--bd);background:#f8fafc;text-transform:uppercase}
-.queue-table td{padding:12px 16px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:13px}
-.queue-table tr:last-child td{border-bottom:none}
-.queue-table tr:hover td{background:#f8fafc}
-.pbadge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
-.pbadge.urgent{background:#fee2e2;color:#991b1b}.pbadge.medium{background:#fef3c7;color:#92400e}.pbadge.normal{background:#f0fdf4;color:#166534}
-.btn-approve{background:#0e9f6e;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
-.btn-approve:hover{background:#0a7a55}
-.btn-rej{background:#e53e3e;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
-.btn-rej:hover{background:#c53030}
-.tech-sel{border:1px solid var(--bd);border-radius:7px;padding:5px 8px;font-size:12px;outline:none;background:#fafafa;min-width:150px}
-.ai-lbl{font-size:10px;color:var(--p);font-weight:600;margin-bottom:3px}
-.right-col{display:flex;flex-direction:column;gap:14px}
-.pie-wrap{padding:16px 18px}
-canvas#pieChart{max-width:140px}
-.pie-legend{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.pie-item{display:flex;align-items:center;gap:8px;font-size:12px}
-.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.tech-list{padding:14px 18px}
-.tech-item{margin-bottom:12px}
-.tech-item:last-child{margin-bottom:0}
-.tech-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.tech-name{font-size:13px;font-weight:600}
-.tech-spec{font-size:11px;color:var(--mu)}
-.spill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
-.spill.READY{background:#dcfce7;color:#15803d}.spill.BUSY{background:#fef3c7;color:#92400e}.spill.FULL{background:#fee2e2;color:#991b1b}
-.prog-bar{height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden}
-.prog-fill{height:100%;border-radius:3px}
-.prog-fill.READY{background:#0e9f6e}.prog-fill.BUSY{background:#d97706}.prog-fill.FULL{background:#e53e3e}
-.prog-lbl{font-size:10px;color:var(--mu);margin-top:2px}
-
-/* NON-ADMIN */
-#normalApp{display:none;flex-direction:column;min-height:100vh}
-#normalApp.on{display:flex}
-.nheader{background:linear-gradient(135deg,var(--p),var(--g));color:#fff;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.nlogo{font-size:18px;font-weight:800}
-.nuinfo{display:flex;align-items:center;gap:8px;font-size:13px}
-.nav2{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
-.rbadge{background:rgba(255,255,255,.2);border-radius:99px;padding:3px 9px;font-size:11px;font-weight:600}
-.hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
-.nwrap{max-width:680px;margin:0 auto;padding:16px 14px;flex:1}
-.nstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-.nsc{background:#fff;border-radius:12px;padding:10px 8px;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center}
-.nsc .sl{font-size:10px;color:var(--mu);margin-bottom:2px}
-.nsc .sv{font-size:22px;font-weight:800}
-.bv{color:var(--p)}.yv{color:var(--w)}.gv{color:var(--g)}
-.ncard{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px}
-.ncard h2{font-size:15px;font-weight:700;margin-bottom:14px;color:#2d3748}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.full{grid-column:1/-1}
-.ncard label{font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px}
-.ncard input,.ncard select,.ncard textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit}
-.ncard textarea{resize:vertical;min-height:76px}
-.cf{margin-bottom:0}
-.btns{margin-top:12px;background:var(--p);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
-.uarea{border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center;cursor:pointer;font-size:13px;color:var(--mu);display:block}
-.uarea input{display:none}
-
-/* CATBOX / URGBOX */
-.catbox{display:flex;align-items:center;gap:8px;border:1.5px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:500;color:#4a5568;background:#fafafa;user-select:none}
-.catbox:hover{border-color:var(--p);background:#eff6ff}
-.catbox.on{border-color:var(--p);background:#eff6ff;color:var(--p);font-weight:700}
-.caticon{font-size:16px}
-.urgbox{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--bd);border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;user-select:none}
-.urgred{background:#fff0f0;color:#991b1b;border-color:#fca5a5}
-.urgred.on{background:#fca5a5;border-color:#e53e3e}
-.urgamber{background:#fffbeb;color:#92400e;border-color:#fcd34d}
-.urgamber.on{background:#fcd34d;border-color:#d97706}
-.urgblue{background:#eff6ff;color:#1e40af;border-color:#93c5fd}
-.urgblue.on{background:#93c5fd;border-color:#1a56db}
-
-/* TECH CARDS */
-.tcard{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.09);margin-bottom:16px;overflow:hidden}
-.tchead{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.tcid{font-size:11px;color:var(--mu);font-weight:600;margin-bottom:3px}
-.tctitle{font-size:15px;font-weight:700;line-height:1.3}
-.tcbody{padding:14px 16px}
-.mrow{display:flex;gap:8px;font-size:13px;color:#4a5568;margin-bottom:6px;align-items:flex-start}
-.mi{font-size:14px;min-width:18px;margin-top:1px}
-.step{border:1.5px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden}
-.shead{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fafafa}
-.snum{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
-.snum.done{background:#d1fae5;color:#065f46}
-.snum.active{background:var(--p);color:#fff}
-.snum.idle{background:#e2e8f0;color:#718096}
-.slbl{font-size:14px;font-weight:600;flex:1}
-.sstat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px}
-.sstat.done{background:#d1fae5;color:#065f46}
-.sstat.active{background:#dbeafe;color:#1e40af}
-.sstat.idle{background:#f1f5f9;color:#64748b}
-.sbody{padding:14px 16px;border-top:1px solid var(--bd)}
-.irow{display:flex;gap:10px;margin-bottom:12px}
-.islot{flex:1;border:1.5px dashed var(--bd);border-radius:10px;padding:8px;text-align:center;font-size:12px;color:var(--mu);cursor:pointer}
-.islot:hover{border-color:var(--p)}
-.islot.has{border-color:var(--g);border-style:solid}
-.islot img{width:100%;height:80px;object-fit:cover;border-radius:8px;display:block}
-.ilbl{margin-top:5px;font-size:11px}
-.btnaccept{width:100%;padding:12px;background:var(--p);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
-.btnconfirm{flex:2;padding:10px;background:var(--p);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
-.btnreject2{flex:1;padding:10px;background:#f1f5f9;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:#64748b}
-.btnclose{width:100%;padding:12px;background:var(--g);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
-.btnclose:disabled{background:#9ca3af;cursor:not-allowed}
-
-/* HELP REQUEST */
-.help-card{border:1.5px solid #fed7aa;background:#fff7ed;border-radius:12px;padding:14px;margin-bottom:12px}
-.help-card.accepted{border-color:#bbf7d0;background:#f0fdf4}
-.help-badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:#fed7aa;color:#9a3412}
-.help-badge.accepted{background:#bbf7d0;color:#065f46}
-.btn-help{background:var(--or);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:10px}
-.btn-help:hover{background:#c2410c}
-.btn-help-accept{background:var(--g);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer}
-.btn-help-accept:hover{background:#0a7a55}
-.notification-dot{width:8px;height:8px;border-radius:50%;background:#e53e3e;display:inline-block;margin-left:4px;animation:blink 1s infinite}
-
-/* SHARED */
-.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
-.badge.pending{background:#fef3c7;color:#92400e}
-.badge.assigned{background:#dbeafe;color:#1e40af}
-.badge.in_progress{background:#e0e7ff;color:#3730a3}
-.badge.completed{background:#d1fae5;color:#065f46}
-.badge.rejected{background:#fee2e2;color:#991b1b}
-.badge.urgent{background:#fee2e2;color:#991b1b}
-.badge.normal{background:#f0fdf4;color:#166534}
-.empty{text-align:center;color:var(--mu);padding:40px;font-size:14px}
-.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
-.mo.on{display:flex}
-.mb{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.mb h3{font-size:16px;font-weight:700;margin-bottom:16px}
-.mc{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);line-height:1;margin-top:-4px}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--g);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none;z-index:9999}
-.toast.on{opacity:1;transform:translateY(0)}
-.toast.err{background:var(--r)}
-@media(max-width:900px){.dash-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:600px){.sidebar{display:none}.main{margin-left:0}.stat-grid{grid-template-columns:repeat(2,1fr)}.row2,.g2{grid-template-columns:1fr}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>ResolveNow</title>
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
+
 <body>
 
-<!-- AUTH -->
-<div class="aw" id="authPage">
-  <div class="ac">
-    <div class="al"><h1>&#127961;&#65039; ResolveNow</h1><p>ระบบรับแจ้งเรื่องร้องเรียน</p></div>
-    <div class="tabs">
-      <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
-      <button class="tab"    id="tabReg"   onclick="switchTab('reg')">สมัครสมาชิก</button>
-    </div>
-    <div class="ebox" id="authErr"></div>
-    <div id="fLogin">
-      <div class="fg"><label>Gmail</label><input type="email" id="lEmail" placeholder="example@gmail.com"/></div>
-      <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-      <div class="rem"><input type="checkbox" id="rem"/><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
-      <button class="btnp" onclick="doLogin()">เข้าสู่ระบบ</button>
-      <!-- <p style="text-align:center;font-size:11px;color:var(--mu);margin-top:12px">Admin: admin&#64;resolvenow.th / admin1234<br/>ช่าง: tech1~tech7&#64;resolvenow.th / tech1234</p> -->
-    </div>
-    <div id="fReg" style="display:none">
-      <div class="row2">
-        <div class="fg"><label>ชื่อ</label><input type="text" id="rFirst" placeholder="ชื่อ"/></div>
-        <div class="fg"><label>นามสกุล</label><input type="text" id="rLast" placeholder="นามสกุล"/></div>
+  <!-- ── AUTH ──────────────────────────────────────────────── -->
+  <div class="aw" id="authPage">
+    <div class="ac">
+      <div class="al">
+        <h1>&#127961;&#65039; ResolveNow</h1>
+        <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
       </div>
-      <div class="fg"><label>Gmail</label><input type="email" id="rEmail" placeholder="example@gmail.com"/></div>
-      <div class="fg"><label>Password</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
-      <button class="btnp" onclick="doRegister()">สมัครสมาชิก</button>
+      <div class="tabs">
+        <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+        <button class="tab" id="tabReg" onclick="switchTab('reg')">สมัครสมาชิก</button>
+      </div>
+      <div class="ebox" id="authErr"></div>
+      <!-- Login Form -->
+      <div id="fLogin">
+        <div class="fg"><label>Gmail</label><input type="email" id="lEmail" placeholder="example@gmail.com" /></div>
+        <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน"
+            onkeydown="if(event.key==='Enter')doLogin()" /></div>
+        <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
+        <button class="btnp" onclick="doLogin()">เข้าสู่ระบบ</button>
+      </div>
+      <!-- Register Form -->
+      <div id="fReg" style="display:none">
+        <div class="row2">
+          <div class="fg"><label>ชื่อ</label><input type="text" id="rFirst" placeholder="ชื่อ" /></div>
+          <div class="fg"><label>นามสกุล</label><input type="text" id="rLast" placeholder="นามสกุล" /></div>
+        </div>
+        <div class="fg"><label>Gmail</label><input type="email" id="rEmail" placeholder="example@gmail.com" /></div>
+        <div class="fg"><label>Password</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร" />
+        </div>
+        <button class="btnp" onclick="doRegister()">สมัครสมาชิก</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ADMIN APP -->
-<div id="adminApp">
-  <div class="sidebar">
-    <div class="sb-logo"><h1>&#127961;&#65039; ResolveNow</h1><p>Smart Dispatcher</p></div>
-    <div class="sb-nav">
-      <div class="sb-item on" onclick="showPage('dashboard')"><span>&#128200;</span> Dashboard</div>
-      <div class="sb-item"    onclick="showPage('queue')"><span>&#128203;</span> รายการทั้งหมด</div>
-      <div class="sb-item"    onclick="showPage('techs')"><span>&#128295;</span> สถานะทีมช่าง</div>
-    </div>
-    <div class="sb-logout"><button onclick="doLogout()">&#10148;&#65039; ออกจากระบบ</button></div>
-  </div>
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title"><h2 id="pageTitle">Smart Dispatcher Dashboard</h2><p>จัดการและอนุมัติงานด้วย AI</p></div>
-      <div class="topbar-user"><div class="uav" id="adminAv">A</div><div><div class="uname" id="adminName">Admin</div><div class="ustatus">&#9679; ONLINE</div></div></div>
-    </div>
-    <div class="content">
-      <div class="stat-grid">
-        <div class="scard red"><div class="slabel">งานด่วนมาก</div><div class="sval" id="sUrgent">0</div></div>
-        <div class="scard or"><div class="slabel">งานด่วน</div><div class="sval" id="sMed">0</div></div>
-        <div class="scard blue"><div class="slabel">งานปกติ</div><div class="sval" id="sNorm">0</div></div>
-        <div class="scard gray"><div class="slabel">ช่างพร้อม</div><div class="sval" id="sTR" style="color:var(--g)">0</div><div style="font-size:11px;color:var(--mu)" id="sTT"></div></div>
-        <div class="scard white"><div class="slabel">ยอดวันนี้</div><div class="sval" id="sTD" style="color:var(--p)">0</div></div>
+  <!-- ── ADMIN APP ──────────────────────────────────────────── -->
+  <div id="adminApp">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-logo">
+        <h1>&#127961;&#65039; ResolveNow</h1>
+        <p>Smart Dispatcher</p>
       </div>
+      <div class="sb-nav">
+        <div class="sb-item on" onclick="showPage('dashboard')"><span>&#128200;</span> Dashboard</div>
+        <div class="sb-item" onclick="showPage('queue')"><span>&#128203;</span> รายการทั้งหมด</div>
+        <div class="sb-item" onclick="showPage('techs')"><span>&#128295;</span> สถานะทีมช่าง</div>
+      </div>
+      <div class="sb-logout"><button onclick="doLogout()">&#10148;&#65039; ออกจากระบบ</button></div>
+    </div>
 
-      <div id="pageDashboard">
-        <div class="dash-grid">
+    <!-- Main content -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">
+          <h2 id="pageTitle">Smart Dispatcher Dashboard</h2>
+          <p>จัดการและอนุมัติงานด้วย AI</p>
+        </div>
+        <div class="topbar-user">
+          <div class="uav" id="adminAv">A</div>
           <div>
-            <div class="panel">
-              <div class="panel-head"><h3>&#128203; SMART QUEUE — รอการอนุมัติ</h3><div class="live-badge"><div class="live-dot"></div>Real-time</div></div>
-              <div style="overflow-x:auto"><table class="queue-table">
-                <thead><tr><th>TICKET</th><th>ระดับ</th><th>รายละเอียด</th><th>จัดการ</th></tr></thead>
-                <tbody id="queueBody"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody>
-              </table></div>
+            <div class="uname" id="adminName">Admin</div>
+            <div class="ustatus">&#9679; ONLINE</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+          <div class="scard red">
+            <div class="slabel">งานด่วนมาก</div>
+            <div class="sval" id="sUrgent">0</div>
+          </div>
+          <div class="scard or">
+            <div class="slabel">งานด่วน</div>
+            <div class="sval" id="sMed">0</div>
+          </div>
+          <div class="scard blue">
+            <div class="slabel">งานปกติ</div>
+            <div class="sval" id="sNorm">0</div>
+          </div>
+          <div class="scard gray">
+            <div class="slabel">ช่างพร้อม</div>
+            <div class="sval" id="sTR" style="color:var(--g)">0</div>
+            <div style="font-size:11px;color:var(--mu)" id="sTT"></div>
+          </div>
+          <div class="scard white">
+            <div class="slabel">ยอดวันนี้</div>
+            <div class="sval" id="sTD" style="color:var(--p)">0</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="pageDashboard">
+          <div class="dash-grid">
+            <div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>&#128203; SMART QUEUE — รอการอนุมัติ</h3>
+                  <div class="live-badge">
+                    <div class="live-dot"></div>Real-time
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="queue-table">
+                    <thead>
+                      <tr>
+                        <th>TICKET</th>
+                        <th>ระดับ</th>
+                        <th>รายละเอียด</th>
+                        <th>จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody id="queueBody">
+                      <tr>
+                        <td colspan="4" class="empty">กำลังโหลด...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="right-col">
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>&#128200; ภาพรวมงาน</h3>
+                </div>
+                <div class="pie-wrap">
+                  <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140"
+                      height="140"></canvas></div>
+                  <div class="pie-legend" id="pieLegend"></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>&#128295; สถานะช่าง</h3><span style="font-size:11px;font-weight:600;color:var(--g)">LIVE</span>
+                </div>
+                <div class="tech-list" id="techStatusList"></div>
+              </div>
             </div>
           </div>
-          <div class="right-col">
-            <div class="panel"><div class="panel-head"><h3>&#128200; ภาพรวมงาน</h3></div>
-              <div class="pie-wrap"><div style="display:flex;justify-content:center"><canvas id="pieChart" width="140" height="140"></canvas></div><div class="pie-legend" id="pieLegend"></div></div>
+        </div>
+
+        <!-- All Tickets Page -->
+        <div id="pageQueue" style="display:none">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>&#128203; Ticket ทั้งหมด</h3>
             </div>
-            <div class="panel"><div class="panel-head"><h3>&#128295; สถานะช่าง</h3><span style="font-size:11px;font-weight:600;color:var(--g)">LIVE</span></div>
-              <div class="tech-list" id="techStatusList"></div>
+            <div style="overflow-x:auto">
+              <table class="queue-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>ผู้แจ้ง</th>
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                    <th>Priority</th>
+                    <th>สถานะ</th>
+                    <th>ช่าง</th>
+                    <th>อัปเดต</th>
+                    <th>วันที่</th>
+                  </tr>
+                </thead>
+                <tbody id="allBody">
+                  <tr>
+                    <td colspan="9" class="empty">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      </div>
 
-      <div id="pageQueue" style="display:none">
-        <div class="panel"><div class="panel-head"><h3>&#128203; Ticket ทั้งหมด</h3></div>
-          <div style="overflow-x:auto"><table class="queue-table">
-            <thead><tr><th>ID</th><th>ผู้แจ้ง</th><th>ประเภท</th><th>รายละเอียด</th><th>Priority</th><th>สถานะ</th><th>ช่าง</th><th>อัปเดต</th><th>วันที่</th></tr></thead>
-            <tbody id="allBody"><tr><td colspan="9" class="empty">กำลังโหลด...</td></tr></tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <div id="pageTechs" style="display:none">
-        <div class="panel"><div class="panel-head"><h3>&#128295; ทีมช่างทั้งหมด 7 แผนก</h3></div>
-          <div id="techFullList" style="padding:16px"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- NON-ADMIN APP -->
-<div id="normalApp">
-  <header class="nheader">
-    <div class="nlogo">&#127961;&#65039; ResolveNow</div>
-    <div class="nuinfo">
-      <div class="nav2" id="hAv">?</div>
-      <div><div id="hName" style="font-weight:600;font-size:13px"></div><div id="hRole" class="rbadge"></div></div>
-      <button class="hbtn" onclick="openChPw()">&#128274;</button>
-      <button class="hbtn" onclick="doLogout()">ออก</button>
-    </div>
-  </header>
-  <div class="nwrap">
-    <div class="nstats">
-      <div class="nsc"><div class="sl">ทั้งหมด</div><div class="sv bv" id="stT">0</div></div>
-      <div class="nsc"><div class="sl">รอ</div><div class="sv yv" id="stP">0</div></div>
-      <div class="nsc"><div class="sl">กำลังซ่อม</div><div class="sv bv" id="stI">0</div></div>
-      <div class="nsc"><div class="sl">เสร็จ</div><div class="sv gv" id="stD">0</div></div>
-    </div>
-
-    <!-- CITIZEN -->
-    <div id="secCitizen" style="display:none">
-      <div class="ncard">
-        <h2>&#128221; แจ้งเรื่องร้องเรียนใหม่</h2>
-        <div style="margin-bottom:14px">
-          <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:10px">1. ประเภทปัญหาที่พบ <span style="color:var(--r)">*</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="catGrid">
-            <div class="catbox" data-val="Road"        onclick="toggleCat(this)"><span class="caticon">&#128763;</span> ถนน/ทางเท้า</div>
-            <div class="catbox" data-val="Water"       onclick="toggleCat(this)"><span class="caticon">&#128167;</span> ท่อแตก/น้ำไม่ไหล</div>
-            <div class="catbox" data-val="Electricity" onclick="toggleCat(this)"><span class="caticon">&#128161;</span> ไฟฟ้าสาธารณะดับ</div>
-            <div class="catbox" data-val="Garbage"     onclick="toggleCat(this)"><span class="caticon">&#128465;</span> ขยะตกค้าง</div>
-            <div class="catbox" data-val="Animal"      onclick="toggleCat(this)"><span class="caticon">&#128054;</span> สัตว์มีพิษ/จรจัด</div>
-            <div class="catbox" data-val="Tree"        onclick="toggleCat(this)"><span class="caticon">&#127807;</span> กิ่งไม้วางทาง</div>
-            <div class="catbox" data-val="Hazard"      onclick="toggleCat(this)" style="grid-column:1/-1"><span class="caticon">&#128680;</span> เหตุระเบิด/เพลิง/ภัยพิบัติ</div>
+        <!-- Technician Status Page -->
+        <div id="pageTechs" style="display:none">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>&#128295; ทีมช่างทั้งหมด 7 แผนก</h3>
+            </div>
+            <div id="techFullList" style="padding:16px"></div>
           </div>
-          <div class="ebox" id="catErr" style="margin-top:6px">กรุณาเลือกประเภทปัญหา</div>
         </div>
-        <div style="margin-bottom:14px">
-          <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:10px">2. ระดับความเร่งด่วน <span style="color:var(--r)">*</span></div>
-          <div style="display:flex;gap:8px">
-            <div class="urgbox urgred"   data-val="urgent" onclick="toggleUrg(this)">&#9889; ด่วนมาก</div>
-            <div class="urgbox urgamber" data-val="medium" onclick="toggleUrg(this)">&#9201;&#65039; ด่วน</div>
-            <div class="urgbox urgblue"  data-val="normal" onclick="toggleUrg(this)">&#128309; ปกติ</div>
+      </div><!-- /content -->
+    </div><!-- /main -->
+  </div><!-- /adminApp -->
+
+  <!-- ── NON-ADMIN APP ──────────────────────────────────────── -->
+  <div id="normalApp">
+    <header class="nheader">
+      <div class="nlogo">&#127961;&#65039; ResolveNow</div>
+      <div class="nuinfo">
+        <div class="nav2" id="hAv">?</div>
+        <div>
+          <div id="hName" style="font-weight:600;font-size:13px"></div>
+          <div id="hRole" class="rbadge"></div>
+        </div>
+        <button class="hbtn" onclick="openChPw()">&#128274;</button>
+        <button class="hbtn" onclick="doLogout()">ออก</button>
+      </div>
+    </header>
+
+    <div class="nwrap">
+      <!-- Mini stat bar -->
+      <div class="nstats">
+        <div class="nsc">
+          <div class="sl">ทั้งหมด</div>
+          <div class="sv bv" id="stT">0</div>
+        </div>
+        <div class="nsc">
+          <div class="sl">รอ</div>
+          <div class="sv yv" id="stP">0</div>
+        </div>
+        <div class="nsc">
+          <div class="sl">กำลังซ่อม</div>
+          <div class="sv bv" id="stI">0</div>
+        </div>
+        <div class="nsc">
+          <div class="sl">เสร็จ</div>
+          <div class="sv gv" id="stD">0</div>
+        </div>
+      </div>
+
+      <!-- ── Citizen Section ── -->
+      <div id="secCitizen" style="display:none">
+        <div class="ncard">
+          <h2>&#128221; แจ้งเรื่องร้องเรียนใหม่</h2>
+
+          <!-- 1. Category -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:10px">1. ประเภทปัญหาที่พบ <span
+                style="color:var(--r)">*</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="catGrid">
+              <div class="catbox" data-val="Road" onclick="toggleCat(this)"><span class="caticon">&#128763;</span>
+                ถนน/ทางเท้า</div>
+              <div class="catbox" data-val="Water" onclick="toggleCat(this)"><span class="caticon">&#128167;</span>
+                ท่อน้ำแตก/น้ำไม่ไหล</div>
+              <div class="catbox" data-val="Electricity" onclick="toggleCat(this)"><span
+                  class="caticon">&#128161;</span> ไฟฟ้า</div>
+              <div class="catbox" data-val="Garbage" onclick="toggleCat(this)"><span class="caticon">&#128465;</span>
+                ขยะตกค้าง</div>
+              <div class="catbox" data-val="Animal" onclick="toggleCat(this)"><span class="caticon">&#128054;</span>
+                สัตว์มีพิษ</div>
+              <div class="catbox" data-val="Tree" onclick="toggleCat(this)"><span class="caticon">&#127807;</span>
+                สิ่งกีดขวางทาง</div>
+              <div class="catbox" data-val="Hazard" onclick="toggleCat(this)" style="grid-column:1/-1"><span
+                  class="caticon">&#128680;</span> เหตุระเบิด/เพลิง/ภัยพิบัติ</div>
+            </div>
+            <div class="ebox" id="catErr" style="margin-top:6px">กรุณาเลือกประเภทปัญหา</div>
           </div>
-          <div class="ebox" id="urgErr" style="margin-top:6px">กรุณาเลือกระดับความเร่งด่วน</div>
+
+          <!-- 2. Urgency -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:10px">2. ระดับความเร่งด่วน <span
+                style="color:var(--r)">*</span></div>
+            <div style="display:flex;gap:8px">
+              <div class="urgbox urgred" data-val="urgent" onclick="toggleUrg(this)">&#9889; ด่วนมาก</div>
+              <div class="urgbox urgamber" data-val="medium" onclick="toggleUrg(this)">&#9201;&#65039; ด่วน</div>
+              <div class="urgbox urgblue" data-val="normal" onclick="toggleUrg(this)">&#128309; ปกติ</div>
+            </div>
+            <div class="ebox" id="urgErr" style="margin-top:6px">กรุณาเลือกระดับความเร่งด่วน</div>
+          </div>
+
+          <!-- 3. Location -->
+          <div style="margin-bottom:12px">
+            <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">3. สถานที่ <span
+                style="color:var(--r)">*</span></label>
+            <input type="text" id="tLoc" placeholder="เช่น ถนนสุขุมวิท ซอย 5"
+              style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit" />
+          </div>
+
+          <!-- 4. Description -->
+          <div style="margin-bottom:12px">
+            <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">4. รายละเอียด
+              <span style="color:var(--r)">*</span></label>
+            <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..."
+              style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit;resize:vertical;min-height:76px"></textarea>
+          </div>
+
+          <!-- 5. Image -->
+          <div style="margin-bottom:4px">
+            <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">5. รูปภาพ <span
+                style="font-weight:400;color:var(--mu)">(บังคับ)</span></label>
+            <label class="uarea">
+              <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)" />
+              <div id="cImgPrev">
+                <div style="font-size:26px;margin-bottom:4px">&#128247;</div>
+                <div>คลิกเพื่อแนบรูปภาพ</div>
+                <div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>
+              </div>
+            </label>
+          </div>
+
+          <button class="btns" onclick="submitTicket()">&#128228; ส่งเรื่องร้องเรียน</button>
         </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">3. สถานที่ <span style="color:var(--r)">*</span></label>
-          <input type="text" id="tLoc" placeholder="เช่น ถนนสุขุมวิท ซอย 5" style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit"/>
+
+        <div class="ncard">
+          <h2>&#128203; เรื่องร้องเรียนของฉัน</h2>
+          <div id="citizenCards">
+            <div class="empty">ยังไม่มีเรื่องร้องเรียน</div>
+          </div>
         </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">4. รายละเอียด <span style="color:var(--r)">*</span></label>
-          <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..." style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit;resize:vertical;min-height:76px"></textarea>
+      </div><!-- /secCitizen -->
+
+      <!-- ── Technician Section ── -->
+      <div id="secTech" style="display:none">
+        <div style="font-size:13px;color:var(--mu);margin-bottom:12px;font-weight:500" id="techSub"></div>
+        <!-- Help Requests Banner -->
+        <div id="helpBanner"
+          style="display:none;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:14px;font-weight:700;color:#92400e">&#128204; คำขอความช่วยเหลือจากเพื่อนช่าง</div>
+            <span id="helpCount"
+              style="background:#fed7aa;color:#9a3412;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px">0</span>
+          </div>
+          <div id="helpList"></div>
         </div>
-        <div style="margin-bottom:4px">
-          <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">5. รูปภาพ <span style="font-weight:400;color:var(--mu)">(บังคับ)</span></label>
-          <label class="uarea"><input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)"/>
-            <div id="cImgPrev"><div style="font-size:26px;margin-bottom:4px">&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div></div>
-          </label>
-        </div>
-        <button class="btns" onclick="submitTicket()">&#128228; ส่งเรื่องร้องเรียน</button>
+        <div id="techCards"></div>
+      </div><!-- /secTech -->
+    </div><!-- /nwrap -->
+  </div><!-- /normalApp -->
+
+  <!-- ── MODAL: Change Password ─────────────────────────────── -->
+  <div class="mo" id="mChPw">
+    <div class="mb">
+      <button class="mc" onclick="closeChPw()">&#10005;</button>
+      <h3>&#128274; เปลี่ยนรหัสผ่าน</h3>
+      <div class="ebox" id="chErr"></div>
+      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" /></div>
+      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" /></div>
+      <div class="fg"><label>ยืนยัน</label><input type="password" id="conP" /></div>
+      <button class="btnp" onclick="doChPw()">บันทึก</button>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Request Help ────────────────────────────────── -->
+  <div class="mo" id="mHelp">
+    <div class="mb">
+      <button class="mc" onclick="ge('mHelp').classList.remove('on')">&#10005;</button>
+      <h3>&#128204; ขอความช่วยเหลือจากช่างแผนกอื่น</h3>
+      <div style="font-size:13px;color:var(--mu);margin-bottom:14px" id="helpTicketInfo"></div>
+      <div class="fg">
+        <label>แผนกที่ต้องการ (ไม่บังคับ)</label>
+        <select id="helpTargetDept">
+          <option value="">— ทุกแผนก —</option>
+          <option value="Road">&#128763; ถนน/ทางเท้า</option>
+          <option value="Water">&#128167; ท่อแตก/น้ำ</option>
+          <option value="Electricity">&#128161; ไฟฟ้า</option>
+          <option value="Garbage">&#128465; ขยะ</option>
+          <option value="Animal">&#128054; สัตว์</option>
+          <option value="Tree">&#127807; กิ่งไม้</option>
+          <option value="Hazard">&#128680; ภัยพิบัติ</option>
+        </select>
       </div>
-      <div class="ncard"><h2>&#128203; เรื่องร้องเรียนของฉัน</h2><div id="citizenCards"><div class="empty">ยังไม่มีเรื่องร้องเรียน</div></div></div>
-    </div>
-
-    <!-- TECH -->
-    <div id="secTech" style="display:none">
-      <div style="font-size:13px;color:var(--mu);margin-bottom:12px;font-weight:500" id="techSub"></div>
-      <!-- Help Requests Banner -->
-      <div id="helpBanner" style="display:none;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:14px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:14px;font-weight:700;color:#92400e">&#128204; คำขอความช่วยเหลือจากเพื่อนช่าง</div>
-          <span id="helpCount" style="background:#fed7aa;color:#9a3412;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px">0</span>
-        </div>
-        <div id="helpList"></div>
+      <div class="fg">
+        <label>ข้อความถึงช่างที่จะมาช่วย</label>
+        <textarea id="helpMsg" placeholder="อธิบายสิ่งที่ต้องการความช่วยเหลือ..."
+          style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;font-family:inherit;resize:none;height:80px;background:#fafafa"></textarea>
       </div>
-      <div id="techCards"></div>
+      <button class="btnp" onclick="submitHelpRequest()">&#128204; ส่งคำขอช่วยเหลือ</button>
     </div>
   </div>
-</div>
 
-<!-- MODAL: เปลี่ยนรหัสผ่าน -->
-<div class="mo" id="mChPw">
-  <div class="mb">
-    <button class="mc" onclick="closeChPw()">&#10005;</button>
-    <h3>&#128274; เปลี่ยนรหัสผ่าน</h3>
-    <div class="ebox" id="chErr"></div>
-    <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP"/></div>
-    <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"/></div>
-    <div class="fg"><label>ยืนยัน</label><input type="password" id="conP"/></div>
-    <button class="btnp" onclick="doChPw()">บันทึก</button>
-  </div>
-</div>
-
-<!-- MODAL: ขอความช่วยเหลือ -->
-<div class="mo" id="mHelp">
-  <div class="mb">
-    <button class="mc" onclick="ge('mHelp').classList.remove('on')">&#10005;</button>
-    <h3>&#128204; ขอความช่วยเหลือจากช่างแผนกอื่น</h3>
-    <div style="font-size:13px;color:var(--mu);margin-bottom:14px" id="helpTicketInfo"></div>
-    <div class="fg">
-      <label>แผนกที่ต้องการ (ไม่บังคับ)</label>
-      <select id="helpTargetDept">
-        <option value="">— ทุกแผนก —</option>
-        <option value="Road">&#128763; ถนน/ทางเท้า</option>
-        <option value="Water">&#128167; ท่อแตก/น้ำ</option>
-        <option value="Electricity">&#128161; ไฟฟ้า</option>
-        <option value="Garbage">&#128465; ขยะ</option>
-        <option value="Animal">&#128054; สัตว์</option>
-        <option value="Tree">&#127807; กิ่งไม้</option>
-        <option value="Hazard">&#128680; ภัยพิบัติ</option>
-      </select>
+  <!-- ── MODAL: View Image ──────────────────────────────────── -->
+  <div class="mo" id="mImg" onclick="closeMImg()">
+    <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
+      <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
+      <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:12px" src="" alt="" />
+      <p style="color:rgba(255,255,255,.6);font-size:12px;margin-top:8px">คลิกพื้นหลังเพื่อปิด</p>
     </div>
-    <div class="fg"><label>ข้อความถึงช่างที่จะมาช่วย</label><textarea id="helpMsg" placeholder="อธิบายสิ่งที่ต้องการความช่วยเหลือ..." style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;font-family:inherit;resize:none;height:80px;background:#fafafa"></textarea></div>
-    <button class="btnp" onclick="submitHelpRequest()">&#128204; ส่งคำขอช่วยเหลือ</button>
   </div>
-</div>
 
-<!-- MODAL: ดูรูป -->
-<div class="mo" id="mImg" onclick="closeMImg()">
-  <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
-    <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
-    <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:12px" src="" alt=""/>
-    <p style="color:rgba(255,255,255,.6);font-size:12px;margin-top:8px">คลิกพื้นหลังเพื่อปิด</p>
-  </div>
-</div>
+  <!-- Hidden file input for tech uploads -->
+  <input type="file" id="techFile" accept="image/*" style="display:none" />
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
-<input type="file" id="techFile" accept="image/*" style="display:none"/>
-<div class="toast" id="toast"></div>
+  <!-- ── JavaScript Modules (load order matters) ────────────── -->
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/citizen.js"></script>
+  <script src="/js/technician.js"></script>
+  <script src="/js/app.js"></script>
 
-<script>
-var CU = null;
-var upId = null, upType = null;
-var helpTicketId = null;
-var currentPage = 'dashboard';
-
-var DEPT = {
-  Road:'ถนน/ทางเท้า', Water:'ท่อแตก/น้ำ', Electricity:'ไฟฟ้า',
-  Garbage:'ขยะ', Animal:'สัตว์', Tree:'กิ่งไม้', Hazard:'ภัยพิบัติ'
-};
-var DEPT_ICON = {
-  Road:'&#128763;', Water:'&#128167;', Electricity:'&#128161;',
-  Garbage:'&#128465;', Animal:'&#128054;', Tree:'&#127807;', Hazard:'&#128680;'
-};
-
-function ge(id){ return document.getElementById(id); }
-function showToast(msg,isErr){ var t=ge('toast'); t.textContent=msg; t.className='toast on'+(isErr?' err':''); setTimeout(function(){ t.className='toast'; },3000); }
-function showE(id,msg){ ge(id).textContent=msg; ge(id).classList.add('on'); }
-function hideE(id){ ge(id).classList.remove('on'); }
-function stTH(s){ var m={pending:'รอดำเนินการ',assigned:'รับงานแล้ว',in_progress:'กำลังดำเนินการ',completed:'เสร็จสิ้น',rejected:'ปฏิเสธ'}; return m[s]||s; }
-function pLabel(s){ if(s>=70)return '<span style="font-weight:700;font-size:11px;color:var(--r)">&#128308; '+s+'</span>'; if(s>=40)return '<span style="font-weight:700;font-size:11px;color:var(--w)">&#128992; '+s+'</span>'; return '<span style="font-weight:700;font-size:11px;color:var(--g)">&#128994; '+s+'</span>'; }
-
-function switchTab(t){ hideE('authErr'); ge('fLogin').style.display=t==='login'?'block':'none'; ge('fReg').style.display=t==='reg'?'block':'none'; ge('tabLogin').className='tab'+(t==='login'?' on':''); ge('tabReg').className='tab'+(t==='reg'?' on':''); }
-
-/* ── AUTH ── */
-async function doRegister(){
-  hideE('authErr');
-  var body={firstName:ge('rFirst').value.trim(),lastName:ge('rLast').value.trim(),email:ge('rEmail').value.trim(),password:ge('rPass').value};
-  if(!body.firstName||!body.lastName||!body.email||!body.password) return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
-  try{ var res=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var data=await res.json(); if(!res.ok)return showE('authErr',data.error||'เกิดข้อผิดพลาด'); CU=data.user; enterApp(); }catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ'); }
-}
-async function doLogin(){
-  hideE('authErr');
-  var email=ge('lEmail').value.trim(), pass=ge('lPass').value;
-  if(!email||!pass) return showE('authErr','กรุณากรอกข้อมูลให้ครบ');
-  try{ var res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,remember:ge('rem').checked})}); var data=await res.json(); if(!res.ok)return showE('authErr',data.error||'เกิดข้อผิดพลาด'); CU=data.user; enterApp(); }catch(e){ showE('authErr','ไม่สามารถเชื่อมต่อ'); }
-}
-async function doLogout(){ await fetch('/api/auth/logout',{method:'POST'}); CU=null; ge('adminApp').classList.remove('on'); ge('normalApp').classList.remove('on'); ge('authPage').style.display='flex'; switchTab('login'); }
-
-function enterApp(){
-  ge('authPage').style.display='none';
-  if(CU.role==='admin'){
-    ge('adminApp').classList.add('on');
-    ge('adminAv').textContent=(CU.firstName[0]+CU.lastName[0]).toUpperCase();
-    ge('adminName').textContent=CU.firstName+' '+CU.lastName;
-    loadAdmin(); setInterval(loadAdmin,6000);
-  } else {
-    ge('normalApp').classList.add('on');
-    ge('hAv').textContent=(CU.firstName[0]+CU.lastName[0]).toUpperCase();
-    ge('hName').textContent=CU.firstName+' '+CU.lastName;
-    var roleLabel = CU.role==='technician' ? 'ช่าง '+(DEPT[CU.specialty]||'') : 'ประชาชน';
-    ge('hRole').textContent = roleLabel;
-    ge('secCitizen').style.display=CU.role==='citizen'?'block':'none';
-    ge('secTech').style.display=CU.role==='technician'?'block':'none';
-    loadTickets(); setInterval(loadTickets,8000);
-    if(CU.role==='technician'){ loadHelpRequests(); setInterval(loadHelpRequests,8000); }
-  }
-}
-
-/* ── ADMIN PAGES ── */
-function showPage(page){
-  currentPage=page;
-  ge('pageDashboard').style.display=page==='dashboard'?'block':'none';
-  ge('pageQueue').style.display=page==='queue'?'block':'none';
-  ge('pageTechs').style.display=page==='techs'?'block':'none';
-  var titles={dashboard:'Smart Dispatcher Dashboard',queue:'รายการ Ticket ทั้งหมด',techs:'สถานะทีมช่าง 7 แผนก'};
-  ge('pageTitle').textContent=titles[page];
-  document.querySelectorAll('.sb-item').forEach(function(el,i){ el.classList.remove('on'); });
-  var idx={dashboard:0,queue:1,techs:2}[page];
-  document.querySelectorAll('.sb-item')[idx].classList.add('on');
-}
-
-async function loadAdmin(){
-  try{
-    var r1=await fetch('/api/tickets'); var r2=await fetch('/api/technicians');
-    var tks=await r1.json(); var techs=await r2.json();
-    var urg=tks.filter(function(t){return t.priorityScore>=70&&t.status!=='completed'&&t.status!=='rejected';}).length;
-    var med=tks.filter(function(t){return t.priorityScore>=40&&t.priorityScore<70&&t.status!=='completed'&&t.status!=='rejected';}).length;
-    var nor=tks.filter(function(t){return t.priorityScore<40&&t.status!=='completed'&&t.status!=='rejected';}).length;
-    var rdy=techs.filter(function(t){return t.statusLabel==='READY';}).length;
-    ge('sUrgent').textContent=urg; ge('sMed').textContent=med; ge('sNorm').textContent=nor;
-    ge('sTR').textContent=rdy; ge('sTT').textContent='/ '+techs.length; ge('sTD').textContent=tks.length;
-    var pend=tks.filter(function(t){return t.status==='pending';}).length;
-    var inpg=tks.filter(function(t){return t.status==='in_progress'||t.status==='assigned';}).length;
-    var done=tks.filter(function(t){return t.status==='completed';}).length;
-    drawPie(pend,inpg,done);
-    renderTechStatus(techs);
-    var pendTks=tks.filter(function(t){return t.status==='pending';});
-    pendTks.sort(function(a,b){return b.priorityScore-a.priorityScore;});
-    renderQueue(pendTks,techs);
-    if(currentPage==='queue') renderAllQueue(tks);
-    if(currentPage==='techs') renderTechFull(techs);
-  }catch(e){console.error(e);}
-}
-
-function drawPie(p,i,d){
-  var canvas=ge('pieChart'); var ctx=canvas.getContext('2d');
-  var total=p+i+d||1;
-  var data=[{val:p,color:'#e53e3e',label:'รอ ('+p+')'},{val:i,color:'#ea580c',label:'กำลังซ่อม ('+i+')'},{val:d,color:'#1a56db',label:'เสร็จ ('+d+')'}];
-  ctx.clearRect(0,0,140,140);
-  var start=-Math.PI/2, cx=70, cy=70, r=60;
-  for(var k=0;k<data.length;k++){ var sl=(data[k].val/total)*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+sl); ctx.closePath(); ctx.fillStyle=data[k].color; ctx.fill(); start+=sl; }
-  ctx.beginPath(); ctx.arc(cx,cy,30,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-  var lg=ge('pieLegend'); lg.innerHTML='';
-  for(var j=0;j<data.length;j++) lg.innerHTML+='<div class="pie-item"><div class="pie-dot" style="background:'+data[j].color+'"></div><span>'+data[j].label+'</span></div>';
-}
-
-function renderTechStatus(techs){
-  var el=ge('techStatusList');
-  if(!techs.length){el.innerHTML='<div class="empty">ไม่มีช่าง</div>';return;}
-  var h='';
-  for(var i=0;i<techs.length;i++){
-    var t=techs[i];
-    h+='<div class="tech-item"><div class="tech-row"><div><div class="tech-name">'+(DEPT_ICON[t.specialty]||'')+(DEPT[t.specialty]||t.specialty)+'</div><div class="tech-spec">'+t.name+'</div></div><span class="spill '+t.statusLabel+'">'+t.statusLabel+'</span></div>';
-    h+='<div class="prog-bar"><div class="prog-fill '+t.statusLabel+'" style="width:'+t.capacity+'%"></div></div>';
-    h+='<div class="prog-lbl">LOAD '+t.capacity+'%</div></div>';
-  }
-  el.innerHTML=h;
-}
-
-function renderQueue(tks,techs){
-  var el=ge('queueBody');
-  if(!tks.length){el.innerHTML='<tr><td colspan="4" class="empty">ไม่มีงานรอ &#127881;</td></tr>';return;}
-  var h='';
-  for(var i=0;i<tks.length;i++){
-    var t=tks[i];
-    var pc=t.priorityScore>=70?'urgent':t.priorityScore>=40?'medium':'normal';
-    var pt=t.priorityScore>=70?'ด่วนมาก':t.priorityScore>=40?'ด่วน':'ปกติ';
-    var opts='<option value="">-- เลือกช่าง --</option>';
-    for(var j=0;j<techs.length;j++){
-      var tc=techs[j];
-      var match=tc.specialty===t.category;
-      opts+='<option value="'+tc.id+'"'+(tc.statusLabel==='FULL'?' disabled':'')+'>'+( match?'&#11088; ':'' )+(DEPT_ICON[tc.specialty]||'')+tc.name+' - '+tc.statusLabel+'</option>';
-    }
-    h+='<tr>';
-    h+='<td><strong>#'+t.ticketId+'</strong><br/><span style="font-size:11px;color:var(--mu)">'+t.citizenName+'</span></td>';
-    h+='<td><span class="pbadge '+pc+'">'+pt+'</span><br/>'+pLabel(t.priorityScore)+'</td>';
-    h+='<td><div style="font-weight:600">'+(DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+' - '+t.location+'</div><div style="font-size:12px;color:#4a5568">'+t.description+'</div>'+(t.citizenImage?'<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูป\')" style="width:60px;height:40px;object-fit:cover;border-radius:6px;margin-top:4px;cursor:pointer"/>':'')+'</td>';
-    h+='<td><div class="ai-lbl">&#129302; AI RECOMMEND</div><select class="tech-sel" id="tsel_'+t.ticketId+'">'+opts+'</select><div style="display:flex;gap:6px;margin-top:8px"><button class="btn-approve" data-id="'+t.ticketId+'" onclick="approveTicket(this)">APPROVE</button><button class="btn-rej" data-id="'+t.ticketId+'" onclick="rejectTicket(this)">REJECT</button></div></td>';
-    h+='</tr>';
-  }
-  el.innerHTML=h;
-  for(var k=0;k<tks.length;k++) autoSelect(tks[k],techs);
-}
-
-function autoSelect(ticket,techs){
-  var sel=ge('tsel_'+ticket.ticketId); if(!sel)return;
-  var spec=techs.filter(function(t){return t.specialty===ticket.category&&t.statusLabel!=='FULL';});
-  var pool=spec.length?spec:techs.filter(function(t){return t.statusLabel!=='FULL';});
-  if(!pool.length)return;
-  pool.sort(function(a,b){return a.activeJobs-b.activeJobs;});
-  sel.value=pool[0].id;
-}
-
-async function approveTicket(btn){
-  var id=btn.getAttribute('data-id'); var sel=ge('tsel_'+id);
-  if(!sel||!sel.value) return showToast('กรุณาเลือกช่างก่อน',true);
-  var res=await fetch('/api/tickets/'+id+'/assign',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({technicianId:sel.value})});
-  if(!res.ok){var d=await res.json();return showToast(d.error,true);}
-  showToast('Approve แล้ว!'); loadAdmin();
-}
-async function rejectTicket(btn){
-  await fetch('/api/tickets/'+btn.getAttribute('data-id')+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejected'})});
-  showToast('ปฏิเสธแล้ว',true); loadAdmin();
-}
-
-function renderAllQueue(tks){
-  var el=ge('allBody');
-  if(!tks.length){el.innerHTML='<tr><td colspan="9" class="empty">ยังไม่มี Ticket</td></tr>';return;}
-  tks.sort(function(a,b){return b.priorityScore-a.priorityScore;});
-  var h='';
-  for(var i=0;i<tks.length;i++){
-    var t=tks[i];
-    h+='<tr><td><strong>'+t.ticketId+'</strong></td><td>'+t.citizenName+'</td><td>'+(DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+'</td>';
-    h+='<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.description+'</td>';
-    h+='<td>'+pLabel(t.priorityScore)+'</td><td><span class="badge '+t.status+'">'+stTH(t.status)+'</span></td>';
-    h+='<td style="font-size:12px">'+(t.assignedName||'-')+'</td>';
-    h+='<td><select data-id="'+t.ticketId+'" onchange="adminChSt(this)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">';
-    ['pending','assigned','in_progress','completed','rejected'].forEach(function(s){ h+='<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+stTH(s)+'</option>'; });
-    h+='</select></td><td style="font-size:11px;color:var(--mu);white-space:nowrap">'+t.createdAt+'</td></tr>';
-  }
-  el.innerHTML=h;
-}
-
-function adminChSt(sel){ fetch('/api/tickets/'+sel.getAttribute('data-id')+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:sel.value})}).then(function(){showToast('อัปเดตแล้ว');loadAdmin();}); }
-
-function renderTechFull(techs){
-  var el=ge('techFullList');
-  var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">';
-  for(var i=0;i<techs.length;i++){
-    var t=techs[i];
-    h+='<div style="border:1px solid var(--bd);border-radius:12px;padding:16px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:20px">'+(DEPT_ICON[t.specialty]||'')+'</div><div style="font-size:14px;font-weight:700;margin-top:4px">'+(DEPT[t.specialty]||t.specialty)+'</div><div style="font-size:12px;color:var(--mu)">'+t.name+'</div></div><span class="spill '+t.statusLabel+'">'+t.statusLabel+'</span></div>';
-    h+='<div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill '+t.statusLabel+'" style="width:'+t.capacity+'%"></div></div>';
-    h+='<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mu)"><span>ค้าง: '+t.activeJobs+'</span><span>รวม: '+t.totalJobs+'</span></div></div>';
-  }
-  h+='</div>';
-  el.innerHTML=h;
-}
-
-/* ── LOAD TICKETS (non-admin) ── */
-async function loadTickets(){
-  try{
-    var res=await fetch('/api/tickets'); if(!res.ok)return;
-    var data=await res.json();
-    ge('stT').textContent=data.length;
-    ge('stP').textContent=data.filter(function(t){return t.status==='pending';}).length;
-    ge('stI').textContent=data.filter(function(t){return t.status==='in_progress';}).length;
-    ge('stD').textContent=data.filter(function(t){return t.status==='completed';}).length;
-    if(CU.role==='technician') renderTech(data);
-    else renderCitizen(data);
-  }catch(e){console.error(e);}
-}
-
-/* ── HELP REQUESTS ── */
-async function loadHelpRequests(){
-  try{
-    var res=await fetch('/api/help-requests'); if(!res.ok)return;
-    var helps=await res.json();
-    var open=helps.filter(function(h){return h.status==='open'&&h.requesterId!==CU.id;});
-    var banner=ge('helpBanner');
-    if(open.length){
-      banner.style.display='block';
-      ge('helpCount').textContent=open.length;
-      var h='';
-      for(var i=0;i<open.length;i++){
-        var hp=open[i];
-        h+='<div class="help-card">';
-        h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
-        h+='<div><div style="font-size:13px;font-weight:700">&#128204; '+hp.requesterName+' ('+( DEPT[hp.requesterDept]||hp.requesterDept)+') ขอความช่วยเหลือ</div>';
-        h+='<div style="font-size:12px;color:#4a5568;margin-top:2px">Ticket: '+hp.ticketId+' — '+(DEPT_ICON[hp.ticketCategory]||'')+' '+(DEPT[hp.ticketCategory]||hp.ticketCategory)+' ที่ '+hp.ticketLocation+'</div>';
-        if(hp.message) h+='<div style="font-size:12px;color:var(--mu);margin-top:2px">ข้อความ: '+hp.message+'</div>';
-        h+='</div></div>';
-        h+='<button class="btn-help-accept" data-id="'+hp.id+'" onclick="acceptHelp(this)">&#9989; รับงานช่วยเหลือ</button>';
-        h+='</div>';
-      }
-      ge('helpList').innerHTML=h;
-    } else {
-      banner.style.display='none';
-    }
-  }catch(e){}
-}
-
-async function acceptHelp(btn){
-  var id=btn.getAttribute('data-id');
-  var res=await fetch('/api/help-requests/'+id+'/accept',{method:'PUT',headers:{'Content-Type':'application/json'}});
-  var data=await res.json();
-  if(!res.ok) return showToast(data.error||'เกิดข้อผิดพลาด',true);
-  showToast('&#9989; รับงานช่วยเหลือแล้ว!');
-  loadHelpRequests(); loadTickets();
-}
-
-function openHelpModal(ticketId){
-  helpTicketId=ticketId;
-  ge('helpTicketInfo').textContent='Ticket: '+ticketId;
-  ge('helpMsg').value=''; ge('helpTargetDept').value='';
-  ge('mHelp').classList.add('on');
-}
-
-async function submitHelpRequest(){
-  if(!helpTicketId) return;
-  var msg=ge('helpMsg').value.trim();
-  var dept=ge('helpTargetDept').value;
-  var res=await fetch('/api/help-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticketId:helpTicketId,message:msg,targetDept:dept})});
-  var data=await res.json();
-  if(!res.ok) return showToast(data.error||'เกิดข้อผิดพลาด',true);
-  ge('mHelp').classList.remove('on');
-  showToast('&#128204; ส่งคำขอช่วยเหลือแล้ว!');
-  loadHelpRequests();
-}
-
-/* ── CITIZEN RENDER ── */
-function renderCitizen(data){
-  var el=ge('citizenCards');
-  if(!data.length){el.innerHTML='<div class="empty">ยังไม่มีเรื่องร้องเรียน</div>';return;}
-  var h='';
-  for(var i=0;i<data.length;i++){
-    var t=data[i]; var done=t.status==='completed';
-    h+='<div style="border:1.5px solid '+(done?'var(--g)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:10px">';
-    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
-    h+='<div><div style="font-size:11px;color:var(--mu);font-weight:600">'+t.ticketId+'</div>';
-    h+='<div style="font-size:14px;font-weight:700">'+(DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+' - '+t.location+'</div></div>';
-    h+='<span class="badge '+t.status+'">'+stTH(t.status)+'</span></div>';
-    h+='<div style="font-size:13px;color:#4a5568;margin-bottom:4px">'+t.description+'</div>';
-    h+='<div style="font-size:12px;color:var(--mu);margin-bottom:8px">'+t.createdAt+'</div>';
-    if(t.citizenImage) h+='<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูป\')" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;cursor:pointer"/>';
-    if(done&&(t.beforeImage||t.afterImage)){
-      h+='<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div style="display:flex;gap:8px">';
-      if(t.beforeImage) h+='<div style="flex:1;text-align:center"><img src="'+t.beforeImage+'" onclick="viewImg(this.src,\'ก่อน\')" style="width:100%;height:80px;object-fit:cover;border-radius:8px;cursor:pointer"/><div style="font-size:11px;color:#065f46;margin-top:3px;font-weight:600">ก่อน</div></div>';
-      if(t.afterImage)  h+='<div style="flex:1;text-align:center"><img src="'+t.afterImage+'"  onclick="viewImg(this.src,\'หลัง\')" style="width:100%;height:80px;object-fit:cover;border-radius:8px;cursor:pointer"/><div style="font-size:11px;color:#065f46;margin-top:3px;font-weight:600">หลัง</div></div>';
-      h+='</div></div>';
-    } else if(!done&&t.status!=='pending'&&t.status!=='rejected'&&t.beforeImage){
-      h+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px">&#128295; ช่างกำลังดำเนินการ</div><img src="'+t.beforeImage+'" onclick="viewImg(this.src,\'รูปปัญหา\')" style="width:100%;max-height:70px;object-fit:cover;border-radius:8px;cursor:pointer"/></div>';
-    }
-    h+='</div>';
-  }
-  el.innerHTML=h;
-}
-
-/* ── TECH RENDER ── */
-function renderTech(data){
-  var el=ge('techCards');
-  var active=data.filter(function(t){return t.status!=='completed'&&t.status!=='rejected';});
-  ge('techSub').textContent='แผนก: '+(DEPT_ICON[CU.specialty]||'')+' '+(DEPT[CU.specialty]||CU.specialty)+' | งานทั้งหมด '+data.length+' | ค้างอยู่ '+active.length;
-  if(!data.length){el.innerHTML='<div class="empty">ไม่มีงานในแผนกของคุณ</div>';return;}
-  var sorted=active.concat(data.filter(function(t){return t.status==='completed'||t.status==='rejected';}));
-  var h='';
-  for(var i=0;i<sorted.length;i++){
-    var t=sorted[i];
-    var urgent=t.priorityScore>=70;
-    var isDone=t.status==='completed'||t.status==='rejected';
-    var s1=t.status==='pending'?'active':'done';
-    var s2=t.status==='pending'?'idle':(t.status==='assigned'?'active':'done');
-    var s3=t.status==='in_progress'?'active':(t.status==='completed'?'done':'idle');
-
-    h+='<div class="tcard">';
-    h+='<div class="tchead"><div><div class="tcid">TICKET #'+t.ticketId+'</div><div class="tctitle">'+(DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+' - '+t.location+'</div></div>';
-    h+='<span class="badge '+(urgent?'urgent':'normal')+'">'+(urgent?'&#9889; เร่งด่วน':'ปกติ')+' '+pLabel(t.priorityScore)+'</span></div>';
-    h+='<div class="tcbody">';
-    h+='<div class="mrow"><span class="mi">&#9888;&#65039;</span><span>'+t.description+'</span></div>';
-    h+='<div class="mrow"><span class="mi">&#128205;</span><span>'+t.location+'</span></div>';
-    h+='<div class="mrow"><span class="mi">&#128100;</span><span>'+t.citizenName+'</span></div>';
-    h+='<div class="mrow" style="margin-bottom:12px"><span class="mi">&#128336;</span><span>'+t.createdAt+'</span></div>';
-    if(t.citizenImage) h+='<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:var(--mu);margin-bottom:4px">รูปจากผู้แจ้ง</div><img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;cursor:pointer"/></div>';
-
-    if(isDone){
-      var dc=t.status==='completed'?'#065f46':'#991b1b', db=t.status==='completed'?'#f0fdf4':'#fef2f2', dd=t.status==='completed'?'#bbf7d0':'#fecaca';
-      h+='<div style="background:'+db+';border:1px solid '+dd+';border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:600;color:'+dc+'">'+(t.status==='completed'?'&#9989; เสร็จสิ้น':'&#10060; ปฏิเสธ')+'</div>';
-      if(t.beforeImage||t.afterImage){
-        h+='<div class="irow" style="margin-top:10px">';
-        if(t.beforeImage) h+='<div class="islot has" onclick="viewImg(\''+t.beforeImage+'\',\'ก่อน\')"><img src="'+t.beforeImage+'"/><div class="ilbl">ก่อน</div></div>';
-        if(t.afterImage)  h+='<div class="islot has" onclick="viewImg(\''+t.afterImage+'\',\'หลัง\')"><img src="'+t.afterImage+'"/><div class="ilbl">หลัง</div></div>';
-        h+='</div>';
-      }
-    } else {
-      // STEP 1
-      h+='<div class="step"><div class="shead"><div class="snum '+s1+'">'+(s1==='done'?'&#10003;':'1')+'</div><div class="slbl">ข้อมูลการร้องเรียน</div><span class="sstat '+s1+'">'+(s1==='done'?'เสร็จ':'รอ')+'</span></div>';
-      if(t.status==='pending') h+='<div class="sbody"><p style="font-size:13px;color:#4a5568;margin-bottom:12px">กดรับงานเพื่อเริ่มลงพื้นที่</p><button class="btnaccept" data-id="'+t.ticketId+'" onclick="acceptJob(this)">&#128295; รับเรื่องและลงพื้นที่</button></div>';
-      h+='</div>';
-
-      // STEP 2
-      h+='<div class="step"><div class="shead"><div class="snum '+s2+'">'+(s2==='done'?'&#10003;':'2')+'</div><div class="slbl">ยืนยันการเข้าตรวจสอบ</div><span class="sstat '+s2+'">'+(s2==='done'?'เสร็จ':s2==='active'?'กำลังทำ':'รอ')+'</span></div>';
-      if(s2==='active'){
-        h+='<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปสภาพก่อนซ่อม</p>';
-        if(t.beforeImage) h+='<div class="islot has" style="display:block;margin-bottom:12px" data-id="'+t.ticketId+'" data-type="before" onclick="triggerUpload(this)"><img src="'+t.beforeImage+'" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/><div class="ilbl" style="color:var(--g)">&#9989; อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
-        else h+='<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="'+t.ticketId+'" data-type="before" onclick="triggerUpload(this)"><div style="font-size:28px">&#128247;</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
-        h+='<div style="margin-bottom:12px"><label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บันทึกเพิ่มเติม (ไม่บังคับ)</label><textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
-        // ปุ่มขอความช่วยเหลือ
-        h+='<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">&#128204; ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div><button class="btn-help" data-id="'+t.ticketId+'" onclick="openHelpModal(this.getAttribute(\'data-id\'))">&#128204; ขอความช่วยเหลือ</button></div>';
-        h+='<div style="display:flex;gap:8px"><button class="btnreject2" data-id="'+t.ticketId+'" onclick="rejectJob(this)">ปฏิเสธ</button><button class="btnconfirm" data-id="'+t.ticketId+'" onclick="startWork(this)">&#9989; ยืนยันเริ่มซ่อม</button></div></div>';
-      }
-      h+='</div>';
-
-      // STEP 3
-      h+='<div class="step"><div class="shead"><div class="snum '+s3+'">'+(s3==='done'?'&#10003;':'3')+'</div><div class="slbl">หลักฐานหลังการดำเนินการ</div><span class="sstat '+s3+'">'+(s3==='done'?'เสร็จ':s3==='active'?'กำลังทำ':'รอ')+'</span></div>';
-      if(s3==='active'){
-        h+='<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปหลังซ่อม</p><div class="irow">';
-        if(t.beforeImage) h+='<div class="islot has" onclick="viewImg(\''+t.beforeImage+'\',\'ก่อน\')"><img src="'+t.beforeImage+'"/><div class="ilbl">ก่อน</div></div>';
-        else h+='<div class="islot"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">ก่อน</div></div>';
-        if(t.afterImage) h+='<div class="islot has" data-id="'+t.ticketId+'" data-type="after" onclick="triggerUpload(this)"><img src="'+t.afterImage+'"/><div class="ilbl" style="color:var(--g)">&#9989; คลิกเปลี่ยน</div></div>';
-        else h+='<div class="islot" data-id="'+t.ticketId+'" data-type="after" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
-        h+='</div>';
-        h+='<div style="margin-bottom:12px"><label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บรรยายงานที่ทำ</label><textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
-        h+='<button class="btnclose"'+(t.afterImage?'':' disabled')+' data-id="'+t.ticketId+'" onclick="completeJob(this)">&#128228; ยืนยันปิดเรื่องร้องเรียน</button>';
-        if(!t.afterImage) h+='<p style="font-size:12px;color:var(--mu);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
-        h+='</div>';
-      }
-      h+='</div>';
-    }
-    h+='</div></div>';
-  }
-  el.innerHTML=h;
-}
-
-/* ── TECH ACTIONS ── */
-function acceptJob(btn)   { apiStatus(btn.getAttribute('data-id'),'assigned');    showToast('&#9989; รับงานแล้ว'); }
-function startWork(btn)   { apiStatus(btn.getAttribute('data-id'),'in_progress'); showToast('&#128295; เริ่มดำเนินการ'); }
-function rejectJob(btn)   { apiStatus(btn.getAttribute('data-id'),'rejected');    showToast('ปฏิเสธแล้ว',true); }
-function completeJob(btn) { apiStatus(btn.getAttribute('data-id'),'completed');   showToast('&#127881; ปิดงานสำเร็จ'); }
-async function apiStatus(id,status){ await fetch('/api/tickets/'+id+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})}); loadTickets(); }
-
-/* ── UPLOAD ── */
-function triggerUpload(el){
-  upId=el.getAttribute('data-id'); upType=el.getAttribute('data-type');
-  var inp=ge('techFile'); inp.value='';
-  inp.onchange=function(e){
-    var f=e.target.files[0]; if(!f)return;
-    var fd=new FormData(); fd.append('image',f);
-    fetch('/api/tickets/'+upId+'/upload/'+upType,{method:'POST',body:fd})
-      .then(function(r){return r.json();})
-      .then(function(d){if(d.error)return showToast(d.error,true); showToast('&#9989; อัปโหลดสำเร็จ'); loadTickets();})
-      .catch(function(){showToast('อัปโหลดไม่สำเร็จ',true);});
-  };
-  inp.click();
-}
-
-/* ── CATEGORY / URGENCY ── */
-function toggleCat(el){ document.querySelectorAll('#catGrid .catbox').forEach(function(b){b.classList.remove('on');}); el.classList.add('on'); hideE('catErr'); }
-function toggleUrg(el){ document.querySelectorAll('.urgbox').forEach(function(b){b.classList.remove('on');}); el.classList.add('on'); hideE('urgErr'); }
-function getSelectedCat(){ var el=document.querySelector('#catGrid .catbox.on'); return el?el.getAttribute('data-val'):null; }
-function getSelectedUrg(){ var el=document.querySelector('.urgbox.on'); return el?el.getAttribute('data-val'):null; }
-
-/* ── CITIZEN SUBMIT ── */
-async function submitTicket(){
-  var cat=getSelectedCat(), urg=getSelectedUrg();
-  var loc=ge('tLoc').value.trim(), desc=ge('tDesc').value.trim();
-  var ok=true;
-  if(!cat){ge('catErr').classList.add('on');ok=false;}else hideE('catErr');
-  if(!urg){ge('urgErr').classList.add('on');ok=false;}else hideE('urgErr');
-  if(!loc||!desc) return showToast('กรุณากรอกสถานที่และรายละเอียด',true);
-  if(!ok) return;
-  try{
-    var fd=new FormData();
-    fd.append('category',cat); fd.append('urgency',urg);
-    fd.append('location',loc); fd.append('description',desc);
-    var f=ge('cImg').files[0]; if(f) fd.append('image',f);
-    var res=await fetch('/api/tickets',{method:'POST',body:fd});
-    var data=await res.json();
-    if(!res.ok) return showToast(data.error||'เกิดข้อผิดพลาด',true);
-    showToast('&#9989; ส่งสำเร็จ! '+data.ticketId);
-    ge('tLoc').value=''; ge('tDesc').value=''; ge('cImg').value='';
-    document.querySelectorAll('#catGrid .catbox').forEach(function(b){b.classList.remove('on');});
-    document.querySelectorAll('.urgbox').forEach(function(b){b.classList.remove('on');});
-    ge('cImgPrev').innerHTML='<div style="font-size:26px;margin-bottom:4px">&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
-    loadTickets();
-  }catch(e){showToast('เกิดข้อผิดพลาด',true);}
-}
-
-function prevCitizenImg(e){
-  var f=e.target.files[0]; if(!f)return;
-  var r=new FileReader();
-  r.onload=function(ev){ge('cImgPrev').innerHTML='<img src="'+ev.target.result+'" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">'+f.name+'</div>';};
-  r.readAsDataURL(f);
-}
-
-/* ── CHANGE PW ── */
-function openChPw(){ hideE('chErr'); ['curP','newP','conP'].forEach(function(i){ge(i).value='';}); ge('mChPw').classList.add('on'); }
-function closeChPw(){ ge('mChPw').classList.remove('on'); }
-async function doChPw(){
-  hideE('chErr');
-  var cur=ge('curP').value, nw=ge('newP').value, con=ge('conP').value;
-  if(!cur||!nw||!con) return showE('chErr','กรุณากรอกข้อมูลให้ครบ');
-  if(nw!==con) return showE('chErr','รหัสผ่านใหม่ไม่ตรงกัน');
-  try{
-    var res=await fetch('/api/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
-    var data=await res.json();
-    if(!res.ok) return showE('chErr',data.error||'เกิดข้อผิดพลาด');
-    closeChPw(); showToast('เปลี่ยนรหัสผ่านสำเร็จ');
-  }catch(e){showE('chErr','เกิดข้อผิดพลาด');}
-}
-
-/* ── VIEW IMG ── */
-function viewImg(src,title){ ge('mImgSrc').src=src; ge('mImgTitle').textContent=title; ge('mImg').classList.add('on'); }
-function closeMImg(){ ge('mImg').classList.remove('on'); }
-
-/* ── SESSION CHECK ── */
-(function(){
-  fetch('/api/auth/me').then(function(r){if(r.ok)return r.json();throw new Error('no');})
-    .then(function(d){CU=d;enterApp();}).catch(function(){});
-})();
-</script>
 </body>
+
 </html>
