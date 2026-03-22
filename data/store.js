@@ -68,4 +68,8 @@ function nextHelpId() {
   console.log('   Tech:  tech1@resolvenow.th ~ tech7@resolvenow.th / tech1234');
 })();
 
-module.exports = { users, tickets, helpRequests, STATUSES, DEPT_MAP, nextTicketId, nextHelpId };
+// ─── OTP Store ─────────────────────────────────────────────────
+// Map<token, { otp, userData, expiresAt, attempts }>
+const otpStore = new Map();
+
+module.exports = { users, tickets, helpRequests, otpStore, STATUSES, DEPT_MAP, nextTicketId, nextHelpId };

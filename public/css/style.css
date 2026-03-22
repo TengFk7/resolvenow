@@ -1350,3 +1350,77 @@ canvas#pieChart {
     grid-template-columns: 1fr
   }
 }
+
+/* ── OTP ──────────────────────────────────── */
+.otp-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #1e40af;
+  margin-bottom: 16px;
+  text-align: center
+}
+
+.otp-wrap {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 14px
+}
+
+.otp-box {
+  width: 44px;
+  height: 52px;
+  border: 2px solid var(--bd);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  outline: none;
+  background: #fafafa;
+  color: #1a202c;
+  transition: border-color .2s
+}
+
+.otp-box:focus {
+  border-color: var(--p);
+  background: #fff
+}
+
+.otp-box.filled {
+  border-color: var(--p)
+}
+
+.otp-box.error {
+  border-color: var(--r);
+  background: #fff5f5
+}
+
+.btn-resend {
+  background: none;
+  border: 1.5px solid var(--p);
+  color: var(--p);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer
+}
+
+.btn-resend:hover {
+  background: #eff6ff
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0) }
+  20%       { transform: translateX(-6px) }
+  40%       { transform: translateX(6px) }
+  60%       { transform: translateX(-4px) }
+  80%       { transform: translateX(4px) }
+}
+
+.otp-box.shake {
+  animation: shake .4s ease
+}
