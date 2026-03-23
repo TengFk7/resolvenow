@@ -1,14 +1,29 @@
 // ─── config/mailer.js ─────────────────────────────────────────
-// ใช้ Resend API (HTTPS) แทน SMTP — ทำงานได้บน Render free plan
-// Local: อ่านจาก .env  |  Render: ตั้งใน Dashboard → Environment
+// Credentials อ่านจาก Environment Variables
+// Local: สร้างไฟล์ .env ที่ root แล้วใส่ MAIL_USER และ MAIL_PASS
+// Render: ตั้งค่าใน Dashboard → Environment Variables
 
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const MAIL_USER = process.env.MAIL_USER;
+const MAIL_PASS = process.env.MAIL_PASS;
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: MAIL_USER,
+    pass: MAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
 async function sendOtpEmail(toEmail, otp, firstName) {
-  await resend.emails.send({
-    from: 'ResolveNow <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: '"ResolveNow" <' + MAIL_USER + '>',
     to: toEmail,
     subject: '🔐 รหัส OTP สำหรับสมัครสมาชิก ResolveNow',
     html: `

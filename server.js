@@ -1,3 +1,4 @@
+require('dotenv').config();   // โหลด .env สำหรับ local dev (Render ใช้ env vars แทน)
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
