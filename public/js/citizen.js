@@ -35,7 +35,7 @@ async function submitTicket() {
   var ok = true;
   if (!cat) { ge('catErr').classList.add('on'); ok = false; } else hideE('catErr');
   if (!urg) { ge('urgErr').classList.add('on'); ok = false; } else hideE('urgErr');
-  if (!loc || !desc) return showToast('กรุณากรอกสถานที่และรายละเอียด', true);
+  if (!loc || !desc) { showToast('กรุณากรอกสถานที่และรายละเอียด', true); ok = false; }
   if (!ok) return;
   try {
     var fd = new FormData();

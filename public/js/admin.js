@@ -157,7 +157,7 @@ async function rejectTicket(btn) {
 /* ── All Tickets Table ───────────────────────────────── */
 function renderAllQueue(tks) {
   var el = ge('allBody');
-  if (!tks.length) { el.innerHTML = '<tr><td colspan="9" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
+  if (!tks.length) { el.innerHTML = '<tr><td colspan="10" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
   tks.sort(function (a, b) { return b.priorityScore - a.priorityScore; });
   var h = '';
   for (var i = 0; i < tks.length; i++) {
@@ -166,6 +166,24 @@ function renderAllQueue(tks) {
     h += '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + t.description + '</td>';
     h += '<td>' + pLabel(t.priorityScore) + '</td><td><span class="badge ' + t.status + '">' + stTH(t.status) + '</span></td>';
     h += '<td style="font-size:12px">' + (t.assignedName || '-') + '</td>';
+
+    // ── รูปภาพ ──────────────────────────────────────────────
+    var imgCell = '';
+    if (t.status === 'completed' && (t.beforeImage || t.afterImage)) {
+      imgCell += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:6px">';
+      imgCell += '<div style="font-size:10px;font-weight:700;color:#065f46;margin-bottom:5px">✅ ก่อน / หลัง</div>';
+      imgCell += '<div style="display:flex;gap:4px">';
+      if (t.beforeImage) imgCell += '<div style="text-align:center"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" style="width:54px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid #bbf7d0"/><div style="font-size:9px;color:#065f46;margin-top:2px;font-weight:600">ก่อน</div></div>';
+      if (t.afterImage) imgCell += '<div style="text-align:center"><img src="' + t.afterImage + '" onclick="viewImg(this.src,\'หลัง\')" style="width:54px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid #bbf7d0"/><div style="font-size:9px;color:#065f46;margin-top:2px;font-weight:600">หลัง</div></div>';
+      imgCell += '</div></div>';
+    } else if (t.citizenImage) {
+      imgCell += '<div style="text-align:center"><img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" style="width:54px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer"/><div style="font-size:9px;color:var(--mu);margin-top:2px">ผู้แจ้ง</div></div>';
+    } else {
+      imgCell = '<span style="font-size:11px;color:var(--mu)">-</span>';
+    }
+    h += '<td>' + imgCell + '</td>';
+    // ────────────────────────────────────────────────────────
+
     h += '<td><select data-id="' + t.ticketId + '" onchange="adminChSt(this)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">';
     ['pending', 'assigned', 'in_progress', 'completed', 'rejected'].forEach(function (s) {
       h += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + stTH(s) + '</option>';
