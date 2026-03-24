@@ -68,7 +68,7 @@ function renderTech(data) {
       if (s3 === 'active') {
         h += '<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปหลังซ่อม</p><div class="irow">';
         if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อน</div></div>';
-        else h += '<div class="islot"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">ก่อน</div></div>';
+        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
         if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl" style="color:var(--g)">&#9989; คลิกเปลี่ยน</div></div>';
         else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
         h += '</div>';
