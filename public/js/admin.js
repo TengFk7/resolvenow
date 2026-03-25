@@ -11,9 +11,20 @@
 /* ── Page Navigation ─────────────────────────────────── */
 function showPage(page) {
   currentPage = page;
-  ge('pageDashboard').style.display = page === 'dashboard' ? 'block' : 'none';
-  ge('pageQueue').style.display = page === 'queue' ? 'block' : 'none';
-  ge('pageTechs').style.display = page === 'techs' ? 'block' : 'none';
+  var pages = ['pageDashboard', 'pageQueue', 'pageTechs'];
+  pages.forEach(function (pid) {
+    var el = ge(pid);
+    var active = (pid === 'page' + page.charAt(0).toUpperCase() + page.slice(1));
+    if (active) {
+      el.style.display = 'block';
+      // replay animation
+      el.style.animation = 'none';
+      el.offsetHeight; // force reflow
+      el.style.animation = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
   var titles = { dashboard: 'Smart Dispatcher Dashboard', queue: 'รายการ Ticket ทั้งหมด', techs: 'สถานะทีมช่าง 7 แผนก' };
   ge('pageTitle').textContent = titles[page];
   document.querySelectorAll('.sb-item').forEach(function (el) { el.classList.remove('on'); });

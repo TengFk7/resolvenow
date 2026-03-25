@@ -30,6 +30,212 @@ body {
   min-height: 100vh
 }
 
+/* ── APPLE-STYLE ANIMATION SYSTEM ────────────────────────── */
+
+/* Global easing — Apple's preferred curve */
+:root {
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --dur-fast:    160ms;
+  --dur-base:    260ms;
+  --dur-slow:    400ms;
+}
+
+/* ── Keyframes ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.88) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Page wrapper transitions ── */
+.page-enter {
+  animation: fadeSlideUp var(--dur-base) var(--ease-spring) both;
+}
+
+/* Admin content pages */
+#pageDashboard,
+#pageQueue,
+#pageTechs {
+  animation: fadeSlideUp var(--dur-base) var(--ease-spring) both;
+}
+
+/* Auth card entrance */
+.ac {
+  animation: popIn var(--dur-slow) var(--ease-spring) both;
+}
+
+/* ── Cards stagger ── */
+.ncard {
+  animation: cardEntrance var(--dur-base) var(--ease-spring) both;
+}
+.ncard:nth-child(1) { animation-delay: 0ms; }
+.ncard:nth-child(2) { animation-delay: 60ms; }
+.ncard:nth-child(3) { animation-delay: 120ms; }
+
+/* Stat cards */
+.scard {
+  animation: cardEntrance var(--dur-base) var(--ease-spring) both;
+}
+.scard:nth-child(1) { animation-delay: 0ms; }
+.scard:nth-child(2) { animation-delay: 40ms; }
+.scard:nth-child(3) { animation-delay: 80ms; }
+.scard:nth-child(4) { animation-delay: 120ms; }
+.scard:nth-child(5) { animation-delay: 160ms; }
+
+/* Technician cards */
+.tcard {
+  animation: cardEntrance var(--dur-base) var(--ease-spring) both;
+}
+
+/* ── Button micro-interactions ── */
+.btnp, .btns, .btnaccept, .btnconfirm, .btnclose,
+.btn-approve, .btn-rej, .btn-help, .btn-help-accept {
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast) var(--ease-smooth),
+              background var(--dur-fast) var(--ease-smooth);
+}
+.btnp:hover,  .btns:hover, .btnaccept:hover,
+.btn-approve:hover, .btn-rej:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+.btnp:active, .btns:active, .btnaccept:active,
+.btn-approve:active, .btn-rej:active,
+.btnclose:active, .btnconfirm:active {
+  transform: scale(0.96) translateY(0);
+  box-shadow: none;
+}
+
+/* LINE login button */
+#btnLoginLine {
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast) var(--ease-smooth);
+}
+#btnLoginLine:hover  { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(6,199,85,.35); }
+#btnLoginLine:active { transform: scale(0.96); }
+
+/* ── Sidebar nav items ── */
+.sb-item {
+  transition: background var(--dur-fast) var(--ease-smooth),
+              color var(--dur-fast) var(--ease-smooth),
+              border-left-color var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.sb-item:hover { transform: translateX(2px); }
+.sb-item.on    { transform: translateX(3px); }
+
+/* ── Input / select focus ── */
+.fg input:focus, .fg select:focus,
+.ncard input:focus, .ncard select:focus, .ncard textarea:focus {
+  transition: border-color var(--dur-fast) var(--ease-smooth),
+              box-shadow var(--dur-fast) var(--ease-smooth),
+              background var(--dur-fast) var(--ease-smooth);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
+}
+
+/* ── Modal spring animation ── */
+.mo {
+  transition: background var(--dur-base) var(--ease-smooth);
+}
+.mo.on .mb {
+  animation: popIn var(--dur-base) var(--ease-spring) both;
+}
+
+/* ── Toast ── */
+.toast {
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-spring);
+}
+
+/* ── Category / urgency boxes ── */
+.catbox, .urgbox {
+  transition: border-color var(--dur-fast) var(--ease-smooth),
+              background var(--dur-fast) var(--ease-smooth),
+              color var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.catbox:hover  { transform: scale(1.02); }
+.catbox:active { transform: scale(0.97); }
+.catbox.on     { transform: scale(1.02); }
+.urgbox:hover  { transform: scale(1.03); }
+.urgbox:active { transform: scale(0.96); }
+.urgbox.on     { transform: scale(1.03); }
+
+/* ── Table rows ── */
+.queue-table tr {
+  transition: background var(--dur-fast) var(--ease-smooth);
+}
+
+/* ── Progress bar animated fill ── */
+.prog-fill {
+  transition: width 0.6s var(--ease-out);
+}
+
+/* ── Upload area ── */
+.uarea {
+  transition: border-color var(--dur-fast) var(--ease-smooth),
+              background var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.uarea:hover {
+  border-color: var(--p);
+  background: #f0f7ff;
+  transform: scale(1.01);
+}
+
+/* ── Image slots ── */
+.islot {
+  transition: border-color var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.islot:hover { transform: scale(1.03); }
+
+/* ── Topbar header slide down ── */
+.topbar {
+  animation: fadeSlideDown var(--dur-base) var(--ease-out) both;
+}
+
+/* ── nheader ── */
+.nheader {
+  animation: fadeSlideDown var(--dur-base) var(--ease-out) both;
+}
+
+/* ── Tab switch ── */
+.tab {
+  transition: background var(--dur-fast) var(--ease-smooth),
+              color var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.tab:hover:not(.on) { background: #f1f5f9; }
+.tab.on { transform: scale(0.99); }
+
+/* ── Panel ── */
+.panel {
+  animation: fadeSlideUp var(--dur-slow) var(--ease-spring) both;
+}
+
+
 /* ── AUTH ─────────────────────────────────── */
 .aw {
   min-height: 100vh;

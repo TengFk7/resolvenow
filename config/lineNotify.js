@@ -27,7 +27,8 @@ async function pushTo(userId, messages) {
       res.on('data', c => (data += c));
       res.on('end', () => {
         if (res.statusCode !== 200)
-          console.error('[LINE] push error', res.statusCode, data);
+          console.error('[LINE] push error to', userId, res.statusCode, data,
+            res.statusCode === 400 ? '→ user อาจยังไม่ได้ Add Friend bot' : '');
         resolve();
       });
     });
