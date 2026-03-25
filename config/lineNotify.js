@@ -196,12 +196,13 @@ async function notifyCompleted(ticket) {
   }
 }
 
-function notifyRejected(ticket) {
+function notifyRejected(ticket, reason) {
   const adminMsg = '❌ ปฏิเสธการรับงาน\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👤 ผู้แจ้ง: ' + ticket.citizenName + '\n' +
+    (reason ? '📝 เหตุผล: ' + reason + '\n' : '') +
     '━━━━━━━━━━━━━━━━\n' +
     '📌 กรุณาตรวจสอบและดำเนินการต่อไป';
 
@@ -209,8 +210,9 @@ function notifyRejected(ticket) {
     '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
+    (reason ? '📝 เหตุผล: ' + reason + '\n' : '') +
     '━━━━━━━━━━━━━━━━\n' +
-    '📞 กรุณาติดต่อเจ้าหน้าที่เพื่อสอบถามข้อมูลเพิ่มเติม';
+    '📞 หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่';
 
   return pushAll(
     ticket.citizenLineId,

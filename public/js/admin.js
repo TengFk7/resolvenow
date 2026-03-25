@@ -159,11 +159,51 @@ async function approveTicket(btn) {
   loadAdmin();
 }
 
-async function rejectTicket(btn) {
-  await fetch('/api/tickets/' + btn.getAttribute('data-id') + '/status', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'rejected' }) });
+/* ── Global state for reject modal ──────────────────── */
+var _rejectId = null;
+var _rejectTicketId = null;
+
+function rejectTicket(btn) {
+  _rejectId = btn.getAttribute('data-id');
+  _rejectTicketId = _rejectId;
+  ge('mRejectTicketLabel').textContent = 'Ticket #' + _rejectId;
+  ge('rejectReason').value = '';
+  hideE('rejectErr');
+  ge('mRejectStep1').style.display = 'block';
+  ge('mRejectStep2').style.display = 'none';
+  ge('mReject').classList.add('on');
+}
+
+function closeRejectModal() {
+  ge('mReject').classList.remove('on');
+  _rejectId = null;
+}
+
+function goRejectStep2() {
+  ge('mRejectStep1').style.display = 'none';
+  ge('mRejectStep2').style.display = 'block';
+  ge('rejectReason').focus();
+}
+
+function goRejectStep1() {
+  ge('mRejectStep2').style.display = 'none';
+  ge('mRejectStep1').style.display = 'block';
+}
+
+async function submitReject() {
+  var reason = ge('rejectReason').value.trim();
+  if (!reason) return showE('rejectErr', 'กรุณาระบุเหตุผลก่อนส่ง');
+  hideE('rejectErr');
+  await fetch('/api/tickets/' + _rejectId + '/status', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'rejected', reason: reason })
+  });
+  closeRejectModal();
   showToast('ปฏิเสธแล้ว', true);
   loadAdmin();
 }
+
 
 /* ── All Tickets Table ───────────────────────────────── */
 function renderAllQueue(tks) {

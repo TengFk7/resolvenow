@@ -437,6 +437,57 @@
     </div>
   </div>
 
+  <!-- ── MODAL: Reject Confirm ──────────────────────────────── -->
+  <div class="mo" id="mReject">
+    <div class="mb">
+      <button class="mc" onclick="closeRejectModal()">&#10005;</button>
+
+      <!-- Step 1: Confirm -->
+      <div id="mRejectStep1">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:40px;margin-bottom:8px">&#10060;</div>
+          <h3 style="margin:0 0 6px;font-size:17px">ปฏิเสธเรื่องร้องเรียน?</h3>
+          <p style="font-size:13px;color:#718096;margin:0" id="mRejectTicketLabel"></p>
+        </div>
+        <p style="font-size:13px;color:#4a5568;text-align:center;margin-bottom:20px">
+          หากยืนยัน ระบบจะแจ้งผู้ร้องเรียนทาง LINE ทันที
+        </p>
+        <div style="display:flex;gap:10px">
+          <button onclick="closeRejectModal()"
+            style="flex:1;padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:#4a5568">
+            &#10006; ไม่ใช่
+          </button>
+          <button onclick="goRejectStep2()"
+            style="flex:1;padding:11px;border:none;border-radius:12px;background:#e53e3e;color:#fff;font-size:14px;cursor:pointer;font-weight:700">
+            &#10004; ตกลง
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Reason -->
+      <div id="mRejectStep2" style="display:none">
+        <h3 style="margin:0 0 4px">&#128221; ระบุเหตุผลที่ปฏิเสธ</h3>
+        <p style="font-size:12px;color:#718096;margin:0 0 14px">ข้อความนี้จะถูกส่งไปยัง LINE ของผู้แจ้งเรื่องโดยตรง</p>
+        <div class="fg">
+          <label>เหตุผล <span style="color:var(--r)">*</span></label>
+          <textarea id="rejectReason" placeholder="เช่น ข้อมูลไม่ครบถ้วน / ไม่อยู่ในเขตรับผิดชอบ..."
+            style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;font-family:inherit;resize:none;height:90px;background:#fafafa"></textarea>
+        </div>
+        <div class="ebox" id="rejectErr"></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button onclick="goRejectStep1()"
+            style="flex:1;padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:#4a5568">
+            &#8592; ย้อนกลับ
+          </button>
+          <button onclick="submitReject()"
+            style="flex:1;padding:11px;border:none;border-radius:12px;background:#e53e3e;color:#fff;font-size:14px;cursor:pointer;font-weight:700">
+            &#128228; ส่งการปฏิเสธ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Hidden file input for tech uploads -->
   <input type="file" id="techFile" accept="image/*" style="display:none" />
   <!-- Toast -->

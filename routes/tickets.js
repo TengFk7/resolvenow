@@ -102,7 +102,7 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
 
 // PUT /api/tickets/:id/status
 router.put('/:id/status', requireAuth, async (req, res) => {
-  const { status } = req.body;
+  const { status, reason } = req.body;
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Status ไม่ถูกต้อง' });
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
@@ -126,13 +126,14 @@ router.put('/:id/status', requireAuth, async (req, res) => {
   }
 
   ticket.status = status;
+  if (status === 'rejected' && reason) ticket.rejectReason = reason;
 
   // แจ้งเตือน LINE ตาม status
   try {
     if (status === 'assigned')    await notifyAssigned(ticket);
     if (status === 'in_progress') await notifyInProgress(ticket);
     if (status === 'completed')   await notifyCompleted(ticket);
-    if (status === 'rejected')    await notifyRejected(ticket);
+    if (status === 'rejected')    await notifyRejected(ticket, reason || '');
   } catch (e) { console.error('[LINE] status notify error:', e); }
 
   res.json(ticket);
