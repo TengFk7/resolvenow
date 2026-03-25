@@ -20,15 +20,17 @@ function enterApp() {
   if (CU.role === 'admin') {
     // ── Admin view ──
     ge('adminApp').classList.add('on');
-    ge('adminAv').textContent = (CU.firstName[0] + CU.lastName[0]).toUpperCase();
-    ge('adminName').textContent = CU.firstName + ' ' + CU.lastName;
+    var adminInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
+    ge('adminAv').textContent = adminInit.toUpperCase();
+    ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
     loadAdmin();
     setInterval(loadAdmin, 6000);
   } else {
     // ── Citizen / Technician view ──
     ge('normalApp').classList.add('on');
-    ge('hAv').textContent = (CU.firstName[0] + CU.lastName[0]).toUpperCase();
-    ge('hName').textContent = CU.firstName + ' ' + CU.lastName;
+    var userInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
+    ge('hAv').textContent = userInit.toUpperCase();
+    ge('hName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
     var roleLabel = CU.role === 'technician' ? 'ช่าง ' + (DEPT[CU.specialty] || '') : 'ประชาชน';
     ge('hRole').textContent = roleLabel;
     ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
