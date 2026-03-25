@@ -212,7 +212,7 @@ function notifyRejected(ticket, reason) {
     '📍 สถานที่: ' + ticket.location + '\n' +
     (reason ? '📝 เหตุผล: ' + reason + '\n' : '') +
     '━━━━━━━━━━━━━━━━\n' +
-    '📞 หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่';
+    '📞 หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่ @ResolveNow.com';
 
   return pushAll(
     ticket.citizenLineId,
