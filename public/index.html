@@ -29,6 +29,16 @@
             onkeydown="if(event.key==='Enter')doLogin()" /></div>
         <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
         <button class="btnp" onclick="doLogin()">เข้าสู่ระบบ</button>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
+          <div style="flex:1;height:1px;background:#e2e8f0"></div>
+          <span style="font-size:12px;color:#a0aec0;white-space:nowrap">หรือเข้าสู่ระบบด้วย</span>
+          <div style="flex:1;height:1px;background:#e2e8f0"></div>
+        </div>
+        <a href="/auth/line" id="btnLoginLine"
+          style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px;background:#06C755;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;box-sizing:border-box">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" style="width:22px;height:22px;filter:brightness(0)invert(1)" alt="LINE" />
+          เข้าสู่ระบบด้วย LINE
+        </a>
       </div>
       <!-- Register Form -->
       <div id="fReg" style="display:none">

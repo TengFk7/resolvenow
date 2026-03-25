@@ -74,8 +74,9 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     const fileUrl = getFileUrl(req);
     const ticket = {
       ticketId: nextTicketId(),
-      citizenId: user.id,
-      citizenName: user.firstName + ' ' + user.lastName,
+      citizenId:     user.id,
+      citizenName:   user.firstName + ' ' + user.lastName,
+      citizenLineId: user.lineUserId || null,   // สำหรับ push personal notification
       category, description, location,
       urgency: urgency || 'normal',
       priorityScore: score,

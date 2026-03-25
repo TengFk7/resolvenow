@@ -21,6 +21,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/technicians', require('./routes/technicians'));
 app.use('/api/help-requests', require('./routes/helpRequests'));
+app.use('/auth/line', require('./routes/lineAuth'));
 
 // ─── Fallback (SPA) ─────────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
