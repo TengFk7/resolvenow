@@ -68,8 +68,9 @@ function notifyNewTicket(ticket) {
     ticket.urgency === 'urgent' ? '🔴 เร่งด่วน' :
       ticket.urgency === 'medium' ? '🟡 ปานกลาง' : '🟢 ปกติ';
 
-  const msg = '✅ ระบบได้รับเรื่องของคุณเรียบร้อยแล้วหมายเลขคำร้องของคุณคือ' + ticket.ticketId + '\n' +
+  const msg = '🆕 มีเรื่องร้องเรียนใหม่เข้ามา!\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
+    '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '⚠️  รายละเอียด: ' + ticket.description + '\n' +
     '⏱️  ความเร่งด่วน: ' + urgencyLabel + '\n' +
@@ -77,13 +78,9 @@ function notifyNewTicket(ticket) {
     '━━━━━━━━━━━━━━━━━━\n' +
     '🔗 กรุณาตรวจสอบและมอบหมายงานในระบบ';
 
-  const citizenMsg = '✅ รับเรื่องร้องเรียนของคุณแล้ว!\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
-    '📋 Ticket: ' + ticket.ticketId + '\n' +
-    '📍 สถานที่: ' + ticket.location + '\n' +
-    '⏱️  ความเร่งด่วน: ' + urgencyLabel + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
-    '⏳ เจ้าหน้าที่กำลังดำเนินการ กรุณารอการติดตามผล';
+  const citizenMsg = '✅ ระบบได้รับเรื่องของคุณเรียบร้อยแล้ว\n' +
+    'หมายเลขคำร้องของคุณคือ: ' + ticket.ticketId + '\n\n' +
+    'เจ้าหน้าที่จะทำการตรวจสอบและดำเนินการโดยเร็วที่สุด';
 
   return pushAll(
     ticket.citizenLineId,
@@ -96,19 +93,19 @@ function notifyAssigned(ticket) {
   const techName = ticket.assignedName || 'ยังไม่ได้ระบุ';
 
   const adminMsg = '🔧 มอบหมายงานให้ช่างแล้ว\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้รับงาน: ' + techName + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '⏳ รอช่างเข้าดำเนินการ';
 
   const citizenMsg = '🔧 มีช่างรับงานของคุณแล้ว!\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้รับงาน: ' + techName + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '⏳ ช่างกำลังเดินทางไปยังสถานที่';
 
   return pushAll(
@@ -122,19 +119,19 @@ function notifyInProgress(ticket) {
   const techName = ticket.assignedName || 'ยังไม่ได้ระบุ';
 
   const adminMsg = '⚙️  เริ่มดำเนินการแล้ว\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้ดำเนินการ: ' + techName + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '🔨 กำลังเร่งดำเนินการแก้ไข';
 
   const citizenMsg = '⚙️  ช่างเริ่มดำเนินการแก้ไขแล้ว!\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้ดำเนินการ: ' + techName + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '🔨 กำลังแก้ไข กรุณารอสักครู่...';
 
   return pushAll(
@@ -153,24 +150,24 @@ async function notifyCompleted(ticket) {
   });
 
   const adminMsg = '✅ ดำเนินการซ่อมแซมเสร็จสิ้นแล้ว\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้ดำเนินการ: ' + techName + '\n' +
     '👤 ผู้แจ้ง: ' + ticket.citizenName + '\n' +
     '🕐 เสร็จสิ้นเมื่อ: ' + now + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '🙏 ขอบคุณที่ไว้วางใจในบริการของเรา\n' +
     'หากพบปัญหาใหม่สามารถแจ้งเรื่องเข้ามาได้ตลอดเวลา\n' +
     '📲 ระบบ ResolvNow พร้อมรับเรื่องร้องเรียนทุกเมื่อ';
 
   const citizenMsg = '🎉 เรื่องร้องเรียนของคุณได้รับการแก้ไขแล้ว!\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่าง: ' + techName + '\n' +
     '🕐 เสร็จสิ้นเมื่อ: ' + now + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '🙏 ขอบคุณที่แจ้งเรื่องมายังระบบ ResolvNow\n' +
     'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!';
 
@@ -201,18 +198,18 @@ async function notifyCompleted(ticket) {
 
 function notifyRejected(ticket) {
   const adminMsg = '❌ ปฏิเสธการรับงาน\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👤 ผู้แจ้ง: ' + ticket.citizenName + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📌 กรุณาตรวจสอบและดำเนินการต่อไป';
 
   const citizenMsg = '❌ ขออภัย เรื่องร้องเรียนของคุณถูกปฏิเสธ\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
-    '━━━━━━━━━━━━━━━━━━\n' +
+    '━━━━━━━━━━━━━━━━\n' +
     '📞 กรุณาติดต่อเจ้าหน้าที่เพื่อสอบถามข้อมูลเพิ่มเติม';
 
   return pushAll(
