@@ -63,9 +63,22 @@ function nextHelpId() {
     });
   }
 
+  // ── Pre-seeded citizen account ──
+  users.push({
+    id: depts.length + 2,
+    firstName: 'Teng',
+    lastName: 'Teng(-Admin-)',
+    email: 'tenginpb@gmail.com',
+    password: await bcrypt.hash('123456', 10),
+    role: 'citizen',
+    specialty: null,
+    createdAt: new Date().toISOString()
+  });
+
   console.log('✅ Seed สำเร็จ');
-  console.log('   Admin: admin@resolvenow.th / admin1234');
-  console.log('   Tech:  tech1@resolvenow.th ~ tech7@resolvenow.th / tech1234');
+  console.log('   Admin:   admin@resolvenow.th / admin1234');
+  console.log('   Tech:    tech1@resolvenow.th ~ tech7@resolvenow.th / tech1234');
+  console.log('   Citizen: tenginpb@gmail.com / 123456');
 })();
 
 // ─── OTP Store ─────────────────────────────────────────────────

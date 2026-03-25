@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { users, tickets, STATUSES, nextTicketId } = require('../data/store');
+const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected } = require('../config/lineNotify');
 
 // ─── Middleware ─────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -36,7 +37,7 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // POST /api/tickets
-router.post('/', requireAuth, upload.single('image'), (req, res) => {
+router.post('/', requireAuth, upload.single('image'), async (req, res) => {
   try {
     const { category, description, location, urgency } = req.body;
     const user = users.find(u => u.id === req.session.userId);
@@ -62,22 +63,35 @@ router.post('/', requireAuth, upload.single('image'), (req, res) => {
       createdAt: new Date().toLocaleString('th-TH')
     };
     tickets.push(ticket);
+
+    // แจ้งเตือน Line
+    notifyNewTicket(ticket).catch(e => console.error('Line notify error:', e));
+
     res.status(201).json(ticket);
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 // PUT /api/tickets/:id/status
-router.put('/:id/status', requireAuth, (req, res) => {
+router.put('/:id/status', requireAuth, async (req, res) => {
   const { status } = req.body;
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Status ไม่ถูกต้อง' });
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
   ticket.status = status;
+
+  // แจ้งเตือน Line ตาม status
+  try {
+    if (status === 'assigned') await notifyAssigned(ticket);
+    if (status === 'in_progress') await notifyInProgress(ticket);
+    if (status === 'completed') await notifyCompleted(ticket);
+    if (status === 'rejected') await notifyRejected(ticket);
+  } catch (e) { console.error('Line notify error:', e); }
+
   res.json(ticket);
 });
 
 // PUT /api/tickets/:id/assign
-router.put('/:id/assign', requireAuth, (req, res) => {
+router.put('/:id/assign', requireAuth, async (req, res) => {
   const { technicianId } = req.body;
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
@@ -86,6 +100,10 @@ router.put('/:id/assign', requireAuth, (req, res) => {
   ticket.assignedTo = tech.id;
   ticket.assignedName = tech.firstName + ' ' + tech.lastName;
   ticket.status = 'assigned';
+
+  // แจ้งเตือน Line
+  notifyAssigned(ticket).catch(e => console.error('Line notify error:', e));
+
   res.json(ticket);
 });
 
@@ -102,8 +120,14 @@ router.post('/:id/upload/after', requireAuth, upload.single('image'), (req, res)
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
   ticket.afterImage = '/uploads/' + req.file.filename;
-  if (ticket.status === 'in_progress') ticket.status = 'completed';
+  const wasInProgress = ticket.status === 'in_progress';
+  if (wasInProgress) ticket.status = 'completed';
   res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
+
+  // แจ้งเตือน LINE เมื่องานเสร็จสมบูรณ์ (พร้อมรูปก่อน-หลัง)
+  if (wasInProgress) {
+    notifyCompleted(ticket).catch(e => console.error('[LINE] notifyCompleted error:', e));
+  }
 });
 
 module.exports = router;
