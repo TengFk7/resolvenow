@@ -64,3 +64,12 @@ function openChPw() {
   ge('mChPw').classList.add('on');
 }
 function closeChPw() { ge('mChPw').classList.remove('on'); }
+
+/* ── Mobile Bottom Nav Active State ──────────────────── */
+function mobNavSetActive(id) {
+  var btns = document.querySelectorAll('.mob-nav-btn');
+  btns.forEach(function (b) { b.classList.remove('on'); });
+  var el = ge(id);
+  if (el) el.classList.add('on');
+}
+
