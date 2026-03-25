@@ -19,10 +19,13 @@ function sendText(text) {
 
 // ── ส่งรูปภาพ (ต้องการ URL สาธารณะ HTTPS) ────────────────────
 function sendImage(imageUrl) {
+  // encode เฉพาะ path segment (ไม่ encode ://  และ /)
+  const safeUrl = imageUrl.replace(/\/uploads\/(.+)$/, (_, fname) => '/uploads/' + encodeURIComponent(fname));
+  console.log('[LINE] ส่งรูป URL:', safeUrl);
   return pushMessages([{
     type: 'image',
-    originalContentUrl: imageUrl,
-    previewImageUrl: imageUrl
+    originalContentUrl: safeUrl,
+    previewImageUrl: safeUrl
   }]);
 }
 

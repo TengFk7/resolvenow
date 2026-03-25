@@ -5,6 +5,7 @@ const fs = require('fs');
 const multer = require('multer');
 const { users, tickets, STATUSES, nextTicketId } = require('../data/store');
 const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected } = require('../config/lineNotify');
+const { upload: cloudinaryUpload, isCloudinaryConfigured } = require('../config/cloudinary');
 
 // ─── Middleware ─────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -12,15 +13,36 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ─── Multer Setup ───────────────────────────────────────────────
+// ─── Multer Setup (Local fallback เมื่อไม่มี Cloudinary) ────────
 const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-const storage = multer.diskStorage({
+const ALLOWED_EXTS = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+const localStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+  filename: (req, file, cb) => {
+    const ext = ALLOWED_EXTS[file.mimetype] || path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, Date.now() + '-' + Math.random().toString(36).slice(2, 8) + ext);
+  }
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const localUpload = multer({ storage: localStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+// เลือก uploader ตาม config
+const upload = isCloudinaryConfigured() ? cloudinaryUpload : localUpload;
+
+// ดึง URL ของไฟล์ที่อัปโหลด (Cloudinary คืน URL ตรง, local ต้องสร้างเอง)
+function getFileUrl(req) {
+  if (!req.file) return null;
+  if (isCloudinaryConfigured()) {
+    // Cloudinary: req.file.path คือ secure_url
+    return req.file.path;
+  }
+  // Local fallback
+  const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
+  return BASE_URL
+    ? BASE_URL + '/uploads/' + req.file.filename
+    : '/uploads/' + req.file.filename;
+}
 
 // GET /api/tickets
 router.get('/', requireAuth, (req, res) => {
@@ -49,6 +71,7 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     for (const kw of ['flood', 'fire', 'อันตราย', 'เร่งด่วน', 'น้ำท่วม', 'ฉุกเฉิน'])
       if (desc.includes(kw)) score = Math.min(score + 10, 100);
 
+    const fileUrl = getFileUrl(req);
     const ticket = {
       ticketId: nextTicketId(),
       citizenId: user.id,
@@ -58,17 +81,20 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
       priorityScore: score,
       status: 'pending',
       assignedTo: null, assignedName: null,
-      citizenImage: req.file ? '/uploads/' + req.file.filename : null,
+      citizenImage: fileUrl,
       beforeImage: null, afterImage: null,
       createdAt: new Date().toLocaleString('th-TH')
     };
     tickets.push(ticket);
 
-    // แจ้งเตือน Line
-    notifyNewTicket(ticket).catch(e => console.error('Line notify error:', e));
+    // แจ้งเตือน LINE
+    notifyNewTicket(ticket).catch(e => console.error('[LINE] notifyNewTicket error:', e));
 
     res.status(201).json(ticket);
-  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
 });
 
 // PUT /api/tickets/:id/status
@@ -77,15 +103,34 @@ router.put('/:id/status', requireAuth, async (req, res) => {
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Status ไม่ถูกต้อง' });
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+  const caller = users.find(u => u.id === req.session.userId);
+
+  // ถ้าช่างกดรับงานเองผ่าน status route → เซ็ตชื่อช่างด้วย
+  if (status === 'assigned' && caller && caller.role === 'technician') {
+    if (!ticket.assignedTo) {
+      ticket.assignedTo   = caller.id;
+      ticket.assignedName = caller.firstName + ' ' + caller.lastName;
+    }
+  }
+
+  // ถ้าช่างกด in_progress และยังไม่มีชื่อ → เซ็ตจาก session
+  if (status === 'in_progress' && caller && caller.role === 'technician') {
+    if (!ticket.assignedTo) {
+      ticket.assignedTo   = caller.id;
+      ticket.assignedName = caller.firstName + ' ' + caller.lastName;
+    }
+  }
+
   ticket.status = status;
 
-  // แจ้งเตือน Line ตาม status
+  // แจ้งเตือน LINE ตาม status
   try {
-    if (status === 'assigned') await notifyAssigned(ticket);
+    if (status === 'assigned')    await notifyAssigned(ticket);
     if (status === 'in_progress') await notifyInProgress(ticket);
-    if (status === 'completed') await notifyCompleted(ticket);
-    if (status === 'rejected') await notifyRejected(ticket);
-  } catch (e) { console.error('Line notify error:', e); }
+    if (status === 'completed')   await notifyCompleted(ticket);
+    if (status === 'rejected')    await notifyRejected(ticket);
+  } catch (e) { console.error('[LINE] status notify error:', e); }
 
   res.json(ticket);
 });
@@ -101,8 +146,8 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
   ticket.assignedName = tech.firstName + ' ' + tech.lastName;
   ticket.status = 'assigned';
 
-  // แจ้งเตือน Line
-  notifyAssigned(ticket).catch(e => console.error('Line notify error:', e));
+  // แจ้งเตือน LINE
+  notifyAssigned(ticket).catch(e => console.error('[LINE] notifyAssigned error:', e));
 
   res.json(ticket);
 });
@@ -111,7 +156,7 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
 router.post('/:id/upload/before', requireAuth, upload.single('image'), (req, res) => {
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
-  ticket.beforeImage = '/uploads/' + req.file.filename;
+  ticket.beforeImage = getFileUrl(req);
   res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.beforeImage });
 });
 
@@ -119,7 +164,7 @@ router.post('/:id/upload/before', requireAuth, upload.single('image'), (req, res
 router.post('/:id/upload/after', requireAuth, upload.single('image'), (req, res) => {
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
-  ticket.afterImage = '/uploads/' + req.file.filename;
+  ticket.afterImage = getFileUrl(req);
   const wasInProgress = ticket.status === 'in_progress';
   if (wasInProgress) ticket.status = 'completed';
   res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
