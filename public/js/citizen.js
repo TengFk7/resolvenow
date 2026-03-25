@@ -36,6 +36,8 @@ async function submitTicket() {
   if (!cat) { ge('catErr').classList.add('on'); ok = false; } else hideE('catErr');
   if (!urg) { ge('urgErr').classList.add('on'); ok = false; } else hideE('urgErr');
   if (!loc || !desc) { showToast('กรุณากรอกสถานที่และรายละเอียด', true); ok = false; }
+  var f = ge('cImg').files[0];
+  if (!f) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
   if (!ok) return;
   try {
     var fd = new FormData();

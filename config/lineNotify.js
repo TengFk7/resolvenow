@@ -68,9 +68,8 @@ function notifyNewTicket(ticket) {
     ticket.urgency === 'urgent' ? '🔴 เร่งด่วน' :
       ticket.urgency === 'medium' ? '🟡 ปานกลาง' : '🟢 ปกติ';
 
-  const msg = '🆕 มีเรื่องร้องเรียนใหม่เข้ามา!\n' +
+  const msg = '✅ ระบบได้รับเรื่องของคุณเรียบร้อยแล้วหมายเลขคำร้องของคุณคือ' + ticket.ticketId + '\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
-    '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '⚠️  รายละเอียด: ' + ticket.description + '\n' +
     '⏱️  ความเร่งด่วน: ' + urgencyLabel + '\n' +

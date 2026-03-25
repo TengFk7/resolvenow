@@ -15,7 +15,7 @@ const DEPT_MAP = {
   Water: { th: 'ท่อแตก/น้ำไม่ไหล', icon: '💧' },
   Electricity: { th: 'ไฟฟ้าสาธารณะดับ', icon: '💡' },
   Garbage: { th: 'ขยะตกค้าง', icon: '🗑️' },
-  Animal: { th: 'สัตว์มีพิษ/จรจัด', icon: '🐕' },
+  Animal: { th: 'สัตว์มีพิษ/จรจัด', icon: '🐍' },
   Tree: { th: 'กิ่งไม้วางทาง', icon: '🌿' },
   Hazard: { th: 'เพลิง/ภัยพิบัติ', icon: '🚨' },
 };

@@ -15,7 +15,7 @@ var DEPT = {
 };
 var DEPT_ICON = {
   Road: '&#128763;', Water: '&#128167;', Electricity: '&#128161;',
-  Garbage: '&#128465;', Animal: '&#128054;', Tree: '&#127807;', Hazard: '&#128680;'
+  Garbage: '&#128465;', Animal: '&#128013;', Tree: '&#127807;', Hazard: '&#128680;'
 };
 
 /* ── DOM Helper ──────────────────────────────────────── */

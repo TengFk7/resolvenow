@@ -65,6 +65,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     const user = users.find(u => u.id === req.session.userId);
     if (!category || !description || !location)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+    if (!req.file)
+      return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่ง' });
 
     let score = urgency === 'urgent' ? 90 : urgency === 'medium' ? 60 : 30;
     const desc = description.toLowerCase();
@@ -166,14 +168,8 @@ router.post('/:id/upload/after', requireAuth, upload.single('image'), (req, res)
   const ticket = tickets.find(t => t.ticketId === req.params.id);
   if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
   ticket.afterImage = getFileUrl(req);
-  const wasInProgress = ticket.status === 'in_progress';
-  if (wasInProgress) ticket.status = 'completed';
+  // ไม่ auto-complete — ช่างต้องกดปุ่ม "ยืนยันปิดเรื่องร้องเรียน" เองผ่าน PUT /status
   res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
-
-  // แจ้งเตือน LINE เมื่องานเสร็จสมบูรณ์ (พร้อมรูปก่อน-หลัง)
-  if (wasInProgress) {
-    notifyCompleted(ticket).catch(e => console.error('[LINE] notifyCompleted error:', e));
-  }
 });
 
 module.exports = router;
