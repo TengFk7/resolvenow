@@ -4,7 +4,7 @@
 
 const https = require('https');
 
-const TOKEN    = process.env.LINE_CHANNEL_TOKEN;
+const TOKEN = process.env.LINE_CHANNEL_TOKEN;
 const ADMIN_ID = process.env.LINE_ADMIN_USER_ID;
 const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
 
@@ -56,7 +56,7 @@ async function pushImageTo(userId, imageUrl) {
   return pushTo(userId, [{
     type: 'image',
     originalContentUrl: safeUrl,
-    previewImageUrl:    safeUrl
+    previewImageUrl: safeUrl
   }]);
 }
 
@@ -65,7 +65,7 @@ async function pushImageTo(userId, imageUrl) {
 function notifyNewTicket(ticket) {
   const urgencyLabel =
     ticket.urgency === 'urgent' ? '🔴 เร่งด่วน' :
-    ticket.urgency === 'medium' ? '🟡 ปานกลาง' : '🟢 ปกติ';
+      ticket.urgency === 'medium' ? '🟡 ปานกลาง' : '🟢 ปกติ';
 
   const msg = '🆕 มีเรื่องร้องเรียนใหม่เข้ามา!\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
