@@ -1,533 +1,462 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>ResolveNow</title>
+  <title>ResolveNow — ระบบรับแจ้งเรื่องร้องเรียน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
 </head>
-
 <body>
 
-  <!-- ── AUTH ──────────────────────────────────────────────── -->
-  <div class="aw" id="authPage">
-    <div class="ac">
-      <div class="al">
-        <h1>&#127961;&#65039; ResolveNow</h1>
-        <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
-      </div>
-      <div class="tabs">
-        <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
-        <button class="tab" id="tabReg" onclick="switchTab('reg')">สมัครสมาชิก</button>
-      </div>
-      <div class="ebox" id="authErr"></div>
-      <!-- Login Form -->
-      <div id="fLogin">
-        <div class="fg"><label>Gmail</label><input type="email" id="lEmail" placeholder="example@gmail.com" /></div>
-        <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="รหัสผ่าน"
-            onkeydown="if(event.key==='Enter')doLogin()" /></div>
-        <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
-        <button class="btnp" onclick="doLogin()">เข้าสู่ระบบ</button>
-        <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
-          <div style="flex:1;height:1px;background:#e2e8f0"></div>
-          <span style="font-size:12px;color:#a0aec0;white-space:nowrap">หรือเข้าสู่ระบบด้วย</span>
-          <div style="flex:1;height:1px;background:#e2e8f0"></div>
-        </div>
-        <a href="/auth/line" id="btnLoginLine"
-          style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px;background:#06C755;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;box-sizing:border-box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
-            <path
-              d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-          </svg>
-          เข้าสู่ระบบด้วย LINE
-        </a>
-      </div>
-      <!-- Register Form -->
-      <div id="fReg" style="display:none">
-        <div class="row2">
-          <div class="fg"><label>ชื่อ</label><input type="text" id="rFirst" placeholder="ชื่อ" /></div>
-          <div class="fg"><label>นามสกุล</label><input type="text" id="rLast" placeholder="นามสกุล" /></div>
-        </div>
-        <div class="fg"><label>Gmail</label><input type="email" id="rEmail" placeholder="example@gmail.com" /></div>
-        <div class="fg"><label>Password</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร" />
-        </div>
-        <button class="btnp" id="btnSendOtp" onclick="doRegister()">&#128231; ส่ง OTP ยืนยันอีเมล</button>
-      </div>
-
-      <!-- OTP Verification Step -->
-      <div id="fOtp" style="display:none">
-        <div class="otp-info" id="otpInfo"></div>
-        <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:12px;text-align:center">กรอกรหัส OTP 6
-          หลักที่ส่งไปยัง Email ของคุณ</div>
-        <div class="otp-wrap" id="otpWrap">
-          <input class="otp-box" id="otp0" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp1" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp2" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp3" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp4" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp5" type="text" inputmode="numeric" maxlength="1" />
-        </div>
-        <div id="otpAttempts" style="text-align:center;font-size:12px;color:#e53e3e;margin-bottom:8px;min-height:18px">
-        </div>
-        <button class="btnp" onclick="doVerifyOtp()" id="btnVerify">&#9989; ยืนยัน OTP</button>
-        <div style="text-align:center;margin-top:14px">
-          <span id="otpTimerWrap" style="font-size:13px;color:#718096">ส่งอีกครั้งใน <strong
-              id="otpTimer">5:00</strong></span>
-          <button id="btnResend" onclick="doResendOtp()" class="btn-resend" style="display:none">&#128260; ส่ง OTP
-            ใหม่</button>
-        </div>
-        <button onclick="backToRegForm()"
-          style="width:100%;margin-top:10px;padding:9px;background:none;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;color:#718096;cursor:pointer">&#8592;
-          แก้ไขข้อมูล</button>
-      </div>
+<!-- ── AUTH ──────────────────────────────────────────────── -->
+<div class="aw" id="authPage">
+  <!-- Hero Panel (desktop) -->
+  <div class="auth-hero">
+    <div class="auth-decor"></div>
+    <div class="auth-decor2"></div>
+    <div class="auth-hero-content">
+      <h1>Resolve<span>Now</span></h1>
     </div>
   </div>
 
-  <!-- ── ADMIN APP ──────────────────────────────────────────── -->
-  <div id="adminApp">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sb-logo">
-        <h1>&#127961;&#65039; ResolveNow</h1>
-        <p>Smart Dispatcher</p>
-      </div>
-      <div class="sb-nav">
-        <div class="sb-item on" onclick="showPage('dashboard')"><span>&#128200;</span> Dashboard</div>
-        <div class="sb-item" onclick="showPage('queue')"><span>&#128203;</span> รายการทั้งหมด</div>
-        <div class="sb-item" onclick="showPage('techs')"><span>&#128295;</span> สถานะทีมช่าง</div>
-      </div>
-      <div class="sb-logout"><button onclick="doLogout()">&#10148;&#65039; ออกจากระบบ</button></div>
+  <!-- Auth Card -->
+  <div class="ac">
+    <div class="al">
+      <h1>🏛️ ResolveNow</h1>
+      <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
+    </div>
+    <div class="tabs">
+      <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+      <button class="tab" id="tabReg" onclick="switchTab('reg')">สมัครสมาชิก</button>
+    </div>
+    <div class="ebox" id="authErr"></div>
+
+    <!-- Login Form -->
+    <div id="fLogin">
+      <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com" /></div>
+      <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+      <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
+      <button class="btnp btn-ripple" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <div class="divider"><div class="divider-line"></div><span>หรือเข้าสู่ระบบด้วย</span><div class="divider-line"></div></div>
+      <a href="/auth/line" class="line-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
+          <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
+        </svg>
+        เข้าสู่ระบบด้วย LINE
+      </a>
     </div>
 
-    <!-- Main content -->
-    <div class="main">
-      <div class="topbar">
-        <div class="topbar-title">
-          <h2 id="pageTitle">Smart Dispatcher Dashboard</h2>
-          <p>จัดการและอนุมัติงานด้วย AI</p>
-        </div>
+    <!-- Register Form -->
+    <div id="fReg" style="display:none">
+      <div class="row2">
+        <div class="fg"><label>ชื่อ</label><input type="text" id="rFirst" placeholder="ชื่อ" /></div>
+        <div class="fg"><label>นามสกุล</label><input type="text" id="rLast" placeholder="นามสกุล" /></div>
+      </div>
+      <div class="fg"><label>อีเมล</label><input type="email" id="rEmail" placeholder="example@gmail.com" /></div>
+      <div class="fg"><label>รหัสผ่าน</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร" /></div>
+      <button class="btnp btn-ripple" id="btnSendOtp" onclick="doRegister()">📧 ส่ง OTP ยืนยันอีเมล</button>
+    </div>
+
+    <!-- OTP Verification Step -->
+    <div id="fOtp" style="display:none">
+      <div class="otp-info" id="otpInfo"></div>
+      <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:12px;text-align:center">กรอกรหัส OTP 6 หลักที่ส่งไปยัง Email</div>
+      <div class="otp-wrap" id="otpWrap">
+        <input class="otp-box" id="otp0" type="text" inputmode="numeric" maxlength="1" />
+        <input class="otp-box" id="otp1" type="text" inputmode="numeric" maxlength="1" />
+        <input class="otp-box" id="otp2" type="text" inputmode="numeric" maxlength="1" />
+        <input class="otp-box" id="otp3" type="text" inputmode="numeric" maxlength="1" />
+        <input class="otp-box" id="otp4" type="text" inputmode="numeric" maxlength="1" />
+        <input class="otp-box" id="otp5" type="text" inputmode="numeric" maxlength="1" />
+      </div>
+      <div id="otpAttempts" style="text-align:center;font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px"></div>
+      <button class="btnp btn-ripple" onclick="doVerifyOtp()" id="btnVerify">✅ ยืนยัน OTP</button>
+      <div style="text-align:center;margin-top:14px">
+        <span id="otpTimerWrap" style="font-size:13px;color:var(--muted)">ส่งอีกครั้งใน <strong id="otpTimer">5:00</strong></span>
+        <button id="btnResend" onclick="doResendOtp()" class="btn-resend" style="display:none">🔄 ส่ง OTP ใหม่</button>
+      </div>
+      <button onclick="backToRegForm()" style="width:100%;margin-top:10px;padding:10px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:13px;color:var(--muted);cursor:pointer;transition:var(--transition)" onmouseenter="this.style.borderColor='#94a3b8'" onmouseleave="this.style.borderColor='var(--border)'">← แก้ไขข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ──────────────────────────────────────────── -->
+<div id="adminApp">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <h1>🏛️ ResolveNow</h1>
+      <p>Smart Dispatcher</p>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-item on" id="nav-dashboard" onclick="showPage('dashboard')">
+        <span class="sb-icon">📊</span> Dashboard
+      </div>
+      <div class="sb-item" id="nav-queue" onclick="showPage('queue')">
+        <span class="sb-icon">📋</span> รายการทั้งหมด
+      </div>
+      <div class="sb-item" id="nav-techs" onclick="showPage('techs')">
+        <span class="sb-icon">🔧</span> สถานะทีมช่าง
+      </div>
+    </div>
+    <div class="sb-logout"><button class="btn-ripple" onclick="doLogout()">▶️ ออกจากระบบ</button></div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <h2 id="pageTitle">Smart Dispatcher Dashboard</h2>
+        <p>จัดการและอนุมัติงานด้วย AI</p>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-clock" id="topbarClock">--:--:--</div>
         <div class="topbar-user">
           <div class="uav" id="adminAv">A</div>
           <div>
             <div class="uname" id="adminName">Admin</div>
-            <div class="ustatus">&#9679; ONLINE</div>
+            <div class="ustatus">● ONLINE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+        <div class="scard red">
+          <div class="slabel">งานด่วนมาก</div>
+          <div class="sval" id="sUrgent">0</div>
+        </div>
+        <div class="scard or">
+          <div class="slabel">งานด่วน</div>
+          <div class="sval" id="sMed">0</div>
+        </div>
+        <div class="scard blue">
+          <div class="slabel">งานปกติ</div>
+          <div class="sval" id="sNorm">0</div>
+        </div>
+        <div class="scard gray">
+          <div class="slabel">ช่างพร้อม</div>
+          <div class="sval" id="sTR" style="color:var(--g)">0</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sTT"></div>
+        </div>
+        <div class="scard white">
+          <div class="slabel">ยอดวันนี้</div>
+          <div class="sval" id="sTD" style="color:var(--blue2)">0</div>
+        </div>
+      </div>
+
+      <!-- Dashboard Page -->
+      <div id="pageDashboard" class="page-enter">
+        <div class="dash-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>📋 SMART QUEUE — รอการอนุมัติ</h3>
+                <div class="live-badge"><div class="live-dot"></div>Real-time</div>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="queue-table">
+                  <thead><tr><th>TICKET</th><th>ระดับ</th><th>รายละเอียด</th><th>จัดการ</th></tr></thead>
+                  <tbody id="queueBody"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="right-col">
+            <div class="panel">
+              <div class="panel-head"><h3>📊 ภาพรวมงาน</h3></div>
+              <div class="pie-wrap">
+                <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140" height="140"></canvas></div>
+                <div class="pie-legend" id="pieLegend"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>🔧 สถานะช่าง</h3>
+                <span style="font-size:11px;font-weight:700;color:var(--g)">LIVE</span>
+              </div>
+              <div class="tech-list" id="techStatusList"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="content">
-        <!-- Stat Cards -->
-        <div class="stat-grid">
-          <div class="scard red">
-            <div class="slabel">งานด่วนมาก</div>
-            <div class="sval" id="sUrgent">0</div>
-          </div>
-          <div class="scard or">
-            <div class="slabel">งานด่วน</div>
-            <div class="sval" id="sMed">0</div>
-          </div>
-          <div class="scard blue">
-            <div class="slabel">งานปกติ</div>
-            <div class="sval" id="sNorm">0</div>
-          </div>
-          <div class="scard gray">
-            <div class="slabel">ช่างพร้อม</div>
-            <div class="sval" id="sTR" style="color:var(--g)">0</div>
-            <div style="font-size:11px;color:var(--mu)" id="sTT"></div>
-          </div>
-          <div class="scard white">
-            <div class="slabel">ยอดวันนี้</div>
-            <div class="sval" id="sTD" style="color:var(--p)">0</div>
+      <!-- All Tickets Page -->
+      <div id="pageQueue" style="display:none">
+        <div class="panel">
+          <div class="panel-head"><h3>📋 Ticket ทั้งหมด</h3></div>
+          <div style="overflow-x:auto">
+            <table class="queue-table">
+              <thead><tr><th>ID</th><th>ผู้แจ้ง</th><th>ประเภท</th><th>รายละเอียด</th><th>Priority</th><th>สถานะ</th><th>ช่าง</th><th>รูปภาพ</th><th>อัปเดต</th><th>วันที่</th></tr></thead>
+              <tbody id="allBody"><tr><td colspan="10" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
           </div>
         </div>
+      </div>
 
-        <!-- Dashboard Page -->
-        <div id="pageDashboard">
-          <div class="dash-grid">
+      <!-- Technician Status Page -->
+      <div id="pageTechs" style="display:none">
+        <div class="panel">
+          <div class="panel-head"><h3>🔧 ทีมช่างทั้งหมด 7 แผนก</h3></div>
+          <div class="tech-full-grid" id="techFullList"></div>
+        </div>
+      </div>
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /adminApp -->
+
+<!-- ── Mobile Bottom Nav (admin) ──────────────────────── -->
+<nav class="mob-nav" id="mobNav">
+  <div class="mob-nav-inner">
+    <button class="mob-nav-btn on" id="mnDash" onclick="showPage('dashboard');mobNavSetActive('mnDash')">
+      <span>📊</span><span>Dashboard</span>
+    </button>
+    <button class="mob-nav-btn" id="mnQueue" onclick="showPage('queue');mobNavSetActive('mnQueue')">
+      <span>📋</span><span>รายการ</span>
+    </button>
+    <button class="mob-nav-btn" id="mnTechs" onclick="showPage('techs');mobNavSetActive('mnTechs')">
+      <span>🔧</span><span>ช่าง</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── NORMAL APP (Citizen + Tech) ──────────────────── -->
+<div id="normalApp">
+  <header class="nheader">
+    <div class="nlogo">🏛️ Resolve<span>Now</span></div>
+    <div class="nuinfo">
+      <div class="nav2" id="hAv">?</div>
+      <div>
+        <div id="hName"></div>
+        <div id="hRole" class="rbadge"></div>
+      </div>
+      <button class="hbtn" onclick="openChPw()">🔒</button>
+      <button class="hbtn" onclick="doLogout()">ออก</button>
+    </div>
+  </header>
+
+  <div style="padding:16px 16px 0;max-width:760px;margin:0 auto;width:100%">
+    <div class="nstats">
+      <div class="nsc"><div class="sl">ทั้งหมด</div><div class="sv bv" id="stT">0</div></div>
+      <div class="nsc"><div class="sl">รอ</div><div class="sv yv" id="stP">0</div></div>
+      <div class="nsc"><div class="sl">กำลังซ่อม</div><div class="sv bv" id="stI">0</div></div>
+      <div class="nsc"><div class="sl">เสร็จ</div><div class="sv gv" id="stD">0</div></div>
+    </div>
+  </div>
+
+  <div class="nwrap">
+    <!-- Citizen Section -->
+    <div id="secCitizen" style="display:none">
+      <div class="ncard">
+        <h2>📝 แจ้งเรื่องร้องเรียนใหม่</h2>
+        <!-- 1. Category -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">
+            1. ประเภทปัญหา <span style="color:var(--r)">*</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="catGrid">
+            <div class="catbox" data-val="Road" onclick="toggleCat(this)"><span class="caticon">🛣️</span>ถนน/ทางเท้า</div>
+            <div class="catbox" data-val="Water" onclick="toggleCat(this)"><span class="caticon">💧</span>ท่อน้ำแตก/น้ำไม่ไหล</div>
+            <div class="catbox" data-val="Electricity" onclick="toggleCat(this)"><span class="caticon">💡</span>ไฟฟ้า</div>
+            <div class="catbox" data-val="Garbage" onclick="toggleCat(this)"><span class="caticon">🗑️</span>ขยะตกค้าง</div>
+            <div class="catbox" data-val="Animal" onclick="toggleCat(this)"><span class="caticon">🐍</span>สัตว์มีพิษ</div>
+            <div class="catbox" data-val="Tree" onclick="toggleCat(this)"><span class="caticon">🌿</span>สิ่งกีดขวางทาง</div>
+            <div class="catbox" data-val="Hazard" onclick="toggleCat(this)" style="grid-column:1/-1"><span class="caticon">🚨</span>เหตุระเบิด/เพลิง/ภัยพิบัติ</div>
+          </div>
+          <div class="ebox" id="catErr" style="margin-top:8px">กรุณาเลือกประเภทปัญหา</div>
+        </div>
+        <!-- 2. Description -->
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+            2. รายละเอียด <span style="color:var(--r)">*</span>
+          </label>
+          <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..." maxlength="200"
+            oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestUrgency()"
+            style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;background:#fafafa;font-family:'Prompt',sans-serif;resize:vertical;min-height:80px;transition:var(--transition)"
+            onfocus="this.style.borderColor='var(--blue2)';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
+            onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"></textarea>
+          <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:4px"><span id="descCount">0</span> / 200</div>
+        </div>
+        <!-- 3. Location GPS -->
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+            3. สถานที่ <span style="color:var(--r)">*</span> <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none">(บังคับใช้ GPS)</span>
+          </label>
+          <button type="button" id="btnGps" class="gps-btn" onclick="captureGPS()">
+            <span id="gpsIcon">📍</span>
+            <span id="gpsBtnText">ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน</span>
+          </button>
+          <div id="gpsResult" class="gps-result" style="display:none">
+            <strong>✅ ได้รับตำแหน่ง GPS แล้ว</strong>
+            <div id="gpsCoords" style="font-size:11px;word-break:break-all"></div>
+            <a id="gpsMapLink" href="#" target="_blank" style="font-size:11px;color:var(--blue);font-weight:600">🗺️ ดูบน Google Maps</a>
+          </div>
+          <input type="hidden" id="tLat" />
+          <input type="hidden" id="tLng" />
+        </div>
+        <!-- 4. Urgency AI -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+            4. ระดับความเร่งด่วน <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none">(🤖 AI วิเคราะห์)</span>
+          </div>
+          <div class="urg-box" id="urgAiBox">
+            <span class="urg-icon" id="urgAiIcon">🤖</span>
             <div>
-              <div class="panel">
-                <div class="panel-head">
-                  <h3>&#128203; SMART QUEUE — รอการอนุมัติ</h3>
-                  <div class="live-badge">
-                    <div class="live-dot"></div>Real-time
-                  </div>
-                </div>
-                <div style="overflow-x:auto">
-                  <table class="queue-table">
-                    <thead>
-                      <tr>
-                        <th>TICKET</th>
-                        <th>ระดับ</th>
-                        <th>รายละเอียด</th>
-                        <th>จัดการ</th>
-                      </tr>
-                    </thead>
-                    <tbody id="queueBody">
-                      <tr>
-                        <td colspan="4" class="empty">กำลังโหลด...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div class="right-col">
-              <div class="panel">
-                <div class="panel-head">
-                  <h3>&#128200; ภาพรวมงาน</h3>
-                </div>
-                <div class="pie-wrap">
-                  <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140"
-                      height="140"></canvas></div>
-                  <div class="pie-legend" id="pieLegend"></div>
-                </div>
-              </div>
-              <div class="panel">
-                <div class="panel-head">
-                  <h3>&#128295; สถานะช่าง</h3><span style="font-size:11px;font-weight:600;color:var(--g)">LIVE</span>
-                </div>
-                <div class="tech-list" id="techStatusList"></div>
-              </div>
+              <div class="urg-label" id="urgAiLabel">รอวิเคราะห์...</div>
+              <div class="urg-sub" id="urgAiSub">พิมพ์รายละเอียดเพื่อให้ AI ประเมิน</div>
             </div>
           </div>
+          <input type="hidden" id="tUrg" value="" />
+          <div class="ebox" id="urgErr" style="margin-top:8px">รอให้ AI วิเคราะห์ก่อนส่ง</div>
         </div>
-
-        <!-- All Tickets Page -->
-        <div id="pageQueue" style="display:none">
-          <div class="panel">
-            <div class="panel-head">
-              <h3>&#128203; Ticket ทั้งหมด</h3>
+        <!-- 5. Image -->
+        <div style="margin-bottom:18px">
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+            5. รูปภาพ <span style="color:var(--r)">*</span>
+          </label>
+          <label class="uarea">
+            <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)" />
+            <div id="cImgPrev">
+              <div style="font-size:32px;margin-bottom:6px">📷</div>
+              <div style="font-weight:600">คลิกเพื่อแนบรูปภาพ</div>
+              <div style="font-size:11px;margin-top:4px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>
             </div>
-            <div style="overflow-x:auto">
-              <table class="queue-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>ผู้แจ้ง</th>
-                    <th>ประเภท</th>
-                    <th>รายละเอียด</th>
-                    <th>Priority</th>
-                    <th>สถานะ</th>
-                    <th>ช่าง</th>
-                    <th>รูปภาพ</th>
-                    <th>อัปเดต</th>
-                    <th>วันที่</th>
-                  </tr>
-                </thead>
-                <tbody id="allBody">
-                  <tr>
-                    <td colspan="10" class="empty">กำลังโหลด...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          </label>
         </div>
-
-        <!-- Technician Status Page -->
-        <div id="pageTechs" style="display:none">
-          <div class="panel">
-            <div class="panel-head">
-              <h3>&#128295; ทีมช่างทั้งหมด 7 แผนก</h3>
-            </div>
-            <div id="techFullList" style="padding:16px"></div>
-          </div>
-        </div>
-      </div><!-- /content -->
-    </div><!-- /main -->
-  </div><!-- /adminApp -->
-
-  <!-- ── Mobile Bottom Nav (admin only, shown on mobile via CSS) ── -->
-  <nav class="mob-nav" id="mobNav">
-    <div class="mob-nav-inner">
-      <button class="mob-nav-btn on" id="mnDash" onclick="showPage('dashboard');mobNavSetActive('mnDash')">
-        <span>📊</span><span>Dashboard</span>
-      </button>
-      <button class="mob-nav-btn" id="mnQueue" onclick="showPage('queue');mobNavSetActive('mnQueue')">
-        <span>📋</span><span>รายการ</span>
-      </button>
-      <button class="mob-nav-btn" id="mnTechs" onclick="showPage('techs');mobNavSetActive('mnTechs')">
-        <span>🔧</span><span>ช่าง</span>
-      </button>
-    </div>
-  </nav>
-
-  <!-- ── NON-ADMIN APP ──────────────────────────────────────── -->
-  <div id="normalApp">
-    <header class="nheader">
-      <div class="nlogo">&#127961;&#65039; ResolveNow</div>
-      <div class="nuinfo">
-        <div class="nav2" id="hAv">?</div>
-        <div>
-          <div id="hName" style="font-weight:600;font-size:13px"></div>
-          <div id="hRole" class="rbadge"></div>
-        </div>
-        <button class="hbtn" onclick="openChPw()">&#128274;</button>
-        <button class="hbtn" onclick="doLogout()">ออก</button>
-      </div>
-    </header>
-
-    <div class="nwrap">
-      <!-- Mini stat bar -->
-      <div class="nstats">
-        <div class="nsc">
-          <div class="sl">ทั้งหมด</div>
-          <div class="sv bv" id="stT">0</div>
-        </div>
-        <div class="nsc">
-          <div class="sl">รอ</div>
-          <div class="sv yv" id="stP">0</div>
-        </div>
-        <div class="nsc">
-          <div class="sl">กำลังซ่อม</div>
-          <div class="sv bv" id="stI">0</div>
-        </div>
-        <div class="nsc">
-          <div class="sl">เสร็จ</div>
-          <div class="sv gv" id="stD">0</div>
-        </div>
+        <button class="btns btn-ripple" onclick="submitTicket()">📨 ส่งเรื่องร้องเรียน</button>
       </div>
 
-      <!-- ── Citizen Section ── -->
-      <div id="secCitizen" style="display:none">
-        <div class="ncard">
-          <h2>&#128221; แจ้งเรื่องร้องเรียนใหม่</h2>
+      <div class="ncard">
+        <h2>📋 เรื่องร้องเรียนของฉัน</h2>
+        <div id="citizenCards"><div class="empty">ยังไม่มีเรื่องร้องเรียน</div></div>
+      </div>
+    </div><!-- /secCitizen -->
 
-          <!-- 1. Category -->
-          <div style="margin-bottom:14px">
-            <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:10px">1. ประเภทปัญหาที่พบ <span
-                style="color:var(--r)">*</span></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="catGrid">
-              <div class="catbox" data-val="Road" onclick="toggleCat(this)"><span class="caticon">&#128763;</span>
-                ถนน/ทางเท้า</div>
-              <div class="catbox" data-val="Water" onclick="toggleCat(this)"><span class="caticon">&#128167;</span>
-                ท่อน้ำแตก/น้ำไม่ไหล</div>
-              <div class="catbox" data-val="Electricity" onclick="toggleCat(this)"><span
-                  class="caticon">&#128161;</span> ไฟฟ้า</div>
-              <div class="catbox" data-val="Garbage" onclick="toggleCat(this)"><span class="caticon">&#128465;</span>
-                ขยะตกค้าง</div>
-              <div class="catbox" data-val="Animal" onclick="toggleCat(this)"><span class="caticon">&#128013;</span>
-                สัตว์มีพิษ</div>
-              <div class="catbox" data-val="Tree" onclick="toggleCat(this)"><span class="caticon">&#127807;</span>
-                สิ่งกีดขวางทาง</div>
-              <div class="catbox" data-val="Hazard" onclick="toggleCat(this)" style="grid-column:1/-1"><span
-                  class="caticon">&#128680;</span> เหตุระเบิด/เพลิง/ภัยพิบัติ</div>
-            </div>
-            <div class="ebox" id="catErr" style="margin-top:6px">กรุณาเลือกประเภทปัญหา</div>
-          </div>
-
-          <!-- 2. Urgency (AI-determined) -->
-          <div style="margin-bottom:14px">
-            <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:8px">2. ระดับความเร่งด่วน
-              <span style="font-size:11px;font-weight:400;color:#6b7280">(🤖 AI วิเคราะห์อัตโนมัติ)</span>
-            </div>
-            <!-- AI urgency display -->
-            <div id="urgAiBox"
-              style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f8fafc;border:1.5px dashed #cbd5e0;border-radius:12px;min-height:46px">
-              <span id="urgAiIcon" style="font-size:20px">🤖</span>
-              <div>
-                <div id="urgAiLabel" style="font-size:14px;font-weight:700;color:#4a5568">รอวิเคราะห์...</div>
-                <div id="urgAiSub" style="font-size:11px;color:#a0aec0">พิมพ์รายละเอียดเพื่อให้ AI
-                  ประเมินระดับความเร่งด่วน</div>
-              </div>
-            </div>
-            <input type="hidden" id="tUrg" value="" />
-            <div class="ebox" id="urgErr" style="margin-top:6px">รอให้ AI วิเคราะห์ก่อนส่ง</div>
-          </div>
-
-          <!-- 3. Location (GPS only) -->
-          <div style="margin-bottom:12px">
-            <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">3. สถานที่ <span
-                style="color:var(--r)">*</span> <span style="font-size:11px;font-weight:400;color:var(--mu)">(บังคับใช้
-                GPS)</span></label>
-            <!-- GPS Button -->
-            <button type="button" id="btnGps" onclick="captureGPS()"
-              style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:#ebf8ff;border:1.5px solid #90cdf4;border-radius:10px;font-size:13px;font-weight:600;color:#2b6cb0;cursor:pointer;font-family:inherit;width:100%;justify-content:center">
-              <span id="gpsIcon">📍</span>
-              <span id="gpsBtnText">ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน</span>
-            </button>
-            <!-- GPS Result -->
-            <div id="gpsResult"
-              style="display:none;margin-top:8px;padding:10px 12px;background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:10px;font-size:12px;color:#276749">
-              <div style="font-weight:700;margin-bottom:3px">✅ ได้รับตำแหน่ง GPS แล้ว</div>
-              <div id="gpsCoords" style="font-size:11px;color:#2d6a4f;word-break:break-all"></div>
-              <a id="gpsMapLink" href="#" target="_blank"
-                style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600">🗺️ ดูบน Google Maps</a>
-            </div>
-            <!-- Hidden GPS fields -->
-            <input type="hidden" id="tLat" />
-            <input type="hidden" id="tLng" />
-          </div>
-
-          <!-- 4. Description -->
-          <div style="margin-bottom:12px">
-            <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">4. รายละเอียด
-              <span style="color:var(--r)">*</span></label>
-            <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..." maxlength="200"
-              oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestUrgency()"
-              style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit;resize:vertical;min-height:76px"></textarea>
-            <div style="text-align:right;font-size:11px;color:var(--mu);margin-top:3px"><span id="descCount">0</span> /
-              200 ตัวอักษร</div>
-          </div>
-
-          <!-- 5. Image -->
-          <div style="margin-bottom:4px">
-            <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">5. รูปภาพ <span
-                style="font-weight:400;color:var(--mu)">(บังคับ)</span></label>
-            <label class="uarea">
-              <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)" />
-              <div id="cImgPrev">
-                <div style="font-size:26px;margin-bottom:4px">&#128247;</div>
-                <div>คลิกเพื่อแนบรูปภาพ</div>
-                <div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>
-              </div>
-            </label>
-          </div>
-
-          <button class="btns" onclick="submitTicket()">&#128228; ส่งเรื่องร้องเรียน</button>
+    <!-- Technician Section -->
+    <div id="secTech" style="display:none">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;font-weight:500" id="techSub"></div>
+      <!-- Help Requests Banner -->
+      <div id="helpBanner" class="help-banner" style="display:none">
+        <div class="help-banner-head">
+          <div style="font-size:14px;font-weight:700;color:#92400e">📌 คำขอความช่วยเหลือจากเพื่อนช่าง</div>
+          <span class="help-badge" id="helpCount">0</span>
         </div>
+        <div id="helpList"></div>
+      </div>
+      <div id="techCards"></div>
+    </div><!-- /secTech -->
+  </div><!-- /nwrap -->
+</div><!-- /normalApp -->
 
-        <div class="ncard">
-          <h2>&#128203; เรื่องร้องเรียนของฉัน</h2>
-          <div id="citizenCards">
-            <div class="empty">ยังไม่มีเรื่องร้องเรียน</div>
-          </div>
-        </div>
-      </div><!-- /secCitizen -->
-
-      <!-- ── Technician Section ── -->
-      <div id="secTech" style="display:none">
-        <div style="font-size:13px;color:var(--mu);margin-bottom:12px;font-weight:500" id="techSub"></div>
-        <!-- Help Requests Banner -->
-        <div id="helpBanner"
-          style="display:none;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:14px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:14px;font-weight:700;color:#92400e">&#128204; คำขอความช่วยเหลือจากเพื่อนช่าง</div>
-            <span id="helpCount"
-              style="background:#fed7aa;color:#9a3412;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px">0</span>
-          </div>
-          <div id="helpList"></div>
-        </div>
-        <div id="techCards"></div>
-      </div><!-- /secTech -->
-    </div><!-- /nwrap -->
-  </div><!-- /normalApp -->
-
-  <!-- ── MODAL: Change Password ─────────────────────────────── -->
-  <div class="mo" id="mChPw">
-    <div class="mb">
-      <button class="mc" onclick="closeChPw()">&#10005;</button>
-      <h3>&#128274; เปลี่ยนรหัสผ่าน</h3>
-      <div class="ebox" id="chErr"></div>
-      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" /></div>
-      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" /></div>
-      <div class="fg"><label>ยืนยัน</label><input type="password" id="conP" /></div>
-      <button class="btnp" onclick="doChPw()">บันทึก</button>
-    </div>
+<!-- ── MODAL: Change Password ───────────────────────────── -->
+<div class="mo" id="mChPw">
+  <div class="mb">
+    <button class="mc" onclick="closeChPw()">✕</button>
+    <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
+    <div class="ebox" id="chErr"></div>
+    <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" /></div>
+    <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" /></div>
+    <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" /></div>
+    <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
   </div>
+</div>
 
-  <!-- ── MODAL: Request Help ────────────────────────────────── -->
-  <div class="mo" id="mHelp">
-    <div class="mb">
-      <button class="mc" onclick="ge('mHelp').classList.remove('on')">&#10005;</button>
-      <h3>&#128204; ขอความช่วยเหลือจากช่างแผนกอื่น</h3>
-      <div style="font-size:13px;color:var(--mu);margin-bottom:14px" id="helpTicketInfo"></div>
+<!-- ── MODAL: Request Help ──────────────────────────────── -->
+<div class="mo" id="mHelp">
+  <div class="mb">
+    <button class="mc" onclick="ge('mHelp').classList.remove('on')">✕</button>
+    <h3>📌 ขอความช่วยเหลือจากช่างแผนกอื่น</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px" id="helpTicketInfo"></div>
+    <div class="fg">
+      <label>แผนกที่ต้องการ (ไม่บังคับ)</label>
+      <select id="helpTargetDept">
+        <option value="">— ทุกแผนก —</option>
+        <option value="Road">🛣️ ถนน/ทางเท้า</option>
+        <option value="Water">💧 ท่อแตก/น้ำ</option>
+        <option value="Electricity">💡 ไฟฟ้า</option>
+        <option value="Garbage">🗑️ ขยะ</option>
+        <option value="Animal">🐍 สัตว์</option>
+        <option value="Tree">🌿 กิ่งไม้</option>
+        <option value="Hazard">🚨 ภัยพิบัติ</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>ข้อความถึงช่างที่จะมาช่วย</label>
+      <textarea id="helpMsg" placeholder="อธิบายสิ่งที่ต้องการความช่วยเหลือ..." style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;font-family:'Prompt',sans-serif;resize:none;height:80px;background:#fafafa"></textarea>
+    </div>
+    <button class="btnp btn-ripple" onclick="submitHelpRequest()">📌 ส่งคำขอช่วยเหลือ</button>
+  </div>
+</div>
+
+<!-- ── MODAL: View Image ────────────────────────────────── -->
+<div class="mo" id="mImg" onclick="closeMImg()">
+  <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
+    <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
+    <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.4)" src="" alt="" />
+    <p style="color:rgba(255,255,255,.5);font-size:12px;margin-top:10px">คลิกพื้นหลังเพื่อปิด</p>
+  </div>
+</div>
+
+<!-- ── MODAL: Reject Confirm ────────────────────────────── -->
+<div class="mo" id="mReject">
+  <div class="mb">
+    <button class="mc" onclick="closeRejectModal()">✕</button>
+    <!-- Step 1: Confirm -->
+    <div id="mRejectStep1">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:44px;margin-bottom:10px">❌</div>
+        <h3 style="margin:0 0 6px;font-size:18px">ปฏิเสธเรื่องร้องเรียน?</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="mRejectTicketLabel"></p>
+      </div>
+      <p style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff7ed;border-radius:10px;padding:12px;border:1px solid #fed7aa">
+        หากยืนยัน ระบบจะแจ้งผู้ร้องเรียนทาง LINE ทันที
+      </p>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeRejectModal()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted);transition:var(--transition)">✕ ไม่ใช่</button>
+        <button onclick="goRejectStep2()" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.3)">✓ ตกลง</button>
+      </div>
+    </div>
+    <!-- Step 2: Reason -->
+    <div id="mRejectStep2" style="display:none">
+      <h3 style="margin:0 0 4px">📝 ระบุเหตุผลที่ปฏิเสธ</h3>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 16px">ข้อความนี้จะถูกส่งไปยัง LINE ของผู้แจ้งเรื่องโดยตรง</p>
       <div class="fg">
-        <label>แผนกที่ต้องการ (ไม่บังคับ)</label>
-        <select id="helpTargetDept">
-          <option value="">— ทุกแผนก —</option>
-          <option value="Road">&#128763; ถนน/ทางเท้า</option>
-          <option value="Water">&#128167; ท่อแตก/น้ำ</option>
-          <option value="Electricity">&#128161; ไฟฟ้า</option>
-          <option value="Garbage">&#128465; ขยะ</option>
-          <option value="Animal">&#128054; สัตว์</option>
-          <option value="Tree">&#127807; กิ่งไม้</option>
-          <option value="Hazard">&#128680; ภัยพิบัติ</option>
-        </select>
+        <label>เหตุผล <span style="color:var(--r)">*</span></label>
+        <textarea id="rejectReason" placeholder="เช่น ข้อมูลไม่ครบถ้วน / ไม่อยู่ในเขตรับผิดชอบ..." style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;font-family:'Prompt',sans-serif;resize:none;height:90px;background:#fafafa"></textarea>
       </div>
-      <div class="fg">
-        <label>ข้อความถึงช่างที่จะมาช่วย</label>
-        <textarea id="helpMsg" placeholder="อธิบายสิ่งที่ต้องการความช่วยเหลือ..."
-          style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;font-family:inherit;resize:none;height:80px;background:#fafafa"></textarea>
-      </div>
-      <button class="btnp" onclick="submitHelpRequest()">&#128204; ส่งคำขอช่วยเหลือ</button>
-    </div>
-  </div>
-
-  <!-- ── MODAL: View Image ──────────────────────────────────── -->
-  <div class="mo" id="mImg" onclick="closeMImg()">
-    <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
-      <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
-      <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:12px" src="" alt="" />
-      <p style="color:rgba(255,255,255,.6);font-size:12px;margin-top:8px">คลิกพื้นหลังเพื่อปิด</p>
-    </div>
-  </div>
-
-  <!-- ── MODAL: Reject Confirm ──────────────────────────────── -->
-  <div class="mo" id="mReject">
-    <div class="mb">
-      <button class="mc" onclick="closeRejectModal()">&#10005;</button>
-
-      <!-- Step 1: Confirm -->
-      <div id="mRejectStep1">
-        <div style="text-align:center;margin-bottom:16px">
-          <div style="font-size:40px;margin-bottom:8px">&#10060;</div>
-          <h3 style="margin:0 0 6px;font-size:17px">ปฏิเสธเรื่องร้องเรียน?</h3>
-          <p style="font-size:13px;color:#718096;margin:0" id="mRejectTicketLabel"></p>
-        </div>
-        <p style="font-size:13px;color:#4a5568;text-align:center;margin-bottom:20px">
-          หากยืนยัน ระบบจะแจ้งผู้ร้องเรียนทาง LINE ทันที
-        </p>
-        <div style="display:flex;gap:10px">
-          <button onclick="closeRejectModal()"
-            style="flex:1;padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:#4a5568">
-            &#10006; ไม่ใช่
-          </button>
-          <button onclick="goRejectStep2()"
-            style="flex:1;padding:11px;border:none;border-radius:12px;background:#e53e3e;color:#fff;font-size:14px;cursor:pointer;font-weight:700">
-            &#10004; ตกลง
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 2: Reason -->
-      <div id="mRejectStep2" style="display:none">
-        <h3 style="margin:0 0 4px">&#128221; ระบุเหตุผลที่ปฏิเสธ</h3>
-        <p style="font-size:12px;color:#718096;margin:0 0 14px">ข้อความนี้จะถูกส่งไปยัง LINE ของผู้แจ้งเรื่องโดยตรง</p>
-        <div class="fg">
-          <label>เหตุผล <span style="color:var(--r)">*</span></label>
-          <textarea id="rejectReason" placeholder="เช่น ข้อมูลไม่ครบถ้วน / ไม่อยู่ในเขตรับผิดชอบ..."
-            style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;font-family:inherit;resize:none;height:90px;background:#fafafa"></textarea>
-        </div>
-        <div class="ebox" id="rejectErr"></div>
-        <div style="display:flex;gap:10px;margin-top:4px">
-          <button onclick="goRejectStep1()"
-            style="flex:1;padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:#4a5568">
-            &#8592; ย้อนกลับ
-          </button>
-          <button onclick="submitReject()"
-            style="flex:1;padding:11px;border:none;border-radius:12px;background:#e53e3e;color:#fff;font-size:14px;cursor:pointer;font-weight:700">
-            &#128228; ส่งการปฏิเสธ
-          </button>
-        </div>
+      <div class="ebox" id="rejectErr"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button onclick="goRejectStep1()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted);transition:var(--transition)">← ย้อนกลับ</button>
+        <button onclick="submitReject()" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.3)">📨 ส่งการปฏิเสธ</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Hidden file input for tech uploads -->
-  <input type="file" id="techFile" accept="image/*" style="display:none" />
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
+<!-- ── SPLASH SCREEN ──────────────────────────────────── -->
+<div id="splash">
+  <div id="splashContent">
+    <div class="splash-logo">Resolve<span>Now</span></div>
+    <div class="splash-bar"><div class="splash-progress"></div></div>
+  </div>
+</div>
 
-  <!-- ── JavaScript Modules (load order matters) ────────────── -->
-  <script src="/js/ui.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/admin.js"></script>
-  <script src="/js/citizen.js"></script>
-  <script src="/js/technician.js"></script>
-  <script src="/js/app.js"></script>
+<!-- Hidden file input for tech uploads -->
+<input type="file" id="techFile" accept="image/*" style="display:none" />
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
+<!-- JS Modules -->
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/citizen.js"></script>
+<script src="/js/technician.js"></script>
+<script src="/js/app.js"></script>
 </body>
-
 </html>

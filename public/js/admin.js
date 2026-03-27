@@ -8,29 +8,8 @@
    • Technician status panel
    ───────────────────────────────────────────── */
 
-/* ── Page Navigation ─────────────────────────────────── */
-function showPage(page) {
-  currentPage = page;
-  var pages = ['pageDashboard', 'pageQueue', 'pageTechs'];
-  pages.forEach(function (pid) {
-    var el = ge(pid);
-    var active = (pid === 'page' + page.charAt(0).toUpperCase() + page.slice(1));
-    if (active) {
-      el.style.display = 'block';
-      // replay animation
-      el.style.animation = 'none';
-      el.offsetHeight; // force reflow
-      el.style.animation = '';
-    } else {
-      el.style.display = 'none';
-    }
-  });
-  var titles = { dashboard: 'Smart Dispatcher Dashboard', queue: 'รายการ Ticket ทั้งหมด', techs: 'สถานะทีมช่าง 7 แผนก' };
-  ge('pageTitle').textContent = titles[page];
-  document.querySelectorAll('.sb-item').forEach(function (el) { el.classList.remove('on'); });
-  var idx = { dashboard: 0, queue: 1, techs: 2 }[page];
-  document.querySelectorAll('.sb-item')[idx].classList.add('on');
-}
+/* ── Page Navigation is handled by ui.js showPage() ──── */
+/* showPage() is defined in ui.js and calls loadAdmin() when needed */
 
 /* ── Load All Admin Data ─────────────────────────────── */
 async function loadAdmin() {
@@ -45,12 +24,12 @@ async function loadAdmin() {
     var med = tks.filter(function (t) { return t.priorityScore >= 40 && t.priorityScore < 70 && t.status !== 'completed' && t.status !== 'rejected'; }).length;
     var nor = tks.filter(function (t) { return t.priorityScore < 40 && t.status !== 'completed' && t.status !== 'rejected'; }).length;
     var rdy = techs.filter(function (t) { return t.statusLabel === 'READY'; }).length;
-    ge('sUrgent').textContent = urg;
-    ge('sMed').textContent = med;
-    ge('sNorm').textContent = nor;
-    ge('sTR').textContent = rdy;
+    animateNum(ge('sUrgent'), urg);
+    animateNum(ge('sMed'), med);
+    animateNum(ge('sNorm'), nor);
+    animateNum(ge('sTR'), rdy);
     ge('sTT').textContent = '/ ' + techs.length;
-    ge('sTD').textContent = tks.length;
+    animateNum(ge('sTD'), tks.length);
 
     // Pie chart
     var pend = tks.filter(function (t) { return t.status === 'pending'; }).length;
@@ -78,9 +57,9 @@ function drawPie(p, i, d) {
   var ctx = canvas.getContext('2d');
   var total = p + i + d || 1;
   var data = [
-    { val: p, color: '#e53e3e', label: 'รอ (' + p + ')' },
-    { val: i, color: '#ea580c', label: 'กำลังซ่อม (' + i + ')' },
-    { val: d, color: '#1a56db', label: 'เสร็จ (' + d + ')' }
+    { val: p, color: '#f59e0b', label: 'รอ (' + p + ')' },
+    { val: i, color: '#8b5cf6', label: 'กำลังซ่อม (' + i + ')' },
+    { val: d, color: '#22c55e', label: 'เสร็จ (' + d + ')' }
   ];
   ctx.clearRect(0, 0, 140, 140);
   var start = -Math.PI / 2, cx = 70, cy = 70, r = 60;
@@ -92,6 +71,9 @@ function drawPie(p, i, d) {
   }
   ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2);
   ctx.fillStyle = '#fff'; ctx.fill();
+  // center dot
+  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.fillStyle = '#e2e8f0'; ctx.fill();
   var lg = ge('pieLegend'); lg.innerHTML = '';
   for (var j = 0; j < data.length; j++)
     lg.innerHTML += '<div class="pie-item"><div class="pie-dot" style="background:' + data[j].color + '"></div><span>' + data[j].label + '</span></div>';
@@ -104,9 +86,17 @@ function renderTechStatus(techs) {
   var h = '';
   for (var i = 0; i < techs.length; i++) {
     var t = techs[i];
-    h += '<div class="tech-item"><div class="tech-row"><div><div class="tech-name">' + (DEPT_ICON[t.specialty] || '') + (DEPT[t.specialty] || t.specialty) + '</div><div class="tech-spec">' + t.name + '</div></div><span class="spill ' + t.statusLabel + '">' + t.statusLabel + '</span></div>';
-    h += '<div class="prog-bar"><div class="prog-fill ' + t.statusLabel + '" style="width:' + t.capacity + '%"></div></div>';
-    h += '<div class="prog-lbl">LOAD ' + t.capacity + '%</div></div>';
+    var csClass = t.statusLabel==='READY' ? 'cs-ready' : t.statusLabel==='BUSY' ? 'cs-busy' : 'cs-full';
+    var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('');
+    h += '<div class="tech-item">';
+    h += '<div class="tech-av">' + initials + '</div>';
+    h += '<div class="tech-info">';
+    h += '<div class="tech-name">' + (DEPT_ICON[t.specialty]||'') + ' ' + t.name + '</div>';
+    h += '<div class="tech-dept">' + (DEPT[t.specialty]||t.specialty) + '</div>';
+    h += '<div class="tech-bar-wrap"><div class="tech-bar" style="width:'+t.capacity+'%"></div></div>';
+    h += '</div>';
+    h += '<span class="cstatus ' + csClass + '">' + t.statusLabel + '</span>';
+    h += '</div>';
   }
   el.innerHTML = h;
 }
@@ -114,24 +104,27 @@ function renderTechStatus(techs) {
 /* ── Smart Queue (Pending tickets) ───────────────────── */
 function renderQueue(tks, techs) {
   var el = ge('queueBody');
-  if (!tks.length) { el.innerHTML = '<tr><td colspan="4" class="empty">ไม่มีงานรอ &#127881;</td></tr>'; return; }
+  if (!tks.length) { el.innerHTML = '<tr><td colspan="4" class="empty">🎉 ไม่มีงานรอการอนุมัติ</td></tr>'; return; }
   var h = '';
   for (var i = 0; i < tks.length; i++) {
     var t = tks[i];
-    var pc = t.priorityScore >= 70 ? 'urgent' : t.priorityScore >= 40 ? 'medium' : 'normal';
-    var pt = t.priorityScore >= 70 ? 'ด่วนมาก' : t.priorityScore >= 40 ? 'ด่วน' : 'ปกติ';
-    var opts = '<option value="">-- เลือกช่าง --</option>';
+    var opts = '<option value="">— เลือกช่าง —</option>';
     for (var j = 0; j < techs.length; j++) {
       var tc = techs[j];
       var match = tc.specialty === t.category;
-      opts += '<option value="' + tc.id + '"' + (tc.statusLabel === 'FULL' ? ' disabled' : '') + '>' + (match ? '&#11088; ' : '') + (DEPT_ICON[tc.specialty] || '') + tc.name + ' - ' + tc.statusLabel + '</option>';
+      opts += '<option value="'+tc.id+'"'+(tc.statusLabel==='FULL' ? ' disabled' : '')+'>'+(match ? '⭐ ' : '')+(DEPT_ICON[tc.specialty]||'')+' '+tc.name+' — '+tc.statusLabel+'</option>';
     }
+    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '';
     h += '<tr>';
-    h += '<td><strong>#' + t.ticketId + '</strong><br/><span style="font-size:11px;color:var(--mu)">' + t.citizenName + '</span></td>';
-    h += '<td><span class="pbadge ' + pc + '">' + pt + '</span><br/>' + pLabel(t.priorityScore) + '</td>';
-    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600" title="ดูบน Google Maps">\ud83d\uddfa\ufe0f GPS</a>' : '';
-    h += '<td><div style="font-weight:600">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' - ' + t.location + gpsLink + '</div><div style="font-size:12px;color:#4a5568">' + t.description + '</div>' + (t.citizenImage ? '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'\u0e23\u0e39\u0e1b\')" style="width:60px;height:40px;object-fit:cover;border-radius:6px;margin-top:4px;cursor:pointer"/>' : '') + '</td>';
-    h += '<td><div class="ai-lbl">&#129302; AI RECOMMEND</div><select class="tech-sel" id="tsel_' + t.ticketId + '">' + opts + '</select><div style="display:flex;gap:6px;margin-top:8px"><button class="btn-approve" data-id="' + t.ticketId + '" onclick="approveTicket(this)">APPROVE</button><button class="btn-rej" data-id="' + t.ticketId + '" onclick="rejectTicket(this)">REJECT</button></div></td>';
+    h += '<td><div style="font-weight:700;color:var(--navy);font-family:Inter,sans-serif">#'+t.ticketId+'</div><div style="font-size:11px;color:var(--muted)">'+t.citizenName+'</div></td>';
+    h += '<td>'+pLabel(t.priorityScore)+'</td>';
+    h += '<td><div style="font-weight:600;font-size:13px">'+( DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+gpsLink+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">📍 '+t.location+'</div><div style="font-size:12px;color:var(--text);margin-top:2px">'+t.description+'</div>'+(t.citizenImage ? '<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb" style="margin-top:6px"/>' : '')+'</td>';
+    h += '<td><div style="font-size:11px;font-weight:700;color:var(--blue2);margin-bottom:6px">🤖 AI RECOMMEND</div>';
+    h += '<select id="tsel_'+t.ticketId+'" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:Prompt,sans-serif;outline:none;background:#fff">'+opts+'</select>';
+    h += '<div style="display:flex;gap:6px;margin-top:8px">';
+    h += '<button class="abt abt-blue btn-ripple" data-id="'+t.ticketId+'" onclick="approveTicket(this)">✓ Approve</button>';
+    h += '<button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)">✕ Reject</button>';
+    h += '</div></td>';
     h += '</tr>';
   }
   el.innerHTML = h;
@@ -153,10 +146,10 @@ function autoSelect(ticket, techs) {
 async function approveTicket(btn) {
   var id = btn.getAttribute('data-id');
   var sel = ge('tsel_' + id);
-  if (!sel || !sel.value) return showToast('กรุณาเลือกช่างก่อน', true);
+  if (!sel || !sel.value) return showToast('กรุณาเลือกช่างก่อน', 'warning');
   var res = await fetch('/api/tickets/' + id + '/assign', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ technicianId: sel.value }) });
-  if (!res.ok) { var d = await res.json(); return showToast(d.error, true); }
-  showToast('Approve แล้ว!');
+  if (!res.ok) { var d = await res.json(); return showToast(d.error, 'error'); }
+  showToast('Approve แล้ว! 🎉', 'success');
   loadAdmin();
 }
 
@@ -201,7 +194,7 @@ async function submitReject() {
     body: JSON.stringify({ status: 'rejected', reason: reason })
   });
   closeRejectModal();
-  showToast('ปฏิเสธแล้ว', true);
+  showToast('ปฏิเสธแล้ว', 'error');
   loadAdmin();
 }
 
@@ -210,38 +203,35 @@ async function submitReject() {
 function renderAllQueue(tks) {
   var el = ge('allBody');
   if (!tks.length) { el.innerHTML = '<tr><td colspan="10" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
-  tks.sort(function (a, b) { return b.priorityScore - a.priorityScore; });
+  tks.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
   var h = '';
   for (var i = 0; i < tks.length; i++) {
     var t = tks[i];
-    var locGps = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:10px;color:#2b6cb0;text-decoration:none;font-weight:600">\ud83d\uddfa\ufe0f GPS</a>' : '';
-    h += '<tr><td><strong>' + t.ticketId + '</strong></td><td>' + t.citizenName + '</td><td>' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + '</td>';
-    h += '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + t.location + locGps + '<br/><span style="color:#4a5568;font-size:11px">' + t.description + '</span></td>';
-    h += '<td>' + pLabel(t.priorityScore) + '</td><td><span class="badge ' + t.status + '">' + stTH(t.status) + '</span></td>';
-    h += '<td style="font-size:12px">' + (t.assignedName || '-') + '</td>';
-
-    // ── รูปภาพ ──────────────────────────────────────────────
+    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
+    h += '<tr>';
+    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+t.ticketId+'</td>';
+    h += '<td style="font-size:12px">'+t.citizenName+'</td>';
+    h += '<td>'+(DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+'</td>';
+    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 '+t.location+gpsLink+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.description+'</div></td>';
+    h += '<td>'+pLabel(t.priorityScore)+'</td>';
+    h += '<td>'+statusBadge(t.status)+'</td>';
+    h += '<td style="font-size:12px">'+(t.assignedName||'<span style="color:var(--muted)">—</span>')+'</td>';
+    // Images
     var imgCell = '';
-    if (t.status === 'completed' && (t.beforeImage || t.afterImage)) {
-      imgCell += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:6px">';
-      imgCell += '<div style="font-size:10px;font-weight:700;color:#065f46;margin-bottom:5px">✅ ก่อน / หลัง</div>';
-      imgCell += '<div style="display:flex;gap:4px">';
-      if (t.beforeImage) imgCell += '<div style="text-align:center"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" style="width:54px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid #bbf7d0"/><div style="font-size:9px;color:#065f46;margin-top:2px;font-weight:600">ก่อน</div></div>';
-      if (t.afterImage) imgCell += '<div style="text-align:center"><img src="' + t.afterImage + '" onclick="viewImg(this.src,\'หลัง\')" style="width:54px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid #bbf7d0"/><div style="font-size:9px;color:#065f46;margin-top:2px;font-weight:600">หลัง</div></div>';
-      imgCell += '</div></div>';
-    } else if (t.citizenImage) {
-      imgCell += '<div style="text-align:center"><img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" style="width:54px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer"/><div style="font-size:9px;color:var(--mu);margin-top:2px">ผู้แจ้ง</div></div>';
+    if (t.status==='completed' && (t.beforeImage||t.afterImage)) {
+      imgCell = '<div style="display:flex;gap:4px">';
+      if (t.beforeImage) imgCell += '<div style="text-align:center">'+imgThumb(t.beforeImage,'ก่อน')+'<div style="font-size:9px;color:var(--g);margin-top:2px;font-weight:700">ก่อน</div></div>';
+      if (t.afterImage) imgCell += '<div style="text-align:center">'+imgThumb(t.afterImage,'หลัง')+'<div style="font-size:9px;color:var(--blue2);margin-top:2px;font-weight:700">หลัง</div></div>';
+      imgCell += '</div>';
     } else {
-      imgCell = '<span style="font-size:11px;color:var(--mu)">-</span>';
+      imgCell = imgThumb(t.citizenImage, 'รูปผู้แจ้ง');
     }
-    h += '<td>' + imgCell + '</td>';
-    // ────────────────────────────────────────────────────────
-
-    h += '<td><select data-id="' + t.ticketId + '" onchange="adminChSt(this)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--bd)">';
-    ['pending', 'assigned', 'in_progress', 'completed', 'rejected'].forEach(function (s) {
-      h += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + stTH(s) + '</option>';
+    h += '<td>'+imgCell+'</td>';
+    h += '<td><select data-id="'+t.ticketId+'" onchange="adminChSt(this)" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:9px;font-family:Prompt,sans-serif;outline:none;background:#fff">';
+    ['pending','assigned','in_progress','completed','rejected'].forEach(function(s){
+      h += '<option value="'+s+'"'+(t.status===s ? ' selected' : '')+'>'+stTH(s)+'</option>';
     });
-    h += '</select></td><td style="font-size:11px;color:var(--mu);white-space:nowrap">' + t.createdAt + '</td></tr>';
+    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+t.createdAt+'</td></tr>';
   }
   el.innerHTML = h;
 }
@@ -267,19 +257,28 @@ function adminChSt(sel) {
   fetch('/api/tickets/' + id + '/status', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: status })
-  }).then(function () { showToast('อัปเดตแล้ว'); loadAdmin(); });
+  }).then(function () { showToast('อัปเดตแล้ว', 'success'); loadAdmin(); });
 }
 
 /* ── Technician Full Cards ───────────────────────────── */
 function renderTechFull(techs) {
   var el = ge('techFullList');
-  var h = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">';
+  var h = '';
   for (var i = 0; i < techs.length; i++) {
     var t = techs[i];
-    h += '<div style="border:1px solid var(--bd);border-radius:12px;padding:16px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:20px">' + (DEPT_ICON[t.specialty] || '') + '</div><div style="font-size:14px;font-weight:700;margin-top:4px">' + (DEPT[t.specialty] || t.specialty) + '</div><div style="font-size:12px;color:var(--mu)">' + t.name + '</div></div><span class="spill ' + t.statusLabel + '">' + t.statusLabel + '</span></div>';
-    h += '<div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill ' + t.statusLabel + '" style="width:' + t.capacity + '%"></div></div>';
-    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mu)"><span>ค้าง: ' + t.activeJobs + '</span><span>รวม: ' + t.totalJobs + '</span></div></div>';
+    var csClass = t.statusLabel==='READY' ? 'cs-ready' : t.statusLabel==='BUSY' ? 'cs-busy' : 'cs-full';
+    var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('');
+    h += '<div class="tech-card">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
+    h += '<div style="display:flex;align-items:center;gap:10px">';
+    h += '<div class="tech-av" style="width:42px;height:42px;font-size:16px">'+initials+'</div>';
+    h += '<div><div style="font-size:15px;font-weight:700;color:var(--navy)">'+(DEPT_ICON[t.specialty]||'')+' '+(DEPT[t.specialty]||t.specialty)+'</div><div style="font-size:12px;color:var(--muted)">'+t.name+'</div></div>';
+    h += '</div>';
+    h += '<span class="cstatus '+csClass+'">'+t.statusLabel+'</span>';
+    h += '</div>';
+    h += '<div class="tech-bar-wrap" style="margin-bottom:8px"><div class="tech-bar" style="width:'+t.capacity+'%"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>งานค้าง: <strong style="color:var(--navy)">'+t.activeJobs+'</strong></span><span>รวมทั้งหมด: <strong style="color:var(--navy)">'+t.totalJobs+'</strong></span></div>';
+    h += '</div>';
   }
-  h += '</div>';
   el.innerHTML = h;
 }
