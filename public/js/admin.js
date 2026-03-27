@@ -247,9 +247,26 @@ function renderAllQueue(tks) {
 }
 
 function adminChSt(sel) {
-  fetch('/api/tickets/' + sel.getAttribute('data-id') + '/status', {
+  var id = sel.getAttribute('data-id');
+  var status = sel.value;
+
+  // If rejecting, open the reject modal so admin must provide a reason
+  if (status === 'rejected') {
+    _rejectId = id;
+    ge('mRejectTicketLabel').textContent = 'Ticket #' + id;
+    ge('rejectReason').value = '';
+    hideE('rejectErr');
+    ge('mRejectStep1').style.display = 'block';
+    ge('mRejectStep2').style.display = 'none';
+    ge('mReject').classList.add('on');
+    // Reset select back to previous value (modal will handle the actual change)
+    loadAdmin();
+    return;
+  }
+
+  fetch('/api/tickets/' + id + '/status', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: sel.value })
+    body: JSON.stringify({ status: status })
   }).then(function () { showToast('อัปเดตแล้ว'); loadAdmin(); });
 }
 
