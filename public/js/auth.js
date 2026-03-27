@@ -263,11 +263,52 @@ async function doLogout() {
   await fetch('/api/auth/logout', { method: 'POST' });
   CU = null;
   _stopOtpTimer();
-  ge('adminApp').classList.remove('on');
-  ge('normalApp').classList.remove('on');
-  ge('authPage').style.display = 'flex';
-  switchTab('login');
+
+  // Determine visible app
+  var adminEl  = ge('adminApp');
+  var normalEl = ge('normalApp');
+  var activeEl = (adminEl && adminEl.style.display !== 'none' && adminEl.offsetParent !== null) ? adminEl : normalEl;
+
+  // 3D exit animation on active container
+  if (activeEl) {
+    activeEl.style.transition = 'transform .55s cubic-bezier(.22,1,.36,1), opacity .45s ease';
+    activeEl.style.transformOrigin = 'center center';
+    activeEl.style.transform = 'scale(.88) rotateX(6deg) translateY(-30px)';
+    activeEl.style.opacity = '0';
+  }
+
+  setTimeout(function() {
+    // Reset transform so next login is clean
+    if (activeEl) {
+      activeEl.style.transition = '';
+      activeEl.style.transform = '';
+      activeEl.style.opacity = '';
+    }
+    if (adminEl)  adminEl.style.display  = 'none';
+    if (normalEl) normalEl.style.display = 'none';
+
+    // Restore body scroll for auth page
+    document.body.style.overflow = '';
+
+    // Show auth page with 3D enter animation
+    var ap = ge('authPage');
+    if (ap) {
+      ap.style.display = 'flex';
+      ap.style.transform = 'scale(1.06) rotateX(-4deg)';
+      ap.style.opacity = '0';
+      ap.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), opacity .5s ease';
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          ap.style.transform = '';
+          ap.style.opacity = '1';
+          setTimeout(function(){ ap.style.transition = ''; }, 650);
+        });
+      });
+    }
+    switchTab('login');
+  }, 500);
 }
+
 
 /* ── Change Password ─────────────────────────────────────── */
 async function doChPw() {

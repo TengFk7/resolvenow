@@ -16,26 +16,101 @@
   var heroContent = document.querySelector('.auth-hero-content');
   if (!splash) return;
 
-  // Step 1 (1.7s): Start hero content scale-down FIRST — it's hidden under splash
-  //   Hero text begins morphing from splash-center position DOWN to its natural size+position
+  /* ── Starfield Canvas ─── */
+  (function initStars() {
+    var canvas = document.getElementById('starCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W, H, stars = [];
+    function resize() {
+      W = canvas.width = splash.offsetWidth;
+      H = canvas.height = splash.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    for (var i = 0; i < 220; i++) {
+      stars.push({
+        x: Math.random() * 1920,
+        y: Math.random() * 1080,
+        r: Math.random() * 1.4 + 0.2,
+        a: Math.random(),
+        da: (Math.random() - 0.5) * 0.008,
+        dx: (Math.random() - 0.5) * 0.06
+      });
+    }
+    function draw() {
+      if (!splash.parentNode) return; // splash removed
+      ctx.clearRect(0, 0, W, H);
+      stars.forEach(function(s) {
+        s.a += s.da;
+        if (s.a > 1) { s.a = 1; s.da *= -1; }
+        if (s.a < 0) { s.a = 0; s.da *= -1; }
+        s.x += s.dx;
+        if (s.x > W) s.x = 0;
+        if (s.x < 0) s.x = W;
+        ctx.beginPath();
+        ctx.arc(s.x * (W/1920), s.y * (H/1080), s.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  // Step 1 (1.7s): Start hero content scale-down FIRST — hidden under splash
   setTimeout(function() {
     if (heroContent) heroContent.classList.add('hero-enter');
   }, 1700);
 
-  // Step 2 (1.85s): Fade splash out — reveal the hero text already mid-animation
-  //   Login card slides in from right simultaneously
+  // Step 2 (1.85s): Fade splash out, slide card in from right
   setTimeout(function() {
     splash.classList.add('fade-out');
     if (card) {
-      requestAnimationFrame(function() {
-        card.classList.add('card-enter');
-      });
+      requestAnimationFrame(function() { card.classList.add('card-enter'); });
     }
-    // Remove splash from DOM after fade completes
     setTimeout(function() {
       if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
     }, 950);
   }, 1850);
+})();
+
+/* ── Auth Hero Mouse Parallax ────────────────────────── */
+(function initParallax() {
+  var hero = document.querySelector('.auth-hero');
+  var content = document.querySelector('.auth-hero-content');
+  if (!hero || !content) return;
+  var entered = false;
+  // Only enable after hero-enter animation completes
+  document.addEventListener('mouseenter', function check() {
+    if (content.classList.contains('hero-enter')) {
+      entered = true;
+      document.removeEventListener('mouseenter', check);
+    }
+  }, true);
+  setTimeout(function() { entered = true; }, 2800);
+
+  hero.addEventListener('mousemove', function(e) {
+    if (!entered) return;
+    var rect = hero.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + rect.height / 2;
+    var dx = (e.clientX - cx) / rect.width;   // -0.5 to 0.5
+    var dy = (e.clientY - cy) / rect.height;
+    var rotX = -dy * 10;   // tilt up/down max 10deg
+    var rotY =  dx * 10;   // tilt left/right max 10deg
+    content.classList.add('tilting');
+    content.style.transform = 'scale(1) translateX(0) rotateX(' + rotX + 'deg) rotateY(' + rotY + 'deg)';
+  });
+
+  hero.addEventListener('mouseleave', function() {
+    if (!entered) return;
+    content.classList.remove('tilting');
+    content.style.transform = 'scale(1) translateX(0) rotateX(0deg) rotateY(0deg)';
+    // Re-add smooth transition for reset
+    content.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1)';
+    setTimeout(function() { content.style.transition = ''; }, 700);
+  });
 })();
 
 var DEPT = {

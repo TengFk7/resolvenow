@@ -26,9 +26,9 @@ function enterApp() {
   ge('authPage').style.display = 'none';
 
   if (CU.role === 'admin') {
+
     ge('adminApp').style.display = 'flex';
     ge('normalApp').style.display = 'none';
-    ge('mobNav').style.display = 'block';
     var adminInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
     ge('adminAv').textContent = adminInit.toUpperCase();
     ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
@@ -39,7 +39,8 @@ function enterApp() {
   } else {
     ge('normalApp').style.display = 'flex';
     ge('adminApp').style.display = 'none';
-    ge('mobNav').style.display = 'none';
+
+
     // Avatar: prefer LINE picture
     var hAv = ge('hAv');
     if (CU.linePicture) {

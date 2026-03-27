@@ -1,9 +1,127 @@
+var _gpsAddress = '';
+
 /* ─────────────────────────────────────────────
    public/js/citizen.js — Citizen Features
    • Category / urgency selection
    • Submit new ticket
    • Render my tickets list
    ───────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════
+   WIZARD — 5-Step form controller
+══════════════════════════════════════════ */
+var _curStep = 1;
+var TOTAL_STEPS = 5;
+
+// Transition map: step → { forward: [exitClass, enterClass], backward: [exitClass, enterClass] }
+var WIZ_TRANS = {
+  1: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  },
+  2: { fwd: ['exit-top',  'enter-bottom'],  bwd: ['exit-bottom','enter-top']   },
+  3: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  },
+  4: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  },
+  5: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  }
+};
+
+function wizGoTo(from, to) {
+  var isForward = to > from;
+  var fromEl = ge('wiz' + from);
+  var toEl   = ge('wiz' + to);
+  if (!fromEl || !toEl) return;
+
+  var trans = WIZ_TRANS[from] || WIZ_TRANS[1];
+  var exitCls  = isForward ? trans.fwd[0] : trans.bwd[0];
+  var enterCls = isForward ? trans.fwd[1] : trans.bwd[1];
+
+  // Exit current step
+  fromEl.classList.add(exitCls);
+  setTimeout(function() {
+    fromEl.classList.remove('active', exitCls);
+    // Enter new step
+    toEl.classList.add('active', enterCls);
+    setTimeout(function() {
+      toEl.classList.remove(enterCls);
+    }, 500);
+  }, 340);
+
+  _curStep = to;
+  wizUpdateProgress(to);
+
+  // If arriving at step 5 — render summary
+  if (to === 5) wizBuildSummary();
+
+  // Scroll to top of wizard
+  var prog = ge('stepProgress');
+  if (prog) prog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function wizNext(step) {
+  // Validation per step
+  if (step === 1) {
+    if (!getSelectedCat()) { ge('catErr').classList.add('on'); return; }
+    hideE('catErr');
+    // Update icon on step 1 based on selection
+    var icon = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
+    var cat = getSelectedCat();
+    var h2 = ge('wiz1').querySelector('h2');
+    if (h2 && icon[cat]) h2.textContent = icon[cat] + ' ' + (DEPT[cat] || cat);
+  }
+  if (step === 2) {
+    var desc = ge('tDesc').value.trim();
+    if (!desc) { showToast('กรุณากรอกรายละเอียด', true); return; }
+  }
+  if (step === 3) {
+    if (!ge('tLat').value || !ge('tLng').value) {
+      showToast('กรุณาระบุตำแหน่ง GPS ก่อน', true); return;
+    }
+  }
+  if (step === 4) {
+    if (!ge('cImg').files[0]) { showToast('กรุณาแนบรูปภาพก่อน', true); return; }
+  }
+  if (step < TOTAL_STEPS) wizGoTo(step, step + 1);
+}
+
+function wizBack(step) {
+  if (step > 1) wizGoTo(step, step - 1);
+}
+
+function wizUpdateProgress(step) {
+  // Fill bar: 0% at step 1, 100% at step 5
+  var pct = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+  var fill = ge('stepFill');
+  if (fill) fill.style.width = pct + '%';
+
+  // Dots
+  document.querySelectorAll('.step-dot').forEach(function(d) {
+    var s = parseInt(d.getAttribute('data-step'));
+    d.classList.remove('on', 'done');
+    if (s === step) d.classList.add('on');
+    else if (s < step) d.classList.add('done');
+  });
+}
+
+function wizBuildSummary() {
+  var cat = getSelectedCat();
+  var desc = ge('tDesc').value.trim();
+  var hasGps = ge('tLat').value && ge('tLng').value;
+  var file = ge('cImg').files[0];
+  var urg = ge('tUrg').value || 'ไม่ระบุ';
+  var urgTH = { urgent: '⚡ ด่วนมาก', medium: '⏰ ด่วน', normal: '🔵 ปกติ' }[urg] || urg;
+  var catTH = DEPT[cat] || cat || '—';
+  var icon  = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
+
+  var h = '';
+  h += sumRow(icon[cat] || '📋', 'ประเภทปัญหา', catTH);
+  h += sumRow('📝', 'รายละเอียด', desc || '—');
+  h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + (_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
+  h += sumRow('📷', 'รูปภาพ', file ? '✅ ' + file.name : '❌ ยังไม่ได้แนบ');
+  h += sumRow('🤖', 'ระดับความเร่งด่วน', urgTH);
+  ge('wizSummary').innerHTML = h;
+}
+
+function sumRow(icon, label, val) {
+  return '<div class="wiz-summary-item"><div class="wiz-summary-icon">' + icon + '</div><div><div class="wiz-summary-label">' + label + '</div><div class="wiz-summary-val">' + val + '</div></div></div>';
+}
+
 
 /* ── Category Selection ──────────────────────────────── */
 function toggleCat(el) {
@@ -88,6 +206,23 @@ function captureGPS() {
       // Store in hidden fields
       ge('tLat').value = lat;
       ge('tLng').value = lng;
+      // Reverse geocode: get human-readable address
+      _gpsAddress = 'กำลังโหลดที่อยู่...';
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&accept-language=th', { headers: { 'Accept': 'application/json' } })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var a = d.address || {};
+          var parts = [];
+          if (a.road) parts.push(a.road);
+          if (a.suburb || a.village || a.neighbourhood) parts.push(a.suburb || a.village || a.neighbourhood);
+          if (a.city || a.town || a.county) parts.push(a.city || a.town || a.county);
+          if (a.state) parts.push(a.state);
+          _gpsAddress = parts.join(', ') || d.display_name || (lat + ', ' + lng);
+          // Update button text live
+          var bt = ge('gpsBtnText');
+          if (bt) bt.textContent = '✅ ' + _gpsAddress;
+        })
+        .catch(function(){ _gpsAddress = lat + ', ' + lng; });
       // Build mini map (OpenStreetMap embed)
       var delta = 0.005;
       var bbox = (parseFloat(lng)-delta)+','+(parseFloat(lat)-delta)+','+(parseFloat(lng)+delta)+','+(parseFloat(lat)+delta);
@@ -166,8 +301,14 @@ async function submitTicket() {
     gpsBtn.style.background = '#ebf8ff'; gpsBtn.style.borderColor = '#90cdf4'; gpsBtn.style.color = '#2b6cb0';
     gpsIcon.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
     document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
-    ge('cImgPrev').innerHTML = '<div style="font-size:26px;margin-bottom:4px">⚠️&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
+    ge('cImgPrev').innerHTML = '<div style="font-size:48px;margin-bottom:8px">📷</div><div style="font-weight:700;font-size:15px">กดเพื่อแนบรูปภาพ</div><div style="font-size:12px;margin-top:6px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>';
+    // Reset wizard to step 1
+    _curStep = 1;
+    document.querySelectorAll('.wiz-step').forEach(function(s){ s.classList.remove('active','enter-right','enter-left','enter-bottom','enter-top','exit-left','exit-right','exit-top'); });
+    var wiz1 = ge('wiz1'); if(wiz1){ wiz1.classList.add('active'); var hi = wiz1.querySelector('.wiz-icon'); if(hi) hi.textContent='🛣️'; var h2=wiz1.querySelector('h2'); if(h2) h2.textContent='ประเภทปัญหา'; }
+    wizUpdateProgress(1);
     loadTickets();
+
   } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }
 
