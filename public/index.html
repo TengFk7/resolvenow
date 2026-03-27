@@ -37,7 +37,8 @@
         <a href="/auth/line" id="btnLoginLine"
           style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px;background:#06C755;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;box-sizing:border-box">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
-            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+            <path
+              d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
           </svg>
           เข้าสู่ระบบด้วย LINE
         </a>
@@ -237,20 +238,20 @@
     </div><!-- /main -->
   </div><!-- /adminApp -->
 
-<!-- ── Mobile Bottom Nav (admin only, shown on mobile via CSS) ── -->
-<nav class="mob-nav" id="mobNav">
-  <div class="mob-nav-inner">
-    <button class="mob-nav-btn on" id="mnDash" onclick="showPage('dashboard');mobNavSetActive('mnDash')">
-      <span>📊</span><span>Dashboard</span>
-    </button>
-    <button class="mob-nav-btn" id="mnQueue" onclick="showPage('queue');mobNavSetActive('mnQueue')">
-      <span>📋</span><span>รายการ</span>
-    </button>
-    <button class="mob-nav-btn" id="mnTechs" onclick="showPage('techs');mobNavSetActive('mnTechs')">
-      <span>🔧</span><span>ช่าง</span>
-    </button>
-  </div>
-</nav>
+  <!-- ── Mobile Bottom Nav (admin only, shown on mobile via CSS) ── -->
+  <nav class="mob-nav" id="mobNav">
+    <div class="mob-nav-inner">
+      <button class="mob-nav-btn on" id="mnDash" onclick="showPage('dashboard');mobNavSetActive('mnDash')">
+        <span>📊</span><span>Dashboard</span>
+      </button>
+      <button class="mob-nav-btn" id="mnQueue" onclick="showPage('queue');mobNavSetActive('mnQueue')">
+        <span>📋</span><span>รายการ</span>
+      </button>
+      <button class="mob-nav-btn" id="mnTechs" onclick="showPage('techs');mobNavSetActive('mnTechs')">
+        <span>🔧</span><span>ช่าง</span>
+      </button>
+    </div>
+  </nav>
 
   <!-- ── NON-ADMIN APP ──────────────────────────────────────── -->
   <div id="normalApp">
@@ -316,32 +317,56 @@
             <div class="ebox" id="catErr" style="margin-top:6px">กรุณาเลือกประเภทปัญหา</div>
           </div>
 
-          <!-- 2. Urgency -->
+          <!-- 2. Urgency (AI-determined) -->
           <div style="margin-bottom:14px">
-            <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:10px">2. ระดับความเร่งด่วน <span
-                style="color:var(--r)">*</span></div>
-            <div style="display:flex;gap:8px">
-              <div class="urgbox urgred" data-val="urgent" onclick="toggleUrg(this)">&#9889; ด่วนมาก</div>
-              <div class="urgbox urgamber" data-val="medium" onclick="toggleUrg(this)">&#9201;&#65039; ด่วน</div>
-              <div class="urgbox urgblue" data-val="normal" onclick="toggleUrg(this)">&#128309; ปกติ</div>
+            <div style="font-size:13px;font-weight:600;color:#1a202c;margin-bottom:8px">2. ระดับความเร่งด่วน
+              <span style="font-size:11px;font-weight:400;color:#6b7280">(🤖 AI วิเคราะห์อัตโนมัติ)</span>
             </div>
-            <div class="ebox" id="urgErr" style="margin-top:6px">กรุณาเลือกระดับความเร่งด่วน</div>
+            <!-- AI urgency display -->
+            <div id="urgAiBox" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f8fafc;border:1.5px dashed #cbd5e0;border-radius:12px;min-height:46px">
+              <span id="urgAiIcon" style="font-size:20px">🤖</span>
+              <div>
+                <div id="urgAiLabel" style="font-size:14px;font-weight:700;color:#4a5568">รอวิเคราะห์...</div>
+                <div id="urgAiSub" style="font-size:11px;color:#a0aec0">พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน</div>
+              </div>
+            </div>
+            <input type="hidden" id="tUrg" value="" />
+            <div class="ebox" id="urgErr" style="margin-top:6px">รอให้ AI วิเคราะห์ก่อนส่ง</div>
           </div>
 
-          <!-- 3. Location -->
+          <!-- 3. Location (GPS only) -->
           <div style="margin-bottom:12px">
             <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">3. สถานที่ <span
-                style="color:var(--r)">*</span></label>
-            <input type="text" id="tLoc" placeholder="เช่น ถนนสุขุมวิท ซอย 5"
-              style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit" />
+                style="color:var(--r)">*</span> <span style="font-size:11px;font-weight:400;color:var(--mu)">(บังคับใช้
+                GPS)</span></label>
+            <!-- GPS Button -->
+            <button type="button" id="btnGps" onclick="captureGPS()"
+              style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:#ebf8ff;border:1.5px solid #90cdf4;border-radius:10px;font-size:13px;font-weight:600;color:#2b6cb0;cursor:pointer;font-family:inherit;width:100%;justify-content:center">
+              <span id="gpsIcon">📍</span>
+              <span id="gpsBtnText">ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน</span>
+            </button>
+            <!-- GPS Result -->
+            <div id="gpsResult"
+              style="display:none;margin-top:8px;padding:10px 12px;background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:10px;font-size:12px;color:#276749">
+              <div style="font-weight:700;margin-bottom:3px">✅ ได้รับตำแหน่ง GPS แล้ว</div>
+              <div id="gpsCoords" style="font-size:11px;color:#2d6a4f;word-break:break-all"></div>
+              <a id="gpsMapLink" href="#" target="_blank"
+                style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600">🗺️ ดูบน Google Maps</a>
+            </div>
+            <!-- Hidden GPS fields -->
+            <input type="hidden" id="tLat" />
+            <input type="hidden" id="tLng" />
           </div>
 
           <!-- 4. Description -->
           <div style="margin-bottom:12px">
             <label style="font-size:13px;font-weight:600;color:#1a202c;display:block;margin-bottom:6px">4. รายละเอียด
               <span style="color:var(--r)">*</span></label>
-            <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..."
+            <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ..." maxlength="200"
+              oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestUrgency()"
               style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;outline:none;background:#fafafa;font-family:inherit;resize:vertical;min-height:76px"></textarea>
+            <div style="text-align:right;font-size:11px;color:var(--mu);margin-top:3px"><span id="descCount">0</span> /
+              200 ตัวอักษร</div>
           </div>
 
           <!-- 5. Image -->

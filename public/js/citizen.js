@@ -11,31 +11,128 @@ function toggleCat(el) {
   el.classList.add('on');
   hideE('catErr');
 }
-
-function toggleUrg(el) {
-  document.querySelectorAll('.urgbox').forEach(function (b) { b.classList.remove('on'); });
-  el.classList.add('on');
-  hideE('urgErr');
-}
-
 function getSelectedCat() {
   var el = document.querySelector('#catGrid .catbox.on');
   return el ? el.getAttribute('data-val') : null;
 }
 
-function getSelectedUrg() {
-  var el = document.querySelector('.urgbox.on');
-  return el ? el.getAttribute('data-val') : null;
+/* ── AI Urgency Suggestion ──────────────────────────── */
+var _urgTimer = null;
+function aiSuggestUrgency() {
+  var desc = ge('tDesc').value.trim();
+  if (desc.length < 5) {
+    ge('tUrg').value = '';
+    ge('urgAiIcon').textContent = '🤖';
+    ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
+    ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
+    ge('urgAiBox').style.background = '#f8fafc';
+    ge('urgAiBox').style.borderColor = '#cbd5e0';
+    hideE('urgErr');
+    return;
+  }
+  // debounce 900ms
+  clearTimeout(_urgTimer);
+  ge('urgAiIcon').textContent = '⏳';
+  ge('urgAiLabel').textContent = 'AI กำลังวิเคราะห์...';
+  ge('urgAiSub').textContent = 'สักครู่...';
+  _urgTimer = setTimeout(async function () {
+    try {
+      var r = await fetch('/api/ai/urgency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc, category: getSelectedCat() })
+      });
+      var d = await r.json();
+      var urg = d.urgency || 'normal';
+      ge('tUrg').value = urg;
+      hideE('urgErr');
+      var cfg = {
+        urgent:  { icon: '⚡',   label: 'ด่วนมาก',  sub: 'AI ประเมินว่าเรื่องนี้เร่งด่วนมาก', bg: '#fff5f5', border: '#fc8181', labelColor: '#c53030' },
+        medium:  { icon: '⏰️',  label: 'ด่วน',     sub: 'AI ประเมินว่าควรเร่งดำเนินการ',       bg: '#fffbeb', border: '#f6ad55', labelColor: '#c05621' },
+        normal:  { icon: '🔵',   label: 'ปกติ',     sub: 'AI ประเมินว่าไม่เร่งด่วน',     bg: '#ebf8ff', border: '#90cdf4', labelColor: '#2b6cb0' }
+      }[urg];
+      ge('urgAiIcon').textContent = cfg.icon;
+      ge('urgAiLabel').textContent = cfg.label;
+      ge('urgAiLabel').style.color = cfg.labelColor;
+      ge('urgAiSub').textContent = cfg.sub;
+      ge('urgAiBox').style.background = cfg.bg;
+      ge('urgAiBox').style.borderColor = cfg.border;
+      ge('urgAiBox').style.borderStyle = 'solid';
+    } catch (e) {
+      ge('urgAiIcon').textContent = '⚠️';
+      ge('urgAiLabel').textContent = 'ไม่สามารถวิเคราะห์ได้';
+      ge('urgAiSub').textContent = 'กรุณาตรวจสอบการเชื่อมต่อ';
+    }
+  }, 900);
+}
+
+
+/* ── GPS Location Capture ───────────────────────────── */
+function captureGPS() {
+  if (!navigator.geolocation) {
+    showToast('เบราว์เซอร์ของคุณไม่รองรับ GPS', true);
+    return;
+  }
+  var btn = ge('btnGps');
+  var icon = ge('gpsIcon');
+  var text = ge('gpsBtnText');
+  // Show loading state
+  btn.disabled = true;
+  icon.textContent = '⏳';
+  text.textContent = 'กำลังระบุตำแหน่ง...';
+  navigator.geolocation.getCurrentPosition(
+    function (pos) {
+      var lat = pos.coords.latitude.toFixed(6);
+      var lng = pos.coords.longitude.toFixed(6);
+      var acc = Math.round(pos.coords.accuracy);
+      // Store in hidden fields
+      ge('tLat').value = lat;
+      ge('tLng').value = lng;
+      // Build mini map (OpenStreetMap embed)
+      var delta = 0.005;
+      var bbox = (parseFloat(lng)-delta)+','+(parseFloat(lat)-delta)+','+(parseFloat(lng)+delta)+','+(parseFloat(lat)+delta);
+      var mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lng;
+      ge('gpsResult').innerHTML =
+        '<div style="font-weight:700;margin-bottom:6px;font-size:12px">✅ ตำแหน่ง GPS ที่บันทึก</div>' +
+        '<iframe src="' + mapUrl + '" style="width:100%;height:180px;border:none;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
+          '<span style="font-size:10px;color:#2d6a4f">±' + acc + 'm</span>' +
+          '<a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600">🗺️ Google Maps</a>' +
+        '</div>';
+      ge('gpsResult').style.display = 'block';
+      btn.style.background = '#f0fff4';
+      btn.style.borderColor = '#9ae6b4';
+      btn.style.color = '#276749';
+      icon.textContent = '✅';
+      text.textContent = 'ตำแหน่งถูกบันทึกแล้ว (แตะเพื่ออัปเดต)';
+      btn.disabled = false;
+    },
+    function (err) {
+      var msg = 'ไม่สามารถระบุตำแหน่งได้';
+      if (err.code === 1) msg = 'กรุณาอนุญาตการเข้าถึง GPS ในเบราว์เซอร์';
+      if (err.code === 2) msg = 'ไม่พบสัญญาณ GPS กรุณาลองใหม่';
+      if (err.code === 3) msg = 'หมดเวลารอ GPS กรุณาลองใหม่';
+      showToast(msg, true);
+      icon.textContent = '📍';
+      text.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
 }
 
 /* ── Submit Ticket ───────────────────────────────────── */
 async function submitTicket() {
-  var cat = getSelectedCat(), urg = getSelectedUrg();
-  var loc = ge('tLoc').value.trim(), desc = ge('tDesc').value.trim();
+  var cat = getSelectedCat();
+  var urg = ge('tUrg').value;
+  var desc = ge('tDesc').value.trim();
+  var lat = ge('tLat').value;
+  var lng = ge('tLng').value;
   var ok = true;
   if (!cat) { ge('catErr').classList.add('on'); ok = false; } else hideE('catErr');
-  if (!urg) { ge('urgErr').classList.add('on'); ok = false; } else hideE('urgErr');
-  if (!loc || !desc) { showToast('กรุณากรอกสถานที่และรายละเอียด', true); ok = false; }
+  if (!urg) { urg = 'normal'; ge('tUrg').value = 'normal'; } else hideE('urgErr');
+  if (!lat || !lng) { showToast('กรุณาระบุตำแหน่ง GPS ก่อนส่ง', true); ok = false; }
+  if (!desc) { showToast('กรุณากรอกรายละเอียด', true); ok = false; }
   var f = ge('cImg').files[0];
   if (!f) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
   if (!ok) return;
@@ -43,8 +140,10 @@ async function submitTicket() {
     var fd = new FormData();
     fd.append('category', cat);
     fd.append('urgency', urg);
-    fd.append('location', loc);
+    fd.append('location', lat + ',' + lng);  // GPS coordinates as location
     fd.append('description', desc);
+    fd.append('lat', lat);
+    fd.append('lng', lng);
     var f = ge('cImg').files[0];
     if (f) fd.append('image', f);
     var res = await fetch('/api/tickets', { method: 'POST', body: fd });
@@ -52,12 +151,22 @@ async function submitTicket() {
     if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', true);
     showToast('&#9989; ส่งสำเร็จ! ' + data.ticketId);
     // Reset form
-    ge('tLoc').value = '';
     ge('tDesc').value = '';
     ge('cImg').value = '';
+    ge('tLat').value = '';
+    ge('tLng').value = '';
+    ge('tUrg').value = '';
+    ge('descCount').textContent = '0';
+    ge('gpsResult').style.display = 'none';
+    ge('urgAiIcon').textContent = '🤖'; ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
+    ge('urgAiLabel').style.color = '#4a5568';
+    ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
+    ge('urgAiBox').style.background = '#f8fafc'; ge('urgAiBox').style.borderColor = '#cbd5e0'; ge('urgAiBox').style.borderStyle = 'dashed';
+    var gpsBtn = ge('btnGps'); var gpsIcon = ge('gpsIcon'); var gpsBtnText = ge('gpsBtnText');
+    gpsBtn.style.background = '#ebf8ff'; gpsBtn.style.borderColor = '#90cdf4'; gpsBtn.style.color = '#2b6cb0';
+    gpsIcon.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
     document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
-    document.querySelectorAll('.urgbox').forEach(function (b) { b.classList.remove('on'); });
-    ge('cImgPrev').innerHTML = '<div style="font-size:26px;margin-bottom:4px">&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
+    ge('cImgPrev').innerHTML = '<div style="font-size:26px;margin-bottom:4px">⚠️&#128247;</div><div>คลิกเพื่อแนบรูปภาพ</div><div style="font-size:11px;margin-top:3px;color:var(--mu)">PNG, JPG ไม่เกิน 5MB</div>';
     loadTickets();
   } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }

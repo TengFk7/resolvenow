@@ -21,6 +21,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/technicians', require('./routes/technicians'));
 app.use('/api/help-requests', require('./routes/helpRequests'));
+app.use('/api/ai', require('./routes/ai'));
 app.use('/auth/line', require('./routes/lineAuth'));
 
 // ─── Fallback (SPA) ─────────────────────────────────────────────

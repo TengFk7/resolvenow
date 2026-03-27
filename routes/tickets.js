@@ -58,10 +58,39 @@ router.get('/', requireAuth, (req, res) => {
   res.json(result);
 });
 
+
+// ─── Reverse Geocoding (OpenStreetMap Nominatim) ────────────
+async function reverseGeocode(lat, lng) {
+  try {
+    const https = require('https');
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=th&zoom=17`;
+    return await new Promise((resolve) => {
+      https.get(url, { headers: { 'User-Agent': 'ResolvNow/1.0' } }, (res) => {
+        let data = '';
+        res.on('data', c => (data += c));
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            const a = json.address || {};
+            // ประกอบชื่อสถานที่จากส่วนที่มีค่า (ใกล้เคียงที่สุดก่อน)
+            const parts = [
+              a.road || a.pedestrian || a.path,
+              a.suburb || a.neighbourhood || a.quarter,
+              a.city_district || a.district,
+              a.city || a.town || a.village || a.county
+            ].filter(Boolean);
+            resolve(parts.length ? parts.join(', ') : json.display_name || `${lat},${lng}`);
+          } catch { resolve(`${lat},${lng}`); }
+        });
+      }).on('error', () => resolve(`${lat},${lng}`));
+    });
+  } catch { return `${lat},${lng}`; }
+}
+
 // POST /api/tickets
 router.post('/', requireAuth, upload.single('image'), async (req, res) => {
   try {
-    const { category, description, location, urgency } = req.body;
+    const { category, description, location, urgency, lat, lng } = req.body;
     const user = users.find(u => u.id === req.session.userId);
     if (!category || !description || !location)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
@@ -73,13 +102,22 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     for (const kw of ['flood', 'fire', 'อันตราย', 'เร่งด่วน', 'น้ำท่วม', 'ฉุกเฉิน'])
       if (desc.includes(kw)) score = Math.min(score + 10, 100);
 
+    // แปลง GPS พิกัดเป็นชื่อสถานที่ด้วย reverse geocoding
+    let locationName = location;
+    if (lat && lng) {
+      locationName = await reverseGeocode(lat, lng);
+    }
+
     const fileUrl = getFileUrl(req);
     const ticket = {
       ticketId: nextTicketId(),
       citizenId:     user.id,
       citizenName:   user.firstName + ' ' + user.lastName,
       citizenLineId: user.lineUserId || null,   // สำหรับ push personal notification
-      category, description, location,
+      category, description,
+      location: locationName,  // ชื่อสถานที่จาก reverse geocoding
+      lat: lat ? parseFloat(lat) : null,
+      lng: lng ? parseFloat(lng) : null,
       urgency: urgency || 'normal',
       priorityScore: score,
       status: 'pending',

@@ -129,7 +129,8 @@ function renderQueue(tks, techs) {
     h += '<tr>';
     h += '<td><strong>#' + t.ticketId + '</strong><br/><span style="font-size:11px;color:var(--mu)">' + t.citizenName + '</span></td>';
     h += '<td><span class="pbadge ' + pc + '">' + pt + '</span><br/>' + pLabel(t.priorityScore) + '</td>';
-    h += '<td><div style="font-weight:600">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' - ' + t.location + '</div><div style="font-size:12px;color:#4a5568">' + t.description + '</div>' + (t.citizenImage ? '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูป\')" style="width:60px;height:40px;object-fit:cover;border-radius:6px;margin-top:4px;cursor:pointer"/>' : '') + '</td>';
+    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600" title="ดูบน Google Maps">\ud83d\uddfa\ufe0f GPS</a>' : '';
+    h += '<td><div style="font-weight:600">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' - ' + t.location + gpsLink + '</div><div style="font-size:12px;color:#4a5568">' + t.description + '</div>' + (t.citizenImage ? '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'\u0e23\u0e39\u0e1b\')" style="width:60px;height:40px;object-fit:cover;border-radius:6px;margin-top:4px;cursor:pointer"/>' : '') + '</td>';
     h += '<td><div class="ai-lbl">&#129302; AI RECOMMEND</div><select class="tech-sel" id="tsel_' + t.ticketId + '">' + opts + '</select><div style="display:flex;gap:6px;margin-top:8px"><button class="btn-approve" data-id="' + t.ticketId + '" onclick="approveTicket(this)">APPROVE</button><button class="btn-rej" data-id="' + t.ticketId + '" onclick="rejectTicket(this)">REJECT</button></div></td>';
     h += '</tr>';
   }
@@ -213,8 +214,9 @@ function renderAllQueue(tks) {
   var h = '';
   for (var i = 0; i < tks.length; i++) {
     var t = tks[i];
+    var locGps = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:10px;color:#2b6cb0;text-decoration:none;font-weight:600">\ud83d\uddfa\ufe0f GPS</a>' : '';
     h += '<tr><td><strong>' + t.ticketId + '</strong></td><td>' + t.citizenName + '</td><td>' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + '</td>';
-    h += '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + t.description + '</td>';
+    h += '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + t.location + locGps + '<br/><span style="color:#4a5568;font-size:11px">' + t.description + '</span></td>';
     h += '<td>' + pLabel(t.priorityScore) + '</td><td><span class="badge ' + t.status + '">' + stTH(t.status) + '</span></td>';
     h += '<td style="font-size:12px">' + (t.assignedName || '-') + '</td>';
 
