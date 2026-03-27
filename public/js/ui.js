@@ -16,47 +16,8 @@
   var heroContent = document.querySelector('.auth-hero-content');
   if (!splash) return;
 
-  /* ── Starfield Canvas ─── */
-  (function initStars() {
-    var canvas = document.getElementById('starCanvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    var W, H, stars = [];
-    function resize() {
-      W = canvas.width = splash.offsetWidth;
-      H = canvas.height = splash.offsetHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-    for (var i = 0; i < 220; i++) {
-      stars.push({
-        x: Math.random() * 1920,
-        y: Math.random() * 1080,
-        r: Math.random() * 1.4 + 0.2,
-        a: Math.random(),
-        da: (Math.random() - 0.5) * 0.008,
-        dx: (Math.random() - 0.5) * 0.06
-      });
-    }
-    function draw() {
-      if (!splash.parentNode) return; // splash removed
-      ctx.clearRect(0, 0, W, H);
-      stars.forEach(function(s) {
-        s.a += s.da;
-        if (s.a > 1) { s.a = 1; s.da *= -1; }
-        if (s.a < 0) { s.a = 0; s.da *= -1; }
-        s.x += s.dx;
-        if (s.x > W) s.x = 0;
-        if (s.x < 0) s.x = W;
-        ctx.beginPath();
-        ctx.arc(s.x * (W/1920), s.y * (H/1080), s.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
-        ctx.fill();
-      });
-      requestAnimationFrame(draw);
-    }
-    draw();
-  })();
+
+
 
   // Step 1 (1.7s): Start hero content scale-down FIRST — hidden under splash
   setTimeout(function() {

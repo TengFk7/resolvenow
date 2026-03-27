@@ -494,18 +494,19 @@
 
 <!-- ── SPLASH SCREEN ──────────────────────────────────── -->
 <div id="splash">
-  <canvas id="starCanvas"></canvas>
-  <div class="ring3d"></div>
-  <div class="ring3d"></div>
-  <div class="ring3d"></div>
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-  <div class="orb orb3"></div>
+  <!-- Floating dots -->
+  <div class="splash-dot" style="width:4px;height:4px;background:rgba(37,99,235,.6);left:15%;bottom:20%;animation-duration:8s;animation-delay:0s"></div>
+  <div class="splash-dot" style="width:3px;height:3px;background:rgba(245,158,11,.5);left:80%;bottom:10%;animation-duration:11s;animation-delay:-3s"></div>
+  <div class="splash-dot" style="width:2px;height:2px;background:rgba(255,255,255,.4);left:60%;bottom:5%;animation-duration:9s;animation-delay:-1s"></div>
+  <div class="splash-dot" style="width:5px;height:5px;background:rgba(37,99,235,.3);left:30%;bottom:8%;animation-duration:13s;animation-delay:-5s"></div>
+  <div class="splash-dot" style="width:3px;height:3px;background:rgba(139,92,246,.5);left:50%;bottom:15%;animation-duration:7s;animation-delay:-2s"></div>
   <div id="splashContent">
     <div class="splash-logo">Resolve<span>Now</span></div>
+    <div class="splash-tag">Smart City Platform</div>
     <div class="splash-bar"><div class="splash-progress"></div></div>
   </div>
 </div>
+
 
 <!-- Hidden file input for tech uploads -->
 <input type="file" id="techFile" accept="image/*" style="display:none" />
