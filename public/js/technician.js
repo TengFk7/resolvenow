@@ -1,5 +1,6 @@
 /* ─────────────────────────────────────────────
    public/js/technician.js — Technician Features
+   • Welcome banner + stats bar on login
    • Render assigned tickets with 3-step workflow
    • Job actions: accept, start, reject, complete
    • Image upload (before/after)
@@ -7,13 +8,39 @@
    ───────────────────────────────────────────── */
 
 /* ── Render Tech Tickets ─────────────────────────────── */
+var _lastTechJSON = null; // diff-guard to prevent flicker
+var _suppressCardAnim = false; // set true after completion
+
 function renderTech(data) {
   var el = ge('techCards');
-  var active = data.filter(function (t) { return t.status !== 'completed' && t.status !== 'rejected'; });
-  ge('techSub').textContent = 'แผนก: ' + (DEPT_ICON[CU.specialty] || '') + ' ' + (DEPT[CU.specialty] || CU.specialty) + ' | งานทั้งหมด ' + data.length + ' | ค้างอยู่ ' + active.length;
+  var active  = data.filter(function(t){ return t.status !== 'completed' && t.status !== 'rejected'; });
+  var inProg  = data.filter(function(t){ return t.status === 'in_progress' || t.status === 'assigned'; });
+  var done    = data.filter(function(t){ return t.status === 'completed'; });
+
+  /* ── Welcome banner (inject once) ── */
+  if (!ge('techWelcome')) {
+    var initials = (CU.firstName[0] || '') + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
+    ge('secTech').insertAdjacentHTML('afterbegin',
+      '<div class="tech-welcome" id="techWelcome">'
+      + '<div class="tw-avatar">' + initials.toUpperCase() + '</div>'
+      + '<div class="tw-info">'
+      +   '<div class="tw-greeting">ยินดีต้อนรับกลับมา 👋</div>'
+      +   '<div class="tw-name">' + CU.firstName + (CU.lastName ? ' ' + CU.lastName : '') + '</div>'
+      +   '<div class="tw-dept">' + (DEPT_ICON[CU.specialty] || '🔧') + ' ' + (DEPT[CU.specialty] || CU.specialty) + '</div>'
+      + '</div></div>'
+    );
+  }
+
+  /* ── If data unchanged, skip card re-render (prevents flicker) ── */
+  var dataJSON = JSON.stringify(data);
+  if (dataJSON === _lastTechJSON && ge('techCards').innerHTML) return;
+  _lastTechJSON = dataJSON;
+
   if (!data.length) { el.innerHTML = '<div class="empty">ไม่มีงานในแผนกของคุณ</div>'; return; }
-  var sorted = active.concat(data.filter(function (t) { return t.status === 'completed' || t.status === 'rejected'; }));
+
+  var sorted = active.concat(data.filter(function(t){ return t.status === 'completed' || t.status === 'rejected'; }));
   var h = '';
+
   for (var i = 0; i < sorted.length; i++) {
     var t = sorted[i];
     var urgent = t.priorityScore >= 70;
@@ -22,73 +49,215 @@ function renderTech(data) {
     var s2 = t.status === 'pending' ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
     var s3 = t.status === 'in_progress' ? 'active' : (t.status === 'completed' ? 'done' : 'idle');
 
-    h += '<div class="tcard">';
-    h += '<div class="tchead"><div><div class="tcid">TICKET #' + t.ticketId + '</div><div class="tctitle">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' - ' + t.location + '</div></div>';
-    h += '<span class="badge ' + (urgent ? 'urgent' : 'normal') + '">' + (urgent ? '&#9889; เร่งด่วน' : 'ปกติ') + ' ' + pLabel(t.priorityScore) + '</span></div>';
-    h += '<div class="tcbody">';
-    h += '<div class="mrow"><span class="mi">&#9888;&#65039;</span><span>' + t.description + '</span></div>';
-    h += '<div class="mrow"><span class="mi">&#128205;</span><span>' + t.location + '</span></div>';
-    h += '<div class="mrow"><span class="mi">&#128100;</span><span>' + t.citizenName + '</span></div>';
-    h += '<div class="mrow" style="margin-bottom:12px"><span class="mi">&#128336;</span><span>' + t.createdAt + '</span></div>';
+    var cardCls = 'tcard' + (isDone ? (t.status === 'completed' ? ' is-done' : ' is-rejected') : (urgent ? ' is-urgent' : ''));
+
+    h += '<div class="' + cardCls + '">';
+
+    /* ── Header ── */
+    h += '<div class="tchead">'
+      + '<div><div class="tcid">TICKET #' + t.ticketId + '</div>'
+      + '<div class="tctitle">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' — ' + t.location + '</div></div>'
+      + '<span class="badge ' + (urgent ? 'urgent' : (isDone ? t.status : 'normal')) + '">'
+      + (isDone ? (t.status === 'completed' ? '✅ เสร็จ' : '❌ ปฏิเสธ') : (urgent ? '⚡ เร่งด่วน' : '🔵 ' + pLabel(t.priorityScore)))
+      + '</span></div>';
+
+    /* ── Body ── */
+    h += '<div class="tcbody">'
+      + '<div class="mrow"><span class="mi">⚠️</span><span>' + t.description + '</span></div>'
+      + '<div class="mrow"><span class="mi">📍</span><span>' + t.location + '</span></div>'
+      + '<div class="mrow"><span class="mi">👤</span><span>' + t.citizenName + '</span></div>'
+      + '<div class="mrow" style="margin-bottom:12px"><span class="mi">🕐</span><span>' + t.createdAt + '</span></div>';
+
     if (t.citizenImage)
-      h += '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:var(--mu);margin-bottom:4px">รูปจากผู้แจ้ง</div><img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;cursor:pointer"/></div>';
+      h += '<div style="margin-bottom:14px"><div class="citizen-img-label">รูปจากผู้แจ้ง</div>'
+        + '<img class="citizen-img" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/></div>';
 
     if (isDone) {
-      var dc = t.status === 'completed' ? '#065f46' : '#991b1b';
-      var db = t.status === 'completed' ? '#f0fdf4' : '#fef2f2';
-      var dd = t.status === 'completed' ? '#bbf7d0' : '#fecaca';
-      h += '<div style="background:' + db + ';border:1px solid ' + dd + ';border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:600;color:' + dc + '">' + (t.status === 'completed' ? '&#9989; เสร็จสิ้น' : '&#10060; ปฏิเสธ') + '</div>';
+      /* Done / Rejected */
+      h += '<div class="status-done-box ' + t.status + '">'
+        + (t.status === 'completed' ? '✅ งานเสร็จสิ้นแล้ว' : '❌ ปฏิเสธงานนี้แล้ว') + '</div>';
       if (t.beforeImage || t.afterImage) {
-        h += '<div class="irow" style="margin-top:10px">';
-        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อน</div></div>';
-        if (t.afterImage) h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลัง</div></div>';
+        h += '<div class="irow">';
+        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
+        if (t.afterImage)  h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลังซ่อม</div></div>';
         h += '</div>';
       }
     } else {
-      // STEP 1
-      h += '<div class="step"><div class="shead"><div class="snum ' + s1 + '">' + (s1 === 'done' ? '&#10003;' : '1') + '</div><div class="slbl">ข้อมูลการร้องเรียน</div><span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
+      /* ── STEP 1 ── */
+      h += '<div class="step"><div class="shead">'
+        + '<div class="snum ' + s1 + '">' + (s1 === 'done' ? '✓' : '1') + '</div>'
+        + '<div class="slbl">ข้อมูลการร้องเรียน</div>'
+        + '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
       if (t.status === 'pending')
-        h += '<div class="sbody"><p style="font-size:13px;color:#4a5568;margin-bottom:12px">กดรับงานเพื่อเริ่มลงพื้นที่</p><button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)">&#128295; รับเรื่องและลงพื้นที่</button></div>';
+        h += '<div class="sbody"><p>กดรับงานเพื่อเริ่มลงพื้นที่</p>'
+          + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)">🔧 รับเรื่องและลงพื้นที่</button></div>';
       h += '</div>';
 
-      // STEP 2
-      h += '<div class="step"><div class="shead"><div class="snum ' + s2 + '">' + (s2 === 'done' ? '&#10003;' : '2') + '</div><div class="slbl">ยืนยันการเข้าตรวจสอบ</div><span class="sstat ' + s2 + '">' + (s2 === 'done' ? 'เสร็จ' : s2 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
+      /* ── STEP 2 ── */
+      h += '<div class="step"><div class="shead">'
+        + '<div class="snum ' + s2 + '">' + (s2 === 'done' ? '✓' : '2') + '</div>'
+        + '<div class="slbl">ยืนยันการเข้าตรวจสอบ</div>'
+        + '<span class="sstat ' + s2 + '">' + (s2 === 'done' ? 'เสร็จ' : s2 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
       if (s2 === 'active') {
-        h += '<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปสภาพก่อนซ่อม</p>';
-        if (t.beforeImage) h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover;border-radius:8px"/><div class="ilbl" style="color:var(--g)">&#9989; อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
-        else h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="font-size:28px">&#128247;</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
-        h += '<div style="margin-bottom:12px"><label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บันทึกเพิ่มเติม (ไม่บังคับ)</label><textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
-        h += '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">&#128204; ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div><button class="btn-help" data-id="' + t.ticketId + '" onclick="openHelpModal(this.getAttribute(\'data-id\'))">&#128204; ขอความช่วยเหลือ</button></div>';
-        h += '<div style="display:flex;gap:8px"><button class="btnreject2" data-id="' + t.ticketId + '" onclick="rejectJob(this)">ปฏิเสธ</button><button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">&#9989; ยืนยันเริ่มซ่อม</button></div></div>';
+        h += '<div class="sbody"><p>ถ่ายรูปสภาพก่อนซ่อม</p>';
+        if (t.beforeImage)
+          h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
+            + '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover"/>'
+            + '<div class="ilbl">✅ อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
+        else
+          h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
+            + '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
+        h += '<div style="margin-bottom:12px">'
+          + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บันทึกเพิ่มเติม</label>'
+          + '<textarea class="tech-note" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
+        h += '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px">'
+          + '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div>'
+          + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
+        h += '<div style="display:flex;gap:8px">'
+          + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="rejectJob(this)">❌ ปฏิเสธ</button>'
+          + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
+          + '</div></div>';
       }
       h += '</div>';
 
-      // STEP 3
-      h += '<div class="step"><div class="shead"><div class="snum ' + s3 + '">' + (s3 === 'done' ? '&#10003;' : '3') + '</div><div class="slbl">หลักฐานหลังการดำเนินการ</div><span class="sstat ' + s3 + '">' + (s3 === 'done' ? 'เสร็จ' : s3 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
+      /* ── STEP 3 ── */
+      h += '<div class="step"><div class="shead">'
+        + '<div class="snum ' + s3 + '">' + (s3 === 'done' ? '✓' : '3') + '</div>'
+        + '<div class="slbl">หลักฐานหลังการดำเนินการ</div>'
+        + '<span class="sstat ' + s3 + '">' + (s3 === 'done' ? 'เสร็จ' : s3 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
       if (s3 === 'active') {
-        h += '<div class="sbody"><p style="font-size:13px;color:var(--mu);margin-bottom:10px">ถ่ายรูปหลังซ่อม</p><div class="irow">';
-        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อน</div></div>';
-        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
-        if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl" style="color:var(--g)">&#9989; คลิกเปลี่ยน</div></div>';
-        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="padding:12px 0;font-size:20px">&#128247;</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
+        h += '<div class="sbody"><p>ถ่ายรูปหลังซ่อม เพื่อปิดงาน</p><div class="irow">';
+        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
+        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
+        if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl">✅ คลิกเปลี่ยน</div></div>';
+        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
         h += '</div>';
-        h += '<div style="margin-bottom:12px"><label style="font-size:13px;font-weight:500;color:#4a5568;display:block;margin-bottom:4px">บรรยายงานที่ทำ</label><textarea style="width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;resize:none;height:70px;background:#fafafa" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
-        h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">&#128228; ยืนยันปิดเรื่องร้องเรียน</button>';
-        if (!t.afterImage) h += '<p style="font-size:12px;color:var(--mu);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
+        h += '<div style="margin-bottom:12px">'
+          + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บรรยายงานที่ทำ</label>'
+          + '<textarea class="tech-note" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
+        h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
+        if (!t.afterImage) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
         h += '</div>';
       }
       h += '</div>';
     }
-    h += '</div></div>';
+
+    h += '</div></div>'; /* .tcbody + .tcard */
   }
-  el.innerHTML = h;
+
+  /* ── Preserve scroll to avoid page-jump on innerHTML replace ── */
+  var savedScroll = window.scrollY;
+
+  if (_suppressCardAnim) {
+    /* Suppress tcardIn bounce, then fade-in smoothly */
+    el.classList.add('tcard-instant');
+    el.innerHTML = h;
+    window.scrollTo(0, savedScroll);
+    _suppressCardAnim = false;
+
+    /* Double rAF: first frame paints DOM, second starts opacity tween */
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        el.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1)';
+        el.style.opacity = '1';
+        setTimeout(function() {
+          el.style.transition = '';
+          el.style.opacity = '';
+          el.classList.remove('tcard-instant');
+        }, 480);
+      });
+    });
+  } else {
+    el.innerHTML = h;
+    window.scrollTo(0, savedScroll);
+
+    /* Normal post-render: fade-in if cards were hidden */
+    if (el.style.opacity === '0') {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          el.style.transition = 'opacity 0.42s cubic-bezier(.22,1,.36,1)';
+          el.style.opacity = '1';
+          setTimeout(function(){ el.style.transition = ''; el.style.opacity = ''; }, 450);
+        });
+      });
+    }
+  }
 }
 
 /* ── Job Actions ─────────────────────────────────────── */
-function acceptJob(btn) { apiStatus(btn.getAttribute('data-id'), 'assigned'); showToast('&#9989; รับงานแล้ว'); }
-function startWork(btn) { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('&#128295; เริ่มดำเนินการ'); }
-function rejectJob(btn) { apiStatus(btn.getAttribute('data-id'), 'rejected'); showToast('ปฏิเสธแล้ว', true); }
-function completeJob(btn) { apiStatus(btn.getAttribute('data-id'), 'completed'); showToast('&#127881; ปิดงานสำเร็จ'); }
+function acceptJob(btn)  { apiStatus(btn.getAttribute('data-id'), 'assigned');    showToast('✅ รับงานแล้ว'); }
+function startWork(btn)  { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('🔧 เริ่มดำเนินการ'); }
+function rejectJob(btn)  { apiStatus(btn.getAttribute('data-id'), 'rejected');    showToast('ปฏิเสธแล้ว', true); }
+function completeJob(btn) {
+  if (btn.disabled || btn.hasAttribute('disabled')) return;
+  var id = btn.getAttribute('data-id');
+  _showTechComplete(function() {
+    apiStatus(id, 'completed');
+  });
+}
+
+function _showTechComplete(onDone) {
+  var colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#a78bfa','#60a5fa','#f472b6'];
+  var pHtml = '';
+  for (var i = 0; i < 8; i++) {
+    var ang = (i / 8) * Math.PI * 2;
+    var dist = 85 + (i % 3) * 28;
+    var px = Math.round(Math.cos(ang) * dist);
+    var py = Math.round(Math.sin(ang) * dist - 40);
+    pHtml += '<div class="tc-p" style="background:' + colors[i]
+      + ';--px:' + px + 'px;--py:' + py + 'px'
+      + ';animation-delay:' + (1.05 + i * 0.06) + 's"></div>';
+  }
+
+  var ov = document.createElement('div');
+  ov.className = 'tc-bg';
+  ov.innerHTML =
+    '<div class="tc-card" id="_tcCard">'
+    + '<div class="tc-particles">' + pHtml + '</div>'
+    + '<div class="tc-ring-wrap">'
+    +   '<div class="tc-ring"></div>'
+    +   '<div class="tc-ring"></div>'
+    +   '<div class="tc-ring"></div>'
+    +   '<div class="tc-badge">'
+    +     '<svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    +       '<polyline class="tc-check-path" points="13,27 22,37 39,16"'
+    +       ' stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+    +     '</svg>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="tc-title">ปิดงานสำเร็จ! 🎉</div>'
+    + '<div class="tc-sub">งานซ่อมแซมเสร็จเรียบร้อยแล้ว<br>ระบบจะแจ้งผู้ร้องเรียนทาง LINE อัตโนมัติ</div>'
+    + '<div class="tc-chip">✅&nbsp;&nbsp;MISSION COMPLETE</div>'
+    + '<div class="tc-dots"><span></span><span></span><span></span></div>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+
+  /* exit after 3.2s */
+  setTimeout(function() {
+    /* Step 1: Overlay + card exit animation */
+    var card = document.getElementById('_tcCard');
+    if (card) card.classList.add('tc-out');
+    ov.classList.add('tc-out');
+
+    /* Step 2: Fade techCards out simultaneously */
+    var tc = ge('techCards');
+    if (tc) {
+      tc.style.transition = 'opacity 0.32s ease';
+      tc.style.opacity = '0';
+    }
+
+    /* Step 3: Flag next render to skip card bounce animation */
+    _suppressCardAnim = true;
+    _lastTechJSON = null;
+
+    /* Step 4: After overlay gone, fire update → renderTech will fade cards back in */
+    setTimeout(function() {
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (typeof onDone === 'function') onDone();
+    }, 540);
+  }, 3200);
+}
 
 async function apiStatus(id, status) {
   await fetch('/api/tickets/' + id + '/status', {
@@ -100,23 +269,23 @@ async function apiStatus(id, status) {
 
 /* ── Image Upload ────────────────────────────────────── */
 function triggerUpload(el) {
-  upId = el.getAttribute('data-id');
+  upId   = el.getAttribute('data-id');
   upType = el.getAttribute('data-type');
   var inp = ge('techFile');
   inp.value = '';
-  inp.onchange = function (e) {
+  inp.onchange = function(e) {
     var f = e.target.files[0];
     if (!f) return;
     var fd = new FormData();
     fd.append('image', f);
     fetch('/api/tickets/' + upId + '/upload/' + upType, { method: 'POST', body: fd })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
+      .then(function(r){ return r.json(); })
+      .then(function(d){
         if (d.error) return showToast(d.error, true);
-        showToast('&#9989; อัปโหลดสำเร็จ');
+        showToast('✅ อัปโหลดสำเร็จ');
         loadTickets();
       })
-      .catch(function () { showToast('อัปโหลดไม่สำเร็จ', true); });
+      .catch(function(){ showToast('อัปโหลดไม่สำเร็จ', true); });
   };
   inp.click();
 }
@@ -127,7 +296,7 @@ async function loadHelpRequests() {
     var res = await fetch('/api/help-requests');
     if (!res.ok) return;
     var helps = await res.json();
-    var open = helps.filter(function (h) { return h.status === 'open' && h.requesterId !== CU.id; });
+    var open = helps.filter(function(h){ return h.status === 'open' && h.requesterId !== CU.id; });
     var banner = ge('helpBanner');
     if (open.length) {
       banner.style.display = 'block';
@@ -135,27 +304,28 @@ async function loadHelpRequests() {
       var h = '';
       for (var i = 0; i < open.length; i++) {
         var hp = open[i];
-        h += '<div class="help-card">';
-        h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
-        h += '<div><div style="font-size:13px;font-weight:700">&#128204; ' + hp.requesterName + ' (' + (DEPT[hp.requesterDept] || hp.requesterDept) + ') ขอความช่วยเหลือ</div>';
-        h += '<div style="font-size:12px;color:#4a5568;margin-top:2px">Ticket: ' + hp.ticketId + ' — ' + (DEPT_ICON[hp.ticketCategory] || '') + ' ' + (DEPT[hp.ticketCategory] || hp.ticketCategory) + ' ที่ ' + hp.ticketLocation + '</div>';
-        if (hp.message) h += '<div style="font-size:12px;color:var(--mu);margin-top:2px">ข้อความ: ' + hp.message + '</div>';
-        h += '</div></div>';
-        h += '<button class="btn-help-accept" data-id="' + hp.id + '" onclick="acceptHelp(this)">&#9989; รับงานช่วยเหลือ</button>';
-        h += '</div>';
+        h += '<div class="help-card">'
+          + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
+          + '<div>'
+          +   '<div style="font-size:13px;font-weight:700;margin-bottom:3px">📌 ' + hp.requesterName + ' (' + (DEPT[hp.requesterDept] || hp.requesterDept) + ') ขอความช่วยเหลือ</div>'
+          +   '<div style="font-size:12px;color:#4a5568">Ticket: ' + hp.ticketId + ' — ' + (DEPT_ICON[hp.ticketCategory] || '') + ' ' + (DEPT[hp.ticketCategory] || hp.ticketCategory) + ' ที่ ' + hp.ticketLocation + '</div>'
+          +   (hp.message ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">: ' + hp.message + '</div>' : '')
+          + '</div>'
+          + '<button class="btn-help-accept" data-id="' + hp.id + '" onclick="acceptHelp(this)">✅ รับงาน</button>'
+          + '</div></div>';
       }
       ge('helpList').innerHTML = h;
     } else {
       banner.style.display = 'none';
     }
-  } catch (e) { }
+  } catch(e){}
 }
 
 async function acceptHelp(btn) {
   var res = await fetch('/api/help-requests/' + btn.getAttribute('data-id') + '/accept', { method: 'PUT', headers: { 'Content-Type': 'application/json' } });
   var data = await res.json();
   if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', true);
-  showToast('&#9989; รับงานช่วยเหลือแล้ว!');
+  showToast('✅ รับงานช่วยเหลือแล้ว!');
   loadHelpRequests();
   loadTickets();
 }
@@ -170,12 +340,15 @@ function openHelpModal(ticketId) {
 
 async function submitHelpRequest() {
   if (!helpTicketId) return;
-  var msg = ge('helpMsg').value.trim();
+  var msg  = ge('helpMsg').value.trim();
   var dept = ge('helpTargetDept').value;
-  var res = await fetch('/api/help-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: helpTicketId, message: msg, targetDept: dept }) });
+  var res  = await fetch('/api/help-requests', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticketId: helpTicketId, message: msg, targetDept: dept })
+  });
   var data = await res.json();
   if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', true);
   ge('mHelp').classList.remove('on');
-  showToast('&#128204; ส่งคำขอช่วยเหลือแล้ว!');
+  showToast('📌 ส่งคำขอช่วยเหลือแล้ว!');
   loadHelpRequests();
 }
