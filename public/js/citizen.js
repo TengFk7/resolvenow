@@ -1,4 +1,5 @@
 var _gpsAddress = '';
+var _citizenImgDataUrl = ''; // stores preview DataURL for summary
 
 /* ─────────────────────────────────────────────
    public/js/citizen.js — Citizen Features
@@ -113,13 +114,20 @@ function wizBuildSummary() {
   h += sumRow(icon[cat] || '📋', 'ประเภทปัญหา', catTH);
   h += sumRow('📝', 'รายละเอียด', desc || '—');
   h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + (_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
-  h += sumRow('📷', 'รูปภาพ', file ? '✅ ' + file.name : '❌ ยังไม่ได้แนบ');
+  // Show image thumbnail instead of filename
+  var imgHtml = _citizenImgDataUrl
+    ? '<img src="' + _citizenImgDataUrl + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:10px;margin-top:6px;border:1.5px solid var(--border)"/>'
+    : '❌ ยังไม่ได้แนบ';
+  h += sumRowRaw('📷', 'รูปภาพ', imgHtml);
   h += sumRow('🤖', 'ระดับความเร่งด่วน', urgTH);
   ge('wizSummary').innerHTML = h;
 }
 
 function sumRow(icon, label, val) {
   return '<div class="wiz-summary-item"><div class="wiz-summary-icon">' + icon + '</div><div><div class="wiz-summary-label">' + label + '</div><div class="wiz-summary-val">' + val + '</div></div></div>';
+}
+function sumRowRaw(icon, label, rawHtml) {
+  return '<div class="wiz-summary-item"><div class="wiz-summary-icon">' + icon + '</div><div style="flex:1;min-width:0"><div class="wiz-summary-label">' + label + '</div>' + rawHtml + '</div></div>';
 }
 
 
@@ -220,7 +228,7 @@ function captureGPS() {
           _gpsAddress = parts.join(', ') || d.display_name || (lat + ', ' + lng);
           // Update button text live
           var bt = ge('gpsBtnText');
-          if (bt) bt.textContent = '✅ ' + _gpsAddress;
+          if (bt) bt.textContent = _gpsAddress;
         })
         .catch(function(){ _gpsAddress = lat + ', ' + lng; });
       // Build mini map (OpenStreetMap embed)
@@ -284,30 +292,35 @@ async function submitTicket() {
     var res = await fetch('/api/tickets', { method: 'POST', body: fd });
     var data = await res.json();
     if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', true);
-    showToast('&#9989; ส่งสำเร็จ! ' + data.ticketId);
-    // Reset form
-    ge('tDesc').value = '';
-    ge('cImg').value = '';
-    ge('tLat').value = '';
-    ge('tLng').value = '';
-    ge('tUrg').value = '';
-    ge('descCount').textContent = '0';
-    ge('gpsResult').style.display = 'none';
-    ge('urgAiIcon').textContent = '🤖'; ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
-    ge('urgAiLabel').style.color = '#4a5568';
-    ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
-    ge('urgAiBox').style.background = '#f8fafc'; ge('urgAiBox').style.borderColor = '#cbd5e0'; ge('urgAiBox').style.borderStyle = 'dashed';
-    var gpsBtn = ge('btnGps'); var gpsIcon = ge('gpsIcon'); var gpsBtnText = ge('gpsBtnText');
-    gpsBtn.style.background = '#ebf8ff'; gpsBtn.style.borderColor = '#90cdf4'; gpsBtn.style.color = '#2b6cb0';
-    gpsIcon.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
-    document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
-    ge('cImgPrev').innerHTML = '<div style="font-size:48px;margin-bottom:8px">📷</div><div style="font-weight:700;font-size:15px">กดเพื่อแนบรูปภาพ</div><div style="font-size:12px;margin-top:6px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>';
-    // Reset wizard to step 1
-    _curStep = 1;
-    document.querySelectorAll('.wiz-step').forEach(function(s){ s.classList.remove('active','enter-right','enter-left','enter-bottom','enter-top','exit-left','exit-right','exit-top'); });
-    var wiz1 = ge('wiz1'); if(wiz1){ wiz1.classList.add('active'); var hi = wiz1.querySelector('.wiz-icon'); if(hi) hi.textContent='🛣️'; var h2=wiz1.querySelector('h2'); if(h2) h2.textContent='ประเภทปัญหา'; }
-    wizUpdateProgress(1);
-    loadTickets();
+
+    // ── Success Animation ─────────────────────────────────
+    _showSubmitSuccess(data.ticketId, function() {
+      // Reset form fields
+      ge('tDesc').value = '';
+      ge('cImg').value = '';
+      ge('tLat').value = '';
+      ge('tLng').value = '';
+      ge('tUrg').value = '';
+      ge('descCount').textContent = '0';
+      ge('gpsResult').style.display = 'none';
+      _citizenImgDataUrl = '';
+      ge('urgAiIcon').textContent = '🤖'; ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
+      ge('urgAiLabel').style.color = '#4a5568';
+      ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
+      ge('urgAiBox').style.background = '#f8fafc'; ge('urgAiBox').style.borderColor = '#cbd5e0'; ge('urgAiBox').style.borderStyle = 'dashed';
+      var gpsBtn = ge('btnGps'); var gpsIcon2 = ge('gpsIcon'); var gpsBtnText = ge('gpsBtnText');
+      gpsBtn.style.background = ''; gpsBtn.style.borderColor = ''; gpsBtn.style.color = '';
+      gpsIcon2.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
+      document.querySelectorAll('#catGrid .catbox').forEach(function(b){ b.classList.remove('on'); });
+      ge('cImgPrev').innerHTML = '<div style="font-size:48px;margin-bottom:8px">📷</div><div style="font-weight:700;font-size:15px">กดเพื่อแนบรูปภาพ</div><div style="font-size:12px;margin-top:6px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>';
+      // Reset wizard to step 1
+      _curStep = 1;
+      document.querySelectorAll('.wiz-step').forEach(function(s){ s.classList.remove('active','enter-right','enter-left','enter-bottom','enter-top','exit-left','exit-right','exit-top'); });
+      var wiz1 = ge('wiz1');
+      if (wiz1) { wiz1.classList.add('active'); var h2 = wiz1.querySelector('h2'); if (h2) h2.textContent = 'ประเภทปัญหา'; }
+      wizUpdateProgress(1);
+      loadTickets();
+    });
 
   } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
 }
@@ -318,7 +331,8 @@ function prevCitizenImg(e) {
   if (!f) return;
   var r = new FileReader();
   r.onload = function (ev) {
-    ge('cImgPrev').innerHTML = '<img src="' + ev.target.result + '" style="max-width:100%;max-height:140px;border-radius:8px;object-fit:cover"/><div style="font-size:12px;color:var(--mu);margin-top:6px">' + f.name + '</div>';
+    _citizenImgDataUrl = ev.target.result;
+    ge('cImgPrev').innerHTML = '<img src="' + ev.target.result + '" style="max-width:100%;max-height:140px;border-radius:10px;object-fit:cover"/>';
   };
   r.readAsDataURL(f);
 }
@@ -351,4 +365,58 @@ function renderCitizen(data) {
     h += '</div>';
   }
   el.innerHTML = h;
+}
+
+/* ── Submit Success Overlay Animation ───────────────── */
+function _showSubmitSuccess(ticketId, onDone) {
+  var ov = document.createElement('div');
+  ov.id = 'submitSuccessOverlay';
+  ov.style.cssText = [
+    'position:fixed;inset:0;z-index:9000',
+    'display:flex;flex-direction:column;align-items:center;justify-content:center',
+    'background:linear-gradient(145deg,rgba(5,150,105,.97) 0%,rgba(16,185,129,.95) 50%,rgba(4,120,87,.98) 100%)',
+    'padding:40px 24px;text-align:center'
+  ].join(';');
+
+  ov.innerHTML = [
+    // Ring wrap with ripple rings
+    '<div class="ss-ring-wrap">',
+    '  <div class="ss-ripple"></div>',
+    '  <div class="ss-ripple"></div>',
+    '  <div class="ss-ripple"></div>',
+    '  <div class="ss-ring">',
+    '    <div class="ss-check">',
+    '      <svg viewBox="0 0 52 52" fill="none">',
+    '        <circle cx="26" cy="26" r="23" stroke="rgba(255,255,255,.25)" stroke-width="2"/>',
+    '        <polyline class="ss-path" points="13,27 22,36 39,17"',
+    '          stroke="white" stroke-width="3.5"',
+    '          stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    '      </svg>',
+    '    </div>',
+    '  </div>',
+    '</div>',
+    '<div class="ss-title">ส่งสำเร็จ! 🎉</div>',
+    '<div class="ss-id">' + ticketId + '</div>',
+    '<div class="ss-sub">เรื่องร้องเรียนของคุณถูกบันทึกแล้ว<br>ระบบกำลังเตรียมรับเรื่องใหม่...</div>',
+    '<div class="ss-dots"><span></span><span></span><span></span></div>'
+  ].join('');
+
+  document.body.appendChild(ov);
+
+  // Enter with class (GPU-smooth scale+fade)
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      ov.classList.add('ss-enter');
+    });
+  });
+
+  // After 2.8s — exit smoothly then call onDone
+  setTimeout(function() {
+    ov.classList.remove('ss-enter');
+    ov.classList.add('ss-exit');
+    setTimeout(function() {
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (typeof onDone === 'function') onDone();
+    }, 400);
+  }, 2800);
 }

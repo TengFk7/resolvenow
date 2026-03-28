@@ -784,6 +784,118 @@ a{text-decoration:none}
 .toast.warning{border-left-color:var(--gold)}
 
 /* ════════════════════════════════════════════════════════
+   SUBMIT SUCCESS OVERLAY — Premium Smooth
+════════════════════════════════════════════════════════ */
+
+/* ── Overlay itself ── */
+@keyframes ssOverlayIn{
+  from{opacity:0;transform:scale(.97);backdrop-filter:blur(0)}
+  to  {opacity:1;transform:scale(1);  backdrop-filter:blur(16px)}
+}
+@keyframes ssOverlayOut{
+  from{opacity:1;transform:scale(1)   translateY(0)}
+  to  {opacity:0;transform:scale(1.03)translateY(-12px)}
+}
+.ss-enter{animation:ssOverlayIn  .45s cubic-bezier(0,0,.2,1) both}
+.ss-exit {animation:ssOverlayOut .38s cubic-bezier(.4,0,1,1) both}
+
+/* ── Ripple rings ── */
+@keyframes ssRipple{
+  0%  {transform:scale(.8);opacity:.7}
+  100%{transform:scale(2.4);opacity:0}
+}
+.ss-ripple{
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.5);
+  animation:ssRipple 2s ease-out infinite;
+  pointer-events:none;
+}
+.ss-ripple:nth-child(2){animation-delay:.65s}
+.ss-ripple:nth-child(3){animation-delay:1.3s}
+
+/* ── Ring container ── */
+@keyframes ssRingIn{
+  0%  {transform:scale(0) rotate(-20deg);opacity:0}
+  65% {transform:scale(1.1) rotate(3deg);opacity:1}
+  100%{transform:scale(1)   rotate(0deg);opacity:1}
+}
+@keyframes ssGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.25),0 0 40px rgba(255,255,255,.1)}
+  50%    {box-shadow:0 0 0 14px rgba(255,255,255,0),0 0 60px rgba(255,255,255,.25)}
+}
+.ss-ring-wrap{
+  position:relative;
+  width:110px;height:110px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:30px;flex-shrink:0;
+}
+.ss-ring{
+  width:110px;height:110px;border-radius:50%;
+  background:rgba(255,255,255,.15);
+  border:2px solid rgba(255,255,255,.3);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;
+  animation:
+    ssRingIn .55s cubic-bezier(.22,1,.36,1) .05s both,
+    ssGlow   2.5s ease-in-out 1s infinite;
+}
+.ss-check{width:58px;height:58px}
+.ss-check svg{width:100%;height:100%;filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
+
+/* ── Checkmark path draw ── */
+@keyframes ssCheckDraw{
+  0%  {stroke-dashoffset:52;opacity:.3}
+  60% {stroke-dashoffset:-4;opacity:1}
+  100%{stroke-dashoffset:0; opacity:1}
+}
+.ss-path{
+  stroke-dasharray:52;stroke-dashoffset:52;
+  animation:ssCheckDraw .6s cubic-bezier(.22,1,.36,1) .6s both;
+}
+
+/* ── Text elements ── */
+@keyframes ssFadeUp{
+  from{opacity:0;transform:translateY(14px);filter:blur(4px)}
+  to  {opacity:1;transform:translateY(0);   filter:blur(0)}
+}
+.ss-title{
+  font-size:28px;font-weight:800;color:#fff;
+  margin-bottom:8px;letter-spacing:-.5px;
+  text-shadow:0 2px 20px rgba(0,0,0,.2);
+  animation:ssFadeUp .5s cubic-bezier(.22,1,.36,1) .75s both;
+}
+.ss-id{
+  font-size:12px;font-weight:700;color:rgba(255,255,255,.75);
+  background:rgba(0,0,0,.18);border-radius:99px;
+  padding:5px 18px;margin-bottom:20px;
+  letter-spacing:.8px;font-family:'Inter',sans-serif;
+  animation:ssFadeUp .5s cubic-bezier(.22,1,.36,1) .9s both;
+}
+.ss-sub{
+  font-size:14px;color:rgba(255,255,255,.85);line-height:1.75;
+  max-width:280px;
+  animation:ssFadeUp .5s cubic-bezier(.22,1,.36,1) 1.05s both;
+}
+
+/* ── Loading dots ── */
+@keyframes ssDot{
+  0%,80%,100%{transform:translateY(0);  opacity:.4}
+  40%        {transform:translateY(-6px);opacity:1}
+}
+.ss-dots{
+  display:flex;gap:10px;margin-top:30px;
+  animation:ssFadeUp .5s cubic-bezier(.22,1,.36,1) 1.2s both;
+}
+.ss-dots span{
+  width:7px;height:7px;background:rgba(255,255,255,.8);border-radius:50%;
+  animation:ssDot 1.4s ease-in-out 1.3s infinite;
+}
+.ss-dots span:nth-child(2){animation-delay:1.45s}
+.ss-dots span:nth-child(3){animation-delay:1.6s}
+
+
+
+/* ════════════════════════════════════════════════════════
    CITIZEN FORM WIZARD — 5 Step 3D Transitions
 ════════════════════════════════════════════════════════ */
 
@@ -906,19 +1018,23 @@ a{text-decoration:none}
 
 /* Wizard header */
 .wiz-header{
-  text-align:center;margin-bottom:24px;
+  display:flex;flex-direction:column;align-items:flex-start;
+  margin-bottom:24px;
+}
+.wiz-title-row{
+  display:flex;align-items:center;gap:10px;margin-bottom:6px;
 }
 .wiz-icon{
-  font-size:52px;margin-bottom:12px;
-  display:block;
+  font-size:28px;line-height:1;
   animation:wizIconBounce .6s cubic-bezier(.22,1,.36,1) both;
+  flex-shrink:0;
 }
 @keyframes wizIconBounce{
-  from{opacity:0;transform:translateY(-20px) scale(.8)}
-  to{opacity:1;transform:translateY(0) scale(1)}
+  from{opacity:0;transform:scale(.6)}
+  to{opacity:1;transform:scale(1)}
 }
 .wiz-header h2{
-  font-size:22px;font-weight:800;color:var(--navy);margin-bottom:6px;
+  font-size:22px;font-weight:800;color:var(--navy);margin:0;
 }
 .wiz-sub{
   font-size:13px;color:var(--muted);line-height:1.5;
