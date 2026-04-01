@@ -1,0 +1,32 @@
+const mongoose = require('mongoose');
+
+const ticketSchema = new mongoose.Schema({
+  ticketId:      { type: String, required: true, unique: true },  // TKT-001, TKT-002 ...
+  citizenId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  citizenName:   { type: String, required: true },
+  citizenLineId: { type: String, default: null },
+  category:      { type: String, required: true },
+  description:   { type: String, required: true },
+  location:      { type: String, required: true },
+  lat:           { type: Number, default: null },
+  lng:           { type: Number, default: null },
+  urgency:       { type: String, enum: ['normal', 'medium', 'urgent'], default: 'normal' },
+  priorityScore: { type: Number, default: 30 },
+  status:        { type: String, enum: ['pending', 'assigned', 'in_progress', 'completed', 'rejected'], default: 'pending' },
+  assignedTo:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedName:  { type: String, default: null },
+  rejectReason:  { type: String, default: null },
+  // รูปภาพ (URL จาก Cloudinary หรือ local)
+  citizenImage:  { type: String, default: null },
+  beforeImage:   { type: String, default: null },
+  afterImage:    { type: String, default: null },
+  // ประเมินความพึงพอใจ
+  rating:        { type: Number, min: 1, max: 5, default: null },
+  ratingReason:  { type: String, default: null },
+  ratedAt:       { type: String, default: null },
+}, {
+  timestamps: true,   // createdAt, updatedAt อัตโนมัติ
+  toJSON: { virtuals: true },
+});
+
+module.exports = mongoose.model('Ticket', ticketSchema);

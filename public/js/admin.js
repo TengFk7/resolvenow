@@ -11,6 +11,7 @@
 /* ── Page Navigation is handled by ui.js showPage() ──── */
 /* showPage() is defined in ui.js and calls loadAdmin() when needed */
 
+
 /* ── Load All Admin Data ─────────────────────────────── */
 async function loadAdmin() {
   try {
@@ -202,7 +203,7 @@ async function submitReject() {
 /* ── All Tickets Table ───────────────────────────────── */
 function renderAllQueue(tks) {
   var el = ge('allBody');
-  if (!tks.length) { el.innerHTML = '<tr><td colspan="10" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
+  if (!tks.length) { el.innerHTML = '<tr><td colspan="11" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
   tks.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
   var h = '';
   for (var i = 0; i < tks.length; i++) {
@@ -231,7 +232,9 @@ function renderAllQueue(tks) {
     ['pending','assigned','in_progress','completed','rejected'].forEach(function(s){
       h += '<option value="'+s+'"'+(t.status===s ? ' selected' : '')+'>'+stTH(s)+'</option>';
     });
-    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+t.createdAt+'</td></tr>';
+    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+t.createdAt+'</td>';
+    h += '<td><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></td>';
+    h += '</tr>';
   }
   el.innerHTML = h;
 }
@@ -281,4 +284,88 @@ function renderTechFull(techs) {
     h += '</div>';
   }
   el.innerHTML = h;
+}
+
+/* ── Delete Ticket Modal ───────────────────────────────── */
+var _deleteTicketId = null;
+
+function openDeleteModal(btn) {
+  _deleteTicketId = btn.getAttribute('data-id');
+  ge('mDeleteTicketLabel').textContent = 'Ticket #' + _deleteTicketId;
+  ge('mDelete').classList.add('on');
+}
+
+function closeDeleteModal() {
+  ge('mDelete').classList.remove('on');
+  _deleteTicketId = null;
+}
+
+async function confirmDeleteTicket() {
+  if (!_deleteTicketId) return;
+  var btn = ge('btnConfirmDelete');
+  btn.disabled = true;
+  btn.textContent = 'กำลังลบ...';
+  try {
+    var res = await fetch('/api/tickets/' + _deleteTicketId, { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) { showToast(data.error || 'ลบไม่สำเร็จ', 'error'); }
+    else { showToast('ลบ Ticket #' + _deleteTicketId + ' เรียบร้อยแล้ว 🗑️', 'success'); }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+  closeDeleteModal();
+  btn.disabled = false;
+  btn.textContent = '🗑️ ลบถาวร';
+  loadAdmin();
+}
+
+/* ── Delete ALL Tickets ─────────────────────────────────── */
+var DELETE_ALL_PASSWORD = 'admin1234';
+
+function openDeleteAllModal() {
+  ge('deleteAllPwInput').value = '';
+  hideE('deleteAllPwErr');
+  ge('mDeleteAllPw').classList.add('on');
+  setTimeout(function () { ge('deleteAllPwInput').focus(); }, 200);
+}
+
+function closeDeleteAllPw() {
+  ge('mDeleteAllPw').classList.remove('on');
+  ge('deleteAllPwInput').value = '';
+  hideE('deleteAllPwErr');
+}
+
+function submitDeleteAllPw() {
+  var pw = ge('deleteAllPwInput').value;
+  if (pw !== DELETE_ALL_PASSWORD) {
+    showE('deleteAllPwErr', '❌ รหัสผ่านไม่ถูกต้อง');
+    // Trigger shake animation
+    var inp = ge('deleteAllPwInput');
+    inp.classList.remove('pw-shake');
+    void inp.offsetWidth; // force reflow to restart animation
+    inp.classList.add('pw-shake');
+    setTimeout(function () { inp.classList.remove('pw-shake'); }, 450);
+    inp.focus();
+    return;
+  }
+  closeDeleteAllPw();
+  ge('mDeleteAllConfirm').classList.add('on');
+}
+
+function closeDeleteAllConfirm() {
+  ge('mDeleteAllConfirm').classList.remove('on');
+}
+
+async function confirmDeleteAll() {
+  var btn = ge('btnConfirmDeleteAll');
+  btn.disabled = true;
+  btn.textContent = 'กำลังลบ...';
+  try {
+    var res = await fetch('/api/tickets', { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) { showToast(data.error || 'ลบไม่สำเร็จ', 'error'); }
+    else { showToast('ลบ Ticket ทั้งหมด ' + (data.deleted || '') + ' รายการ เรียบร้อยแล้ว 🗑️', 'success'); }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+  closeDeleteAllConfirm();
+  btn.disabled = false;
+  btn.textContent = '🗑️ ลบทั้งหมด';
+  loadAdmin();
 }

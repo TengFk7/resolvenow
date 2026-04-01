@@ -3,7 +3,10 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { users, tickets, STATUSES, nextTicketId } = require('../data/store');
+const User = require('../models/User');
+const Ticket = require('../models/Ticket');
+const Counter = require('../models/Counter');
+const { STATUSES } = require('../data/store');
 const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected } = require('../config/lineNotify');
 const { upload: cloudinaryUpload, isCloudinaryConfigured } = require('../config/cloudinary');
 
@@ -13,7 +16,7 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ─── Multer Setup (Local fallback เมื่อไม่มี Cloudinary) ────────
+// ─── Multer Setup ────────────────────────────────────────────────
 const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -26,40 +29,16 @@ const localStorage = multer.diskStorage({
   }
 });
 const localUpload = multer({ storage: localStorage, limits: { fileSize: 5 * 1024 * 1024 } });
-
-// เลือก uploader ตาม config
 const upload = isCloudinaryConfigured() ? cloudinaryUpload : localUpload;
 
-// ดึง URL ของไฟล์ที่อัปโหลด (Cloudinary คืน URL ตรง, local ต้องสร้างเอง)
 function getFileUrl(req) {
   if (!req.file) return null;
-  if (isCloudinaryConfigured()) {
-    // Cloudinary: req.file.path คือ secure_url
-    return req.file.path;
-  }
-  // Local fallback
+  if (isCloudinaryConfigured()) return req.file.path;
   const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
-  return BASE_URL
-    ? BASE_URL + '/uploads/' + req.file.filename
-    : '/uploads/' + req.file.filename;
+  return BASE_URL ? BASE_URL + '/uploads/' + req.file.filename : '/uploads/' + req.file.filename;
 }
 
-// GET /api/tickets
-router.get('/', requireAuth, (req, res) => {
-  const user = users.find(u => u.id === req.session.userId);
-  let result;
-  if (user.role === 'citizen') {
-    result = tickets.filter(t => t.citizenId === user.id);
-  } else if (user.role === 'technician') {
-    result = tickets.filter(t => t.category === user.specialty || t.assignedTo === user.id);
-  } else {
-    result = tickets; // admin sees all
-  }
-  res.json(result);
-});
-
-
-// ─── Reverse Geocoding (OpenStreetMap Nominatim) ────────────
+// ─── Reverse Geocoding ───────────────────────────────────────────
 async function reverseGeocode(lat, lng) {
   try {
     const https = require('https');
@@ -72,7 +51,6 @@ async function reverseGeocode(lat, lng) {
           try {
             const json = JSON.parse(data);
             const a = json.address || {};
-            // ประกอบชื่อสถานที่จากส่วนที่มีค่า (ใกล้เคียงที่สุดก่อน)
             const parts = [
               a.road || a.pedestrian || a.path,
               a.suburb || a.neighbourhood || a.quarter,
@@ -87,11 +65,54 @@ async function reverseGeocode(lat, lng) {
   } catch { return `${lat},${lng}`; }
 }
 
-// POST /api/tickets
+// ─── Helper: format ticket for API response ──────────────────────
+function formatTicket(t) {
+  return {
+    ticketId: t.ticketId,
+    citizenId: t.citizenId,
+    citizenName: t.citizenName,
+    citizenLineId: t.citizenLineId,
+    category: t.category,
+    description: t.description,
+    location: t.location,
+    lat: t.lat,
+    lng: t.lng,
+    urgency: t.urgency,
+    priorityScore: t.priorityScore,
+    status: t.status,
+    assignedTo: t.assignedTo,
+    assignedName: t.assignedName,
+    rejectReason: t.rejectReason,
+    citizenImage: t.citizenImage,
+    beforeImage: t.beforeImage,
+    afterImage: t.afterImage,
+    rating: t.rating,
+    ratingReason: t.ratingReason,
+    ratedAt: t.ratedAt,
+    createdAt: t.createdAt,
+    _id: t._id,
+  };
+}
+
+// ─── GET /api/tickets ────────────────────────────────────────────
+router.get('/', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    let query = {};
+    if (user.role === 'citizen') query = { citizenId: user._id };
+    else if (user.role === 'technician') query = {
+      $or: [{ category: user.specialty }, { assignedTo: user._id }]
+    };
+    const tickets = await Ticket.find(query).sort({ createdAt: -1 });
+    res.json(tickets.map(formatTicket));
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── POST /api/tickets ───────────────────────────────────────────
 router.post('/', requireAuth, upload.single('image'), async (req, res) => {
   try {
     const { category, description, location, urgency, lat, lng } = req.body;
-    const user = users.find(u => u.id === req.session.userId);
+    const user = await User.findById(req.session.userId);
     if (!category || !description || !location)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (!req.file)
@@ -102,113 +123,211 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     for (const kw of ['flood', 'fire', 'อันตราย', 'เร่งด่วน', 'น้ำท่วม', 'ฉุกเฉิน'])
       if (desc.includes(kw)) score = Math.min(score + 10, 100);
 
-    // แปลง GPS พิกัดเป็นชื่อสถานที่ด้วย reverse geocoding
     let locationName = location;
-    if (lat && lng) {
-      locationName = await reverseGeocode(lat, lng);
-    }
+    if (lat && lng) locationName = await reverseGeocode(lat, lng);
 
-    const fileUrl = getFileUrl(req);
-    const ticket = {
-      ticketId: nextTicketId(),
-      citizenId:     user.id,
-      citizenName:   user.firstName + ' ' + user.lastName,
-      citizenLineId: user.lineUserId || null,   // สำหรับ push personal notification
+    // สร้าง ticketId แบบ TKT-001
+    const seq = await Counter.nextSeq('ticket');
+    const ticketId = 'TKT-' + String(seq).padStart(3, '0');
+
+    const ticket = await new Ticket({
+      ticketId,
+      citizenId: user._id,
+      citizenName: user.firstName + ' ' + user.lastName,
+      citizenLineId: user.lineUserId || null,
       category, description,
-      location: locationName,  // ชื่อสถานที่จาก reverse geocoding
+      location: locationName,
       lat: lat ? parseFloat(lat) : null,
       lng: lng ? parseFloat(lng) : null,
       urgency: urgency || 'normal',
       priorityScore: score,
       status: 'pending',
-      assignedTo: null, assignedName: null,
-      citizenImage: fileUrl,
-      beforeImage: null, afterImage: null,
-      createdAt: new Date().toLocaleString('th-TH')
-    };
-    tickets.push(ticket);
+      citizenImage: getFileUrl(req),
+    }).save();
 
-    // แจ้งเตือน LINE
-    notifyNewTicket(ticket).catch(e => console.error('[LINE] notifyNewTicket error:', e));
-
-    res.status(201).json(ticket);
+    notifyNewTicket(formatTicket(ticket)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+    res.status(201).json(formatTicket(ticket));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
   }
 });
 
-// PUT /api/tickets/:id/status
+// ─── PUT /api/tickets/:id/status ─────────────────────────────────
 router.put('/:id/status', requireAuth, async (req, res) => {
-  const { status, reason } = req.body;
-  if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Status ไม่ถูกต้อง' });
-  const ticket = tickets.find(t => t.ticketId === req.params.id);
-  if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
-
-  const caller = users.find(u => u.id === req.session.userId);
-
-  // ถ้าช่างกดรับงานเองผ่าน status route → เซ็ตชื่อช่างด้วย
-  if (status === 'assigned' && caller && caller.role === 'technician') {
-    if (!ticket.assignedTo) {
-      ticket.assignedTo   = caller.id;
-      ticket.assignedName = caller.firstName + ' ' + caller.lastName;
-    }
-  }
-
-  // ถ้าช่างกด in_progress และยังไม่มีชื่อ → เซ็ตจาก session
-  if (status === 'in_progress' && caller && caller.role === 'technician') {
-    if (!ticket.assignedTo) {
-      ticket.assignedTo   = caller.id;
-      ticket.assignedName = caller.firstName + ' ' + caller.lastName;
-    }
-  }
-
-  ticket.status = status;
-  if (status === 'rejected' && reason) ticket.rejectReason = reason;
-
-  // แจ้งเตือน LINE ตาม status
   try {
-    if (status === 'assigned')    await notifyAssigned(ticket);
-    if (status === 'in_progress') await notifyInProgress(ticket);
-    if (status === 'completed')   await notifyCompleted(ticket);
-    if (status === 'rejected')    await notifyRejected(ticket, reason || '');
-  } catch (e) { console.error('[LINE] status notify error:', e); }
+    const { status, reason } = req.body;
+    if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Status ไม่ถูกต้อง' });
 
-  res.json(ticket);
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    const caller = await User.findById(req.session.userId);
+
+    if ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician') {
+      if (!ticket.assignedTo) {
+        ticket.assignedTo = caller._id;
+        ticket.assignedName = caller.firstName + ' ' + caller.lastName;
+      }
+    }
+
+    ticket.status = status;
+    if (status === 'rejected' && reason) ticket.rejectReason = reason;
+    await ticket.save();
+
+    try {
+      if (status === 'assigned') await notifyAssigned(formatTicket(ticket));
+      if (status === 'in_progress') await notifyInProgress(formatTicket(ticket));
+      if (status === 'completed') await notifyCompleted(formatTicket(ticket));
+      if (status === 'rejected') await notifyRejected(formatTicket(ticket), reason || '');
+    } catch (e) { console.error('[LINE] status notify error:', e); }
+
+    res.json(formatTicket(ticket));
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
-// PUT /api/tickets/:id/assign
+// ─── PUT /api/tickets/:id/assign ─────────────────────────────────
 router.put('/:id/assign', requireAuth, async (req, res) => {
-  const { technicianId } = req.body;
-  const ticket = tickets.find(t => t.ticketId === req.params.id);
-  if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
-  const tech = users.find(u => u.id === parseInt(technicianId) && u.role === 'technician');
-  if (!tech) return res.status(404).json({ error: 'ไม่พบช่าง' });
-  ticket.assignedTo = tech.id;
-  ticket.assignedName = tech.firstName + ' ' + tech.lastName;
-  ticket.status = 'assigned';
+  try {
+    const { technicianId } = req.body;
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
-  // แจ้งเตือน LINE
-  notifyAssigned(ticket).catch(e => console.error('[LINE] notifyAssigned error:', e));
+    const tech = await User.findOne({ _id: technicianId, role: 'technician' });
+    if (!tech) return res.status(404).json({ error: 'ไม่พบช่าง' });
 
-  res.json(ticket);
+    ticket.assignedTo = tech._id;
+    ticket.assignedName = tech.firstName + ' ' + tech.lastName;
+    ticket.status = 'assigned';
+    await ticket.save();
+
+    notifyAssigned(formatTicket(ticket)).catch(e => console.error('[LINE] notifyAssigned error:', e));
+    res.json(formatTicket(ticket));
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
-// POST /api/tickets/:id/upload/before
-router.post('/:id/upload/before', requireAuth, upload.single('image'), (req, res) => {
-  const ticket = tickets.find(t => t.ticketId === req.params.id);
-  if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
-  ticket.beforeImage = getFileUrl(req);
-  res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.beforeImage });
+// ─── POST /api/tickets/:id/upload/before ─────────────────────────
+router.post('/:id/upload/before', requireAuth, upload.single('image'), async (req, res) => {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
+    ticket.beforeImage = getFileUrl(req);
+    await ticket.save();
+    res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.beforeImage });
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
-// POST /api/tickets/:id/upload/after
-router.post('/:id/upload/after', requireAuth, upload.single('image'), (req, res) => {
-  const ticket = tickets.find(t => t.ticketId === req.params.id);
-  if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
-  ticket.afterImage = getFileUrl(req);
-  // ไม่ auto-complete — ช่างต้องกดปุ่ม "ยืนยันปิดเรื่องร้องเรียน" เองผ่าน PUT /status
-  res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
+// ─── POST /api/tickets/:id/upload/after ──────────────────────────
+router.post('/:id/upload/after', requireAuth, upload.single('image'), async (req, res) => {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
+    ticket.afterImage = getFileUrl(req);
+    await ticket.save();
+    res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── PUT /api/tickets/:id/rating ─────────────────────────────────
+router.put('/:id/rating', requireAuth, async (req, res) => {
+  try {
+    const { rating, reason } = req.body;
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'citizen')
+      return res.status(403).json({ error: 'เฉพาะประชาชนเท่านั้น' });
+    if (ticket.citizenId.toString() !== caller._id.toString())
+      return res.status(403).json({ error: 'ไม่ใช่ Ticket ของคุณ' });
+    if (ticket.status !== 'completed')
+      return res.status(400).json({ error: 'Ticket ยังไม่เสร็จสิ้น' });
+
+    const stars = parseInt(rating);
+    if (!stars || stars < 1 || stars > 5)
+      return res.status(400).json({ error: 'คะแนนต้องอยู่ระหว่าง 1-5' });
+
+    ticket.rating = stars;
+    ticket.ratingReason = (stars < 3 && reason) ? reason.trim() : null;
+    ticket.ratedAt = new Date().toLocaleString('th-TH');
+    await ticket.save();
+
+    res.json({ message: 'บันทึกคะแนนสำเร็จ', ticket: formatTicket(ticket) });
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── GET /api/tickets/search ─────────────────────────────────────
+router.get('/search', async (req, res) => {
+  try {
+    const caller = req.session.userId ? await User.findById(req.session.userId) : null;
+    const { q, status: st, category: cat } = req.query;
+
+    if (!caller && (!q || !q.trim())) return res.json([]);
+
+    let query = {};
+    if (caller && caller.role === 'citizen') query.citizenId = caller._id;
+    else if (caller && caller.role === 'technician') {
+      query.$or = [{ category: caller.specialty }, { assignedTo: caller._id }];
+    }
+    if (st && st !== 'all') query.status = st;
+    if (cat && cat !== 'all') query.category = cat;
+
+    let tickets = await Ticket.find(query).sort({ createdAt: -1 });
+
+    if (q && q.trim()) {
+      const kw = q.trim().toLowerCase();
+      tickets = tickets.filter(t =>
+        (t.ticketId || '').toLowerCase().includes(kw) ||
+        (t.description || '').toLowerCase().includes(kw) ||
+        (t.location || '').toLowerCase().includes(kw) ||
+        (t.citizenName || '').toLowerCase().includes(kw) ||
+        (t.assignedName || '').toLowerCase().includes(kw)
+      );
+    }
+
+    // ซ่อนข้อมูลส่วนตัวสำหรับผู้ที่ไม่ได้ login
+    if (!caller) {
+      tickets = tickets.map(t => ({
+        ticketId: t.ticketId, category: t.category,
+        description: t.description, location: t.location,
+        status: t.status, urgency: t.urgency,
+        assignedName: t.assignedName || null,
+        rating: t.rating || null, createdAt: t.createdAt
+      }));
+    } else {
+      tickets = tickets.map(formatTicket);
+    }
+
+    res.json(tickets);
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── DELETE /api/tickets/:id ──────────────────────────────────────
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin')
+      return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้น' });
+
+    const ticket = await Ticket.findOneAndDelete({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    res.json({ message: 'ลบ Ticket เรียบร้อยแล้ว', ticketId: req.params.id });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── DELETE /api/tickets (all) ───────────────────────────────────
+router.delete('/', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin')
+      return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้น' });
+
+    const result = await Ticket.deleteMany({});
+    res.json({ message: 'ลบ Ticket ทั้งหมดเรียบร้อยแล้ว', deleted: result.deletedCount });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 module.exports = router;
+
+

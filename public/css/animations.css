@@ -1,0 +1,233 @@
+/* ═══════════════════════════════════════════════════════════
+   RESOLVENOW — GLOBAL ANIMATION SYSTEM v3
+   Anti-flicker: NO entrance animations on dynamic content.
+   Only hover/interaction animations remain.
+═══════════════════════════════════════════════════════════ */
+
+/* ── Keyframes (interaction only) ─────────────────────── */
+@keyframes buttonShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes inputFocusGlow {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  50%       { box-shadow: 0 0 0 5px rgba(37,99,235,.20); }
+}
+@keyframes liveDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .35; transform: scale(.65); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(14px) scale(.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   1. STAT CARDS — hover only (no entrance = no flicker)
+══════════════════════════════════════════════════════════ */
+.scard {
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .22s ease !important;
+}
+.scard:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow: 0 10px 28px rgba(10,22,40,.14) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   2. PANELS — hover only
+══════════════════════════════════════════════════════════ */
+.panel {
+  transition: box-shadow .25s ease !important;
+}
+.panel:hover {
+  box-shadow: 0 8px 28px rgba(10,22,40,.11) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   3. TABLE ROWS — hover only (no stagger = no flicker)
+══════════════════════════════════════════════════════════ */
+.queue-table tbody tr {
+  transition: background .15s ease !important;
+}
+.queue-table tbody tr:hover {
+  background: rgba(37,99,235,.04) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   4. ADMIN BUTTONS (.abt) — shimmer + hover lift
+══════════════════════════════════════════════════════════ */
+.abt {
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .18s ease,
+              background .15s ease,
+              color .15s ease !important;
+}
+.abt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg,
+    transparent 30%, rgba(255,255,255,.3) 50%, transparent 70%);
+  background-size: 200% 100%;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  transition: opacity .15s ease;
+}
+.abt:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+}
+.abt:hover::after {
+  opacity: 1;
+  animation: buttonShimmer 1s ease-in-out;
+}
+.abt:active { transform: scale(.95) translateY(1px) !important; }
+.abt-blue:hover  { box-shadow: 0 5px 16px rgba(37,99,235,.30) !important; }
+.abt-red:hover   { box-shadow: 0 5px 16px rgba(239,68,68,.30)  !important; }
+.abt-green:hover { box-shadow: 0 5px 16px rgba(34,197,94,.30)  !important; }
+.abt-gold:hover  { box-shadow: 0 5px 16px rgba(245,158,11,.30) !important; }
+
+/* ══════════════════════════════════════════════════════════
+   5. PRIMARY BUTTONS (.btnp, .btns)
+══════════════════════════════════════════════════════════ */
+.btnp, .btns {
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .18s ease !important;
+}
+.btnp::after, .btns::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg,
+    transparent 25%, rgba(255,255,255,.2) 50%, transparent 75%);
+  background-size: 200% 100%;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.btnp:hover::after, .btns:hover::after {
+  opacity: 1;
+  animation: buttonShimmer 1s ease-in-out;
+}
+.btnp:hover { transform: translateY(-2px) !important; }
+.btns:hover { transform: translateY(-2px) !important; }
+.btnp:active, .btns:active {
+  transform: translateY(1px) scale(.98) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   6. TECHNICIAN CARDS — hover only (no entrance animation)
+══════════════════════════════════════════════════════════ */
+.tech-card {
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .22s ease !important;
+}
+.tech-card:hover {
+  transform: translateY(-4px) scale(1.015) !important;
+  box-shadow: 0 10px 28px rgba(10,22,40,.13) !important;
+}
+.tech-list .tech-item {
+  transition: background .15s ease, transform .18s cubic-bezier(.34,1.56,.64,1);
+}
+.tech-list .tech-item:hover {
+  transform: translateX(4px);
+  background: rgba(37,99,235,.04);
+  border-radius: 10px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   7. CITIZEN / TECH CARDS (.ncard) — hover only
+══════════════════════════════════════════════════════════ */
+.ncard {
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .22s ease !important;
+}
+.ncard:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 28px rgba(10,22,40,.12) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   8. CATEGORY BOXES (.catbox)
+══════════════════════════════════════════════════════════ */
+.catbox {
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .2s ease,
+              background .15s ease !important;
+}
+.catbox:hover       { transform: translateY(-3px) scale(1.03) !important; }
+.catbox.sel,
+.catbox.on          { transform: scale(1.02) !important; }
+
+/* ══════════════════════════════════════════════════════════
+   9. SIDEBAR NAV ITEMS — hover only
+══════════════════════════════════════════════════════════ */
+.sb-item {
+  transition: background .18s ease, color .18s ease,
+              transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.sb-item:hover { transform: translateX(4px); }
+.sb-item.on    { transform: translateX(0); }
+
+.sb-logout button {
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), opacity .15s ease !important;
+}
+.sb-logout button:hover  { transform: translateY(-1px) scale(1.03) !important; }
+.sb-logout button:active { transform: scale(.96) !important; }
+
+/* ══════════════════════════════════════════════════════════
+  10. FORM INPUTS — focus glow
+══════════════════════════════════════════════════════════ */
+.fg input:focus,
+.fg textarea:focus,
+.fg select:focus {
+  animation: inputFocusGlow 1.8s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════════════════════
+  11. MODALS — spring entrance (triggered on open only)
+══════════════════════════════════════════════════════════ */
+.mo.on .mb {
+  animation: none !important; /* handled by existing scaleIn */
+}
+
+/* ══════════════════════════════════════════════════════════
+  12. WIZARD BUTTONS
+══════════════════════════════════════════════════════════ */
+.wiz-next, .wiz-back {
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .18s ease !important;
+}
+.wiz-next:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 6px 18px rgba(37,99,235,.25) !important;
+}
+.wiz-back:hover  { transform: translateY(-2px) scale(1.03) !important; }
+.wiz-next:active,
+.wiz-back:active { transform: scale(.96) translateY(1px) !important; }
+
+/* ══════════════════════════════════════════════════════════
+  13. LIVE DOT & TOASTS
+══════════════════════════════════════════════════════════ */
+.live-dot { animation: liveDot 1.4s ease-in-out infinite !important; }
+.toast.show {
+  animation: toastIn .3s cubic-bezier(.34,1.56,.64,1) forwards !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+  UTILITY: Reduced motion
+══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

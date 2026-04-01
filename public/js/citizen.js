@@ -363,6 +363,21 @@ function renderCitizen(data) {
       h += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px">&#128295; ช่างกำลังดำเนินการ</div><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปปัญหา\')" style="width:100%;max-height:70px;object-fit:cover;border-radius:8px;cursor:pointer"/></div>';
     }
     h += '</div>';
+    // Rating section for completed tickets
+    if (done) {
+      if (t.rating) {
+        var starsHtml = '<span style="color:#f59e0b;font-size:16px">';
+        for (var s = 0; s < t.rating; s++) starsHtml += '⭐';
+        for (var s2 = t.rating; s2 < 5; s2++) starsHtml += '☆';
+        starsHtml += '</span>';
+        h += '<div style="margin-top:8px;padding:8px 12px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fde68a;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:8px">';
+        h += '<span style="font-weight:700;color:#92400e">คะแนน:</span>' + starsHtml;
+        if (t.ratingReason) h += '<span style="color:#92400e;font-size:11px">— ' + t.ratingReason + '</span>';
+        h += '</div>';
+      } else {
+        h += '<button onclick="openRatingModal(\'' + t.ticketId + '\',\'' + t.citizenName + '\')" style="margin-top:8px;width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,.3)">⭐ ประเมินความพึงพอใจ</button>';
+      }
+    }
   }
   el.innerHTML = h;
 }
@@ -419,4 +434,85 @@ function _showSubmitSuccess(ticketId, onDone) {
       if (typeof onDone === 'function') onDone();
     }, 400);
   }, 2800);
+}
+
+/* ══════════════════════════════════════════
+   RATING MODAL
+══════════════════════════════════════════ */
+var _ratingTicketId = null;
+var _ratingVal = 0;
+
+function openRatingModal(ticketId, citizenName) {
+  _ratingTicketId = ticketId;
+  _ratingVal = 0;
+  var lbl = ge('ratingTicketLabel');
+  if (lbl) lbl.textContent = ticketId;
+  hideE('ratingErr');
+  ge('ratingReasonWrap').style.display = 'none';
+  if (ge('ratingReason')) ge('ratingReason').value = '';
+  if (ge('starLabel')) ge('starLabel').textContent = '';
+  // reset stars
+  document.querySelectorAll('.star-btn').forEach(function(b) {
+    b.classList.remove('on');
+  });
+  ge('mRating').classList.add('on');
+}
+
+function closeRatingModal() {
+  ge('mRating').classList.remove('on');
+  _ratingTicketId = null;
+  _ratingVal = 0;
+}
+
+function setRatingStar(val) {
+  _ratingVal = val;
+  var LABELS = { 1: '😤 ไม่พอใจมาก', 2: '😞 ไม่ค่อยพอใจ', 3: '😐 พอใจปานกลาง', 4: '😊 พอใจมาก', 5: '😄 พอใจมากที่สุด!' };
+  var COLORS  = { 1: '#dc2626', 2: '#f97316', 3: '#ca8a04', 4: '#16a34a', 5: '#059669' };
+  // Animate each star
+  document.querySelectorAll('.star-btn').forEach(function(b) {
+    var bv = parseInt(b.getAttribute('data-val'));
+    b.classList.toggle('on', bv <= val);
+    b.style.color = bv <= val ? '#f59e0b' : '#d1d5db';
+    // micro-bounce
+    if (bv <= val) {
+      b.style.transform = 'scale(1.3)';
+      setTimeout(function() { b.style.transform = ''; }, 180);
+    }
+  });
+  var lbl = ge('starLabel');
+  if (lbl) { lbl.textContent = LABELS[val] || ''; lbl.style.color = COLORS[val] || 'var(--muted)'; }
+
+  // Show reason field if < 3 stars
+  var wrap = ge('ratingReasonWrap');
+  if (wrap) wrap.style.display = val < 3 ? 'block' : 'none';
+  hideE('ratingErr');
+}
+
+async function submitRating() {
+  if (!_ratingVal) return showE('ratingErr', 'กรุณาเลือกคะแนนก่อน');
+  if (_ratingVal < 3) {
+    var reason = ge('ratingReason') ? ge('ratingReason').value.trim() : '';
+    if (!reason) return showE('ratingErr', 'กรุณาระบุเหตุผลที่ไม่พอใจ');
+  }
+  var btn = ge('btnSubmitRating');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  try {
+    var reason2 = (ge('ratingReason') ? ge('ratingReason').value.trim() : '');
+    var res = await fetch('/api/tickets/' + _ratingTicketId + '/rating', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: _ratingVal, reason: reason2 })
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
+      return showE('ratingErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+    closeRatingModal();
+    showToast('✅ ขอบคุณสำหรับการประเมิน! ' + '⭐'.repeat(_ratingVal));
+    loadTickets();
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
+    showE('ratingErr', 'เกิดข้อผิดพลาด');
+  }
 }

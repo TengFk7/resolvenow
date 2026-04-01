@@ -10,24 +10,37 @@ var _otpToken = null;      // token จากเซิร์ฟเวอร์
 var _otpTimerInterval = null;
 var _otpLocked = false;    // ล็อคหลังผิด 3 ครั้ง
 
-/* ── Tab Switching — 3D Flip Animation ───────────────────── */
+/* ── Tab Switching — 3D Flip Animation ───────────── */
 var _currentTab = 'login';
 var _switching  = false;
+
+// panel id map
+var _panelId = { login: 'fLogin', reg: 'fReg', search: 'fSearch' };
+var _tabId   = { login: 'tabLogin', reg: 'tabReg', search: 'tabSearch' };
 
 function switchTab(t) {
   if (t === _currentTab || _switching) return;
   _switching = true;
   hideE('authErr');
 
-  var fromEl = (t === 'reg') ? ge('fLogin') : ge('fReg');
-  var toEl   = (t === 'reg') ? ge('fReg')   : ge('fLogin');
+  var fromEl = ge(_panelId[_currentTab]);
+  var toEl   = ge(_panelId[t]);
   var wrapper = ge('authFlipWrapper');
 
-  ge('tabLogin').className = 'tab' + (t === 'login' ? ' on' : '');
-  ge('tabReg').className   = 'tab' + (t === 'reg'   ? ' on' : '');
+  // Update tab active state
+  Object.keys(_tabId).forEach(function(k) {
+    var tabEl = ge(_tabId[k]);
+    if (tabEl) tabEl.className = 'tab' + (k === t ? ' on' : '');
+  });
 
-  var outClass = (t === 'reg') ? 'lift-out' : 'sink-out';
-  var inClass  = (t === 'reg') ? 'lift-in'  : 'sink-in';
+  var outClass, inClass;
+  // Determine direction based on tab order: login < reg < search
+  var tabOrder = { login: 0, reg: 1, search: 2 };
+  if (tabOrder[t] > tabOrder[_currentTab]) {
+    outClass = 'lift-out'; inClass = 'lift-in';
+  } else {
+    outClass = 'sink-out'; inClass = 'sink-in';
+  }
 
   // ① Measure BOTH heights before touching the DOM
   var fromH = fromEl.offsetHeight;
@@ -79,6 +92,11 @@ function switchTab(t) {
       toEl.classList.remove(inClass);
       wrapper.style.height = '';
       _switching = false;
+      // auto-focus search input
+      if (t === 'search') {
+        var sq = ge('srchQ');
+        if (sq) sq.focus();
+      }
     }, 500);
   }, 330);
 
@@ -380,9 +398,11 @@ async function doLogout() {
     // Reset flip state so switchTab always runs cleanly
     _currentTab = 'reg';
     _switching  = false;
-    // Show fReg as hidden baseline so fLogin can animate in
-    ge('fLogin').style.display = 'none';
-    ge('fReg').style.display   = 'block';
+    // Hide all panels, show only fReg as baseline
+    ge('fLogin').style.display  = 'none';
+    ge('fReg').style.display    = 'block';
+    var fSearch = ge('fSearch');
+    if (fSearch) fSearch.style.display = 'none';
     switchTab('login');
   }, 500);
 }
@@ -401,4 +421,59 @@ async function doChPw() {
     closeChPw();
     showToast('เปลี่ยนรหัสผ่านสำเร็จ');
   } catch (e) { showE('chErr', 'เกิดข้อผิดพลาด'); }
+}
+
+/* ── Live Search (search tab) ─────────────────────── */
+var _srchTimer = null;
+function liveSearch() {
+  clearTimeout(_srchTimer);
+  _srchTimer = setTimeout(doSearch, 350);
+}
+
+async function doSearch() {
+  var q   = (ge('srchQ') ? ge('srchQ').value : '');
+  var st  = (ge('srchStatus') ? ge('srchStatus').value : 'all');
+  var cat = (ge('srchCat')    ? ge('srchCat').value    : 'all');
+  var res_el = ge('srchResults');
+  if (!res_el) return;
+
+  // ถ้ายังไม่ได้พิมพ์อะไรเลย → แสดงข้อความเชิญชวน
+  if (!q.trim() && st === 'all' && cat === 'all') {
+    res_el.innerHTML = '<div class="search-empty">🔍 พิมพ์ Ticket ID หรือรายละเอียดเพื่อค้นหา</div>';
+    return;
+  }
+
+  try {
+    var url = '/api/tickets/search?q=' + encodeURIComponent(q) +
+              '&status=' + st + '&category=' + cat;
+    var r = await fetch(url);
+    if (!r.ok) { res_el.innerHTML = '<div class="search-empty">⚠️ เกิดข้อผิดพลาด</div>'; return; }
+    var data = await r.json();
+    if (!data.length) { res_el.innerHTML = '<div class="search-empty">🔍 ไม่พบผลลัพธ์</div>'; return; }
+
+    var DEPT_ICON2 = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
+    var DEPT2 = { Road:'ถนน', Water:'ท่อน้ำ', Electricity:'ไฟฟ้า', Garbage:'ขยะ', Animal:'สัตว์', Tree:'กิ่งไม้', Hazard:'ภัยพิบัติ' };
+    var STATUS_TH = { pending:'รอ', assigned:'รับงาน', in_progress:'ดำเนินการ', completed:'เสร็จ', rejected:'ปฏิเสธ' };
+
+    var h = '';
+    data.forEach(function(t) {
+      var stars = t.rating ? '⭐'.repeat(t.rating) : '';
+      h += '<div class="srch-card badge-' + t.status + '">';
+      h += '<div class="srch-row">';
+      h += '<span class="srch-id">' + t.ticketId + '</span>';
+      h += '<span class="srch-status ' + t.status + '">' + (STATUS_TH[t.status] || t.status) + '</span>';
+      h += '</div>';
+      h += '<div class="srch-cat">' + (DEPT_ICON2[t.category] || '') + ' ' + (DEPT2[t.category] || t.category) + '</div>';
+      h += '<div class="srch-desc">' + (t.description || '').slice(0, 80) + '</div>';
+      h += '<div class="srch-meta">';
+      h += '<span>📍 ' + (t.location || '—') + '</span>';
+      if (t.assignedName) h += '<span>🔧 ' + t.assignedName + '</span>';
+      if (stars) h += '<span>' + stars + '</span>';
+      h += '</div>';
+      h += '</div>';
+    });
+    res_el.innerHTML = h;
+  } catch(e) {
+    res_el.innerHTML = '<div class="search-empty">⚠️ เกิดข้อผิดพลาด</div>';
+  }
 }

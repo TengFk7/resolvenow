@@ -1,33 +1,33 @@
 const express = require('express');
-const router = express.Router();
-const { users, tickets } = require('../data/store');
+const router  = express.Router();
+const User    = require('../models/User');
+const Ticket  = require('../models/Ticket');
 
-// ─── Middleware ─────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
   next();
 }
 
 // GET /api/technicians
-router.get('/', requireAuth, (req, res) => {
-  const techs = users.filter(u => u.role === 'technician').map(u => {
-    const active = tickets.filter(t =>
-      t.assignedTo === u.id && t.status !== 'completed' && t.status !== 'rejected'
-    ).length;
-    const total = tickets.filter(t => t.assignedTo === u.id).length;
-    const capacity = active >= 5 ? 100 : active >= 3 ? 75 : active >= 1 ? 40 : 10;
-    const statusLabel = active >= 5 ? 'FULL' : active >= 3 ? 'BUSY' : 'READY';
-    return {
-      id: u.id,
-      name: u.firstName + ' ' + u.lastName,
-      specialty: u.specialty,
-      activeJobs: active,
-      totalJobs: total,
-      capacity,
-      statusLabel
-    };
-  });
-  res.json(techs);
+router.get('/', requireAuth, async (req, res) => {
+  try {
+    const techs = await User.find({ role: 'technician' }).select('-password');
+    const result = await Promise.all(techs.map(async (u) => {
+      const active = await Ticket.countDocuments({
+        assignedTo: u._id,
+        status: { $nin: ['completed', 'rejected'] }
+      });
+      const total = await Ticket.countDocuments({ assignedTo: u._id });
+      const capacity   = active >= 5 ? 100 : active >= 3 ? 75 : active >= 1 ? 40 : 10;
+      const statusLabel = active >= 5 ? 'FULL' : active >= 3 ? 'BUSY' : 'READY';
+      return {
+        id: u._id, name: u.firstName + ' ' + u.lastName,
+        specialty: u.specialty, activeJobs: active,
+        totalJobs: total, capacity, statusLabel
+      };
+    }));
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 module.exports = router;
