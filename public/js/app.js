@@ -32,7 +32,6 @@ function enterApp() {
     var adminInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
     ge('adminAv').textContent = adminInit.toUpperCase();
     ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
-    startClock();
     showPage('dashboard');
     loadAdmin();
     setInterval(loadAdmin, 6000);
@@ -49,9 +48,7 @@ function enterApp() {
       var userInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
       ge('hAv').textContent = userInit.toUpperCase();
     }
-    ge('hName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
-    var roleLabel = CU.role === 'technician' ? 'ช่าง ' + (DEPT[CU.specialty] || '') : 'ประชาชน';
-    ge('hRole').textContent = roleLabel;
+    ge('hName').textContent = CU.firstName + (CU.lastName && CU.lastName !== '-' ? ' ' + CU.lastName : '');
     ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
     ge('secTech').style.display   = CU.role === 'technician' ? 'block' : 'none';
     loadTickets();

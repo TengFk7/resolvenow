@@ -1102,6 +1102,36 @@ a {
   margin-top: 1px
 }
 
+/* Topbar logout button (admin) */
+.topbar-logout {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(239,68,68,.2);
+  background: rgba(239,68,68,.06);
+  color: rgba(239,68,68,.7);
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.topbar-logout:hover {
+  background: rgba(239,68,68,.14);
+  color: #ef4444;
+}
+
+/* Normal header: username only (no badge wrapper) */
+.h-username {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+
 /* Clock in topbar */
 .topbar-clock {
   font-family: 'Inter', sans-serif;

@@ -173,14 +173,11 @@
           <h2 id="pageTitle">Smart Dispatcher Dashboard</h2>
         </div>
         <div class="topbar-right">
-          <div class="topbar-clock" id="topbarClock">--:--:--</div>
           <div class="topbar-user">
             <div class="uav" id="adminAv">A</div>
-            <div>
-              <div class="uname" id="adminName">Admin</div>
-              <div class="ustatus">● ONLINE</div>
-            </div>
+            <div class="uname" id="adminName">Admin</div>
           </div>
+          <button class="topbar-logout btn-ripple" onclick="doLogout()" title="ออกจากระบบ">🚪</button>
         </div>
       </div>
 
@@ -343,11 +340,8 @@
       <div class="nlogo">🏛️ Resolve<span>Now</span></div>
       <div class="nuinfo">
         <div class="nav2" id="hAv">?</div>
-        <div>
-          <div id="hName"></div>
-          <div id="hRole" class="rbadge"></div>
-        </div>
-        <button class="hbtn" onclick="openChPw()">🔒</button>
+        <div id="hName" class="h-username"></div>
+        <button class="hbtn" onclick="openChPw()" title="เปลี่ยนรหัสผ่าน">🔒</button>
         <button class="hbtn" onclick="doLogout()">ออก</button>
       </div>
     </header>
