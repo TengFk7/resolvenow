@@ -1640,10 +1640,6 @@ a {
   gap: 8px;
 }
 
-.nlogo span {
-  color: var(--gold2)
-}
-
 .nuinfo {
   display: flex;
   align-items: center;
