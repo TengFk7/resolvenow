@@ -150,7 +150,7 @@
     <div class="sidebar">
       <div class="sb-logo">
         <h1>🏛️ ResolveNow</h1>
-        <p>Smart Dispatcher</p>
+        <!-- <p>Smart Dispatcher</p> -->
       </div>
       <div class="sb-nav">
         <div class="sb-item on" id="nav-dashboard" onclick="showPage('dashboard')">
@@ -173,7 +173,10 @@
           <h2 id="pageTitle">Smart Dispatcher Dashboard</h2>
         </div>
         <!-- Hidden: used by JS/Drawer -->
-        <div style="display:none"><div id="adminAv">A</div><div id="adminName">Admin</div></div>
+        <div style="display:none">
+          <div id="adminAv">A</div>
+          <div id="adminName">Admin</div>
+        </div>
         <button class="hbg-btn hbg-light btn-ripple" onclick="openDrawer()" aria-label="เมนู">
           <span></span><span></span><span></span>
         </button>
@@ -336,11 +339,15 @@
   <div id="normalApp">
     <header class="nheader">
       <!-- Hidden: used by JS/Drawer -->
-      <div style="display:none"><div class="nav2" id="hAv">?</div><div id="hName" class="h-username"></div></div>
+      <div style="display:none">
+        <div class="nav2" id="hAv">?</div>
+        <div id="hName" class="h-username"></div>
+      </div>
       <!-- Logo — absolutely centered regardless of button width -->
-      <div class="nlogo nlogo-abs">🏛️ Resolve<span>Now</span></div>
+      <div class="nlogo nlogo-abs logo-anim">🏛️ Resolve<span>Now</span></div>
       <!-- Hamburger pushed to right -->
-      <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู" style="margin-left:auto;flex-shrink:0">
+      <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู"
+        style="margin-left:auto;flex-shrink:0">
         <span></span><span></span><span></span>
       </button>
     </header>
