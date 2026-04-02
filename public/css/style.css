@@ -5510,6 +5510,17 @@ a {
   display: flex;
   align-items: center;
   padding: 14px 16px;
+  position: relative; /* needed for absolute child centering */
 }
+
+/* Logo: truly centered using absolute positioning */
+.nlogo-abs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none; /* let clicks pass through to elements behind */
+}
+
 
 
