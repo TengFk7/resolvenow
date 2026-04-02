@@ -112,8 +112,8 @@ function wizBuildSummary() {
 
   var h = '';
   h += sumRow(icon[cat] || '📋', 'ประเภทปัญหา', catTH);
-  h += sumRow('📝', 'รายละเอียด', desc || '—');
-  h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + (_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
+  h += sumRow('📝', 'รายละเอียด', escapeHTML(desc) || '—');
+  h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + escapeHTML(_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
   // Show image thumbnail instead of filename
   var imgHtml = _citizenImgDataUrl
     ? '<img src="' + _citizenImgDataUrl + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:10px;margin-top:6px;border:1.5px solid var(--border)"/>'
@@ -348,9 +348,9 @@ function renderCitizen(data) {
     h += '<div style="border:1.5px solid ' + (done ? 'var(--g)' : 'var(--bd)') + ';border-radius:12px;padding:14px;margin-bottom:10px">';
     h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
     h += '<div><div style="font-size:11px;color:var(--mu);font-weight:600">' + t.ticketId + '</div>';
-    h += '<div style="font-size:14px;font-weight:700">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' - ' + t.location + '</div></div>';
+    h += '<div style="font-size:14px;font-weight:700">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + ' - ' + escapeHTML(t.location) + '</div></div>';
     h += '<span class="badge ' + t.status + '">' + stTH(t.status) + '</span></div>';
-    h += '<div style="font-size:13px;color:#4a5568;margin-bottom:4px">' + t.description + '</div>';
+    h += '<div style="font-size:13px;color:#4a5568;margin-bottom:4px">' + escapeHTML(t.description) + '</div>';
     h += '<div style="font-size:12px;color:var(--mu);margin-bottom:8px">' + t.createdAt + '</div>';
     if (t.citizenImage)
       h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูป\')" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;cursor:pointer"/>';
@@ -372,10 +372,10 @@ function renderCitizen(data) {
         starsHtml += '</span>';
         h += '<div style="margin-top:8px;padding:8px 12px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fde68a;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:8px">';
         h += '<span style="font-weight:700;color:#92400e">คะแนน:</span>' + starsHtml;
-        if (t.ratingReason) h += '<span style="color:#92400e;font-size:11px">— ' + t.ratingReason + '</span>';
+        if (t.ratingReason) h += '<span style="color:#92400e;font-size:11px">— ' + escapeHTML(t.ratingReason) + '</span>';
         h += '</div>';
       } else {
-        h += '<button onclick="openRatingModal(\'' + t.ticketId + '\',\'' + t.citizenName + '\')" style="margin-top:8px;width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,.3)">⭐ ประเมินความพึงพอใจ</button>';
+        h += '<button onclick="openRatingModal(\'' + t.ticketId + '\',\'' + escapeHTML(t.citizenName) + '\')" style="margin-top:8px;width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,.3)">⭐ ประเมินความพึงพอใจ</button>';
       }
     }
   }

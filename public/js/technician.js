@@ -63,10 +63,10 @@ function renderTech(data) {
 
     /* ── Body ── */
     h += '<div class="tcbody">'
-      + '<div class="mrow"><span class="mi">⚠️</span><span>' + t.description + '</span></div>'
-      + '<div class="mrow"><span class="mi">📍</span><span>' + t.location + '</span></div>'
-      + '<div class="mrow"><span class="mi">👤</span><span>' + t.citizenName + '</span></div>'
-      + '<div class="mrow" style="margin-bottom:12px"><span class="mi">🕐</span><span>' + t.createdAt + '</span></div>';
+      + '<div class="mrow"><span class="mi">⚠️</span><span>' + escapeHTML(t.description) + '</span></div>'
+      + '<div class="mrow"><span class="mi">📍</span><span>' + escapeHTML(t.location) + '</span></div>'
+      + '<div class="mrow"><span class="mi">👤</span><span>' + escapeHTML(t.citizenName) + '</span></div>'
+      + '<div class="mrow" style="margin-bottom:12px"><span class="mi">🕐</span><span>' + escapeHTML(t.createdAt) + '</span></div>';
 
     if (t.citizenImage)
       h += '<div style="margin-bottom:14px"><div class="citizen-img-label">รูปจากผู้แจ้ง</div>'

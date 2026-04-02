@@ -9,6 +9,16 @@
    • Image modal / Change-password modal
    ───────────────────────────────────────────── */
 
+/* ── Utilities ───────────────────────────────────────── */
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 /* ── Splash Screen ───────────────────────────────────── */
 (function initSplash() {
   var splash = document.getElementById('splash');
@@ -317,3 +327,12 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeDrawer();
 });
 
+// ─── Socket.io Auto-refresh ──────────────────────────────────
+if (typeof io !== 'undefined') {
+  var socket = io();
+  socket.on('ticket_updated', function() {
+    if (typeof loadTickets === 'function' && window.CU) {
+      loadTickets();
+    }
+  });
+}

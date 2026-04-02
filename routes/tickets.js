@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const { Parser } = require('json2csv');
 const multer = require('multer');
 const User = require('../models/User');
 const Ticket = require('../models/Ticket');
@@ -10,10 +11,15 @@ const { STATUSES } = require('../data/store');
 const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected } = require('../config/lineNotify');
 const { upload: cloudinaryUpload, isCloudinaryConfigured } = require('../config/cloudinary');
 
-// ─── Middleware ─────────────────────────────────────────────────
+// ─── Middleware & Helpers ──────────────────────────────────────────
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
   next();
+}
+
+function emitUpdate(req) {
+  const io = req.app.get('io');
+  if (io) io.emit('ticket_updated');
 }
 
 // ─── Multer Setup ────────────────────────────────────────────────
@@ -94,6 +100,38 @@ function formatTicket(t) {
   };
 }
 
+// ─── GET /api/tickets/export ─────────────────────────────────────
+router.get('/export', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบ' });
+
+    const tickets = await Ticket.find().sort({ createdAt: -1 });
+    const fields = [
+      { label: 'รหัสเรื่อง', value: 'ticketId' },
+      { label: 'ผู้แจ้ง', value: 'citizenName' },
+      { label: 'หมวดหมู่', value: 'category' },
+      { label: 'รายละเอียด', value: 'description' },
+      { label: 'พิกัด', value: 'location' },
+      { label: 'Lat', value: 'lat' },
+      { label: 'Lng', value: 'lng' },
+      { label: 'คะแนนด่วน', value: 'priorityScore' },
+      { label: 'สถานะ', value: 'status' },
+      { label: 'ช่างที่รับผิดชอบ', value: 'assignedName' },
+      { label: 'สร้างเมื่อ', value: 'createdAt' }
+    ];
+    const json2csvParser = new Parser({ fields, withBOM: true });
+    const csv = json2csvParser.parse(tickets);
+
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment(`resolvnow_tickets_${Date.now()}.csv`);
+    return res.send(csv);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'ไม่สามารถออกรายงานได้' });
+  }
+});
+
 // ─── GET /api/tickets ────────────────────────────────────────────
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -146,6 +184,7 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     }).save();
 
     notifyNewTicket(formatTicket(ticket)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+    emitUpdate(req);
     res.status(201).json(formatTicket(ticket));
   } catch (e) {
     console.error(e);
@@ -163,6 +202,8 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
     const caller = await User.findById(req.session.userId);
+    if (caller.role === 'citizen') return res.status(403).json({ error: 'ไม่มีสิทธิ์เปลี่ยนสถานะ' });
+
 
     if ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician') {
       if (!ticket.assignedTo) {
@@ -182,6 +223,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       if (status === 'rejected') await notifyRejected(formatTicket(ticket), reason || '');
     } catch (e) { console.error('[LINE] status notify error:', e); }
 
+    emitUpdate(req);
     res.json(formatTicket(ticket));
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
@@ -189,6 +231,9 @@ router.put('/:id/status', requireAuth, async (req, res) => {
 // ─── PUT /api/tickets/:id/assign ─────────────────────────────────
 router.put('/:id/assign', requireAuth, async (req, res) => {
   try {
+    const caller = await User.findById(req.session.userId);
+    if (caller.role !== 'admin') return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
+
     const { technicianId } = req.body;
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
@@ -202,6 +247,7 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
     await ticket.save();
 
     notifyAssigned(formatTicket(ticket)).catch(e => console.error('[LINE] notifyAssigned error:', e));
+    emitUpdate(req);
     res.json(formatTicket(ticket));
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
@@ -213,6 +259,7 @@ router.post('/:id/upload/before', requireAuth, upload.single('image'), async (re
     if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
     ticket.beforeImage = getFileUrl(req);
     await ticket.save();
+    emitUpdate(req);
     res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.beforeImage });
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
@@ -224,6 +271,7 @@ router.post('/:id/upload/after', requireAuth, upload.single('image'), async (req
     if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
     ticket.afterImage = getFileUrl(req);
     await ticket.save();
+    emitUpdate(req);
     res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });

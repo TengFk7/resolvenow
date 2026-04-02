@@ -12,7 +12,8 @@
     rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/animations.css" />
-
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 
 <body>
@@ -163,7 +164,6 @@
           <span class="sb-icon">🔧</span> สถานะทีมช่าง
         </div>
       </div>
-      <div class="sb-logout"><button class="btn-ripple" onclick="doLogout()">▶️ ออกจากระบบ</button></div>
     </div>
 
     <!-- Main content -->
@@ -215,11 +215,14 @@
               <div class="panel">
                 <div class="panel-head">
                   <h3>📋 SMART QUEUE — รอการอนุมัติ</h3>
-                  <div class="live-badge">
-                    <div class="live-dot"></div>Real-time
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <button class="btn-ripple" onclick="toggleMap()" id="btnToggleMap" style="background:#f1f5f9;color:var(--navy);border:1px solid #cbd5e1;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗺️ แผนที่</button>
+                    <div class="live-badge">
+                      <div class="live-dot"></div>Real-time
+                    </div>
                   </div>
                 </div>
-                <div style="overflow-x:auto">
+                <div id="queueTableContainer" style="overflow-x:auto">
                   <table class="queue-table">
                     <thead>
                       <tr>
@@ -236,12 +239,14 @@
                     </tbody>
                   </table>
                 </div>
+                <div id="queueMapContainer" style="display:none;width:100%;height:350px;border-radius:8px;border:1px solid #e2e8f0;z-index:1;"></div>
               </div>
             </div>
             <div class="right-col">
               <div class="panel">
                 <div class="panel-head">
                   <h3>📊 ภาพรวมงาน</h3>
+                  <button class="btn-ripple" onclick="window.location.href='/api/tickets/export'" style="background:var(--blue2);color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📥 Export CSV</button>
                 </div>
                 <div class="pie-wrap">
                   <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140"
@@ -824,6 +829,8 @@
   <div class="toast" id="toast"></div>
 
   <!-- JS Modules -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/js/ui.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/admin.js"></script>

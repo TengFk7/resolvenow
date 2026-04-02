@@ -354,6 +354,9 @@ async function doLogout() {
   CU = null;
   _stopOtpTimer();
 
+  // Close any open slide drawer globally
+  if (typeof closeDrawer === 'function') closeDrawer();
+
   // Determine visible app
   var adminEl  = ge('adminApp');
   var normalEl = ge('normalApp');
@@ -398,6 +401,13 @@ async function doLogout() {
     // Reset flip state so switchTab always runs cleanly
     _currentTab = 'reg';
     _switching  = false;
+
+    // Clear dynamic DOM arrays to prevent state leakage between accounts
+    if (ge('citizenCards')) ge('citizenCards').innerHTML = '';
+    if (ge('techCards')) ge('techCards').innerHTML = '';
+    if (ge('queueBody')) ge('queueBody').innerHTML = '<tr><td colspan="4" class="empty">กำลังโหลด...</td></tr>';
+    if (ge('allBody')) ge('allBody').innerHTML = '<tr><td colspan="11" class="empty">กำลังโหลด...</td></tr>';
+
     // Hide all panels, show only fReg as baseline
     ge('fLogin').style.display  = 'none';
     ge('fReg').style.display    = 'block';

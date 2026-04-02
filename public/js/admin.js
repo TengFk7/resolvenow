@@ -13,6 +13,7 @@
 
 
 /* ── Load All Admin Data ─────────────────────────────── */
+let _lastAdminTickets = [];
 async function loadAdmin() {
   try {
     var r1 = await fetch('/api/tickets');
@@ -49,6 +50,9 @@ async function loadAdmin() {
     // Sub-pages
     if (currentPage === 'queue') renderAllQueue(tks);
     if (currentPage === 'techs') renderTechFull(techs);
+
+    _lastAdminTickets = tks;
+    if (typeof updateMapMarkers === 'function') updateMapMarkers();
   } catch (e) { console.error(e); }
 }
 
@@ -174,6 +178,66 @@ function closeRejectModal() {
   _rejectId = null;
 }
 
+/* ── Leaflet Map View ────────────────────────────────── */
+let _adminMap = null;
+let _mapMarkers = [];
+let _isMapMode = false;
+
+window.toggleMap = function() {
+  _isMapMode = !_isMapMode;
+  if (_isMapMode) {
+    ge('queueTableContainer').style.display = 'none';
+    ge('queueMapContainer').style.display = 'block';
+    ge('btnToggleMap').style.background = 'var(--navy)';
+    ge('btnToggleMap').style.color = '#fff';
+    ge('btnToggleMap').innerHTML = '📋 ตาราง';
+    initMapIfNeeded();
+  } else {
+    ge('queueTableContainer').style.display = 'block';
+    ge('queueMapContainer').style.display = 'none';
+    ge('btnToggleMap').style.background = '#f1f5f9';
+    ge('btnToggleMap').style.color = 'var(--navy)';
+    ge('btnToggleMap').innerHTML = '🗺️ แผนที่';
+  }
+};
+
+window.initMapIfNeeded = function() {
+  if (!_adminMap) {
+    _adminMap = L.map('queueMapContainer').setView([13.829, 100.551], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(_adminMap);
+  }
+  setTimeout(function() { _adminMap.invalidateSize(); updateMapMarkers(); }, 100);
+};
+
+window.updateMapMarkers = function() {
+  if (!_adminMap || !_lastAdminTickets) return;
+  // Clear old markers
+  _mapMarkers.forEach(function(m) { _adminMap.removeLayer(m); });
+  _mapMarkers = [];
+
+  var active = _lastAdminTickets.filter(t => t.status !== 'completed' && t.status !== 'rejected');
+  
+  // Custom icons mapping
+  var icons = {
+    Road: '🛣️', Water: '💧', Electricity: '💡', Garbage: '🗑️', Animal: '🐍', Tree: '🌿', Hazard: '🚨'
+  };
+
+  active.forEach(function(t) {
+    if (t.lat && t.lng) {
+      var marker = L.marker([t.lat, t.lng]).addTo(_adminMap);
+      var iText = icons[t.category] || '📍';
+      var dText = escapeHTML(t.description || 'ไม่มีรายละเอียด').substring(0, 50);
+      var stText = escapeHTML(t.status);
+      var popHtml = `<b>${t.ticketId}</b><br>${iText} ${escapeHTML(t.category)}<br>${dText}<br><b>สถานะ: ${stText}</b>`;
+      marker.bindPopup(popHtml);
+      _mapMarkers.push(marker);
+    }
+  });
+};
+
 function goRejectStep2() {
   ge('mRejectStep1').style.display = 'none';
   ge('mRejectStep2').style.display = 'block';
@@ -211,12 +275,12 @@ function renderAllQueue(tks) {
     var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
     h += '<tr>';
     h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+t.ticketId+'</td>';
-    h += '<td style="font-size:12px">'+t.citizenName+'</td>';
-    h += '<td>'+(DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+'</td>';
-    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 '+t.location+gpsLink+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+t.description+'</div></td>';
+    h += '<td style="font-size:12px">'+escapeHTML(t.citizenName)+'</td>';
+    h += '<td>'+(DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+'</td>';
+    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 '+escapeHTML(t.location)+gpsLink+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escapeHTML(t.description)+'</div></td>';
     h += '<td>'+pLabel(t.priorityScore)+'</td>';
     h += '<td>'+statusBadge(t.status)+'</td>';
-    h += '<td style="font-size:12px">'+(t.assignedName||'<span style="color:var(--muted)">—</span>')+'</td>';
+    h += '<td style="font-size:12px">'+(t.assignedName ? escapeHTML(t.assignedName) : '<span style="color:var(--muted)">—</span>')+'</td>';
     // Images
     var imgCell = '';
     if (t.status==='completed' && (t.beforeImage||t.afterImage)) {

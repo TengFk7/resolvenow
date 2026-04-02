@@ -19,6 +19,8 @@ router.post('/send-otp', async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
     if (!firstName || !lastName || !email || !password)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+    if (typeof email !== 'string' || typeof password !== 'string')
+      return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
     if (!email.includes('@'))
       return res.status(400).json({ error: 'รูปแบบ Email ไม่ถูกต้อง' });
     if (password.length < 6)
@@ -93,6 +95,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password, remember } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+    if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(401).json({ error: 'ไม่พบ Email นี้ในระบบ' });

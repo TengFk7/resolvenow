@@ -7,21 +7,36 @@ const express    = require('express');
 const session    = require('express-session');
 const { MongoStore } = require('connect-mongo');  // v6: named export
 const path       = require('path');
+const helmet     = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit  = require('express-rate-limit');
+const http       = require('http');            // socket.io requirement
+const { Server } = require('socket.io');       // socket.io requirement
 const connectDB  = require('./config/db');
 const { seedDB } = require('./config/seed');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
+// Make io globally accessible to routers
+app.set('io', io);
 
 // ─── Connect MongoDB → Seed → Start ─────────────────────────────
 (async () => {
   await connectDB();
   await seedDB();
 
-  // ─── Middleware ───────────────────────────────────────────────
+  // ─── Security Middleware ────────────────────────────────────
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabling CSP temporarily to not break any inline scripts/styles (like those in index.html)
+  }));
+  app.use(mongoSanitize());
+
+  // ─── General Middleware ───────────────────────────────────────────────
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(express.static(path.join(__dirname, 'public')));
-
   // ใช้ mongoose connection ที่มีอยู่แล้ว (ไม่ต้อง connect ใหม่)
   const mongoose = require('mongoose');
   app.use(session({
@@ -33,8 +48,28 @@ const app = express();
       dbName: 'resolvenow',
       ttl: 7 * 24 * 60 * 60,
     }),
-    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
+    cookie: { 
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    }
   }));
+
+  // ─── Rate Limiting (apply to auth routes specifically) ─────────
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 30, // limit each IP to 30 requests per windowMs for auth
+    message: { error: 'Too many requests, please try again later.' }
+  });
+  app.use('/api/auth', authLimiter);
+
+  // General strict rate limit for other APIs is optional, but setting a baseline
+  const apiLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 300
+  });
+  app.use('/api/', apiLimiter);
 
   // ─── Routes ──────────────────────────────────────────────────
   app.use('/api/auth',          require('./routes/auth'));
@@ -51,7 +86,7 @@ const app = express();
 
   // ─── Start ───────────────────────────────────────────────────
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log('='.repeat(55));
     console.log(`  ResolveNow: http://localhost:${PORT}`);
     console.log('  Admin: admin@resolvenow.th / admin1234');
