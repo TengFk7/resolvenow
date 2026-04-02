@@ -324,7 +324,17 @@ function adminChSt(sel) {
   fetch('/api/tickets/' + id + '/status', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: status })
-  }).then(function () { showToast('อัปเดตแล้ว', 'success'); loadAdmin(); });
+  }).then(function(r) {
+    return r.json().then(function(d) { return { ok: r.ok, data: d }; });
+  }).then(function(result) {
+    if (!result.ok) {
+      // BUG-014: show error if transition is invalid, then reload to sync dropdown
+      showToast(result.data.error || 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
+    } else {
+      showToast('อัปเดตแล้ว', 'success');
+    }
+    loadAdmin(); // always reload to keep UI in sync
+  });
 }
 
 /* ── Technician Full Cards ───────────────────────────── */

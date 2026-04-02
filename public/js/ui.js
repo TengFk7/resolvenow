@@ -96,6 +96,17 @@ var DEPT_ICON = {
 /* ── DOM Helper ──────────────────────────────────────── */
 function ge(id) { return document.getElementById(id); }
 
+/* ── HTML Escape (BUG-005: prevent XSS in dynamic HTML) */
+function escapeHTML(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* ── Ripple Effect ───────────────────────────────────── */
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-ripple');
@@ -268,8 +279,9 @@ function openDrawer() {
   // ── Avatar ──
   var avEl = ge('drawerAv');
   if (avEl) {
-    if (CU.linePicture) {
-      avEl.innerHTML = '<img src="' + CU.linePicture + '" style="width:100%;height:100%;object-fit:cover;border-radius:18px"/>';
+    // BUG-002: use 'avatar' field (from /api/auth/me), not 'linePicture'
+    if (CU.avatar) {
+      avEl.innerHTML = '<img src="' + CU.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:18px"/>';
     } else {
       var init = (CU.firstName ? CU.firstName[0] : '?') +
                  (CU.lastName && CU.lastName !== '-' && CU.lastName[0] ? CU.lastName[0] : '');

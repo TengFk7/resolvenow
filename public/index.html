@@ -13,7 +13,8 @@
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/animations.css" />
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
 
 <body>
@@ -32,7 +33,7 @@
     <!-- Auth Card -->
     <div class="ac">
       <div class="al">
-        <h1>🏛️ ResolveNow</h1>
+        <h1 class="logo-anim" style="text-align:center;">🏛️ <span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></h1>
         <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
       </div>
       <div class="tabs">
@@ -149,9 +150,12 @@
   <div id="adminApp">
     <!-- Sidebar -->
     <div class="sidebar">
-      <div class="sb-logo">
-        <h1>🏛️ ResolveNow</h1>
-        <!-- <p>Smart Dispatcher</p> -->
+      <div class="sb-logo" style="display: flex; justify-content: center; padding: 28px 0;">
+        <h1 class="logo-anim"
+          style="display: flex; justify-content: center; align-items: center; gap: 6px; margin: 0 0 0 115px; cursor: default;">
+          <span style="font-size: 20px;">🏛️</span>
+          <span>Resolve<span class="now-gold">Now</span></span>
+        </h1>
       </div>
       <div class="sb-nav">
         <div class="sb-item on" id="nav-dashboard" onclick="showPage('dashboard')">
@@ -216,7 +220,9 @@
                 <div class="panel-head">
                   <h3>📋 SMART QUEUE — รอการอนุมัติ</h3>
                   <div style="display:flex;gap:8px;align-items:center">
-                    <button class="btn-ripple" onclick="toggleMap()" id="btnToggleMap" style="background:#f1f5f9;color:var(--navy);border:1px solid #cbd5e1;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗺️ แผนที่</button>
+                    <button class="btn-ripple" onclick="toggleMap()" id="btnToggleMap"
+                      style="background:#f1f5f9;color:var(--navy);border:1px solid #cbd5e1;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗺️
+                      แผนที่</button>
                     <div class="live-badge">
                       <div class="live-dot"></div>Real-time
                     </div>
@@ -239,14 +245,18 @@
                     </tbody>
                   </table>
                 </div>
-                <div id="queueMapContainer" style="display:none;width:100%;height:350px;border-radius:8px;border:1px solid #e2e8f0;z-index:1;"></div>
+                <div id="queueMapContainer"
+                  style="display:none;width:100%;height:350px;border-radius:8px;border:1px solid #e2e8f0;z-index:1;">
+                </div>
               </div>
             </div>
             <div class="right-col">
               <div class="panel">
                 <div class="panel-head">
                   <h3>📊 ภาพรวมงาน</h3>
-                  <button class="btn-ripple" onclick="window.location.href='/api/tickets/export'" style="background:var(--blue2);color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📥 Export CSV</button>
+                  <button class="btn-ripple" onclick="window.location.href='/api/tickets/export'"
+                    style="background:var(--blue2);color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📥
+                    Export CSV</button>
                 </div>
                 <div class="pie-wrap">
                   <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140"
@@ -327,10 +337,6 @@
       <button class="admin-mob-btn" id="amob-techs" onclick="showPage('techs')">
         <span class="admin-mob-icon">🔧</span>
         <span class="admin-mob-label">ทีมช่าง</span>
-      </button>
-      <button class="admin-mob-btn" onclick="openDrawer()">
-        <span class="admin-mob-icon">👤</span>
-        <span class="admin-mob-label">บัญชี</span>
       </button>
     </nav>
 
@@ -796,6 +802,28 @@
     </div>
   </div>
 
+  <!-- ── MODAL: Technician Reject Reason (BUG-003) ─────── -->
+  <div class="mo" id="mTechReject">
+    <div class="mb" style="max-width:400px">
+      <button class="mc" onclick="closeTechRejectModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">❌</div>
+        <h3 style="margin:0 0 4px;font-size:17px;color:var(--navy)">ปฏิเสธงาน</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="techRejectLabel">กรุณาระบุเหตุผล</p>
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px">เหตุผล <span style="color:var(--r)">*</span></label>
+        <textarea id="techRejectReason" placeholder="เช่น ไม่ใช่แผนกที่รับผิดชอบ, อุปกรณ์ไม่พร้อม..." rows="3"
+          style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box;resize:vertical"></textarea>
+      </div>
+      <div class="ebox" id="techRejectErr" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeTechRejectModal()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">ยกเลิก</button>
+        <button onclick="confirmTechReject()" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">❌ ปฏิเสธงาน</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── SPLASH SCREEN ──────────────────────────────────── -->
   <div id="splash">
     <!-- Floating dots -->
@@ -830,7 +858,8 @@
 
   <!-- JS Modules -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/js/ui.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/admin.js"></script>

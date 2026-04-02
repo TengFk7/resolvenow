@@ -204,6 +204,32 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     const caller = await User.findById(req.session.userId);
     if (caller.role === 'citizen') return res.status(403).json({ error: 'ไม่มีสิทธิ์เปลี่ยนสถานะ' });
 
+    // BUG-014: Validate status transitions to prevent skipping workflow steps
+    const TRANSITIONS = {
+      // technicians: can only move forward or reject
+      technician: {
+        pending:     ['assigned'],
+        assigned:    ['in_progress', 'rejected'],
+        in_progress: ['completed', 'rejected'],
+        completed:   [],
+        rejected:    []
+      },
+      // admin: can change to any status except backward (but allow override for corrections)
+      admin: {
+        pending:     ['assigned', 'rejected'],
+        assigned:    ['in_progress', 'completed', 'rejected', 'pending'],
+        in_progress: ['completed', 'rejected', 'assigned'],
+        completed:   ['in_progress'],   // admin can reopen
+        rejected:    ['pending']        // admin can revert reject
+      }
+    };
+
+    const allowed = TRANSITIONS[caller.role]?.[ticket.status] || [];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        error: `ไม่สามารถเปลี่ยนสถานะจาก "${ticket.status}" เป็น "${status}" ได้`
+      });
+    }
 
     if ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician') {
       if (!ticket.assignedTo) {

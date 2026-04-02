@@ -187,7 +187,34 @@ function renderTech(data) {
 /* ── Job Actions ─────────────────────────────────────── */
 function acceptJob(btn) { apiStatus(btn.getAttribute('data-id'), 'assigned'); showToast('✅ รับงานแล้ว'); }
 function startWork(btn) { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('🔧 เริ่มดำเนินการ'); }
-function rejectJob(btn) { apiStatus(btn.getAttribute('data-id'), 'rejected'); showToast('ปฏิเสธแล้ว', true); }
+
+// BUG-003: Tech reject now requires a reason via modal
+var _techRejectId = null;
+function rejectJob(btn) {
+  _techRejectId = btn.getAttribute('data-id');
+  ge('techRejectLabel').textContent = 'Ticket #' + _techRejectId + ' — กรุณาระบุเหตุผล';
+  ge('techRejectReason').value = '';
+  hideE('techRejectErr');
+  ge('mTechReject').classList.add('on');
+  setTimeout(function() { ge('techRejectReason').focus(); }, 200);
+}
+function closeTechRejectModal() {
+  ge('mTechReject').classList.remove('on');
+  _techRejectId = null;
+}
+async function confirmTechReject() {
+  var reason = ge('techRejectReason').value.trim();
+  if (!reason) { showE('techRejectErr', 'กรุณาระบุเหตุผลก่อนปฏิเสธ'); return; }
+  hideE('techRejectErr');
+  await fetch('/api/tickets/' + _techRejectId + '/status', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'rejected', reason: reason })
+  });
+  closeTechRejectModal();
+  showToast('ปฏิเสธงานแล้ว', 'error');
+  loadTickets();
+}
+
 function completeJob(btn) {
   if (btn.disabled || btn.hasAttribute('disabled')) return;
   var id = btn.getAttribute('data-id');
@@ -311,7 +338,7 @@ async function loadHelpRequests() {
           + '<div style="font-size:12px;color:#4a5568">Ticket: ' + hp.ticketId + ' — ' + (DEPT_ICON[hp.ticketCategory] || '') + ' ' + (DEPT[hp.ticketCategory] || hp.ticketCategory) + ' ที่ ' + hp.ticketLocation + '</div>'
           + (hp.message ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">: ' + hp.message + '</div>' : '')
           + '</div>'
-          + '<button class="btn-help-accept" data-id="' + hp.id + '" onclick="acceptHelp(this)">✅ รับงาน</button>'
+          + '<button class="btn-help-accept" data-id="' + hp.helpId + '" onclick="acceptHelp(this)">✅ รับงาน</button>'
           + '</div></div>';
       }
       ge('helpList').innerHTML = h;

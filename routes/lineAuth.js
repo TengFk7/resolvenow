@@ -76,12 +76,14 @@ router.get('/callback', async (req, res) => {
     // หา user ที่มี lineUserId นี้ หรือสร้างใหม่
     let user = await User.findOne({ lineUserId });
     if (!user) {
+      const bcrypt = require('bcryptjs');
       const nameParts = displayName.split(' ');
       user = await new User({
         firstName:      nameParts[0] || displayName,
         lastName:       nameParts.slice(1).join(' ') || '-',
         email:          'line_' + lineUserId + '@line.me',
-        password:       'LINE_AUTH_NO_PASSWORD',
+        // BUG-010: hash a unique unguessable string — prevents bypass via email+password login
+        password:       await bcrypt.hash('LINE_NO_PW_' + lineUserId + '_' + Date.now(), 10),
         role:           'citizen',
         lineUserId,
         lineDisplayName: displayName,

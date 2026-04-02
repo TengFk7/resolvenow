@@ -13,6 +13,11 @@ var upType = null;
 var helpTicketId = null;
 var currentPage = 'dashboard';
 
+/* ── Interval tracking (BUG-001: prevent memory leak on re-login) */
+var _adminInterval = null;
+var _ticketsInterval = null;
+var _helpInterval = null;
+
 /* ── Show Auth Page ──────────────────────────────────── */
 function showAuth() {
   ge('authPage').style.display = 'flex';
@@ -21,9 +26,17 @@ function showAuth() {
   ge('mobNav').style.display = 'none';
 }
 
+/* ── Clear all polling intervals (call on logout) ────── */
+function clearAppIntervals() {
+  if (_adminInterval)   { clearInterval(_adminInterval);   _adminInterval = null; }
+  if (_ticketsInterval) { clearInterval(_ticketsInterval); _ticketsInterval = null; }
+  if (_helpInterval)    { clearInterval(_helpInterval);    _helpInterval = null; }
+}
+
 /* ── Enter Application ───────────────────────────────── */
 function enterApp() {
   ge('authPage').style.display = 'none';
+  clearAppIntervals(); // BUG-001: clear any previous intervals before creating new ones
 
   if (CU.role === 'admin') {
 
@@ -34,16 +47,15 @@ function enterApp() {
     ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
     showPage('dashboard');
     loadAdmin();
-    setInterval(loadAdmin, 6000);
+    _adminInterval = setInterval(loadAdmin, 6000);
   } else {
     ge('normalApp').style.display = 'flex';
     ge('adminApp').style.display = 'none';
 
-
-    // Avatar: prefer LINE picture
+    // BUG-002: Avatar uses 'avatar' field (not 'linePicture') from /api/auth/me
     var hAv = ge('hAv');
-    if (CU.linePicture) {
-      hAv.outerHTML = '<img class="linepic" id="hAv" src="'+CU.linePicture+'" alt="avatar" />';
+    if (CU.avatar) {
+      hAv.outerHTML = '<img class="linepic" id="hAv" src="'+CU.avatar+'" alt="avatar" />';
     } else {
       var userInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
       ge('hAv').textContent = userInit.toUpperCase();
@@ -52,10 +64,10 @@ function enterApp() {
     ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
     ge('secTech').style.display   = CU.role === 'technician' ? 'block' : 'none';
     loadTickets();
-    setInterval(loadTickets, 8000);
+    _ticketsInterval = setInterval(loadTickets, 8000);
     if (CU.role === 'technician') {
       loadHelpRequests();
-      setInterval(loadHelpRequests, 8000);
+      _helpInterval = setInterval(loadHelpRequests, 8000);
     }
   }
 }

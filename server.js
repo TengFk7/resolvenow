@@ -57,20 +57,23 @@ app.set('io', io);
     }
   }));
 
-  // ─── Rate Limiting (apply to auth routes specifically) ─────────
+  // ─── Rate Limiting ────────────────────────────────────────────
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 30, // limit each IP to 30 requests per windowMs for auth
+    max: 30,
     message: { error: 'Too many requests, please try again later.' }
   });
   app.use('/api/auth', authLimiter);
 
-  // General strict rate limit for other APIs is optional, but setting a baseline
+  // BUG-012: Apply apiLimiter only to non-auth routes to prevent double-limiting
   const apiLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 300
   });
-  app.use('/api/', apiLimiter);
+  app.use('/api/tickets',       apiLimiter);
+  app.use('/api/technicians',   apiLimiter);
+  app.use('/api/help-requests', apiLimiter);
+  app.use('/api/ai',            apiLimiter);
 
   // ─── Routes ──────────────────────────────────────────────────
   app.use('/api/auth',          require('./routes/auth'));

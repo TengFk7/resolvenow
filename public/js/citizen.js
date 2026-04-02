@@ -60,11 +60,6 @@ function wizNext(step) {
   if (step === 1) {
     if (!getSelectedCat()) { ge('catErr').classList.add('on'); return; }
     hideE('catErr');
-    // Update icon on step 1 based on selection
-    var icon = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
-    var cat = getSelectedCat();
-    var h2 = ge('wiz1').querySelector('h2');
-    if (h2 && icon[cat]) h2.textContent = icon[cat] + ' ' + (DEPT[cat] || cat);
   }
   if (step === 2) {
     var desc = ge('tDesc').value.trim();
@@ -301,6 +296,7 @@ async function submitTicket() {
       ge('tLat').value = '';
       ge('tLng').value = '';
       ge('tUrg').value = '';
+      _gpsAddress = ''; // BUG-007: reset GPS address to prevent stale data on next submission
       ge('descCount').textContent = '0';
       ge('gpsResult').style.display = 'none';
       _citizenImgDataUrl = '';

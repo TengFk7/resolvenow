@@ -33,6 +33,17 @@ function switchTab(t) {
     if (tabEl) tabEl.className = 'tab' + (k === t ? ' on' : '');
   });
 
+  // Ensure all other panels are completely hidden to prevent leaks (BUG-015)
+  Object.keys(_panelId).forEach(function(k) {
+    if (k !== _currentTab && k !== t) {
+      var el = ge(_panelId[k]);
+      if (el) {
+        el.style.display = 'none';
+        el.classList.remove('lift-out','lift-in','sink-out','sink-in');
+      }
+    }
+  });
+
   var outClass, inClass;
   // Determine direction based on tab order: login < reg < search
   var tabOrder = { login: 0, reg: 1, search: 2 };
@@ -67,14 +78,14 @@ function switchTab(t) {
   fromEl.classList.remove('lift-out','lift-in','sink-out','sink-in');
   fromEl.classList.add(outClass);
 
-  // ⑤ Smoothly resize wrapper to destination height (double rAF = after paint)
+  // ⑤ Smoothly resize wrapper to destination height
   requestAnimationFrame(function() {
     requestAnimationFrame(function() {
       wrapper.style.height = toH + 'px';
     });
   });
 
-  // ⑥ After exit finishes: swap panels and animate in
+  // ⑥ After exit finishes: swap panels
   setTimeout(function() {
     fromEl.style.display    = 'none';
     fromEl.style.position   = '';
@@ -354,6 +365,9 @@ async function doLogout() {
   CU = null;
   _stopOtpTimer();
 
+  // BUG-001: clear all polling intervals so they don't accumulate on re-login
+  if (typeof clearAppIntervals === 'function') clearAppIntervals();
+
   // Close any open slide drawer globally
   if (typeof closeDrawer === 'function') closeDrawer();
 
@@ -470,14 +484,15 @@ async function doSearch() {
       var stars = t.rating ? '⭐'.repeat(t.rating) : '';
       h += '<div class="srch-card badge-' + t.status + '">';
       h += '<div class="srch-row">';
-      h += '<span class="srch-id">' + t.ticketId + '</span>';
+      h += '<span class="srch-id">' + escapeHTML(t.ticketId) + '</span>';
       h += '<span class="srch-status ' + t.status + '">' + (STATUS_TH[t.status] || t.status) + '</span>';
       h += '</div>';
-      h += '<div class="srch-cat">' + (DEPT_ICON2[t.category] || '') + ' ' + (DEPT2[t.category] || t.category) + '</div>';
-      h += '<div class="srch-desc">' + (t.description || '').slice(0, 80) + '</div>';
+      h += '<div class="srch-cat">' + (DEPT_ICON2[t.category] || '') + ' ' + escapeHTML(DEPT2[t.category] || t.category) + '</div>';
+      // BUG-011: escape all user-generated content to prevent XSS
+      h += '<div class="srch-desc">' + escapeHTML((t.description || '').slice(0, 80)) + '</div>';
       h += '<div class="srch-meta">';
-      h += '<span>📍 ' + (t.location || '—') + '</span>';
-      if (t.assignedName) h += '<span>🔧 ' + t.assignedName + '</span>';
+      h += '<span>📍 ' + escapeHTML(t.location || '—') + '</span>';
+      if (t.assignedName) h += '<span>🔧 ' + escapeHTML(t.assignedName) + '</span>';
       if (stars) h += '<span>' + stars + '</span>';
       h += '</div>';
       h += '</div>';

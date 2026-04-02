@@ -2,23 +2,23 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 const DEPT_MAP = {
-  Road:        { th: 'ถนน/ทางเท้า',         icon: '🛣️' },
-  Water:       { th: 'ท่อแตก/น้ำไม่ไหล',    icon: '💧' },
-  Electricity: { th: 'ไฟฟ้าสาธารณะดับ',     icon: '💡' },
-  Garbage:     { th: 'ขยะตกค้าง',           icon: '🗑️' },
-  Animal:      { th: 'สัตว์มีพิษ/จรจัด',    icon: '🐍' },
-  Tree:        { th: 'กิ่งไม้วางทาง',        icon: '🌿' },
-  Hazard:      { th: 'เพลิง/ภัยพิบัติ',     icon: '🚨' },
+  Road: { th: 'ถนน/ทางเท้า', icon: '🛣️' },
+  Water: { th: 'ท่อแตก/น้ำไม่ไหล', icon: '💧' },
+  Electricity: { th: 'ไฟฟ้าสาธารณะดับ', icon: '💡' },
+  Garbage: { th: 'ขยะตกค้าง', icon: '🗑️' },
+  Animal: { th: 'สัตว์มีพิษ/จรจัด', icon: '🐍' },
+  Tree: { th: 'กิ่งไม้วางทาง', icon: '🌿' },
+  Hazard: { th: 'เพลิง/ภัยพิบัติ', icon: '🚨' },
 };
 
 const techNames = [
-  { f: 'วิชัย',  l: 'โยธา',  specialty: 'Road' },
-  { f: 'มานะ',  l: 'ประปา', specialty: 'Water' },
+  { f: 'วิชัย', l: 'โยธา', specialty: 'Road' },
+  { f: 'มานะ', l: 'ประปา', specialty: 'Water' },
   { f: 'สมชาย', l: 'ไฟฟ้า', specialty: 'Electricity' },
-  { f: 'สุรัตน์',l: 'สุขา', specialty: 'Garbage' },
-  { f: 'บุญมี', l: 'ปราบ',  specialty: 'Animal' },
+  { f: 'สุรัตน์', l: 'สุขา', specialty: 'Garbage' },
+  { f: 'บุญมี', l: 'ปราบ', specialty: 'Animal' },
   { f: 'สมศรี', l: 'ป่าไม้', specialty: 'Tree' },
-  { f: 'อนันต์',l: 'กู้ภัย', specialty: 'Hazard' },
+  { f: 'อนันต์', l: 'กู้ภัย', specialty: 'Hazard' },
 ];
 
 async function seedDB() {
