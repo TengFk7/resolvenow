@@ -94,7 +94,8 @@ async function loadTickets() {
  *   ไม่มี flag → เปิดลิงก์/แท็บใหม่ → logout แล้วแสดงหน้า login
  */
 (function() {
-  ge('authPage').style.display = 'flex';
+  var ap = ge('authPage');
+  if (ap) ap.style.display = 'flex';
 
   var params = new URLSearchParams(window.location.search);
 
@@ -108,38 +109,48 @@ async function loadTickets() {
       profile_failed: 'ไม่สามารถดึงข้อมูล LINE profile ได้',
       server_error: 'เกิดข้อผิดพลาดบน server กรุณาลองใหม่'
     };
-    showE('authErr', msgs[lineErr] || 'LINE Login ผิดพลาด: '+lineErr);
+    showE('authErr', msgs[lineErr] || 'LINE Login ผิดพลาด: ' + lineErr);
     window.history.replaceState({}, '', '/');
     return;
   }
 
   // ── ตรวจ LINE Link pending (callback จาก LINE OAuth ครั้งแรก) ──
+  // ตรวจ URL param ก่อน sessionStorage เสมอ
   var lineLinkParam = params.get('line_link');
   if (lineLinkParam === 'pending') {
     sessionStorage.removeItem('rn_line_pending');
+    sessionStorage.removeItem('rn_logged_in');
     window.history.replaceState({}, '', '/');
-    // เปิด modal เชื่อมบัญชี LINE
-    if (typeof openLineLinkModal === 'function') openLineLinkModal();
+    // เปิด modal เชื่อมบัญชี LINE — ใช้ setTimeout เล็กน้อยเพื่อให้ DOM พร้อมก่อน
+    setTimeout(function() {
+      if (typeof openLineLinkModal === 'function') {
+        openLineLinkModal().catch(function(err) {
+          console.error('[LINE Link] openLineLinkModal error:', err);
+        });
+      } else {
+        console.error('[LINE Link] openLineLinkModal ไม่พบฟังก์ชัน');
+      }
+    }, 80);
     return;
   }
 
-  var isRefresh    = sessionStorage.getItem('rn_logged_in');
-  var linePending  = sessionStorage.getItem('rn_line_pending');
+  var isRefresh   = sessionStorage.getItem('rn_logged_in');
+  var linePending = sessionStorage.getItem('rn_line_pending');
 
   if (isRefresh || linePending) {
     sessionStorage.removeItem('rn_line_pending');
     fetch('/api/auth/me')
-      .then(function(r){ if (r.ok) return r.json(); throw new Error('no session'); })
-      .then(function(d){
+      .then(function(r) { if (r.ok) return r.json(); throw new Error('no session'); })
+      .then(function(d) {
         CU = d;
         sessionStorage.setItem('rn_logged_in', '1');
         enterApp();
       })
-      .catch(function(){
+      .catch(function() {
         sessionStorage.removeItem('rn_logged_in');
       });
   } else {
-    fetch('/api/auth/logout', { method: 'POST' }).catch(function(){});
+    fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
   }
 })();
 
