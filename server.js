@@ -16,6 +16,7 @@ const connectDB  = require('./config/db');
 const { seedDB } = require('./config/seed');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (Render/Heroku)
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
