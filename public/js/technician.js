@@ -13,9 +13,9 @@ var _suppressCardAnim = false; // set true after completion
 
 function renderTech(data) {
   var el = ge('techCards');
-  var active  = data.filter(function(t){ return t.status !== 'completed' && t.status !== 'rejected'; });
-  var inProg  = data.filter(function(t){ return t.status === 'in_progress' || t.status === 'assigned'; });
-  var done    = data.filter(function(t){ return t.status === 'completed'; });
+  var active = data.filter(function (t) { return t.status !== 'completed' && t.status !== 'rejected'; });
+  var inProg = data.filter(function (t) { return t.status === 'in_progress' || t.status === 'assigned'; });
+  var done = data.filter(function (t) { return t.status === 'completed'; });
 
   /* ── Welcome banner (inject once) ── */
   if (!ge('techWelcome')) {
@@ -24,9 +24,9 @@ function renderTech(data) {
       '<div class="tech-welcome" id="techWelcome">'
       + '<div class="tw-avatar">' + initials.toUpperCase() + '</div>'
       + '<div class="tw-info">'
-      +   '<div class="tw-greeting">ยินดีต้อนรับกลับมา 👋</div>'
-      +   '<div class="tw-name">' + CU.firstName + (CU.lastName ? ' ' + CU.lastName : '') + '</div>'
-      +   '<div class="tw-dept">' + (DEPT_ICON[CU.specialty] || '🔧') + ' ' + (DEPT[CU.specialty] || CU.specialty) + '</div>'
+      + '<div class="tw-greeting">ยินดีต้อนรับกลับมา 👋</div>'
+      + '<div class="tw-name">' + CU.firstName + (CU.lastName ? ' ' + CU.lastName : '') + '</div>'
+      + '<div class="tw-dept">' + (DEPT_ICON[CU.specialty] || '🔧') + ' ' + (DEPT[CU.specialty] || CU.specialty) + '</div>'
       + '</div></div>'
     );
   }
@@ -38,7 +38,7 @@ function renderTech(data) {
 
   if (!data.length) { el.innerHTML = '<div class="empty">ไม่มีงานในแผนกของคุณ</div>'; return; }
 
-  var sorted = active.concat(data.filter(function(t){ return t.status === 'completed' || t.status === 'rejected'; }));
+  var sorted = active.concat(data.filter(function (t) { return t.status === 'completed' || t.status === 'rejected'; }));
   var h = '';
 
   for (var i = 0; i < sorted.length; i++) {
@@ -79,7 +79,7 @@ function renderTech(data) {
       if (t.beforeImage || t.afterImage) {
         h += '<div class="irow">';
         if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-        if (t.afterImage)  h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลังซ่อม</div></div>';
+        if (t.afterImage) h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลังซ่อม</div></div>';
         h += '</div>';
       }
     } else {
@@ -156,11 +156,11 @@ function renderTech(data) {
     _suppressCardAnim = false;
 
     /* Double rAF: first frame paints DOM, second starts opacity tween */
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
         el.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1)';
         el.style.opacity = '1';
-        setTimeout(function() {
+        setTimeout(function () {
           el.style.transition = '';
           el.style.opacity = '';
           el.classList.remove('tcard-instant');
@@ -173,11 +173,11 @@ function renderTech(data) {
 
     /* Normal post-render: fade-in if cards were hidden */
     if (el.style.opacity === '0') {
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
           el.style.transition = 'opacity 0.42s cubic-bezier(.22,1,.36,1)';
           el.style.opacity = '1';
-          setTimeout(function(){ el.style.transition = ''; el.style.opacity = ''; }, 450);
+          setTimeout(function () { el.style.transition = ''; el.style.opacity = ''; }, 450);
         });
       });
     }
@@ -185,19 +185,19 @@ function renderTech(data) {
 }
 
 /* ── Job Actions ─────────────────────────────────────── */
-function acceptJob(btn)  { apiStatus(btn.getAttribute('data-id'), 'assigned');    showToast('✅ รับงานแล้ว'); }
-function startWork(btn)  { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('🔧 เริ่มดำเนินการ'); }
-function rejectJob(btn)  { apiStatus(btn.getAttribute('data-id'), 'rejected');    showToast('ปฏิเสธแล้ว', true); }
+function acceptJob(btn) { apiStatus(btn.getAttribute('data-id'), 'assigned'); showToast('✅ รับงานแล้ว'); }
+function startWork(btn) { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('🔧 เริ่มดำเนินการ'); }
+function rejectJob(btn) { apiStatus(btn.getAttribute('data-id'), 'rejected'); showToast('ปฏิเสธแล้ว', true); }
 function completeJob(btn) {
   if (btn.disabled || btn.hasAttribute('disabled')) return;
   var id = btn.getAttribute('data-id');
-  _showTechComplete(function() {
+  _showTechComplete(function () {
     apiStatus(id, 'completed');
   });
 }
 
 function _showTechComplete(onDone) {
-  var colors = ['#10b981','#34d399','#6ee7b7','#fbbf24','#f59e0b','#a78bfa','#60a5fa','#f472b6'];
+  var colors = ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#f59e0b', '#a78bfa', '#60a5fa', '#f472b6'];
   var pHtml = '';
   for (var i = 0; i < 8; i++) {
     var ang = (i / 8) * Math.PI * 2;
@@ -215,15 +215,15 @@ function _showTechComplete(onDone) {
     '<div class="tc-card" id="_tcCard">'
     + '<div class="tc-particles">' + pHtml + '</div>'
     + '<div class="tc-ring-wrap">'
-    +   '<div class="tc-ring"></div>'
-    +   '<div class="tc-ring"></div>'
-    +   '<div class="tc-ring"></div>'
-    +   '<div class="tc-badge">'
-    +     '<svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
-    +       '<polyline class="tc-check-path" points="13,27 22,37 39,16"'
-    +       ' stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-    +     '</svg>'
-    +   '</div>'
+    + '<div class="tc-ring"></div>'
+    + '<div class="tc-ring"></div>'
+    + '<div class="tc-ring"></div>'
+    + '<div class="tc-badge">'
+    + '<svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    + '<polyline class="tc-check-path" points="13,27 22,37 39,16"'
+    + ' stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+    + '</svg>'
+    + '</div>'
     + '</div>'
     + '<div class="tc-title">ปิดงานสำเร็จ! 🎉</div>'
     + '<div class="tc-sub">งานซ่อมแซมเสร็จเรียบร้อยแล้ว<br>ระบบจะแจ้งผู้ร้องเรียนทาง LINE อัตโนมัติ</div>'
@@ -234,7 +234,7 @@ function _showTechComplete(onDone) {
   document.body.appendChild(ov);
 
   /* exit after 3.2s */
-  setTimeout(function() {
+  setTimeout(function () {
     /* Step 1: Overlay + card exit animation */
     var card = document.getElementById('_tcCard');
     if (card) card.classList.add('tc-out');
@@ -252,7 +252,7 @@ function _showTechComplete(onDone) {
     _lastTechJSON = null;
 
     /* Step 4: After overlay gone, fire update → renderTech will fade cards back in */
-    setTimeout(function() {
+    setTimeout(function () {
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (typeof onDone === 'function') onDone();
     }, 540);
@@ -269,23 +269,23 @@ async function apiStatus(id, status) {
 
 /* ── Image Upload ────────────────────────────────────── */
 function triggerUpload(el) {
-  upId   = el.getAttribute('data-id');
+  upId = el.getAttribute('data-id');
   upType = el.getAttribute('data-type');
   var inp = ge('techFile');
   inp.value = '';
-  inp.onchange = function(e) {
+  inp.onchange = function (e) {
     var f = e.target.files[0];
     if (!f) return;
     var fd = new FormData();
     fd.append('image', f);
     fetch('/api/tickets/' + upId + '/upload/' + upType, { method: 'POST', body: fd })
-      .then(function(r){ return r.json(); })
-      .then(function(d){
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
         if (d.error) return showToast(d.error, true);
         showToast('✅ อัปโหลดสำเร็จ');
         loadTickets();
       })
-      .catch(function(){ showToast('อัปโหลดไม่สำเร็จ', true); });
+      .catch(function () { showToast('อัปโหลดไม่สำเร็จ', true); });
   };
   inp.click();
 }
@@ -296,7 +296,7 @@ async function loadHelpRequests() {
     var res = await fetch('/api/help-requests');
     if (!res.ok) return;
     var helps = await res.json();
-    var open = helps.filter(function(h){ return h.status === 'open' && h.requesterId !== CU.id; });
+    var open = helps.filter(function (h) { return h.status === 'open' && h.requesterId !== CU.id; });
     var banner = ge('helpBanner');
     if (open.length) {
       banner.style.display = 'block';
@@ -307,9 +307,9 @@ async function loadHelpRequests() {
         h += '<div class="help-card">'
           + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
           + '<div>'
-          +   '<div style="font-size:13px;font-weight:700;margin-bottom:3px">📌 ' + hp.requesterName + ' (' + (DEPT[hp.requesterDept] || hp.requesterDept) + ') ขอความช่วยเหลือ</div>'
-          +   '<div style="font-size:12px;color:#4a5568">Ticket: ' + hp.ticketId + ' — ' + (DEPT_ICON[hp.ticketCategory] || '') + ' ' + (DEPT[hp.ticketCategory] || hp.ticketCategory) + ' ที่ ' + hp.ticketLocation + '</div>'
-          +   (hp.message ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">: ' + hp.message + '</div>' : '')
+          + '<div style="font-size:13px;font-weight:700;margin-bottom:3px">📌 ' + hp.requesterName + ' (' + (DEPT[hp.requesterDept] || hp.requesterDept) + ') ขอความช่วยเหลือ</div>'
+          + '<div style="font-size:12px;color:#4a5568">Ticket: ' + hp.ticketId + ' — ' + (DEPT_ICON[hp.ticketCategory] || '') + ' ' + (DEPT[hp.ticketCategory] || hp.ticketCategory) + ' ที่ ' + hp.ticketLocation + '</div>'
+          + (hp.message ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">: ' + hp.message + '</div>' : '')
           + '</div>'
           + '<button class="btn-help-accept" data-id="' + hp.id + '" onclick="acceptHelp(this)">✅ รับงาน</button>'
           + '</div></div>';
@@ -318,7 +318,7 @@ async function loadHelpRequests() {
     } else {
       banner.style.display = 'none';
     }
-  } catch(e){}
+  } catch (e) { }
 }
 
 async function acceptHelp(btn) {
@@ -340,9 +340,9 @@ function openHelpModal(ticketId) {
 
 async function submitHelpRequest() {
   if (!helpTicketId) return;
-  var msg  = ge('helpMsg').value.trim();
+  var msg = ge('helpMsg').value.trim();
   var dept = ge('helpTargetDept').value;
-  var res  = await fetch('/api/help-requests', {
+  var res = await fetch('/api/help-requests', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ticketId: helpTicketId, message: msg, targetDept: dept })
   });

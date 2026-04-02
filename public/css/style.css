@@ -5556,24 +5556,31 @@ a {
   animation: logoFloat 3.8s cubic-bezier(.45,.05,.55,.95) infinite;
 }
 
-/* "Now" span: yellow + glow pulse + shimmer */
-.logo-anim span {
-  color: var(--gold2, #fbbf24);
-  animation: nowGlow 2.8s ease-in-out infinite;
-  display: inline-block;
+/* Shimmer animation across the whole "ResolveNow" text */
+@keyframes logoShimmer {
+  0%   { background-position: -300% center; }
+  100% { background-position: 300% center; }
+}
+
+/* Gradient: white for "Resolve", gold for "Now"
+   ~70% breakpoint = rough position of "Now" start */
+.logo-anim {
   background: linear-gradient(
-    100deg,
-    var(--gold2, #fbbf24) 20%,
-    #fff5c0 48%,
-    var(--gold2, #fbbf24) 60%
+    90deg,
+    #fff         0%,
+    #fff         58%,
+    #fbbf24      67%,
+    #fde68a      78%,
+    #fbbf24      100%
   );
   background-size: 300% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: nowGlow 2.8s ease-in-out infinite,
-             nowShimmer 3.2s linear infinite;
+  animation: logoFloat 3.8s cubic-bezier(.45,.05,.55,.95) infinite,
+             logoShimmer 4s linear infinite;
 }
+
 
 
 
