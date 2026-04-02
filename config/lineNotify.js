@@ -178,20 +178,34 @@ async function notifyCompleted(ticket) {
     [{ type: 'text', text: citizenMsg }]
   );
 
-  // ส่งรูปก่อน-หลัง (ต้องการ URL สาธารณะ HTTPS)
+  // ส่งรูปก่อน-หลัง รวมใน push เดียว (LINE รองรับสูงสุด 5 messages/push)
   const targets = [];
   if (ADMIN_ID) targets.push(ADMIN_ID);
   if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID)
     targets.push(ticket.citizenLineId);
 
   for (const uid of targets) {
+    const imageMessages = [];
+
     if (ticket.beforeImage) {
-      await pushTo(uid, [{ type: 'text', text: '📷 รูปก่อนดำเนินการ:' }]);
-      await pushImageTo(uid, ticket.beforeImage);
+      const beforeUrl = ticket.beforeImage.startsWith('http')
+        ? ticket.beforeImage
+        : BASE_URL + ticket.beforeImage;
+      imageMessages.push({ type: 'image', originalContentUrl: beforeUrl, previewImageUrl: beforeUrl });
     }
+
     if (ticket.afterImage) {
-      await pushTo(uid, [{ type: 'text', text: '📷 รูปหลังดำเนินการ:' }]);
-      await pushImageTo(uid, ticket.afterImage);
+      const afterUrl = ticket.afterImage.startsWith('http')
+        ? ticket.afterImage
+        : BASE_URL + ticket.afterImage;
+      imageMessages.push({ type: 'image', originalContentUrl: afterUrl, previewImageUrl: afterUrl });
+    }
+
+    if (imageMessages.length > 0) {
+      const label = imageMessages.length === 2
+        ? '📷 รูปก่อน-หลังดำเนินการ:'
+        : (ticket.beforeImage ? '📷 รูปก่อนดำเนินการ:' : '📷 รูปหลังดำเนินการ:');
+      await pushTo(uid, [{ type: 'text', text: label }, ...imageMessages]);
     }
   }
 }
