@@ -73,28 +73,26 @@ router.get('/callback', async (req, res) => {
     const { userId: lineUserId, displayName, pictureUrl } = profile;
     if (!lineUserId) return res.redirect('/?line_error=profile_failed');
 
-    // หา user ที่มี lineUserId นี้ หรือสร้างใหม่
+    // หา user ที่มี lineUserId นี้
     let user = await User.findOne({ lineUserId });
     if (!user) {
-      const bcrypt = require('bcryptjs');
-      const nameParts = displayName.split(' ');
-      user = await new User({
-        firstName:      nameParts[0] || displayName,
-        lastName:       nameParts.slice(1).join(' ') || '-',
-        email:          'line_' + lineUserId + '@line.me',
-        // BUG-010: hash a unique unguessable string — prevents bypass via email+password login
-        password:       await bcrypt.hash('LINE_NO_PW_' + lineUserId + '_' + Date.now(), 10),
-        role:           'citizen',
+      // LINE user ใหม่ — เก็บ pending ไว้ใน session แล้วให้ frontend แสดง modal เชื่อมบัญชี
+      req.session.lineLinkPending = {
         lineUserId,
         lineDisplayName: displayName,
-        avatar:          pictureUrl || null,
-      }).save();
-      console.log('[LINE Login] สร้าง citizen ใหม่:', user.firstName, lineUserId);
-    } else {
-      user.avatar          = pictureUrl || user.avatar;
-      user.lineDisplayName = displayName;
-      await user.save();
+        lineAvatar: pictureUrl || null
+      };
+      console.log('[LINE Login] LINE user ใหม่ → pending link:', displayName, lineUserId);
+      return req.session.save((err) => {
+        if (err) console.error('[LINE Login] session save error on pending:', err);
+        res.redirect('/?line_link=pending');
+      });
     }
+
+    // เจอ user แล้ว → อัปเดต avatar + เข้าระบบทันที
+    user.avatar          = pictureUrl || user.avatar;
+    user.lineDisplayName = displayName;
+    await user.save();
 
     req.session.userId = user._id.toString();
     req.session.role   = user.role;

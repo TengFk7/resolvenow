@@ -313,6 +313,10 @@ function openDrawer() {
     cpBtn.style.display = isLineOnly ? 'none' : 'flex';
   }
 
+  // ── แสดงปุ่ม unlink LINE เฉพาะ admin ──
+  var unlinkBtn = ge('drawerUnlinkLine');
+  if (unlinkBtn) unlinkBtn.style.display = CU.role === 'admin' ? 'flex' : 'none';
+
   // ── Open ──
   ge('sideDrawer').classList.add('open');
   ge('drawerOverlay').classList.add('open');

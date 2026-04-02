@@ -33,7 +33,8 @@
     <!-- Auth Card -->
     <div class="ac">
       <div class="al">
-        <h1 class="logo-anim" style="text-align:center;">🏛️ <span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></h1>
+        <h1 class="logo-anim" style="text-align:center;">🏛️ <span class="resolve-shimmer">Resolve</span><span
+            class="now-gold">Now</span></h1>
         <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
       </div>
       <div class="tabs">
@@ -56,7 +57,7 @@
             <div class="divider-line"></div><span>หรือเข้าสู่ระบบด้วย</span>
             <div class="divider-line"></div>
           </div>
-          <a href="/auth/line" class="line-btn">
+          <a href="/auth/line" class="line-btn" onclick="sessionStorage.setItem('rn_line_pending','1')">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
               <path
                 d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
@@ -812,14 +813,77 @@
         <p style="font-size:13px;color:var(--muted);margin:0" id="techRejectLabel">กรุณาระบุเหตุผล</p>
       </div>
       <div class="fg" style="margin-bottom:12px">
-        <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px">เหตุผล <span style="color:var(--r)">*</span></label>
+        <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px">เหตุผล <span
+            style="color:var(--r)">*</span></label>
         <textarea id="techRejectReason" placeholder="เช่น ไม่ใช่แผนกที่รับผิดชอบ, อุปกรณ์ไม่พร้อม..." rows="3"
           style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box;resize:vertical"></textarea>
       </div>
       <div class="ebox" id="techRejectErr" style="margin-bottom:10px"></div>
       <div style="display:flex;gap:10px">
-        <button onclick="closeTechRejectModal()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">ยกเลิก</button>
-        <button onclick="confirmTechReject()" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">❌ ปฏิเสธงาน</button>
+        <button onclick="closeTechRejectModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">ยกเลิก</button>
+        <button onclick="confirmTechReject()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">❌
+          ปฏิเสธงาน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: LINE Account Link ───────────────────────────── -->
+  <div class="mo" id="mLineLink">
+    <div class="mb" style="max-width:400px">
+      <!-- ไม่มีปุ่ม X เพราะต้องบังคับเลือก -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:48px;margin-bottom:10px">🔗</div>
+        <h3 style="margin:0 0 4px;font-size:19px;color:var(--navy)">เชื่อมบัญชี LINE</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0">LINE ของคุณยังไม่เชื่อมกับบัญชีใด</p>
+      </div>
+      <!-- LINE profile display -->
+      <div id="llLineProfile" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#06c755,#00a84c);border-radius:14px;padding:14px 16px;margin-bottom:20px">
+        <img id="llLineAvatar" src="" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5);display:none" />
+        <div id="llLineAvatarFallback" style="width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#fff" id="llLineName">กำลังโหลด...</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.75)">บัญชี LINE ของคุณ</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text);margin-bottom:16px;line-height:1.6;background:#eff6ff;border-radius:10px;padding:12px;border:1px solid #bfdbfe">
+        📧 กรอก <strong>Email + Password</strong> ของบัญชีที่สมัครไว้ในระบบ เพื่อเชื่อม LINE กับบัญชีของคุณ — ระบบจะส่งการแจ้งเตือนทาง LINE ได้ทันที
+      </p>
+      <div class="ebox" id="llErr" style="margin-bottom:12px"></div>
+      <div class="fg">
+        <label>Email ที่สมัครไว้ในระบบ</label>
+        <input type="email" id="llEmail" placeholder="example@gmail.com" onkeydown="if(event.key==='Enter')ge('llPass').focus()" />
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <input type="password" id="llPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLineLink()" />
+      </div>
+      <button class="btnp btn-ripple" id="btnLineLink" onclick="doLineLink()" style="margin-bottom:10px">🔗 เชื่อมบัญชีนี้กับ LINE</button>
+      <button onclick="doLineLinkSkip()" style="width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:13px;color:var(--muted);cursor:pointer;transition:var(--transition)" onmouseenter="this.style.borderColor='#94a3b8'" onmouseleave="this.style.borderColor='var(--border)'">ข้าม — เข้าใช้ด้วย LINE โดยไม่เชื่อมบัญชี</button>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Admin Unlink LINE ──────────────────────────────── -->
+  <div class="mo" id="mUnlinkLine">
+    <div class="mb" style="max-width:380px">
+      <button class="mc" onclick="closeUnlinkLineModal()">✕</button>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:40px;margin-bottom:8px">🔗</div>
+        <h3 style="margin:0 0 4px;font-size:17px">ล้างการเชื่อม LINE</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">สำหรับทดสอบระบบ LINE login ครั้งแรก</p>
+      </div>
+      <p style="font-size:13px;background:#fff7ed;border-radius:10px;padding:12px;border:1px solid #fed7aa;margin-bottom:16px;line-height:1.6">
+        ⚠️ ระบบจะลบ <strong>lineUserId</strong> ออกจากบัญชีนั้น — user จะต้องเชื่อม LINE ใหม่อีกครั้งเมื่อ login ด้วย LINE
+      </p>
+      <div class="fg">
+        <label>Email ของ citizen ที่ต้องการ reset <span style="color:var(--r)">*</span></label>
+        <input type="email" id="ulEmail" placeholder="citizen@example.com" onkeydown="if(event.key==='Enter')doAdminUnlinkLine()" />
+      </div>
+      <div class="ebox" id="ulErr" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeUnlinkLineModal()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="doAdminUnlinkLine()" id="btnUnlinkLine" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(245,158,11,.3)">🔗 ล้างการเชื่อม</button>
       </div>
     </div>
   </div>
@@ -887,6 +951,11 @@
         <span class="drawer-item-icon">🔒</span>
         <span>เปลี่ยนรหัสผ่าน</span>
       </button>
+      <!-- Admin only: ล้างการเชื่อม LINE -->
+      <button class="drawer-item" id="drawerUnlinkLine" style="display:none" onclick="openUnlinkLineModal();closeDrawer()">
+        <span class="drawer-item-icon">🔗</span>
+        <span>ล้างการเชื่อม LINE (ทดสอบ)</span>
+      </button>
       <button class="drawer-item drawer-item-danger" onclick="doLogout()">
         <span class="drawer-item-icon">🚪</span>
         <span>ออกจากระบบ</span>
@@ -899,13 +968,13 @@
 
   <!-- Prevent Desktop/Web Zooming -->
   <script>
-    document.addEventListener('wheel', function(e) {
+    document.addEventListener('wheel', function (e) {
       if (e.ctrlKey) {
         e.preventDefault();
       }
     }, { passive: false });
 
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
       if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.keyCode === 187 || e.keyCode === 189)) {
         e.preventDefault();
       }

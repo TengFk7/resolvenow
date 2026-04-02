@@ -87,27 +87,59 @@ async function loadTickets() {
   } catch(e){ console.error(e); }
 }
 
-/* ── Session Resume on Page Load ─────────────────────── */
+/* ── Session Resume / Reset on Page Load ─────────────── */
+/*
+ * ใช้ sessionStorage เป็นตัวแยก:
+ *   มี flag  → refresh ภายใน tab เดิม → resume session ได้
+ *   ไม่มี flag → เปิดลิงก์/แท็บใหม่ → logout แล้วแสดงหน้า login
+ */
 (function() {
-  // Show auth immediately while checking session
   ge('authPage').style.display = 'flex';
-  fetch('/api/auth/me')
-    .then(function(r){ if (r.ok) return r.json(); throw new Error('no session'); })
-    .then(function(d){ CU = d; enterApp(); })
-    .catch(function(){
-      // Check for LINE login error params
-      var params = new URLSearchParams(window.location.search);
-      var lineErr = params.get('line_error');
-      if (lineErr) {
-        var msgs = {
-          cancelled: 'ยกเลิกการเข้าสู่ระบบด้วย LINE',
-          invalid_state: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
-          token_failed: 'ไม่สามารถยืนยัน LINE token ได้',
-          profile_failed: 'ไม่สามารถดึงข้อมูล LINE profile ได้',
-          server_error: 'เกิดข้อผิดพลาดบน server กรุณาลองใหม่'
-        };
-        showE('authErr', msgs[lineErr] || 'LINE Login ผิดพลาด: '+lineErr);
-        window.history.replaceState({}, '', '/');
-      }
-    });
+
+  var params = new URLSearchParams(window.location.search);
+
+  // ── ตรวจ LINE login error params ก่อน ──
+  var lineErr = params.get('line_error');
+  if (lineErr) {
+    var msgs = {
+      cancelled: 'ยกเลิกการเข้าสู่ระบบด้วย LINE',
+      invalid_state: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      token_failed: 'ไม่สามารถยืนยัน LINE token ได้',
+      profile_failed: 'ไม่สามารถดึงข้อมูล LINE profile ได้',
+      server_error: 'เกิดข้อผิดพลาดบน server กรุณาลองใหม่'
+    };
+    showE('authErr', msgs[lineErr] || 'LINE Login ผิดพลาด: '+lineErr);
+    window.history.replaceState({}, '', '/');
+    return;
+  }
+
+  // ── ตรวจ LINE Link pending (callback จาก LINE OAuth ครั้งแรก) ──
+  var lineLinkParam = params.get('line_link');
+  if (lineLinkParam === 'pending') {
+    sessionStorage.removeItem('rn_line_pending');
+    window.history.replaceState({}, '', '/');
+    // เปิด modal เชื่อมบัญชี LINE
+    if (typeof openLineLinkModal === 'function') openLineLinkModal();
+    return;
+  }
+
+  var isRefresh    = sessionStorage.getItem('rn_logged_in');
+  var linePending  = sessionStorage.getItem('rn_line_pending');
+
+  if (isRefresh || linePending) {
+    sessionStorage.removeItem('rn_line_pending');
+    fetch('/api/auth/me')
+      .then(function(r){ if (r.ok) return r.json(); throw new Error('no session'); })
+      .then(function(d){
+        CU = d;
+        sessionStorage.setItem('rn_logged_in', '1');
+        enterApp();
+      })
+      .catch(function(){
+        sessionStorage.removeItem('rn_logged_in');
+      });
+  } else {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(function(){});
+  }
 })();
+

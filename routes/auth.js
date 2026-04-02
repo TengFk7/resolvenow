@@ -152,4 +152,138 @@ router.post('/change-password', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
+// ─── Helpers ใหม่ ─────────────────────────────────────────────
+function requireAdmin(req, res, next) {
+  if (!req.session.userId || req.session.role !== 'admin')
+    return res.status(403).json({ error: 'Admin เท่านั้น' });
+  next();
+}
+
+// ─── GET /api/auth/line-pending ──────────────────────────────
+// คืนข้อมูล LINE ที่รอเชื่อมบัญชี (จาก session.lineLinkPending)
+router.get('/line-pending', (req, res) => {
+  if (!req.session.lineLinkPending)
+    return res.status(404).json({ error: 'ไม่มีข้อมูล LINE pending' });
+  const { lineDisplayName, lineAvatar } = req.session.lineLinkPending;
+  res.json({ lineDisplayName, lineAvatar });
+});
+
+// ─── POST /api/auth/link-line ────────────────────────────────
+// เชื่อม LINE account กับ email account ที่มีอยู่แล้ว
+router.post('/link-line', async (req, res) => {
+  try {
+    if (!req.session.lineLinkPending)
+      return res.status(400).json({ error: 'ไม่มีข้อมูล LINE ที่รอเชื่อม กรุณา Login ด้วย LINE ใหม่' });
+
+    const { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(401).json({ error: 'ไม่พบ Email นี้ในระบบ' });
+    if (!await bcrypt.compare(password, user.password))
+      return res.status(401).json({ error: 'Password ไม่ถูกต้อง' });
+    if (user.lineUserId)
+      return res.status(400).json({ error: 'บัญชีนี้เชื่อมกับ LINE อื่นไปแล้ว' });
+
+    const { lineUserId, lineDisplayName, lineAvatar } = req.session.lineLinkPending;
+
+    // ตรวจว่า lineUserId นี้ยังไม่ถูกใช้กับ user อื่น
+    const existingLine = await User.findOne({ lineUserId });
+    if (existingLine && existingLine._id.toString() !== user._id.toString())
+      return res.status(400).json({ error: 'LINE account นี้เชื่อมกับบัญชีอื่นแล้ว' });
+
+    user.lineUserId      = lineUserId;
+    user.lineDisplayName = lineDisplayName;
+    if (lineAvatar) user.avatar = lineAvatar;
+    await user.save();
+
+    delete req.session.lineLinkPending;
+    req.session.userId = user._id.toString();
+    req.session.role   = user.role;
+
+    console.log('[LINE Link] เชื่อมสำเร็จ:', user.email, '↔', lineUserId);
+    res.json({
+      message: 'เชื่อมบัญชี LINE สำเร็จ',
+      user: {
+        id: user._id, firstName: user.firstName, lastName: user.lastName,
+        email: user.email, role: user.role, specialty: user.specialty,
+        lineUserId: user.lineUserId, avatar: user.avatar
+      }
+    });
+  } catch (e) {
+    console.error('link-line error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// ─── POST /api/auth/link-line-skip ──────────────────────────
+// user กด "ข้าม" → สร้าง LINE-only citizen account จาก pending session
+router.post('/link-line-skip', async (req, res) => {
+  try {
+    if (!req.session.lineLinkPending)
+      return res.status(400).json({ error: 'ไม่มีข้อมูล LINE ที่รอเชื่อม กรุณา Login ด้วย LINE ใหม่' });
+
+    const { lineUserId, lineDisplayName, lineAvatar } = req.session.lineLinkPending;
+
+    // ตรวจว่า lineUserId นี้ยังไม่มีใน DB (กรณี race condition)
+    let user = await User.findOne({ lineUserId });
+    if (!user) {
+      const nameParts = lineDisplayName.split(' ');
+      user = await new User({
+        firstName:      nameParts[0] || lineDisplayName,
+        lastName:       nameParts.slice(1).join(' ') || '-',
+        email:          'line_' + lineUserId + '@line.me',
+        password:       await bcrypt.hash('LINE_NO_PW_' + lineUserId + '_' + Date.now(), 10),
+        role:           'citizen',
+        lineUserId,
+        lineDisplayName,
+        avatar:          lineAvatar || null,
+      }).save();
+      console.log('[LINE Skip] สร้าง LINE-only citizen:', user.firstName, lineUserId);
+    }
+
+    delete req.session.lineLinkPending;
+    req.session.userId = user._id.toString();
+    req.session.role   = user.role;
+
+    res.json({
+      message: 'เข้าสู่ระบบด้วย LINE สำเร็จ',
+      user: {
+        id: user._id, firstName: user.firstName, lastName: user.lastName,
+        email: user.email, role: user.role, specialty: user.specialty,
+        lineUserId: user.lineUserId, avatar: user.avatar
+      }
+    });
+  } catch (e) {
+    console.error('link-line-skip error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// ─── POST /api/auth/admin-unlink-line ────────────────────────
+// Admin ล้างการเชื่อม LINE ของ user (สำหรับทดสอบ)
+router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'กรุณาระบุ Email' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+    if (!user.lineUserId) return res.status(400).json({ error: 'บัญชีนี้ยังไม่ได้เชื่อม LINE' });
+
+    const oldLineId = user.lineUserId;
+    user.lineUserId      = undefined;
+    user.lineDisplayName = undefined;
+    await user.save();
+
+    console.log('[Admin] ล้าง LINE link:', user.email, 'lineId:', oldLineId);
+    res.json({ message: `ล้างการเชื่อม LINE ของ ${user.firstName} ${user.lastName} สำเร็จ` });
+  } catch (e) {
+    console.error('admin-unlink-line error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
 module.exports = router;
+
