@@ -310,7 +310,29 @@
         </div>
       </div><!-- /content -->
     </div><!-- /main -->
+
+    <!-- ── ADMIN MOBILE BOTTOM NAV ───────────────────── -->
+    <nav id="adminMobNav" class="admin-mob-nav">
+      <button class="admin-mob-btn on" id="amob-dashboard" onclick="showPage('dashboard')">
+        <span class="admin-mob-icon">📊</span>
+        <span class="admin-mob-label">Dashboard</span>
+      </button>
+      <button class="admin-mob-btn" id="amob-queue" onclick="showPage('queue')">
+        <span class="admin-mob-icon">📋</span>
+        <span class="admin-mob-label">รายการ</span>
+      </button>
+      <button class="admin-mob-btn" id="amob-techs" onclick="showPage('techs')">
+        <span class="admin-mob-icon">🔧</span>
+        <span class="admin-mob-label">ทีมช่าง</span>
+      </button>
+      <button class="admin-mob-btn admin-mob-logout" onclick="doLogout()">
+        <span class="admin-mob-icon">🚪</span>
+        <span class="admin-mob-label">ออก</span>
+      </button>
+    </nav>
+
   </div><!-- /adminApp -->
+
 
 
 

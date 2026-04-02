@@ -137,6 +137,13 @@ function showPage(name) {
     if (!nav) return;
     nav.classList.toggle('on', k === name);
   });
+  // Update admin mobile bottom nav active state
+  var mobMap = { dashboard: 'amob-dashboard', queue: 'amob-queue', techs: 'amob-techs' };
+  Object.keys(mobMap).forEach(function(k) {
+    var btn = ge(mobMap[k]);
+    if (!btn) return;
+    btn.classList.toggle('on', k === name);
+  });
   // Update page title
   var titles = { dashboard:'Smart Dispatcher Dashboard', queue:'Ticket ทั้งหมด', techs:'สถานะทีมช่าง' };
   var pt = ge('pageTitle');
