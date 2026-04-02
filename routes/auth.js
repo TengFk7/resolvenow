@@ -262,7 +262,7 @@ router.post('/link-line-skip', async (req, res) => {
 });
 
 // ─── POST /api/auth/admin-unlink-line ────────────────────────
-// Admin ล้างการเชื่อม LINE ของ user (สำหรับทดสอบ)
+// Admin ล้างการเชื่อม LINE ของ user รายเดียว
 router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
   try {
     const { email } = req.body;
@@ -281,6 +281,42 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
     res.json({ message: `ล้างการเชื่อม LINE ของ ${user.firstName} ${user.lastName} สำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-line error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// ─── GET /api/auth/admin-linked-lines ────────────────────────
+// Admin ดึงรายชื่อ user ทุกคนที่เชื่อม LINE ไว้แล้ว
+router.get('/admin-linked-lines', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ lineUserId: { $exists: true, $ne: null } })
+      .select('firstName lastName email role lineUserId lineDisplayName avatar')
+      .sort({ updatedAt: -1 });
+    res.json(users.map(u => ({
+      email: u.email,
+      name:  u.firstName + (u.lastName && u.lastName !== '-' ? ' ' + u.lastName : ''),
+      role:  u.role,
+      lineDisplayName: u.lineDisplayName || '',
+      avatar: u.avatar || null
+    })));
+  } catch (e) {
+    console.error('admin-linked-lines error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// ─── POST /api/auth/admin-unlink-all ─────────────────────────
+// Admin ล้างการเชื่อม LINE ของ user ทุกคนพร้อมกัน
+router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
+  try {
+    const result = await User.updateMany(
+      { lineUserId: { $exists: true, $ne: null } },
+      { $unset: { lineUserId: '', lineDisplayName: '' } }
+    );
+    console.log('[Admin] ล้าง LINE link ทั้งหมด:', result.modifiedCount, 'users');
+    res.json({ message: `ล้างการเชื่อม LINE ทั้งหมด ${result.modifiedCount} บัญชีสำเร็จ` });
+  } catch (e) {
+    console.error('admin-unlink-all error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
   }
 });

@@ -601,26 +601,66 @@ async function doLineLinkSkip() {
    Admin Unlink LINE Modal
 ══════════════════════════════════════════════════════════ */
 
-function openUnlinkLineModal() {
-  ge('ulEmail').value = '';
+async function openUnlinkLineModal() {
   hideE('ulErr');
-  ge('btnUnlinkLine').disabled = false;
-  ge('btnUnlinkLine').textContent = '🔗 ล้างการเชื่อม';
+  var btnAll = ge('btnUnlinkAll');
+  if (btnAll) { btnAll.disabled = false; btnAll.textContent = '🗑️ ล้างทั้งหมด'; }
   ge('mUnlinkLine').classList.add('on');
+
+  // โหลดรายการ LINE-linked users
+  ge('ulList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>';
+  try {
+    var r = await fetch('/api/auth/admin-linked-lines');
+    var data = await r.json();
+    if (!r.ok) { ge('ulList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--r);font-size:13px">⚠️ ' + (data.error || 'โหลดไม่สำเร็จ') + '</div>'; return; }
+    _renderUnlinkList(data);
+  } catch (e) {
+    ge('ulList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--r);font-size:13px">⚠️ ไม่สามารถเชื่อมต่อได้</div>';
+  }
+}
+
+function _renderUnlinkList(users) {
+  if (!users.length) {
+    ge('ulList').innerHTML = '<div class="ul-empty" style="padding:24px;text-align:center;color:var(--muted);font-size:13px">✅ ไม่มีบัญชีที่เชื่อม LINE อยู่</div>';
+    var btnAll = ge('btnUnlinkAll');
+    if (btnAll) btnAll.disabled = true;
+    return;
+  }
+  var h = '';
+  users.forEach(function (u, i) {
+    var roleTag = u.role === 'admin' ? '🛡️' : u.role === 'technician' ? '🔧' : '👤';
+    var avHtml = u.avatar
+      ? '<img src="' + escapeHTML(u.avatar) + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(6,199,85,.3)" />'
+      : '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#06c755,#00a84c);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👤</div>';
+    // animation-delay สำหรับ stagger
+    var delay = (i * 55) + 'ms';
+    h += '<div class="ul-row" data-email="' + escapeHTML(u.email) + '" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);animation-delay:' + delay + '">';
+    h += avHtml;
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:13px;font-weight:700;color:var(--navy)">' + roleTag + ' ' + escapeHTML(u.name) + '</div>';
+    h += '<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHTML(u.email) + '</div>';
+    if (u.lineDisplayName) h += '<div style="font-size:11px;color:#06c755;font-weight:600">LINE: ' + escapeHTML(u.lineDisplayName) + '</div>';
+    h += '</div>';
+    h += '<button class="ul-unlink-btn" onclick="doAdminUnlinkLine(\'' + escapeHTML(u.email) + '\')" style="flex-shrink:0;padding:6px 14px;border:1.5px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer">ล้าง</button>';
+    h += '</div>';
+  });
+  ge('ulList').innerHTML = h;
 }
 
 function closeUnlinkLineModal() {
   ge('mUnlinkLine').classList.remove('on');
 }
 
-async function doAdminUnlinkLine() {
+async function doAdminUnlinkLine(email) {
   hideE('ulErr');
-  var email = ge('ulEmail').value.trim();
   if (!email) return showE('ulErr', 'กรุณาระบุ Email');
 
-  var btn = ge('btnUnlinkLine');
-  btn.disabled = true;
-  btn.textContent = 'กำลังล้าง...';
+  // ── Animate แถวออกก่อน ──
+  var row = ge('ulList').querySelector('[data-email="' + email + '"]');
+  if (row) {
+    row.classList.add('removing');
+    await new Promise(function(resolve) { setTimeout(resolve, 370); });
+  }
 
   try {
     var res = await fetch('/api/auth/admin-unlink-line', {
@@ -630,16 +670,54 @@ async function doAdminUnlinkLine() {
     });
     var data = await res.json();
     if (!res.ok) {
-      btn.disabled = false;
-      btn.textContent = '🔗 ล้างการเชื่อม';
+      if (row) row.classList.remove('removing');
       return showE('ulErr', data.error || 'เกิดข้อผิดพลาด');
     }
-    closeUnlinkLineModal();
     showToast('✅ ' + data.message);
+    // รีโหลดรายการ
+    var r2 = await fetch('/api/auth/admin-linked-lines');
+    var data2 = await r2.json();
+    _renderUnlinkList(data2);
   } catch (e) {
-    btn.disabled = false;
-    btn.textContent = '🔗 ล้างการเชื่อม';
+    if (row) row.classList.remove('removing');
     showE('ulErr', 'ไม่สามารถเชื่อมต่อได้');
   }
 }
+
+async function doAdminUnlinkAll() {
+  var btn = ge('btnUnlinkAll');
+  btn.disabled = true;
+  btn.textContent = 'กำลังล้าง...';
+  hideE('ulErr');
+
+  // ── Animate ทุกแถวออก cascade ──
+  var rows = ge('ulList').querySelectorAll('.ul-row');
+  rows.forEach(function(row, i) {
+    setTimeout(function() {
+      row.classList.add('cascade-out');
+    }, i * 60);
+  });
+  var totalDelay = (rows.length * 60) + 320;
+
+  await new Promise(function(resolve) { setTimeout(resolve, totalDelay); });
+
+  try {
+    var res = await fetch('/api/auth/admin-unlink-all', { method: 'POST' });
+    var data = await res.json();
+    if (!res.ok) {
+      btn.disabled = false;
+      btn.textContent = '🗑️ ล้างทั้งหมด';
+      return showE('ulErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+    showToast('✅ ' + data.message);
+    _renderUnlinkList([]); // แสดง empty state พร้อม animation
+    btn.disabled = true;
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '🗑️ ล้างทั้งหมด';
+    showE('ulErr', 'ไม่สามารถเชื่อมต่อได้');
+  }
+}
+
+
 
