@@ -454,7 +454,12 @@ function openRatingModal(ticketId, citizenName) {
   // reset stars
   document.querySelectorAll('.star-btn').forEach(function(b) {
     b.classList.remove('on');
+    b.style.color = '';
+    b.style.transform = '';
   });
+  // reset submit button (อาจค้าง disabled จากครั้งก่อน)
+  var btn = ge('btnSubmitRating');
+  if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
   ge('mRating').classList.add('on');
 }
 
@@ -508,8 +513,9 @@ async function submitRating() {
       if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
       return showE('ratingErr', data.error || 'เกิดข้อผิดพลาด');
     }
+    var finalStars = _ratingVal; // บันทึกก่อน closeRatingModal() จะ reset เป็น 0
     closeRatingModal();
-    showToast('✅ ขอบคุณสำหรับการประเมิน! ' + '⭐'.repeat(_ratingVal));
+    showToast('✅ ขอบคุณสำหรับการประเมิน! ' + '⭐'.repeat(finalStars));
     loadTickets();
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
