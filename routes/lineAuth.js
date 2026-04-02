@@ -76,7 +76,7 @@ router.get('/callback', async (req, res) => {
       const nameParts = displayName.split(' ');
       user = await new User({
         firstName:      nameParts[0] || displayName,
-        lastName:       nameParts.slice(1).join(' ') || '',
+        lastName:       nameParts.slice(1).join(' ') || '-',
         email:          'line_' + lineUserId + '@line.me',
         password:       'LINE_AUTH_NO_PASSWORD',
         role:           'citizen',
@@ -95,7 +95,8 @@ router.get('/callback', async (req, res) => {
     req.session.role   = user.role;
     res.redirect('/');
   } catch (e) {
-    console.error('[LINE Login] callback error:', e);
+    console.error('[LINE Login] callback error:', e.message || e);
+    console.error('[LINE Login] stack:', e.stack || '(no stack)');
     res.redirect('/?line_error=server_error');
   }
 });
