@@ -248,3 +248,72 @@ function imgThumb(url, label) {
   if (!url) return '<span style="color:var(--muted);font-size:12px">—</span>';
   return '<img class="img-thumb" src="'+url+'" onclick="viewImg(\''+url+'\',\''+label+'\')" alt="'+label+'" />';
 }
+
+/* ══════════════════════════════════════════
+   UNIVERSAL SLIDE DRAWER
+══════════════════════════════════════════ */
+function openDrawer() {
+  if (typeof CU === 'undefined' || !CU) return;
+
+  // ── Avatar ──
+  var avEl = ge('drawerAv');
+  if (avEl) {
+    if (CU.linePicture) {
+      avEl.innerHTML = '<img src="' + CU.linePicture + '" style="width:100%;height:100%;object-fit:cover;border-radius:18px"/>';
+    } else {
+      var init = (CU.firstName ? CU.firstName[0] : '?') +
+                 (CU.lastName && CU.lastName !== '-' && CU.lastName[0] ? CU.lastName[0] : '');
+      avEl.innerHTML = '';
+      avEl.textContent = init.toUpperCase();
+    }
+  }
+
+  // ── Name ──
+  var nmEl = ge('drawerName');
+  if (nmEl) {
+    var lastName = (CU.lastName && CU.lastName !== '-') ? ' ' + CU.lastName : '';
+    nmEl.textContent = (CU.firstName || '') + lastName;
+  }
+
+  // ── Role ──
+  var roleEl = ge('drawerRole');
+  if (roleEl) {
+    var DEPT_LABEL = typeof DEPT !== 'undefined' ? DEPT : {};
+    if (CU.role === 'admin') roleEl.textContent = 'ผู้ดูแลระบบ';
+    else if (CU.role === 'technician') roleEl.textContent = 'ช่าง · ' + (DEPT_LABEL[CU.specialty] || '');
+    else roleEl.textContent = 'ประชาชน';
+  }
+
+  // ── Hide change password for LINE-only accounts ──
+  var cpBtn = ge('drawerChPw');
+  if (cpBtn) {
+    var isLineOnly = (CU.email || '').indexOf('line_') === 0;
+    cpBtn.style.display = isLineOnly ? 'none' : 'flex';
+  }
+
+  // ── Open ──
+  ge('sideDrawer').classList.add('open');
+  ge('drawerOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // ── Animate hamburger buttons → X ──
+  document.querySelectorAll('.hbg-btn').forEach(function(b) { b.classList.add('active'); });
+}
+
+function closeDrawer() {
+  var drawer = ge('sideDrawer');
+  var overlay = ge('drawerOverlay');
+  if (!drawer) return;
+  drawer.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+
+  // ── Restore hamburger buttons ──
+  document.querySelectorAll('.hbg-btn').forEach(function(b) { b.classList.remove('active'); });
+}
+
+// ESC key closes drawer
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDrawer();
+});
+

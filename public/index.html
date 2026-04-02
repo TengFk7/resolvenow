@@ -172,13 +172,11 @@
         <div class="topbar-title">
           <h2 id="pageTitle">Smart Dispatcher Dashboard</h2>
         </div>
-        <div class="topbar-right">
-          <div class="topbar-user">
-            <div class="uav" id="adminAv">A</div>
-            <div class="uname" id="adminName">Admin</div>
-          </div>
-          <button class="topbar-logout btn-ripple" onclick="doLogout()" title="ออกจากระบบ">🚪</button>
-        </div>
+        <!-- Hidden: used by JS/Drawer -->
+        <div style="display:none"><div id="adminAv">A</div><div id="adminName">Admin</div></div>
+        <button class="hbg-btn hbg-light btn-ripple" onclick="openDrawer()" aria-label="เมนู">
+          <span></span><span></span><span></span>
+        </button>
       </div>
 
       <div class="content">
@@ -322,9 +320,9 @@
         <span class="admin-mob-icon">🔧</span>
         <span class="admin-mob-label">ทีมช่าง</span>
       </button>
-      <button class="admin-mob-btn admin-mob-logout" onclick="doLogout()">
-        <span class="admin-mob-icon">🚪</span>
-        <span class="admin-mob-label">ออก</span>
+      <button class="admin-mob-btn" onclick="openDrawer()">
+        <span class="admin-mob-icon">👤</span>
+        <span class="admin-mob-label">บัญชี</span>
       </button>
     </nav>
 
@@ -337,13 +335,16 @@
   <!-- ── NORMAL APP (Citizen + Tech) ──────────────────── -->
   <div id="normalApp">
     <header class="nheader">
-      <div class="nlogo">🏛️ Resolve<span>Now</span></div>
-      <div class="nuinfo">
-        <div class="nav2" id="hAv">?</div>
-        <div id="hName" class="h-username"></div>
-        <button class="hbtn" onclick="openChPw()" title="เปลี่ยนรหัสผ่าน">🔒</button>
-        <button class="hbtn" onclick="doLogout()">ออก</button>
-      </div>
+      <!-- Hidden: used by JS/Drawer -->
+      <div style="display:none"><div class="nav2" id="hAv">?</div><div id="hName" class="h-username"></div></div>
+      <!-- Left spacer (balance hamburger width) -->
+      <div style="width:44px;flex-shrink:0"></div>
+      <!-- Center logo -->
+      <div class="nlogo" style="flex:1;text-align:center">🏛️ Resolve<span>Now</span></div>
+      <!-- Hamburger -->
+      <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู" style="flex-shrink:0">
+        <span></span><span></span><span></span>
+      </button>
     </header>
 
     <div style="padding:16px 16px 0;max-width:760px;margin:0 auto;width:100%">
@@ -823,6 +824,38 @@
   <script src="/js/citizen.js"></script>
   <script src="/js/technician.js"></script>
   <script src="/js/app.js"></script>
+  <!-- ── UNIVERSAL SLIDE DRAWER ──────────────────────────── -->
+  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+  <div id="sideDrawer" class="side-drawer">
+    <!-- Close button -->
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+
+    <!-- User Profile Section -->
+    <div class="drawer-user">
+      <div class="drawer-av" id="drawerAv">?</div>
+      <div class="drawer-name" id="drawerName">—</div>
+      <div class="drawer-role" id="drawerRole"></div>
+    </div>
+
+    <div class="drawer-divider"></div>
+
+    <!-- Menu Items -->
+    <nav class="drawer-menu">
+      <button class="drawer-item" id="drawerChPw" onclick="openChPw();closeDrawer()">
+        <span class="drawer-item-icon">🔒</span>
+        <span>เปลี่ยนรหัสผ่าน</span>
+      </button>
+      <button class="drawer-item drawer-item-danger" onclick="doLogout()">
+        <span class="drawer-item-icon">🚪</span>
+        <span>ออกจากระบบ</span>
+      </button>
+    </nav>
+
+    <!-- Version tag -->
+    <div class="drawer-footer">ResolveNow v2.1</div>
+  </div>
+
 </body>
+
 
 </html>
