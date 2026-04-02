@@ -49,7 +49,10 @@ router.get('/', (req, res) => {
     response_type: 'code', client_id: CLIENT_ID,
     redirect_uri: CALLBACK_URL, state, scope: 'profile openid', bot_prompt: 'aggressive'
   });
-  res.redirect(url);
+  req.session.save((err) => {
+    if (err) console.error('[LINE Login] session save error on auth init:', err);
+    res.redirect(url);
+  });
 });
 
 // GET /auth/line/callback
@@ -93,7 +96,10 @@ router.get('/callback', async (req, res) => {
 
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
-    res.redirect('/');
+    req.session.save((err) => {
+      if (err) console.error('[LINE Login] session save error on login:', err);
+      res.redirect('/');
+    });
   } catch (e) {
     console.error('[LINE Login] callback error:', e.message || e);
     console.error('[LINE Login] stack:', e.stack || '(no stack)');
