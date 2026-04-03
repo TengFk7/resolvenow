@@ -231,16 +231,25 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       });
     }
 
-    if ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician') {
-      if (!ticket.assignedTo) {
-        ticket.assignedTo = caller._id;
-        ticket.assignedName = caller.firstName + ' ' + caller.lastName;
-      }
-    }
+    let isInitialAssign = ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician' && !ticket.assignedTo);
 
-    ticket.status = status;
-    if (status === 'rejected' && reason) ticket.rejectReason = reason;
-    await ticket.save();
+    if (isInitialAssign) {
+      const updated = await Ticket.findOneAndUpdate(
+        { ticketId: req.params.id, status: ticket.status },
+        { 
+          assignedTo: caller._id, 
+          assignedName: caller.firstName + ' ' + caller.lastName, 
+          status: status 
+        },
+        { new: true }
+      );
+      if (!updated) return res.status(400).json({ error: 'Ticket นี้ถูกทำรายการไปแล้ว โปรดรีเฟรชหน้าจอ' });
+      Object.assign(ticket, updated);
+    } else {
+      ticket.status = status;
+      if (status === 'rejected' && reason) ticket.rejectReason = reason;
+      await ticket.save();
+    }
 
     try {
       if (status === 'assigned') await notifyAssigned(formatTicket(ticket));

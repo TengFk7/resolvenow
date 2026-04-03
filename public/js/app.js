@@ -156,6 +156,7 @@ async function loadTickets() {
       throw new Error('no session');
     })
     .then(function(d) {
+      if (!d.loggedIn) throw new Error('no session');
       console.log('[App] session ดี → enterApp() role:', d.role);
       CU = d;
       sessionStorage.setItem('rn_logged_in', '1');

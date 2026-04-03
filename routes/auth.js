@@ -126,13 +126,13 @@ router.post('/logout', (req, res) => {
 
 // ─── GET /api/auth/me ────────────────────────────────────────────
 router.get('/me', async (req, res) => {
-  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+  if (!req.session.userId) return res.json({ loggedIn: false });
   try {
     const user = await User.findById(req.session.userId).select('-password');
-    if (!user) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+    if (!user) return res.json({ loggedIn: false });
     res.json({ id: user._id, firstName: user.firstName, lastName: user.lastName,
                email: user.email, role: user.role, specialty: user.specialty,
-               lineUserId: user.lineUserId, avatar: user.avatar });
+               lineUserId: user.lineUserId, avatar: user.avatar, loggedIn: true });
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 

@@ -48,11 +48,12 @@
       <div class="auth-flip-wrapper" id="authFlipWrapper">
         <!-- Login Form -->
         <div id="fLogin" class="auth-flip-panel auth-flip-front">
-          <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com" /></div>
-          <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน"
-              onkeydown="if(event.key==='Enter')doLogin()" /></div>
-          <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
-          <button class="btnp btn-ripple" onclick="doLogin()">เข้าสู่ระบบ</button>
+          <form onsubmit="event.preventDefault(); doLogin();">
+            <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com" /></div>
+            <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน" /></div>
+            <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
+            <button type="submit" class="btnp btn-ripple">เข้าสู่ระบบ</button>
+          </form>
           <div class="divider">
             <div class="divider-line"></div><span>หรือเข้าสู่ระบบด้วย</span>
             <div class="divider-line"></div>

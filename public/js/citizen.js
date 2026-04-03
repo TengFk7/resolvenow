@@ -131,6 +131,7 @@ function toggleCat(el) {
   document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
   el.classList.add('on');
   hideE('catErr');
+  setTimeout(function() { wizNext(1); }, 400); // Auto-scroll to next step for better UX
 }
 function getSelectedCat() {
   var el = document.querySelector('#catGrid .catbox.on');

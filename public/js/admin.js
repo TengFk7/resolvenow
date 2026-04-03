@@ -204,9 +204,9 @@ window.toggleMap = function() {
 window.initMapIfNeeded = function() {
   if (!_adminMap) {
     _adminMap = L.map('queueMapContainer').setView([13.829, 100.551], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      attribution: '© OpenStreetMap, © CARTO'
     }).addTo(_adminMap);
   }
   setTimeout(function() { _adminMap.invalidateSize(); updateMapMarkers(); }, 100);
