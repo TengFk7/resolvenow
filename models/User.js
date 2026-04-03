@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   lineUserId:  { type: String, default: null },
   lineDisplayName: { type: String, default: null },
   avatar:      { type: String, default: null },
+  createdViaLine: { type: Boolean, default: false }, // true = สร้างบัญชีผ่าน register-line
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

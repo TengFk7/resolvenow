@@ -318,7 +318,8 @@ router.post('/register-line', async (req, res) => {
       role:      'citizen',
       lineUserId:      pending.lineUserId,
       lineDisplayName: pending.lineDisplayName || null,
-      avatar:          pending.lineAvatar || null
+      avatar:          pending.lineAvatar || null,
+      createdViaLine:  true   // ← mark ว่าบัญชีนี้สร้างผ่าน LINE
     });
     await user.save();
 
@@ -355,8 +356,7 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
     if (!user.lineUserId) return res.status(400).json({ error: 'บัญชีนี้ยังไม่ได้เชื่อม LINE' });
 
     const oldLineId = user.lineUserId;
-    // ลบ user ออกจาก DB ทั้งหมด (LINE-only และ LINE-registered)
-    // เพื่อให้ทดสอบ flow ใหม่ได้สมบูรณ์
+    // ลบ user ทั้งหมด (LINE-only, LINE-registered, หรือเคยผูกแล้ว clear ไป)
     await User.deleteOne({ _id: user._id });
     console.log('[Admin] ลบ user ที่ผูก LINE:', user.email, 'lineId:', oldLineId);
     res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} และล้างการเชื่อม LINE สำเร็จ` });
@@ -387,14 +387,17 @@ router.get('/admin-linked-lines', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /api/auth/admin-unlink-all ─────────────────────────
-// Admin ลบ user ทุกคนที่ผูก LINE ออกจาก DB (เพื่อทดสอบ flow ใหม่ได้สมบูรณ์)
+// Admin ลบ user ทุกคนที่ผูก LINE หรือสร้างผ่าน LINE ออกจาก DB
 router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
   try {
     const result = await User.deleteMany({
-      lineUserId: { $exists: true, $ne: null }
+      $or: [
+        { lineUserId: { $exists: true, $ne: null } },
+        { createdViaLine: true }
+      ]
     });
-    console.log(`[Admin] ลบ user ทั้งหมดที่ผูก LINE: ${result.deletedCount} คน`);
-    res.json({ message: `ลบบัญชีทั้งหมดที่เชื่อม LINE จำนวน ${result.deletedCount} บัญชีสำเร็จ` });
+    console.log(`[Admin] ลบ user ที่ผูก/สร้างผ่าน LINE: ${result.deletedCount} คน`);
+    res.json({ message: `ลบบัญชีที่เชื่อม/สร้างผ่าน LINE จำนวน ${result.deletedCount} บัญชีสำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-all error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
