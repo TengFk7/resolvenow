@@ -12,6 +12,7 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false,
+  family: 4, // Force IPv4 — Render ไม่รองรับ IPv6 outbound
   auth: {
     user: MAIL_USER,
     pass: MAIL_PASS
