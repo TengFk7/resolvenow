@@ -97,10 +97,14 @@ router.post('/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const emailLower = email.toLowerCase();
+    const user = await User.findOne({ email: emailLower });
+    console.log('[Login] email:', emailLower, '→ found:', !!user);
     if (!user) return res.status(401).json({ error: 'ไม่พบ Email นี้ในระบบ' });
-    if (!await bcrypt.compare(password, user.password))
-      return res.status(401).json({ error: 'Password ไม่ถูกต้อง' });
+
+    const pwMatch = await bcrypt.compare(password, user.password);
+    console.log('[Login] password match:', pwMatch);
+    if (!pwMatch) return res.status(401).json({ error: 'Password ไม่ถูกต้อง' });
 
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
@@ -111,7 +115,7 @@ router.post('/login', async (req, res) => {
       user: { id: user._id, firstName: user.firstName, lastName: user.lastName,
               email: user.email, role: user.role, specialty: user.specialty }
     });
-  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+  } catch (e) { console.error('[Login] error:', e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 // ─── POST /api/auth/logout ───────────────────────────────────────
@@ -301,9 +305,9 @@ router.post('/register-line', async (req, res) => {
       });
     }
 
-    // hash password
-    const bcrypt = require('bcryptjs');
-    const hashed = await bcrypt.hash(password, 12);
+    // hash password (salt 10 เหมือน register ปกติ)
+    const hashed = await bcrypt.hash(password, 10);
+    console.log('[Register-LINE] hashing password, email:', emailLower);
 
     // สร้าง user ใหม่พร้อมผูก LINE
     const user = new User({
@@ -351,22 +355,11 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
     if (!user.lineUserId) return res.status(400).json({ error: 'บัญชีนี้ยังไม่ได้เชื่อม LINE' });
 
     const oldLineId = user.lineUserId;
-    const isLineOnly = user.email.startsWith('line_') && user.email.endsWith('@line.me');
-
-    if (isLineOnly) {
-      // LINE-only account → ลบออกจาก DB เลย เพื่อให้ login ใหม่แสดง modal เสมอ
-      await User.deleteOne({ _id: user._id });
-      console.log('[Admin] ลบ LINE-only user:', user.email, 'lineId:', oldLineId);
-      return res.json({ message: `ลบบัญชี LINE-only (${user.firstName}) และล้างการเชื่อม LINE สำเร็จ` });
-    }
-
-    // บัญชีปกติ → แค่ clear lineUserId
-    user.lineUserId      = undefined;
-    user.lineDisplayName = undefined;
-    await user.save();
-
-    console.log('[Admin] ล้าง LINE link:', user.email, 'lineId:', oldLineId);
-    res.json({ message: `ล้างการเชื่อม LINE ของ ${user.firstName} ${user.lastName} สำเร็จ` });
+    // ลบ user ออกจาก DB ทั้งหมด (LINE-only และ LINE-registered)
+    // เพื่อให้ทดสอบ flow ใหม่ได้สมบูรณ์
+    await User.deleteOne({ _id: user._id });
+    console.log('[Admin] ลบ user ที่ผูก LINE:', user.email, 'lineId:', oldLineId);
+    res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} และล้างการเชื่อม LINE สำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-line error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
