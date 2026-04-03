@@ -10,9 +10,12 @@ const MAIL_PASS = process.env.MAIL_PASS;
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  family: 4, // Force IPv4 — Render ไม่รองรับ IPv6 outbound
+  port: 465,
+  secure: true,           // SSL โดยตรง (ไม่ใช้ STARTTLS)
+  family: 4,              // Force IPv4 — Render ไม่รองรับ IPv6 outbound
+  connectionTimeout: 30000,  // 30 วินาที (รอ cold-start Render)
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
   auth: {
     user: MAIL_USER,
     pass: MAIL_PASS
