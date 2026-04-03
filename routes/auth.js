@@ -343,9 +343,7 @@ router.post('/register-line', async (req, res) => {
 });
 
 // ─── POST /api/auth/admin-unlink-line ────────────────────────
-// Admin ล้างการเชื่อม LINE ของ user รายเดียว
-// — ถ้า user นั้นเป็น LINE-only account (email ขึ้นต้นด้วย line_) → ลบ user ทิ้งเลย
-// — ถ้าเป็นบัญชีปกติที่เชื่อม LINE → แค่ clear lineUserId field
+// Admin ลบ user ที่ผูก LINE หรือสร้างผ่าน LINE (รายคน)
 router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
   try {
     const { email } = req.body;
@@ -353,13 +351,14 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
-    if (!user.lineUserId) return res.status(400).json({ error: 'บัญชีนี้ยังไม่ได้เชื่อม LINE' });
 
-    const oldLineId = user.lineUserId;
-    // ลบ user ทั้งหมด (LINE-only, LINE-registered, หรือเคยผูกแล้ว clear ไป)
+    // ยอมรับทั้ง users ที่มี lineUserId และที่ createdViaLine: true
+    if (!user.lineUserId && !user.createdViaLine)
+      return res.status(400).json({ error: 'บัญชีนี้ไม่ได้สร้างหรือผูกผ่าน LINE' });
+
     await User.deleteOne({ _id: user._id });
-    console.log('[Admin] ลบ user ที่ผูก LINE:', user.email, 'lineId:', oldLineId);
-    res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} และล้างการเชื่อม LINE สำเร็จ` });
+    console.log('[Admin] ลบ user ที่ผูก/สร้างผ่าน LINE:', user.email);
+    res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} สำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-line error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
@@ -367,18 +366,25 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
 });
 
 // ─── GET /api/auth/admin-linked-lines ────────────────────────
-// Admin ดึงรายชื่อ user ทุกคนที่เชื่อม LINE ไว้แล้ว
+// Admin ดึงรายชื่อ user ทุกคนที่ผูก LINE หรือสร้างผ่าน LINE
 router.get('/admin-linked-lines', requireAdmin, async (req, res) => {
   try {
-    const users = await User.find({ lineUserId: { $exists: true, $ne: null } })
-      .select('firstName lastName email role lineUserId lineDisplayName avatar')
+    const users = await User.find({
+      $or: [
+        { lineUserId: { $exists: true, $ne: null } },
+        { createdViaLine: true }
+      ]
+    })
+      .select('firstName lastName email role lineUserId lineDisplayName avatar createdViaLine')
       .sort({ updatedAt: -1 });
     res.json(users.map(u => ({
       email: u.email,
       name:  u.firstName + (u.lastName && u.lastName !== '-' ? ' ' + u.lastName : ''),
       role:  u.role,
       lineDisplayName: u.lineDisplayName || '',
-      avatar: u.avatar || null
+      avatar: u.avatar || null,
+      hasLine: !!u.lineUserId,          // true = ยังผูก LINE อยู่
+      createdViaLine: !!u.createdViaLine // true = สร้างผ่าน LINE
     })));
   } catch (e) {
     console.error('admin-linked-lines error:', e);
