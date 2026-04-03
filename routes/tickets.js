@@ -278,7 +278,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
           assignedName: caller.firstName + ' ' + caller.lastName, 
           status: status 
         },
-        { new: true }
+        { returnDocument: 'after' }
       );
       if (!updated) return res.status(400).json({ error: 'Ticket นี้ถูกทำรายการไปแล้ว โปรดรีเฟรชหน้าจอ' });
       Object.assign(ticket, updated);

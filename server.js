@@ -40,15 +40,22 @@ app.set('io', io);
   app.use(express.static(path.join(__dirname, 'public')));
   // ใช้ mongoose connection ที่มีอยู่แล้ว (ไม่ต้อง connect ใหม่)
   const mongoose = require('mongoose');
+  const sessionStore = MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      dbName: 'resolvenow',
+      ttl: 7 * 24 * 60 * 60,
+      touchAfter: 24 * 3600, // lazy session update — only update once per 24h to reduce writes
+    });
+  // Suppress "Unable to find the session to touch" errors (stale cookies)
+  sessionStore.on('error', function(err) {
+    console.warn('[Session Store] non-critical error:', err.message);
+  });
+
   app.use(session({
     secret: process.env.SESSION_SECRET || 'resolvenow-secret-2024',
     resave: false,
     saveUninitialized: true,   // ต้อง true: ให้ session ที่มีแค่ lineLinkPending (ยังไม่ login) ถูก save ลง MongoDB
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      dbName: 'resolvenow',
-      ttl: 7 * 24 * 60 * 60,
-    }),
+    store: sessionStore,
     cookie: { 
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,

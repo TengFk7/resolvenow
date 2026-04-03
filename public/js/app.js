@@ -146,9 +146,20 @@ async function loadTickets() {
   }
 
 
-  // ── ตรวจ server session เสมอ (ทั้งกรณี refresh และ tab ใหม่) ──
-  console.log('[App] ตรวจ /api/auth/me...');
+  // ── ตรวจ session: resume เฉพาะเมื่อ user เคย login ใน tab นี้ (refresh) ──
+  // ถ้าเปิด URL ใหม่ใน tab ใหม่ → จะไม่มี sessionStorage flag → ไปหน้า login ตลอด
+  var wasLoggedIn = sessionStorage.getItem('rn_logged_in');
   sessionStorage.removeItem('rn_line_pending');
+
+  if (!wasLoggedIn) {
+    // Fresh visit (new tab / paste URL) → clear server session, show login
+    console.log('[App] Fresh visit → logout server session → หน้า login');
+    fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
+    return;
+  }
+
+  // Tab refresh → try to resume session
+  console.log('[App] Tab refresh → ตรวจ /api/auth/me...');
   fetch('/api/auth/me')
     .then(function(r) {
       console.log('[App] /api/auth/me status:', r.status);
