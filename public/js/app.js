@@ -116,30 +116,35 @@ async function loadTickets() {
   var lineLinkParam = params.get('line_link');
   console.log('[App] line_link param:', lineLinkParam);
   if (lineLinkParam === 'pending') {
-    console.log('[App] ✅ พบ line_link=pending → กำลังเปิด modal...');
+    console.log('[App] ✅ พบ line_link=pending → แสดง LINE Link Panel');
     sessionStorage.removeItem('rn_line_pending');
     sessionStorage.removeItem('rn_logged_in');
     window.history.replaceState({}, '', '/');
-    // Force-dismiss splash ทันที (ไม่ต้องรอ 2.8s animation) และเปิด modal
+
+    // ซ่อน app — แสดงเฉพาะ auth page
+    var _aa = ge('adminApp'); if (_aa) _aa.style.display = 'none';
+    var _na = ge('normalApp'); if (_na) _na.style.display = 'none';
+    var _ap = ge('authPage'); if (_ap) _ap.style.display = 'flex';
+
+    // Force-dismiss splash ทันที
     var splashEl = document.getElementById('splash');
     if (splashEl) { splashEl.style.transition = 'opacity 0.3s'; splashEl.style.opacity = '0'; setTimeout(function(){ if (splashEl.parentNode) splashEl.parentNode.removeChild(splashEl); }, 320); }
-    // เปิด modal หลัง splash fade ออก (350ms)
+
     setTimeout(function() {
-      console.log('[App] ⏰ timeout fired, openLineLinkModal type:', typeof openLineLinkModal);
+      // ซ่อน tabs + panels อื่น แสดง fLineLink panel
+      var tabsEl = document.querySelector('.tabs');
+      if (tabsEl) tabsEl.style.display = 'none';
+      ['fLogin','fReg','fSearch'].forEach(function(id){ var el=ge(id); if(el) el.style.display='none'; });
+      var otpEl = ge('fOtp'); if (otpEl) otpEl.style.display = 'none';
+      var fLL = ge('fLineLink');
+      if (fLL) { fLL.style.display = 'block'; }
       if (typeof openLineLinkModal === 'function') {
-        openLineLinkModal().catch(function(err) {
-          console.error('[LINE Link] openLineLinkModal error:', err);
-        });
-      } else {
-        console.error('[LINE Link] openLineLinkModal ไม่พบฟังก์ชัน — ลอง #mLineLink ตรงๆ');
-        // Fallback: เปิด modal ตรงๆ
-        var m = document.getElementById('mLineLink');
-        if (m) { m.classList.add('on'); console.log('[App] Fallback: modal on'); }
-        else { console.error('[App] #mLineLink ไม่พบใน DOM!'); }
+        openLineLinkModal().catch(function(err) { console.error('[LINE Link] error:', err); });
       }
-    }, 350); // 350ms: หลัง splash fade ออก (0.3s transition)
+    }, 350);
     return;
   }
+
 
   // ── ตรวจ server session เสมอ (ทั้งกรณี refresh และ tab ใหม่) ──
   console.log('[App] ตรวจ /api/auth/me...');

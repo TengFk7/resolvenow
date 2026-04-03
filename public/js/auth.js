@@ -512,23 +512,18 @@ async function doSearch() {
 
 /* ── เปิด modal เชื่อมบัญชี LINE ─────────────────────── */
 async function openLineLinkModal() {
-  // null-safe — หาก element ไม่พบ ไม่ให้ crash
+  // ไม่เปิด modal แล้ว — panel #fLineLink ถูกแสดงโดย app.js
+  // ฟังก์ชันนี้แค่ reset form และโหลด LINE profile
   var llEmail = ge('llEmail');
   var llPass  = ge('llPass');
   var btnLink = ge('btnLineLink');
-  var modal   = ge('mLineLink');
-
-  if (!modal) { console.error('[LINE Link] #mLineLink ไม่พบใน DOM'); return; }
 
   if (llEmail) llEmail.value = '';
   if (llPass)  llPass.value  = '';
   hideE('llErr');
   if (btnLink) { btnLink.disabled = false; btnLink.textContent = '🔗 เชื่อมบัญชีนี้กับ LINE'; }
 
-  // ── แสดง modal ก่อนเสมอ — ไม่รอ API ──
-  modal.classList.add('on');
-
-  // ── โหลด LINE profile ใน background ──
+  // โหลด LINE profile ใน background
   try {
     var r = await fetch('/api/auth/line-pending');
     if (r.ok) {
@@ -577,7 +572,8 @@ async function doLineLink() {
       return showE('llErr', data.error || 'เกิดข้อผิดพลาด');
     }
     // สำเร็จ
-    ge('mLineLink').classList.remove('on');
+    var fLL = ge('fLineLink');
+    if (fLL) fLL.style.display = 'none';
     CU = data.user;
     sessionStorage.setItem('rn_logged_in', '1');
     showToast('🔗 เชื่อมบัญชี LINE สำเร็จ!');
@@ -602,7 +598,8 @@ async function doLineLinkSkip() {
       btn.disabled = false;
       return showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
     }
-    ge('mLineLink').classList.remove('on');
+    var fLL = ge('fLineLink');
+    if (fLL) fLL.style.display = 'none';
     CU = data.user;
     sessionStorage.setItem('rn_logged_in', '1');
     showToast('เข้าสู่ระบบด้วย LINE สำเร็จ');
