@@ -120,7 +120,10 @@ async function loadTickets() {
     sessionStorage.removeItem('rn_line_pending');
     sessionStorage.removeItem('rn_logged_in');
     window.history.replaceState({}, '', '/');
-    // รอ DOM + scripts โหลดเสร็จ (เนื่องจาก scripts โหลดก่อน DOMContentLoaded เล็กน้อย)
+    // Force-dismiss splash ทันที (ไม่ต้องรอ 2.8s animation) และเปิด modal
+    var splashEl = document.getElementById('splash');
+    if (splashEl) { splashEl.style.transition = 'opacity 0.3s'; splashEl.style.opacity = '0'; setTimeout(function(){ if (splashEl.parentNode) splashEl.parentNode.removeChild(splashEl); }, 320); }
+    // เปิด modal หลัง splash fade ออก (350ms)
     setTimeout(function() {
       console.log('[App] ⏰ timeout fired, openLineLinkModal type:', typeof openLineLinkModal);
       if (typeof openLineLinkModal === 'function') {
@@ -134,7 +137,7 @@ async function loadTickets() {
         if (m) { m.classList.add('on'); console.log('[App] Fallback: modal on'); }
         else { console.error('[App] #mLineLink ไม่พบใน DOM!'); }
       }
-    }, 200);
+    }, 350); // 350ms: หลัง splash fade ออก (0.3s transition)
     return;
   }
 
