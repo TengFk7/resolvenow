@@ -88,16 +88,13 @@ async function loadTickets() {
 }
 
 /* ── Session Resume / Reset on Page Load ─────────────── */
-/*
- * ใช้ sessionStorage เป็นตัวแยก:
- *   มี flag  → refresh ภายใน tab เดิม → resume session ได้
- *   ไม่มี flag → เปิดลิงก์/แท็บใหม่ → logout แล้วแสดงหน้า login
- */
 (function() {
   var ap = ge('authPage');
   if (ap) ap.style.display = 'flex';
 
   var params = new URLSearchParams(window.location.search);
+  console.log('[App] URL params:', window.location.search);
+  console.log('[App] sessionStorage rn_logged_in:', sessionStorage.getItem('rn_logged_in'));
 
   // ── ตรวจ LINE login error params ก่อน ──
   var lineErr = params.get('line_error');
@@ -109,44 +106,55 @@ async function loadTickets() {
       profile_failed: 'ไม่สามารถดึงข้อมูล LINE profile ได้',
       server_error: 'เกิดข้อผิดพลาดบน server กรุณาลองใหม่'
     };
+    console.warn('[App] LINE error param:', lineErr);
     showE('authErr', msgs[lineErr] || 'LINE Login ผิดพลาด: ' + lineErr);
     window.history.replaceState({}, '', '/');
     return;
   }
 
   // ── ตรวจ LINE Link pending (callback จาก LINE OAuth ครั้งแรก) ──
-  // ตรวจ URL param ก่อน sessionStorage เสมอ
   var lineLinkParam = params.get('line_link');
+  console.log('[App] line_link param:', lineLinkParam);
   if (lineLinkParam === 'pending') {
+    console.log('[App] ✅ พบ line_link=pending → กำลังเปิด modal...');
     sessionStorage.removeItem('rn_line_pending');
     sessionStorage.removeItem('rn_logged_in');
     window.history.replaceState({}, '', '/');
-    // เปิด modal เชื่อมบัญชี LINE — ใช้ setTimeout เล็กน้อยเพื่อให้ DOM พร้อมก่อน
+    // รอ DOM + scripts โหลดเสร็จ (เนื่องจาก scripts โหลดก่อน DOMContentLoaded เล็กน้อย)
     setTimeout(function() {
+      console.log('[App] ⏰ timeout fired, openLineLinkModal type:', typeof openLineLinkModal);
       if (typeof openLineLinkModal === 'function') {
         openLineLinkModal().catch(function(err) {
           console.error('[LINE Link] openLineLinkModal error:', err);
         });
       } else {
-        console.error('[LINE Link] openLineLinkModal ไม่พบฟังก์ชัน');
+        console.error('[LINE Link] openLineLinkModal ไม่พบฟังก์ชัน — ลอง #mLineLink ตรงๆ');
+        // Fallback: เปิด modal ตรงๆ
+        var m = document.getElementById('mLineLink');
+        if (m) { m.classList.add('on'); console.log('[App] Fallback: modal on'); }
+        else { console.error('[App] #mLineLink ไม่พบใน DOM!'); }
       }
-    }, 80);
+    }, 200);
     return;
   }
 
   // ── ตรวจ server session เสมอ (ทั้งกรณี refresh และ tab ใหม่) ──
-  // เหตุ: ถ้า logout ทันทีเมื่อไม่มี sessionStorage flag จะทำให้ session ที่ server
-  //       สร้างหลัง LINE callback หรือ doLogin() ถูกลบก่อนที่จะใช้งาน (bug: bounce to login)
+  console.log('[App] ตรวจ /api/auth/me...');
   sessionStorage.removeItem('rn_line_pending');
   fetch('/api/auth/me')
-    .then(function(r) { if (r.ok) return r.json(); throw new Error('no session'); })
+    .then(function(r) {
+      console.log('[App] /api/auth/me status:', r.status);
+      if (r.ok) return r.json();
+      throw new Error('no session');
+    })
     .then(function(d) {
+      console.log('[App] session ดี → enterApp() role:', d.role);
       CU = d;
       sessionStorage.setItem('rn_logged_in', '1');
       enterApp();
     })
     .catch(function() {
-      // ไม่มี session จริง → logout ให้ clean แล้วรอหน้า login
+      console.log('[App] ไม่มี session → หน้า login');
       sessionStorage.removeItem('rn_logged_in');
       fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
     });

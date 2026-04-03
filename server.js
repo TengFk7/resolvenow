@@ -43,7 +43,7 @@ app.set('io', io);
   app.use(session({
     secret: process.env.SESSION_SECRET || 'resolvenow-secret-2024',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,   // ต้อง true: ให้ session ที่มีแค่ lineLinkPending (ยังไม่ login) ถูก save ลง MongoDB
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
       dbName: 'resolvenow',
@@ -52,7 +52,7 @@ app.set('io', io);
     cookie: { 
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'lax',    // lax: ส่ง cookie กับ GET redirect (LINE callback) ได้
       secure: process.env.NODE_ENV === 'production'
     }
   }));
