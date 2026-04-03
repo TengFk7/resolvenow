@@ -387,34 +387,14 @@ router.get('/admin-linked-lines', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /api/auth/admin-unlink-all ─────────────────────────
-// Admin ล้างการเชื่อม LINE ของ user ทุกคนพร้อมกัน
-// — LINE-only users (email ขึ้นต้นด้วย line_) → ลบออกจาก DB
-// — Regular users ที่เชื่อม LINE → clear lineUserId field
+// Admin ลบ user ทุกคนที่ผูก LINE ออกจาก DB (เพื่อทดสอบ flow ใหม่ได้สมบูรณ์)
 router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
   try {
-    // หา LINE-only users ก่อน (สร้างโดย link-line-skip)
-    const lineOnlyUsers = await User.find({
-      lineUserId: { $exists: true, $ne: null },
-      email: { $regex: /^line_.*@line\.me$/ }
+    const result = await User.deleteMany({
+      lineUserId: { $exists: true, $ne: null }
     });
-
-    // ลบ LINE-only users ออกเลย
-    const lineOnlyIds = lineOnlyUsers.map(u => u._id);
-    let deletedCount = 0;
-    if (lineOnlyIds.length > 0) {
-      const del = await User.deleteMany({ _id: { $in: lineOnlyIds } });
-      deletedCount = del.deletedCount;
-    }
-
-    // Clear lineUserId สำหรับ regular users ที่เชื่อม LINE
-    const result = await User.updateMany(
-      { lineUserId: { $exists: true, $ne: null } },
-      { $unset: { lineUserId: '', lineDisplayName: '' } }
-    );
-
-    const total = deletedCount + result.modifiedCount;
-    console.log(`[Admin] ล้าง LINE: ลบ ${deletedCount} LINE-only, clear ${result.modifiedCount} regular`);
-    res.json({ message: `ล้างการเชื่อม LINE ทั้งหมด ${total} บัญชีสำเร็จ` });
+    console.log(`[Admin] ลบ user ทั้งหมดที่ผูก LINE: ${result.deletedCount} คน`);
+    res.json({ message: `ลบบัญชีทั้งหมดที่เชื่อม LINE จำนวน ${result.deletedCount} บัญชีสำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-all error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
