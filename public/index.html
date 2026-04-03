@@ -122,12 +122,16 @@
         <div style="text-align:center;margin-bottom:14px">
           <div style="font-size:38px;margin-bottom:6px">✨</div>
           <h3 style="font-size:17px;color:var(--navy);margin:0 0 4px">สร้างบัญชีใหม่</h3>
-          <p style="font-size:12px;color:var(--muted);margin:0">ลงทะเบียนและผูกกับ LINE ของคุณ</p>
+          <p style="font-size:12px;color:var(--muted);margin:0">ลงทะเบียนและเข้าสู่ระบบ</p>
         </div>
         <!-- LINE profile badge -->
-        <div id="llLineProfile" style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#06c755,#00a84c);border-radius:12px;padding:10px 14px;margin-bottom:14px">
-          <img id="llLineAvatar" src="" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5);display:none" />
-          <div id="llLineAvatarFallback" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>
+        <div id="llLineProfile"
+          style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#06c755,#00a84c);border-radius:12px;padding:10px 14px;margin-bottom:14px">
+          <img id="llLineAvatar" src="" alt=""
+            style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5);display:none" />
+          <div id="llLineAvatarFallback"
+            style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px">
+            👤</div>
           <div>
             <div style="font-size:13px;font-weight:700;color:#fff" id="llLineName">กำลังโหลด...</div>
             <div style="font-size:10px;color:rgba(255,255,255,.8)">บัญชี LINE ที่จะผูกกับระบบ</div>
@@ -135,14 +139,23 @@
         </div>
         <div class="ebox" id="llErr" style="margin-bottom:10px"></div>
         <div style="display:flex;gap:8px">
-          <div class="fg" style="flex:1"><label>ชื่อ</label><input type="text" id="llFirst" placeholder="ชื่อ" onkeydown="if(event.key==='Enter')ge('llLast').focus()" /></div>
-          <div class="fg" style="flex:1"><label>นามสกุล</label><input type="text" id="llLast" placeholder="นามสกุล" onkeydown="if(event.key==='Enter')ge('llEmail').focus()" /></div>
+          <div class="fg" style="flex:1"><label>ชื่อ</label><input type="text" id="llFirst" placeholder="ชื่อ"
+              onkeydown="if(event.key==='Enter')ge('llLast').focus()" /></div>
+          <div class="fg" style="flex:1"><label>นามสกุล</label><input type="text" id="llLast" placeholder="นามสกุล"
+              onkeydown="if(event.key==='Enter')ge('llEmail').focus()" /></div>
         </div>
-        <div class="fg"><label>Email</label><input type="email" id="llEmail" placeholder="example@gmail.com" onkeydown="if(event.key==='Enter')ge('llPass').focus()" /></div>
-        <div class="fg"><label>Password</label><input type="password" id="llPass" placeholder="รหัสผ่านอย่างน้อย 6 ตัวอักษร" onkeydown="if(event.key==='Enter')ge('llPass2').focus()" /></div>
-        <div class="fg"><label>ยืนยัน Password</label><input type="password" id="llPass2" placeholder="ยืนยันรหัสผ่าน" onkeydown="if(event.key==='Enter')doLineLinkRegister()" /></div>
-        <button class="btnp btn-ripple" id="btnLineLink" onclick="doLineLinkRegister()" style="margin-bottom:10px">✨ สร้างบัญชีและผูกกับ LINE</button>
-        <button onclick="doLineLinkSkip()" style="width:100%;padding:10px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);cursor:pointer;transition:var(--transition)" onmouseenter="this.style.borderColor='#94a3b8'" onmouseleave="this.style.borderColor='var(--border)'">ข้าม — เข้าสู่ระบบด้วย LINE โดยไม่มีบัญชี</button>
+        <div class="fg"><label>Email</label><input type="email" id="llEmail" placeholder="example@gmail.com"
+            onkeydown="if(event.key==='Enter')ge('llPass').focus()" /></div>
+        <div class="fg"><label>Password</label><input type="password" id="llPass"
+            placeholder="รหัสผ่านอย่างน้อย 6 ตัวอักษร" onkeydown="if(event.key==='Enter')ge('llPass2').focus()" /></div>
+        <div class="fg"><label>ยืนยัน Password</label><input type="password" id="llPass2" placeholder="ยืนยันรหัสผ่าน"
+            onkeydown="if(event.key==='Enter')doLineLinkRegister()" /></div>
+        <button class="btnp btn-ripple" id="btnLineLink" onclick="doLineLinkRegister()" style="margin-bottom:10px">✨
+          สร้างบัญชีและผูกกับ LINE</button>
+        <button onclick="doLineLinkSkip()"
+          style="width:100%;padding:10px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:12px;color:var(--muted);cursor:pointer;transition:var(--transition)"
+          onmouseenter="this.style.borderColor='#94a3b8'" onmouseleave="this.style.borderColor='var(--border)'">ข้าม —
+          เข้าสู่ระบบด้วย LINE โดยไม่มีบัญชี</button>
       </div>
 
 
