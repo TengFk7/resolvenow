@@ -512,18 +512,15 @@ async function doSearch() {
 
 /* ── เปิด modal เชื่อมบัญชี LINE ─────────────────────── */
 async function openLineLinkModal() {
-  // ไม่เปิด modal แล้ว — panel #fLineLink ถูกแสดงโดย app.js
-  // ฟังก์ชันนี้แค่ reset form และโหลด LINE profile
-  var llEmail = ge('llEmail');
-  var llPass  = ge('llPass');
-  var btnLink = ge('btnLineLink');
-
-  if (llEmail) llEmail.value = '';
-  if (llPass)  llPass.value  = '';
+  // panel #fLineLink ถูกแสดงโดย app.js — ฟังก์ชันนี้แค่ reset form + โหลด LINE profile
+  ['llFirst','llLast','llEmail','llPass','llPass2'].forEach(function(id){
+    var el = ge(id); if (el) el.value = '';
+  });
   hideE('llErr');
-  if (btnLink) { btnLink.disabled = false; btnLink.textContent = '🔗 เชื่อมบัญชีนี้กับ LINE'; }
+  var btnLink = ge('btnLineLink');
+  if (btnLink) { btnLink.disabled = false; btnLink.textContent = '✨ สร้างบัญชีและผูกกับ LINE'; }
 
-  // โหลด LINE profile ใน background
+  // โหลด LINE profile
   try {
     var r = await fetch('/api/auth/line-pending');
     if (r.ok) {
@@ -548,11 +545,53 @@ async function openLineLinkModal() {
 }
 
 
-/* ── ยืนยันเชื่อม LINE กับ email account ─────────────── */
+/* ── สมัครสมาชิกใหม่ + ผูก LINE ─────────────────────── */
+async function doLineLinkRegister() {
+  hideE('llErr');
+  var firstName = (ge('llFirst') ? ge('llFirst').value.trim() : '');
+  var lastName  = (ge('llLast')  ? ge('llLast').value.trim()  : '');
+  var email     = (ge('llEmail') ? ge('llEmail').value.trim() : '');
+  var pass      = (ge('llPass')  ? ge('llPass').value         : '');
+  var pass2     = (ge('llPass2') ? ge('llPass2').value        : '');
+
+  if (!firstName) return showE('llErr', 'กรุณากรอกชื่อ');
+  if (!email)     return showE('llErr', 'กรุณากรอก Email');
+  if (!pass)      return showE('llErr', 'กรุณากรอกรหัสผ่าน');
+  if (pass.length < 6) return showE('llErr', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+  if (pass !== pass2) return showE('llErr', 'รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่');
+
+  var btn = ge('btnLineLink');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้างบัญชี...'; }
+
+  try {
+    var r = await fetch('/api/auth/register-line', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: firstName, lastName: lastName, email: email, password: pass })
+    });
+    var data = await r.json();
+    if (!r.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '✨ สร้างบัญชีและผูกกับ LINE'; }
+      return showE('llErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+    // สำเร็จ
+    var fLL = ge('fLineLink'); if (fLL) fLL.style.display = 'none';
+    CU = data.user;
+    sessionStorage.setItem('rn_logged_in', '1');
+    showToast('✨ สร้างบัญชีและผูก LINE สำเร็จ!');
+    enterApp();
+  } catch (e) {
+    console.error('doLineLinkRegister error:', e);
+    if (btn) { btn.disabled = false; btn.textContent = '✨ สร้างบัญชีและผูกกับ LINE'; }
+    showE('llErr', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+  }
+}
+
+/* ── ยืนยันเชื่อม LINE กับ email account (สำรอง) ────── */
 async function doLineLink() {
   hideE('llErr');
-  var email = ge('llEmail').value.trim();
-  var pass = ge('llPass').value;
+  var email = ge('llEmail') ? ge('llEmail').value.trim() : '';
+  var pass = ge('llPass') ? ge('llPass').value : '';
   if (!email || !pass) return showE('llErr', 'กรุณากรอกข้อมูลให้ครบ');
 
   var btn = ge('btnLineLink');

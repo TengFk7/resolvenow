@@ -261,6 +261,82 @@ router.post('/link-line-skip', async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/register-line ────────────────────────────
+// ผู้ใช้ใหม่จาก LINE — สมัครสมาชิกใหม่และผูก LINE ทันที
+router.post('/register-line', async (req, res) => {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+    const pending = req.session.lineLinkPending;
+
+    if (!pending || !pending.lineUserId)
+      return res.status(400).json({ error: 'ไม่พบข้อมูล LINE session กรุณา login ด้วย LINE ใหม่อีกครั้ง' });
+
+    if (!firstName || !firstName.trim())
+      return res.status(400).json({ error: 'กรุณากรอกชื่อ' });
+    if (!email || !email.trim())
+      return res.status(400).json({ error: 'กรุณากรอก Email' });
+    if (!password || password.length < 6)
+      return res.status(400).json({ error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' });
+
+    const emailLower = email.toLowerCase().trim();
+
+    // ตรวจ email ซ้ำ
+    const existing = await User.findOne({ email: emailLower });
+    if (existing) return res.status(400).json({ error: 'Email นี้มีในระบบแล้ว กรุณาใช้ Email อื่น' });
+
+    // ตรวจ lineUserId ซ้ำ (ป้องกัน race condition)
+    const existingLine = await User.findOne({ lineUserId: pending.lineUserId });
+    if (existingLine) {
+      // มีบัญชีแล้ว (อาจกด register ซ้ำ) — login เลย
+      delete req.session.lineLinkPending;
+      req.session.userId = existingLine._id.toString();
+      req.session.role   = existingLine.role;
+      return res.json({
+        message: 'เข้าสู่ระบบสำเร็จ',
+        user: {
+          id: existingLine._id, firstName: existingLine.firstName, lastName: existingLine.lastName,
+          email: existingLine.email, role: existingLine.role, specialty: existingLine.specialty,
+          lineUserId: existingLine.lineUserId, avatar: existingLine.avatar
+        }
+      });
+    }
+
+    // hash password
+    const bcrypt = require('bcryptjs');
+    const hashed = await bcrypt.hash(password, 12);
+
+    // สร้าง user ใหม่พร้อมผูก LINE
+    const user = new User({
+      firstName: firstName.trim(),
+      lastName:  (lastName || '').trim() || '-',
+      email:     emailLower,
+      password:  hashed,
+      role:      'citizen',
+      lineUserId:      pending.lineUserId,
+      lineDisplayName: pending.lineDisplayName || null,
+      avatar:          pending.lineAvatar || null
+    });
+    await user.save();
+
+    delete req.session.lineLinkPending;
+    req.session.userId = user._id.toString();
+    req.session.role   = user.role;
+
+    console.log('[Register-LINE] สร้างบัญชีใหม่:', user.email, 'line:', user.lineUserId);
+    res.json({
+      message: 'สร้างบัญชีและผูก LINE สำเร็จ!',
+      user: {
+        id: user._id, firstName: user.firstName, lastName: user.lastName,
+        email: user.email, role: user.role, specialty: user.specialty,
+        lineUserId: user.lineUserId, avatar: user.avatar
+      }
+    });
+  } catch (e) {
+    console.error('register-line error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+  }
+});
+
 // ─── POST /api/auth/admin-unlink-line ────────────────────────
 // Admin ล้างการเชื่อม LINE ของ user รายเดียว
 // — ถ้า user นั้นเป็น LINE-only account (email ขึ้นต้นด้วย line_) → ลบ user ทิ้งเลย
