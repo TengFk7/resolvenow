@@ -512,30 +512,46 @@ async function doSearch() {
 
 /* ── เปิด modal เชื่อมบัญชี LINE ─────────────────────── */
 async function openLineLinkModal() {
-  // ล้าง form
-  ge('llEmail').value = '';
-  ge('llPass').value = '';
+  // null-safe — หาก element ไม่พบ ไม่ให้ crash
+  var llEmail = ge('llEmail');
+  var llPass  = ge('llPass');
+  var btnLink = ge('btnLineLink');
+  var modal   = ge('mLineLink');
+
+  if (!modal) { console.error('[LINE Link] #mLineLink ไม่พบใน DOM'); return; }
+
+  if (llEmail) llEmail.value = '';
+  if (llPass)  llPass.value  = '';
   hideE('llErr');
-  ge('btnLineLink').disabled = false;
-  ge('btnLineLink').textContent = '🔗 เชื่อมบัญชีนี้กับ LINE';
+  if (btnLink) { btnLink.disabled = false; btnLink.textContent = '🔗 เชื่อมบัญชีนี้กับ LINE'; }
 
-  // แสดง modal ก่อน
-  ge('mLineLink').classList.add('on');
+  // ── แสดง modal ก่อนเสมอ — ไม่รอ API ──
+  modal.classList.add('on');
 
-  // ดึงข้อมูล LINE profile จาก session
+  // ── โหลด LINE profile ใน background ──
   try {
     var r = await fetch('/api/auth/line-pending');
     if (r.ok) {
       var data = await r.json();
-      ge('llLineName').textContent = data.lineDisplayName || 'LINE User';
+      var nameEl = ge('llLineName');
+      if (nameEl) nameEl.textContent = data.lineDisplayName || 'LINE User';
       if (data.lineAvatar) {
-        ge('llLineAvatar').src = data.lineAvatar;
-        ge('llLineAvatar').style.display = 'block';
-        ge('llLineAvatarFallback').style.display = 'none';
+        var av   = ge('llLineAvatar');
+        var avFb = ge('llLineAvatarFallback');
+        if (av)   { av.src = data.lineAvatar; av.style.display = 'block'; }
+        if (avFb) avFb.style.display = 'none';
       }
+    } else {
+      var nameEl2 = ge('llLineName');
+      if (nameEl2) nameEl2.textContent = 'LINE User';
     }
-  } catch (e) { /* ไม่มี avatar ก็ไม่เป็นไร */ }
+  } catch (e) {
+    var nameEl3 = ge('llLineName');
+    if (nameEl3) nameEl3.textContent = 'LINE User';
+    console.warn('[LINE Link] โหลด profile ไม่สำเร็จ:', e);
+  }
 }
+
 
 /* ── ยืนยันเชื่อม LINE กับ email account ─────────────── */
 async function doLineLink() {

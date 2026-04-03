@@ -134,23 +134,21 @@ async function loadTickets() {
     return;
   }
 
-  var isRefresh   = sessionStorage.getItem('rn_logged_in');
-  var linePending = sessionStorage.getItem('rn_line_pending');
-
-  if (isRefresh || linePending) {
-    sessionStorage.removeItem('rn_line_pending');
-    fetch('/api/auth/me')
-      .then(function(r) { if (r.ok) return r.json(); throw new Error('no session'); })
-      .then(function(d) {
-        CU = d;
-        sessionStorage.setItem('rn_logged_in', '1');
-        enterApp();
-      })
-      .catch(function() {
-        sessionStorage.removeItem('rn_logged_in');
-      });
-  } else {
-    fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
-  }
+  // ── ตรวจ server session เสมอ (ทั้งกรณี refresh และ tab ใหม่) ──
+  // เหตุ: ถ้า logout ทันทีเมื่อไม่มี sessionStorage flag จะทำให้ session ที่ server
+  //       สร้างหลัง LINE callback หรือ doLogin() ถูกลบก่อนที่จะใช้งาน (bug: bounce to login)
+  sessionStorage.removeItem('rn_line_pending');
+  fetch('/api/auth/me')
+    .then(function(r) { if (r.ok) return r.json(); throw new Error('no session'); })
+    .then(function(d) {
+      CU = d;
+      sessionStorage.setItem('rn_logged_in', '1');
+      enterApp();
+    })
+    .catch(function() {
+      // ไม่มี session จริง → logout ให้ clean แล้วรอหน้า login
+      sessionStorage.removeItem('rn_logged_in');
+      fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
+    });
 })();
 

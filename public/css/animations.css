@@ -210,10 +210,10 @@
 
 /* Modal card spring drop */
 @keyframes llCardDrop {
-  0%   { opacity: 0; transform: scale(.88) translateY(-28px); }
+  0%   { opacity: 0.01; transform: scale(.88) translateY(-28px); }
   60%  { opacity: 1; transform: scale(1.02) translateY(6px); }
   80%  { transform: scale(.99) translateY(-2px); }
-  100% { transform: scale(1)   translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* List row slide-in (stagger via JS delay) */
@@ -244,11 +244,14 @@
 /* ── Modal open trigger ── */
 #mLineLink.on,
 #mUnlinkLine.on {
+  display: flex !important;
   animation: llBgIn .3s ease both;
 }
 
+/* Force .mb to be visible — avoid animation invisible state */
 #mLineLink.on .mb,
 #mUnlinkLine.on .mb {
+  opacity: 1 !important;
   animation: llCardDrop .42s cubic-bezier(.22, 1, .36, 1) .05s both !important;
 }
 
