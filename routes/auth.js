@@ -266,7 +266,7 @@ router.post('/link-line-skip', async (req, res) => {
 });
 
 // ─── POST /api/auth/register-line ────────────────────────────
-// ผู้ใช้ใหม่จาก LINE — สมัครสมาชิกใหม่และผูก LINE ทันที
+// Step 1: ส่ง OTP ไปยัง email ก่อนสร้างบัญชี
 router.post('/register-line', async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -291,7 +291,7 @@ router.post('/register-line', async (req, res) => {
     // ตรวจ lineUserId ซ้ำ (ป้องกัน race condition)
     const existingLine = await User.findOne({ lineUserId: pending.lineUserId });
     if (existingLine) {
-      // มีบัญชีแล้ว (อาจกด register ซ้ำ) — login เลย
+      // มีบัญชีแล้ว — login เลย
       delete req.session.lineLinkPending;
       req.session.userId = existingLine._id.toString();
       req.session.role   = existingLine.role;
@@ -305,21 +305,59 @@ router.post('/register-line', async (req, res) => {
       });
     }
 
-    // hash password (salt 10 เหมือน register ปกติ)
-    const hashed = await bcrypt.hash(password, 10);
-    console.log('[Register-LINE] hashing password, email:', emailLower);
+    // สร้าง OTP และเก็บข้อมูลไว้
+    const otp   = generateOtp();
+    const token = generateToken();
+    otpStore.set(token, {
+      otp, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0,
+      userData: { firstName: firstName.trim(), lastName: (lastName || '').trim() || '-', email: emailLower, password },
+      isLineRegister: true  // flag ว่าเป็น LINE registration
+    });
 
-    // สร้าง user ใหม่พร้อมผูก LINE
+    await sendOtpEmail(emailLower, otp, firstName.trim());
+    console.log('[Register-LINE] ส่ง OTP ไปที่:', emailLower);
+    res.json({ message: 'ส่ง OTP แล้ว', token });
+  } catch (e) {
+    console.error('register-line error:', e);
+    res.status(500).json({ error: 'ส่งอีเมลไม่สำเร็จ กรุณาตรวจสอบ Email อีกครั้ง' });
+  }
+});
+
+// ─── POST /api/auth/verify-line-otp ────────────────────────────
+// Step 2: ยืนยัน OTP แล้วสร้างบัญชี + ผูก LINE
+router.post('/verify-line-otp', async (req, res) => {
+  try {
+    const { token, otp } = req.body;
+    const pending = req.session.lineLinkPending;
+
+    if (!pending || !pending.lineUserId)
+      return res.status(400).json({ error: 'ไม่พบข้อมูล LINE session กรุณา login ด้วย LINE ใหม่อีกครั้ง' });
+
+    const entry = otpStore.get(token);
+    if (!entry) return res.status(400).json({ error: 'OTP หมดอายุ กรุณาขอใหม่' });
+    if (Date.now() > entry.expiresAt) { otpStore.delete(token); return res.status(400).json({ error: 'OTP หมดอายุ กรุณาขอใหม่' }); }
+    if (entry.attempts >= 5) { otpStore.delete(token); return res.status(400).json({ error: 'กรอก OTP ผิดเกินกำหนด กรุณาขอใหม่' }); }
+    if (entry.otp !== otp) { entry.attempts++; return res.status(400).json({ error: 'รหัส OTP ไม่ถูกต้อง (เหลือ ' + (5 - entry.attempts) + ' ครั้ง)' }); }
+
+    // OTP ถูกต้อง — สร้างบัญชี
+    const { firstName, lastName, email, password } = entry.userData;
+    otpStore.delete(token);
+
+    // ตรวจซ้ำอีกครั้ง (ป้องกัน race condition)
+    const existCheck = await User.findOne({ email });
+    if (existCheck) return res.status(400).json({ error: 'Email นี้มีในระบบแล้ว' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    console.log('[Register-LINE] OTP ถูกต้อง, สร้างบัญชี:', email);
+
     const user = new User({
-      firstName: firstName.trim(),
-      lastName:  (lastName || '').trim() || '-',
-      email:     emailLower,
+      firstName, lastName, email,
       password:  hashed,
       role:      'citizen',
       lineUserId:      pending.lineUserId,
       lineDisplayName: pending.lineDisplayName || null,
       avatar:          pending.lineAvatar || null,
-      createdViaLine:  true   // ← mark ว่าบัญชีนี้สร้างผ่าน LINE
+      createdViaLine:  true
     });
     await user.save();
 
@@ -337,7 +375,7 @@ router.post('/register-line', async (req, res) => {
       }
     });
   } catch (e) {
-    console.error('register-line error:', e);
+    console.error('verify-line-otp error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
   }
 });

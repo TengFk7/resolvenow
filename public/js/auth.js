@@ -212,6 +212,31 @@ function _setupOtpInputs() {
   }
 }
 
+/* ── LINE OTP Input Auto-focus ──────────────────────────── */
+(function() {
+  // Setup LINE OTP boxes on page load
+  setTimeout(function() {
+    for (var i = 0; i < 6; i++) {
+      (function (idx) {
+        var box = ge('llOtp' + idx);
+        if (!box) return;
+        box.oninput = function () {
+          var val = box.value.replace(/\D/g, '');
+          box.value = val.slice(-1);
+          box.className = 'otp-box' + (box.value ? ' filled' : '');
+          if (box.value && idx < 5) ge('llOtp' + (idx + 1)).focus();
+          if (idx === 5 && box.value) doLineLinkVerifyOtp();
+        };
+        box.onkeydown = function (e) {
+          if (e.key === 'Backspace' && !box.value && idx > 0) {
+            ge('llOtp' + (idx - 1)).focus();
+          }
+        };
+      })(i);
+    }
+  }, 500);
+})();
+
 /* ── Get OTP value ───────────────────────────────────────── */
 function _getOtpValue() {
   var code = '';
@@ -562,7 +587,11 @@ async function openLineLinkModal() {
 }
 
 
-/* ── สมัครสมาชิกใหม่ + ผูก LINE ─────────────────────── */
+/* ── สมัครสมาชิกใหม่ + ผูก LINE (Step 1: ส่ง OTP) ─── */
+var _llOtpToken = null;
+var _llOtpTimer = null;
+var _llFormData = null; // เก็บข้อมูลไว้สำหรับ resend
+
 async function doLineLinkRegister() {
   hideE('llErr');
   var firstName = (ge('llFirst') ? ge('llFirst').value.trim() : '');
@@ -578,30 +607,149 @@ async function doLineLinkRegister() {
   if (pass !== pass2) return showE('llErr', 'รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่');
 
   var btn = ge('btnLineLink');
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้างบัญชี...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '📧 กำลังส่ง OTP...'; }
+
+  _llFormData = { firstName: firstName, lastName: lastName, email: email, password: pass };
 
   try {
     var r = await fetch('/api/auth/register-line', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ firstName: firstName, lastName: lastName, email: email, password: pass })
+      body: JSON.stringify(_llFormData)
     });
     var data = await r.json();
     if (!r.ok) {
       if (btn) { btn.disabled = false; btn.textContent = '✨ สร้างบัญชีและผูกกับ LINE'; }
+      // ถ้า login เลย (LINE user มีบัญชีแล้ว)
+      if (data.user) {
+        var fLL = ge('fLineLink'); if (fLL) fLL.style.display = 'none';
+        CU = data.user;
+        sessionStorage.setItem('rn_logged_in', '1');
+        showToast('✨ เข้าสู่ระบบสำเร็จ!');
+        enterApp();
+        return;
+      }
       return showE('llErr', data.error || 'เกิดข้อผิดพลาด');
     }
-    // สำเร็จ
-    var fLL = ge('fLineLink'); if (fLL) fLL.style.display = 'none';
-    CU = data.user;
-    sessionStorage.setItem('rn_logged_in', '1');
-    showToast('✨ สร้างบัญชีและผูก LINE สำเร็จ!');
-    enterApp();
+
+    // ถ้า response มี user = login เลย (LINE user ซ้ำ)
+    if (data.user) {
+      var fLL2 = ge('fLineLink'); if (fLL2) fLL2.style.display = 'none';
+      CU = data.user;
+      sessionStorage.setItem('rn_logged_in', '1');
+      showToast('✨ เข้าสู่ระบบสำเร็จ!');
+      enterApp();
+      return;
+    }
+
+    // OTP ส่งแล้ว → แสดง OTP panel
+    _llOtpToken = data.token;
+    ge('fLineLink').style.display = 'none';
+    ge('fLineLinkOtp').style.display = 'block';
+    ge('llOtpEmail').textContent = email;
+    hideE('llOtpErr');
+    // Clear OTP boxes
+    for (var i = 0; i < 6; i++) { var b = ge('llOtp' + i); if (b) b.value = ''; }
+    setTimeout(function() { var b0 = ge('llOtp0'); if (b0) b0.focus(); }, 300);
+    startLLOtpTimer();
+    showToast('📧 ส่ง OTP ไปที่ ' + email);
   } catch (e) {
     console.error('doLineLinkRegister error:', e);
     if (btn) { btn.disabled = false; btn.textContent = '✨ สร้างบัญชีและผูกกับ LINE'; }
     showE('llErr', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
   }
+}
+
+/* ── LINE OTP: ยืนยัน OTP (Step 2) ──────────────────── */
+async function doLineLinkVerifyOtp() {
+  hideE('llOtpErr');
+  var otp = '';
+  for (var i = 0; i < 6; i++) { var b = ge('llOtp' + i); otp += (b ? b.value : ''); }
+  if (otp.length < 6) return showE('llOtpErr', 'กรุณากรอก OTP 6 หลัก');
+
+  var btn = ge('btnLineLinkVerify');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังตรวจสอบ...'; }
+
+  try {
+    var r = await fetch('/api/auth/verify-line-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: _llOtpToken, otp: otp })
+    });
+    var data = await r.json();
+    if (!r.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยัน OTP'; }
+      return showE('llOtpErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+    // สำเร็จ!
+    if (_llOtpTimer) clearInterval(_llOtpTimer);
+    ge('fLineLinkOtp').style.display = 'none';
+    CU = data.user;
+    sessionStorage.setItem('rn_logged_in', '1');
+    showToast('✨ สร้างบัญชีและผูก LINE สำเร็จ!');
+    enterApp();
+  } catch (e) {
+    console.error('doLineLinkVerifyOtp error:', e);
+    if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยัน OTP'; }
+    showE('llOtpErr', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+  }
+}
+
+/* ── LINE OTP: ส่ง OTP ใหม่ ──────────────────────────── */
+async function doLineLinkResendOtp() {
+  if (!_llFormData) return;
+  var btn = ge('btnLLResend');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...'; }
+
+  try {
+    var r = await fetch('/api/auth/register-line', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_llFormData)
+    });
+    var data = await r.json();
+    if (!r.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 ส่ง OTP ใหม่'; }
+      return showE('llOtpErr', data.error || 'ส่ง OTP ไม่สำเร็จ');
+    }
+    _llOtpToken = data.token;
+    for (var i = 0; i < 6; i++) { var b = ge('llOtp' + i); if (b) b.value = ''; }
+    hideE('llOtpErr');
+    startLLOtpTimer();
+    showToast('📧 ส่ง OTP ใหม่แล้ว!');
+    setTimeout(function() { var b0 = ge('llOtp0'); if (b0) b0.focus(); }, 200);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 ส่ง OTP ใหม่'; }
+    showE('llOtpErr', 'ส่ง OTP ไม่สำเร็จ');
+  }
+}
+
+/* ── LINE OTP: Timer 5 นาที ──────────────────────────── */
+function startLLOtpTimer() {
+  if (_llOtpTimer) clearInterval(_llOtpTimer);
+  var secs = 300; // 5 minutes
+  ge('llOtpTimerWrap').style.display = 'inline';
+  ge('btnLLResend').style.display = 'none';
+  _llOtpTimer = setInterval(function() {
+    secs--;
+    var m = Math.floor(secs / 60), s = secs % 60;
+    ge('llOtpTimer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if (secs <= 0) {
+      clearInterval(_llOtpTimer);
+      ge('llOtpTimerWrap').style.display = 'none';
+      var btn = ge('btnLLResend');
+      if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; btn.textContent = '🔄 ส่ง OTP ใหม่'; }
+    }
+  }, 1000);
+}
+
+/* ── LINE OTP: กลับไปแก้ไขข้อมูล ─────────────────────── */
+function backToLineLinkForm() {
+  if (_llOtpTimer) clearInterval(_llOtpTimer);
+  ge('fLineLinkOtp').style.display = 'none';
+  ge('fLineLink').style.display = 'block';
+  var btn = ge('btnLineLink');
+  if (btn) { btn.disabled = false; btn.textContent = '✨ สร้างบัญชีและผูกกับ LINE'; }
 }
 
 /* ── ยืนยันเชื่อม LINE กับ email account (สำรอง) ────── */

@@ -179,6 +179,35 @@
           เข้าสู่ระบบด้วย LINE โดยไม่มีบัญชี</button>
       </div>
 
+      <!-- LINE Link OTP Verification Step -->
+      <div id="fLineLinkOtp" style="display:none">
+        <div style="text-align:center;margin-bottom:14px">
+          <div style="font-size:38px;margin-bottom:6px">📧</div>
+          <h3 style="font-size:17px;color:var(--navy);margin:0 0 4px">ยืนยันอีเมล</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0">กรอกรหัส OTP 6 หลักที่ส่งไปยัง Email</p>
+        </div>
+        <div id="llOtpEmail" style="text-align:center;font-size:13px;color:var(--blue2);font-weight:700;margin-bottom:12px"></div>
+        <div class="ebox" id="llOtpErr" style="margin-bottom:10px"></div>
+        <div class="otp-wrap" id="llOtpWrap">
+          <input class="otp-box" id="llOtp0" type="text" inputmode="numeric" maxlength="1" />
+          <input class="otp-box" id="llOtp1" type="text" inputmode="numeric" maxlength="1" />
+          <input class="otp-box" id="llOtp2" type="text" inputmode="numeric" maxlength="1" />
+          <input class="otp-box" id="llOtp3" type="text" inputmode="numeric" maxlength="1" />
+          <input class="otp-box" id="llOtp4" type="text" inputmode="numeric" maxlength="1" />
+          <input class="otp-box" id="llOtp5" type="text" inputmode="numeric" maxlength="1" />
+        </div>
+        <div id="llOtpAttempts" style="text-align:center;font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px"></div>
+        <button class="btnp btn-ripple" onclick="doLineLinkVerifyOtp()" id="btnLineLinkVerify">✅ ยืนยัน OTP</button>
+        <div style="text-align:center;margin-top:14px">
+          <span id="llOtpTimerWrap" style="font-size:13px;color:var(--muted)">ส่งอีกครั้งใน <strong id="llOtpTimer">5:00</strong></span>
+          <button id="btnLLResend" onclick="doLineLinkResendOtp()" class="btn-resend" style="display:none">🔄 ส่ง OTP ใหม่</button>
+        </div>
+        <button onclick="backToLineLinkForm()"
+          style="width:100%;margin-top:10px;padding:10px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:13px;color:var(--muted);cursor:pointer;transition:var(--transition)"
+          onmouseenter="this.style.borderColor='#94a3b8'" onmouseleave="this.style.borderColor='var(--border)'">←
+          แก้ไขข้อมูล</button>
+      </div>
+
 
       <!-- OTP Verification Step -->
       <div id="fOtp" style="display:none">
