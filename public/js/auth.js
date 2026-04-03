@@ -15,8 +15,8 @@ var _currentTab = 'login';
 var _switching = false;
 
 // panel id map
-var _panelId = { login: 'fLogin', reg: 'fReg', search: 'fSearch' };
-var _tabId = { login: 'tabLogin', reg: 'tabReg', search: 'tabSearch' };
+var _panelId = { login: 'fLogin', reg: 'fReg', search: 'fSearch', heatmap: 'fHeatmap' };
+var _tabId = { login: 'tabLogin', reg: 'tabReg', search: 'tabSearch', heatmap: 'tabHeatmap' };
 
 function switchTab(t) {
   if (t === _currentTab || _switching) return;
@@ -46,7 +46,7 @@ function switchTab(t) {
 
   var outClass, inClass;
   // Determine direction based on tab order: login < reg < search
-  var tabOrder = { login: 0, reg: 1, search: 2 };
+  var tabOrder = { login: 0, reg: 1, search: 2, heatmap: 3 };
   if (tabOrder[t] > tabOrder[_currentTab]) {
     outClass = 'lift-out'; inClass = 'lift-in';
   } else {
@@ -107,6 +107,9 @@ function switchTab(t) {
       if (t === 'search') {
         var sq = ge('srchQ');
         if (sq) sq.focus();
+      }
+      if (t === 'heatmap') {
+        loadHeatmap();
       }
     }, 500);
   }, 330);
@@ -483,20 +486,34 @@ async function doSearch() {
     var STATUS_TH = { pending: 'รอ', assigned: 'รับงาน', in_progress: 'ดำเนินการ', completed: 'เสร็จ', rejected: 'ปฏิเสธ' };
 
     var h = '';
-    data.forEach(function (t) {
+    data.forEach(function (t, idx) {
       var stars = t.rating ? '⭐'.repeat(t.rating) : '';
-      h += '<div class="srch-card badge-' + t.status + '">';
+      h += '<div class="srch-card badge-' + t.status + '" style="animation-delay:' + (idx * 0.05) + 's">';
       h += '<div class="srch-row">';
       h += '<span class="srch-id">' + escapeHTML(t.ticketId) + '</span>';
       h += '<span class="srch-status ' + t.status + '">' + (STATUS_TH[t.status] || t.status) + '</span>';
       h += '</div>';
       h += '<div class="srch-cat">' + (DEPT_ICON2[t.category] || '') + ' ' + escapeHTML(DEPT2[t.category] || t.category) + '</div>';
-      // BUG-011: escape all user-generated content to prevent XSS
       h += '<div class="srch-desc">' + escapeHTML((t.description || '').slice(0, 80)) + '</div>';
       h += '<div class="srch-meta">';
       h += '<span>📍 ' + escapeHTML(t.location || '—') + '</span>';
       if (t.assignedName) h += '<span>🔧 ' + escapeHTML(t.assignedName) + '</span>';
       if (stars) h += '<span>' + stars + '</span>';
+      h += '</div>';
+      // Social action bar: Upvote + Follow
+      h += '<div class="social-action-bar">';
+      var upCls = (t.hasUpvoted ? ' voted' : '');
+      h += '<button class="upvote-btn' + upCls + '" data-id="' + t.ticketId + '" onclick="toggleUpvote(this)">';
+      h += '<span class="upvote-icon">👍</span>';
+      h += '<span class="upvote-count">' + (t.upvoteCount || 0) + '</span>';
+      h += '<span style="font-size:11px">ได้รับผลกระทบ</span>';
+      h += '</button>';
+      var foCls = (t.isFollowing ? ' following' : '');
+      h += '<button class="follow-btn' + foCls + '" data-id="' + t.ticketId + '" onclick="toggleFollow(this)">';
+      h += '<span class="follow-icon">' + (t.isFollowing ? '🔔' : '🔕') + '</span>';
+      h += '<span class="follow-count">' + (t.followerCount || 0) + '</span>';
+      h += '<span style="font-size:11px">' + (t.isFollowing ? 'กำลังติดตาม' : 'ติดตาม') + '</span>';
+      h += '</button>';
       h += '</div>';
       h += '</div>';
     });

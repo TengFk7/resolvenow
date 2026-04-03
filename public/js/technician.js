@@ -142,6 +142,11 @@ function renderTech(data) {
       h += '</div>';
     }
 
+    // Chat button for technician
+    h += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">';
+    h += '<button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+    h += '</div>';
+
     h += '</div></div>'; /* .tcbody + .tcard */
   }
 

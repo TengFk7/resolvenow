@@ -24,6 +24,16 @@ const ticketSchema = new mongoose.Schema({
   rating:        { type: Number, min: 1, max: 5, default: null },
   ratingReason:  { type: String, default: null },
   ratedAt:       { type: String, default: null },
+  // ── SLA System ──
+  slaAssignDeadline:   { type: Date, default: null },
+  slaCompleteDeadline: { type: Date, default: null },
+  slaBreached:         { type: Boolean, default: false },
+  // ── Upvote System ──
+  upvotes:       [{ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, createdAt: { type: Date, default: Date.now } }],
+  upvoteCount:   { type: Number, default: 0 },
+  // ── Follow/Subscribe System ──
+  followers:     [{ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, lineUserId: { type: String, default: null } }],
+  followerCount: { type: Number, default: 0 },
 }, {
   timestamps: true,   // createdAt, updatedAt อัตโนมัติ
   toJSON: { virtuals: true },

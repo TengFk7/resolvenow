@@ -240,5 +240,32 @@ module.exports = {
   notifyAssigned,
   notifyInProgress,
   notifyCompleted,
-  notifyRejected
+  notifyRejected,
+  notifyFollowers
 };
+
+// ── Notify all followers of a ticket on status change ──────────
+async function notifyFollowers(ticket, newStatus) {
+  if (!ticket.followers || !ticket.followers.length) return;
+  const statusTH = {
+    pending: 'รอดำเนินการ', assigned: 'มอบหมายช่างแล้ว',
+    in_progress: 'กำลังดำเนินการซ่อม', completed: 'เสร็จสิ้นแล้ว',
+    rejected: 'ถูกปฏิเสธ'
+  };
+  const statusLabel = statusTH[newStatus] || newStatus;
+  const msg = '🔔 Ticket ที่คุณติดตามมีการอัปเดต!\n' +
+    '━━━━━━━━━━━━━━━━\n' +
+    '📋 Ticket: ' + ticket.ticketId + '\n' +
+    '📍 สถานที่: ' + ticket.location + '\n' +
+    '📊 สถานะใหม่: ' + statusLabel + '\n' +
+    '━━━━━━━━━━━━━━━━\n' +
+    '📲 เข้าระบบ ResolveNow เพื่อดูรายละเอียดเพิ่มเติม';
+
+  const tasks = [];
+  for (const f of ticket.followers) {
+    if (f.lineUserId) {
+      tasks.push(pushTo(f.lineUserId, [{ type: 'text', text: msg }]));
+    }
+  }
+  await Promise.all(tasks);
+}

@@ -131,7 +131,6 @@ function toggleCat(el) {
   document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
   el.classList.add('on');
   hideE('catErr');
-  setTimeout(function() { wizNext(1); }, 400); // Auto-scroll to next step for better UX
 }
 function getSelectedCat() {
   var el = document.querySelector('#catGrid .catbox.on');
@@ -358,6 +357,10 @@ function renderCitizen(data) {
       h += '</div></div>';
     } else if (!done && t.status !== 'pending' && t.status !== 'rejected' && t.beforeImage) {
       h += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px">&#128295; ช่างกำลังดำเนินการ</div><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปปัญหา\')" style="width:100%;max-height:70px;object-fit:cover;border-radius:8px;cursor:pointer"/></div>';
+    }
+    // Chat button — show for non-pending tickets
+    if (t.status !== 'rejected') {
+      h += '<div style="margin-top:8px"><button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับช่าง</button></div>';
     }
     h += '</div>';
     // Rating section for completed tickets

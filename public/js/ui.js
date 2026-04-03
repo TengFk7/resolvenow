@@ -338,9 +338,11 @@ function closeDrawer() {
   document.querySelectorAll('.hbg-btn').forEach(function(b) { b.classList.remove('active'); });
 }
 
+
 // ESC key closes drawer
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeDrawer();
+  if (e.key === 'Escape') closeTicketChat();
 });
 
 // ─── Socket.io Auto-refresh ──────────────────────────────────
@@ -351,4 +353,283 @@ if (typeof io !== 'undefined') {
       loadTickets();
     }
   });
+  // Live chat: auto-append new comments
+  socket.on('comment_added', function(data) {
+    if (_chatTicketId && data.ticketId === _chatTicketId) {
+      _appendComment(data.comment, true);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   UPVOTE SYSTEM
+══════════════════════════════════════════════════════════ */
+async function toggleUpvote(btn) {
+  var id = btn.getAttribute('data-id');
+  if (!id) return;
+  try {
+    var res = await fetch('/api/tickets/' + id + '/upvote', { method: 'POST' });
+    if (res.status === 401) return showToast('กรุณา Login เพื่อโหวต', 'warning');
+    if (res.status === 400) { var d = await res.json(); return showToast(d.error, 'warning'); }
+    var data = await res.json();
+    // Update button state with animation
+    var countEl = btn.querySelector('.upvote-count');
+    var iconEl = btn.querySelector('.upvote-icon');
+    if (countEl) {
+      countEl.textContent = data.upvoteCount;
+      countEl.style.transform = 'scale(1.4)';
+      setTimeout(function() { countEl.style.transform = ''; }, 250);
+    }
+    if (data.hasUpvoted) {
+      btn.classList.add('voted');
+      if (iconEl) { iconEl.style.transform = 'scale(1.5) rotate(-10deg)'; setTimeout(function(){ iconEl.style.transform = ''; }, 300); }
+      showToast('👍 โหวตแล้ว!');
+    } else {
+      btn.classList.remove('voted');
+      showToast('ยกเลิกโหวตแล้ว');
+    }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FOLLOW / SUBSCRIBE SYSTEM
+══════════════════════════════════════════════════════════ */
+async function toggleFollow(btn) {
+  var id = btn.getAttribute('data-id');
+  if (!id) return;
+  try {
+    var res = await fetch('/api/tickets/' + id + '/follow', { method: 'POST' });
+    if (res.status === 401) return showToast('กรุณา Login เพื่อติดตาม', 'warning');
+    var data = await res.json();
+    var countEl = btn.querySelector('.follow-count');
+    var iconEl = btn.querySelector('.follow-icon');
+    var labelEl = btn.querySelectorAll('span')[2];
+    if (countEl) {
+      countEl.textContent = data.followerCount;
+      countEl.style.transform = 'scale(1.3)';
+      setTimeout(function(){ countEl.style.transform = ''; }, 250);
+    }
+    if (data.isFollowing) {
+      btn.classList.add('following');
+      if (iconEl) iconEl.textContent = '🔔';
+      if (labelEl) labelEl.textContent = 'กำลังติดตาม';
+      showToast('🔔 ติดตามแล้ว! จะแจ้งเตือนทาง LINE');
+    } else {
+      btn.classList.remove('following');
+      if (iconEl) iconEl.textContent = '🔕';
+      if (labelEl) labelEl.textContent = 'ติดตาม';
+      showToast('ยกเลิกการติดตามแล้ว');
+    }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TICKET CHAT / COMMENTS
+══════════════════════════════════════════════════════════ */
+var _chatTicketId = null;
+var _chatCommentIds = {}; // track loaded comment IDs to prevent duplicates
+
+function openTicketChat(ticketId) {
+  _chatTicketId = ticketId;
+  _chatCommentIds = {};
+  ge('chatTicketLabel').textContent = ticketId;
+  ge('chatMessages').innerHTML = '<div class="chat-empty">⏳ กำลังโหลด...</div>';
+  ge('chatInput').value = '';
+  ge('mTicketChat').classList.add('on');
+  loadComments(ticketId);
+  setTimeout(function() { ge('chatInput').focus(); }, 300);
+}
+
+function closeTicketChat() {
+  ge('mTicketChat').classList.remove('on');
+  _chatTicketId = null;
+  _chatCommentIds = {};
+}
+
+async function loadComments(ticketId) {
+  try {
+    var res = await fetch('/api/tickets/' + ticketId + '/comments');
+    if (!res.ok) return;
+    var comments = await res.json();
+    var el = ge('chatMessages');
+    if (!comments.length) {
+      el.innerHTML = '<div class="chat-empty">💬 ยังไม่มีข้อความ — เริ่มสนทนาเลย!</div>';
+      return;
+    }
+    el.innerHTML = '';
+    comments.forEach(function(c) { _appendComment(c, false); });
+    // Scroll to bottom
+    el.scrollTop = el.scrollHeight;
+  } catch (e) { console.error(e); }
+}
+
+function _appendComment(c, animated) {
+  if (_chatCommentIds[c._id]) return; // prevent duplicates
+  _chatCommentIds[c._id] = true;
+
+  var el = ge('chatMessages');
+  // Remove "empty" placeholder
+  var emptyEl = el.querySelector('.chat-empty');
+  if (emptyEl) emptyEl.remove();
+
+  var isMe = window.CU && c.userId === window.CU.id;
+  var bubbleCls = 'chat-bubble ';
+  if (c.userRole === 'admin') bubbleCls += 'chat-bubble-admin';
+  else if (isMe) bubbleCls += 'chat-bubble-right';
+  else bubbleCls += 'chat-bubble-left';
+
+  var time = '';
+  if (c.createdAt) {
+    var d = new Date(c.createdAt);
+    time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  var roleTH = { citizen: '👤 ผู้แจ้ง', technician: '🔧 ช่าง', admin: '👨‍💼 แอดมิน' };
+  var div = document.createElement('div');
+  div.className = bubbleCls;
+  if (!animated) div.style.animation = 'none';
+
+  div.innerHTML = (!isMe ? '<div class="chat-bubble-name">' + (roleTH[c.userRole] || '') + ' ' + escapeHTML(c.userName) + '</div>' : '') +
+    '<div>' + escapeHTML(c.message) + '</div>' +
+    '<div class="chat-bubble-meta">' + time + '</div>';
+
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendComment() {
+  if (!_chatTicketId) return;
+  var input = ge('chatInput');
+  var msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  var btn = ge('chatSendBtn');
+  btn.disabled = true;
+  try {
+    var res = await fetch('/api/tickets/' + _chatTicketId + '/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    var data = null;
+    try { data = await res.json(); } catch(e) {}
+    if (!res.ok) {
+      showToast((data && data.error) || 'ส่งไม่สำเร็จ', 'error');
+    } else if (data && data._id && !_chatCommentIds[data._id]) {
+      _appendComment(data, true);
+    }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+  btn.disabled = false;
+  input.focus();
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   PUBLIC HEATMAP
+══════════════════════════════════════════════════════════ */
+var _publicMap = null;
+var _publicMarkers = [];
+
+async function loadHeatmap() {
+  try {
+    var container = ge('publicMapContainer');
+    if (!container) return;
+
+    // Initialize map once
+    if (!_publicMap) {
+      _publicMap = L.map('publicMapContainer').setView([13.829, 100.551], 11);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap, © CARTO'
+      }).addTo(_publicMap);
+    }
+    setTimeout(function() { _publicMap.invalidateSize(); }, 200);
+
+    // Fetch data
+    var res = await fetch('/api/tickets/public-map');
+    if (!res.ok) return;
+    var tickets = await res.json();
+
+    // Clear old markers
+    _publicMarkers.forEach(function(m) { _publicMap.removeLayer(m); });
+    _publicMarkers = [];
+
+    var ICONS_MAP = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
+    var statCount = { pending:0, in_progress:0, completed:0 };
+
+    tickets.forEach(function(t, i) {
+      if (!t.lat || !t.lng) return;
+
+      var colorClass = 'hm-marker-red';
+      if (t.status === 'in_progress' || t.status === 'assigned') colorClass = 'hm-marker-yellow';
+      if (t.status === 'completed') colorClass = 'hm-marker-green';
+
+      var icon = L.divIcon({
+        className: '',
+        html: '<div class="hm-marker ' + colorClass + '" style="animation-delay:' + (i * 0.06) + 's"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      var marker = L.marker([t.lat, t.lng], { icon: icon }).addTo(_publicMap);
+      var iText = ICONS_MAP[t.category] || '📍';
+      var stTH = { pending:'⏳ รอ', assigned:'🔧 รับงาน', in_progress:'🔨 กำลังซ่อม', completed:'✅ เสร็จ', rejected:'❌ ปฏิเสธ' };
+      marker.bindPopup(
+        '<div style="font-size:13px;min-width:150px">' +
+        '<b>' + t.ticketId + '</b><br>' +
+        iText + ' ' + escapeHTML(t.category) + '<br>' +
+        '<span style="font-size:12px">' + escapeHTML(t.description || '') + '</span><br>' +
+        '<b>' + (stTH[t.status] || t.status) + '</b>' +
+        (t.upvoteCount ? '<br>👍 ' + t.upvoteCount + ' โหวต' : '') +
+        '</div>'
+      );
+      _publicMarkers.push(marker);
+
+      // Count stats
+      if (t.status === 'pending' || t.status === 'assigned') statCount.pending++;
+      else if (t.status === 'in_progress') statCount.in_progress++;
+      else if (t.status === 'completed') statCount.completed++;
+    });
+
+    // Stats
+    var statsEl = ge('heatmapStats');
+    if (statsEl) {
+      statsEl.innerHTML = '📊 รอ: <b>' + statCount.pending + '</b> | กำลังซ่อม: <b>' + statCount.in_progress + '</b> | แก้แล้ว: <b>' + statCount.completed + '</b> | รวม: <b>' + tickets.length + '</b> จุด';
+    }
+
+    // Fit bounds if we have markers
+    if (_publicMarkers.length > 0) {
+      var group = L.featureGroup(_publicMarkers);
+      _publicMap.fitBounds(group.getBounds().pad(0.1));
+    }
+
+  } catch (e) { console.error('[Heatmap]', e); }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   SLA HELPER
+══════════════════════════════════════════════════════════ */
+function formatSlaCountdown(deadline) {
+  if (!deadline) return { text: '—', cls: '' };
+  var now = new Date();
+  var dl = new Date(deadline);
+  var diff = dl - now;
+  if (diff <= 0) return { text: '🔴 OVERDUE', cls: 'sla-badge-overdue' };
+  var hours = Math.floor(diff / 3600000);
+  var mins = Math.floor((diff % 3600000) / 60000);
+  if (hours < 2) return { text: '⚡ ' + hours + 'h ' + mins + 'm', cls: 'sla-badge-warn' };
+  return { text: '✅ ' + hours + 'h ' + mins + 'm', cls: 'sla-badge-ok' };
+}
+
+function slaLabel(t) {
+  if (t.status === 'completed' || t.status === 'rejected') {
+    return t.slaBreached ? '<span class="sla-badge sla-badge-overdue">❌ SLA BREACHED</span>' : '<span class="sla-badge sla-badge-ok">✅ ตรงเวลา</span>';
+  }
+  if (t.status === 'pending') {
+    var s = formatSlaCountdown(t.slaAssignDeadline);
+    return '<span class="sla-badge ' + s.cls + '"><span class="sla-countdown">' + s.text + '</span></span>';
+  }
+  var s2 = formatSlaCountdown(t.slaCompleteDeadline);
+  return '<span class="sla-badge ' + s2.cls + '"><span class="sla-countdown">' + s2.text + '</span></span>';
 }

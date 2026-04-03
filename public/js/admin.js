@@ -33,6 +33,19 @@ async function loadAdmin() {
     ge('sTT').textContent = '/ ' + techs.length;
     animateNum(ge('sTD'), tks.length);
 
+    // SLA breached count
+    var slaCount = tks.filter(function(t) {
+      if (t.status === 'completed' || t.status === 'rejected') return t.slaBreached;
+      if (t.status === 'pending' && t.slaAssignDeadline) return new Date() > new Date(t.slaAssignDeadline);
+      if ((t.status === 'assigned' || t.status === 'in_progress') && t.slaCompleteDeadline) return new Date() > new Date(t.slaCompleteDeadline);
+      return false;
+    }).length;
+    animateNum(ge('sSLA'), slaCount);
+    var slaCard = ge('slaStatCard');
+    if (slaCard) {
+      slaCard.classList.toggle('sla-ok', slaCount === 0);
+    }
+
     // Pie chart
     var pend = tks.filter(function (t) { return t.status === 'pending'; }).length;
     var inpg = tks.filter(function (t) { return t.status === 'in_progress' || t.status === 'assigned'; }).length;
@@ -122,8 +135,9 @@ function renderQueue(tks, techs) {
     var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '';
     h += '<tr>';
     h += '<td><div style="font-weight:700;color:var(--navy);font-family:Inter,sans-serif">#'+t.ticketId+'</div><div style="font-size:11px;color:var(--muted)">'+t.citizenName+'</div></td>';
-    h += '<td>'+pLabel(t.priorityScore)+'</td>';
+    h += '<td>'+pLabel(t.priorityScore)+(t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 '+t.upvoteCount+'</div>' : '')+'</td>';
     h += '<td><div style="font-weight:600;font-size:13px">'+( DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+gpsLink+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">📍 '+t.location+'</div><div style="font-size:12px;color:var(--text);margin-top:2px">'+t.description+'</div>'+(t.citizenImage ? '<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb" style="margin-top:6px"/>' : '')+'</td>';
+    h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
     h += '<td><div style="font-size:11px;font-weight:700;color:var(--blue2);margin-bottom:6px">🤖 AI RECOMMEND</div>';
     h += '<select id="tsel_'+t.ticketId+'" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:Prompt,sans-serif;outline:none;background:#fff">'+opts+'</select>';
     h += '<div style="display:flex;gap:6px;margin-top:8px">';
@@ -281,6 +295,7 @@ function renderAllQueue(tks) {
     h += '<td>'+pLabel(t.priorityScore)+'</td>';
     h += '<td>'+statusBadge(t.status)+'</td>';
     h += '<td style="font-size:12px">'+(t.assignedName ? escapeHTML(t.assignedName) : '<span style="color:var(--muted)">—</span>')+'</td>';
+    h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
     // Images
     var imgCell = '';
     if (t.status==='completed' && (t.beforeImage||t.afterImage)) {
@@ -297,7 +312,7 @@ function renderAllQueue(tks) {
       h += '<option value="'+s+'"'+(t.status===s ? ' selected' : '')+'>'+stTH(s)+'</option>';
     });
     h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+t.createdAt+'</td>';
-    h += '<td><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></td>';
+    h += '<td><div style="display:flex;gap:4px;flex-direction:column"><button class="btn-chat" onclick="openTicketChat(\''+t.ticketId+'\')">💬</button><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
     h += '</tr>';
   }
   el.innerHTML = h;

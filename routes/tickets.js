@@ -7,9 +7,25 @@ const multer = require('multer');
 const User = require('../models/User');
 const Ticket = require('../models/Ticket');
 const Counter = require('../models/Counter');
+const Comment = require('../models/Comment');
 const { STATUSES } = require('../data/store');
-const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected } = require('../config/lineNotify');
+const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected, notifyFollowers } = require('../config/lineNotify');
 const { upload: cloudinaryUpload, isCloudinaryConfigured } = require('../config/cloudinary');
+
+// ─── SLA Deadline Helper ─────────────────────────────────────────
+const SLA_RULES = {
+  urgent:  { assignHours: 2,  completeHours: 8  },
+  medium:  { assignHours: 8,  completeHours: 48 },
+  normal:  { assignHours: 24, completeHours: 72 }
+};
+function calcSlaDeadlines(urgency) {
+  const rule = SLA_RULES[urgency] || SLA_RULES.normal;
+  const now = new Date();
+  return {
+    slaAssignDeadline:   new Date(now.getTime() + rule.assignHours * 3600000),
+    slaCompleteDeadline: new Date(now.getTime() + rule.completeHours * 3600000)
+  };
+}
 
 // ─── Middleware & Helpers ──────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -72,8 +88,8 @@ async function reverseGeocode(lat, lng) {
 }
 
 // ─── Helper: format ticket for API response ──────────────────────
-function formatTicket(t) {
-  return {
+function formatTicket(t, currentUserId) {
+  const obj = {
     ticketId: t.ticketId,
     citizenId: t.citizenId,
     citizenName: t.citizenName,
@@ -97,7 +113,22 @@ function formatTicket(t) {
     ratedAt: t.ratedAt,
     createdAt: t.createdAt,
     _id: t._id,
+    // SLA
+    slaAssignDeadline: t.slaAssignDeadline || null,
+    slaCompleteDeadline: t.slaCompleteDeadline || null,
+    slaBreached: t.slaBreached || false,
+    // Upvote
+    upvoteCount: t.upvoteCount || 0,
+    // Follow
+    followerCount: t.followerCount || 0,
   };
+  // Per-user flags
+  if (currentUserId) {
+    const uid = currentUserId.toString();
+    obj.hasUpvoted = (t.upvotes || []).some(u => u.userId && u.userId.toString() === uid);
+    obj.isFollowing = (t.followers || []).some(f => f.userId && f.userId.toString() === uid);
+  }
+  return obj;
 }
 
 // ─── GET /api/tickets/export ─────────────────────────────────────
@@ -142,7 +173,7 @@ router.get('/', requireAuth, async (req, res) => {
       $or: [{ category: user.specialty }, { assignedTo: user._id }]
     };
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
-    res.json(tickets.map(formatTicket));
+    res.json(tickets.map(t => formatTicket(t, user._id)));
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
@@ -168,6 +199,10 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     const seq = await Counter.nextSeq('ticket');
     const ticketId = 'TKT-' + String(seq).padStart(3, '0');
 
+    // คำนวณ SLA deadlines
+    const urg = urgency || 'normal';
+    const sla = calcSlaDeadlines(urg);
+
     const ticket = await new Ticket({
       ticketId,
       citizenId: user._id,
@@ -177,15 +212,17 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
       location: locationName,
       lat: lat ? parseFloat(lat) : null,
       lng: lng ? parseFloat(lng) : null,
-      urgency: urgency || 'normal',
+      urgency: urg,
       priorityScore: score,
       status: 'pending',
       citizenImage: getFileUrl(req),
+      slaAssignDeadline: sla.slaAssignDeadline,
+      slaCompleteDeadline: sla.slaCompleteDeadline,
     }).save();
 
-    notifyNewTicket(formatTicket(ticket)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+    notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
     emitUpdate(req);
-    res.status(201).json(formatTicket(ticket));
+    res.status(201).json(formatTicket(ticket, user._id));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
@@ -251,15 +288,30 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       await ticket.save();
     }
 
+    // SLA breach check
+    if (status === 'assigned' && ticket.slaAssignDeadline && new Date() > ticket.slaAssignDeadline) {
+      ticket.slaBreached = true;
+      await ticket.save();
+    }
+    if (status === 'completed' && ticket.slaCompleteDeadline && new Date() > ticket.slaCompleteDeadline) {
+      ticket.slaBreached = true;
+      await ticket.save();
+    }
+
     try {
-      if (status === 'assigned') await notifyAssigned(formatTicket(ticket));
-      if (status === 'in_progress') await notifyInProgress(formatTicket(ticket));
-      if (status === 'completed') await notifyCompleted(formatTicket(ticket));
-      if (status === 'rejected') await notifyRejected(formatTicket(ticket), reason || '');
+      const ft = formatTicket(ticket, caller._id);
+      if (status === 'assigned') await notifyAssigned(ft);
+      if (status === 'in_progress') await notifyInProgress(ft);
+      if (status === 'completed') await notifyCompleted(ft);
+      if (status === 'rejected') await notifyRejected(ft, reason || '');
+      // Notify followers on any status change
+      if (ticket.followers && ticket.followers.length > 0) {
+        notifyFollowers(ticket, status).catch(e => console.error('[LINE] notifyFollowers error:', e));
+      }
     } catch (e) { console.error('[LINE] status notify error:', e); }
 
     emitUpdate(req);
-    res.json(formatTicket(ticket));
+    res.json(formatTicket(ticket, caller._id));
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
@@ -339,6 +391,26 @@ router.put('/:id/rating', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
+// ─── GET /api/tickets/public-map ─────────────────────────────────
+// Public endpoint — no auth required, returns sanitized data for heatmap
+router.get('/public-map', async (req, res) => {
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - 30); // 30 days
+    const tickets = await Ticket.find({ createdAt: { $gte: since }, lat: { $ne: null }, lng: { $ne: null } })
+      .select('ticketId category lat lng status description location upvoteCount createdAt')
+      .sort({ createdAt: -1 })
+      .limit(200);
+    res.json(tickets.map(t => ({
+      ticketId: t.ticketId, category: t.category,
+      lat: t.lat, lng: t.lng, status: t.status,
+      description: (t.description || '').slice(0, 60),
+      location: t.location, upvoteCount: t.upvoteCount || 0,
+      createdAt: t.createdAt
+    })));
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
 // ─── GET /api/tickets/search ─────────────────────────────────────
 router.get('/search', async (req, res) => {
   try {
@@ -375,10 +447,11 @@ router.get('/search', async (req, res) => {
         description: t.description, location: t.location,
         status: t.status, urgency: t.urgency,
         assignedName: t.assignedName || null,
-        rating: t.rating || null, createdAt: t.createdAt
+        rating: t.rating || null, createdAt: t.createdAt,
+        upvoteCount: t.upvoteCount || 0, followerCount: t.followerCount || 0
       }));
     } else {
-      tickets = tickets.map(formatTicket);
+      tickets = tickets.map(t => formatTicket(t, caller._id));
     }
 
     res.json(tickets);
@@ -411,6 +484,131 @@ router.delete('/', requireAuth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
-module.exports = router;
+// ═══════════════════════════════════════════════════════════════════
+// ── COMMENTS (CHAT) ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 
+// GET /api/tickets/:id/comments
+router.get('/:id/comments', requireAuth, async (req, res) => {
+  try {
+    const comments = await Comment.find({ ticketId: req.params.id }).sort({ createdAt: 1 });
+    res.json(comments);
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// POST /api/tickets/:id/comments
+router.post('/:id/comments', requireAuth, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !message.trim()) return res.status(400).json({ error: 'กรุณาพิมพ์ข้อความ' });
+    if (message.length > 500) return res.status(400).json({ error: 'ข้อความยาวเกินไป (สูงสุด 500 ตัวอักษร)' });
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'ไม่พบผู้ใช้' });
+
+    // citizen can only comment on own tickets
+    if (user.role === 'citizen' && ticket.citizenId.toString() !== user._id.toString())
+      return res.status(403).json({ error: 'ไม่สามารถแสดงความคิดเห็นใน Ticket ของคนอื่นได้' });
+
+    const comment = await new Comment({
+      ticketId: req.params.id,
+      userId: user._id,
+      userName: user.firstName + ' ' + (user.lastName && user.lastName !== '-' ? user.lastName : ''),
+      userRole: user.role,
+      message: message.trim()
+    }).save();
+
+    // Emit socket event for real-time
+    const io = req.app.get('io');
+    if (io) io.emit('comment_added', { ticketId: req.params.id, comment });
+
+    res.status(201).json(comment);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ── UPVOTE SYSTEM ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/tickets/:id/upvote — toggle
+router.post('/:id/upvote', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // ห้ามกด upvote ticket ตัวเอง
+    if (ticket.citizenId.toString() === user._id.toString())
+      return res.status(400).json({ error: 'ไม่สามารถโหวต Ticket ของตัวเองได้' });
+
+    const idx = (ticket.upvotes || []).findIndex(u => u.userId && u.userId.toString() === user._id.toString());
+    let action;
+    if (idx >= 0) {
+      // Already upvoted → remove
+      ticket.upvotes.splice(idx, 1);
+      action = 'removed';
+    } else {
+      // Add upvote
+      ticket.upvotes.push({ userId: user._id });
+      action = 'added';
+    }
+    ticket.upvoteCount = ticket.upvotes.length;
+
+    // Priority boost based on upvote count
+    let basePriority = ticket.urgency === 'urgent' ? 90 : ticket.urgency === 'medium' ? 60 : 30;
+    if (ticket.upvoteCount >= 10) basePriority = 100; // Super Urgent
+    else if (ticket.upvoteCount >= 5) basePriority = Math.min(basePriority + 15, 100);
+    ticket.priorityScore = basePriority;
+
+    await ticket.save();
+    emitUpdate(req);
+
+    res.json({
+      action,
+      upvoteCount: ticket.upvoteCount,
+      hasUpvoted: action === 'added',
+      priorityScore: ticket.priorityScore
+    });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ── FOLLOW/SUBSCRIBE SYSTEM ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/tickets/:id/follow — toggle
+router.post('/:id/follow', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    const idx = (ticket.followers || []).findIndex(f => f.userId && f.userId.toString() === user._id.toString());
+    let action;
+    if (idx >= 0) {
+      ticket.followers.splice(idx, 1);
+      action = 'unfollowed';
+    } else {
+      ticket.followers.push({ userId: user._id, lineUserId: user.lineUserId || null });
+      action = 'followed';
+    }
+    ticket.followerCount = ticket.followers.length;
+    await ticket.save();
+
+    res.json({
+      action,
+      followerCount: ticket.followerCount,
+      isFollowing: action === 'followed'
+    });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+module.exports = router;
 
