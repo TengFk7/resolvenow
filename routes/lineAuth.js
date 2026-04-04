@@ -98,7 +98,7 @@ router.get('/callback', async (req, res) => {
     req.session.role   = user.role;
     req.session.save((err) => {
       if (err) console.error('[LINE Login] session save error on login:', err);
-      res.redirect('/');
+      res.redirect('/?line_login=success');
     });
   } catch (e) {
     console.error('[LINE Login] callback error:', e.message || e);

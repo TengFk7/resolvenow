@@ -1,0 +1,935 @@
+# 📘 ResolveNow — เอกสารออกแบบสถาปัตยกรรมระบบ
+
+> ระบบรับแจ้งเรื่องร้องเรียนสำหรับเทศบาล / Smart City  
+> **Version**: 1.0 · **Last Updated**: 4 เมษายน 2569
+
+---
+
+## สารบัญ
+
+1. [ภาพรวมระบบ (System Overview)](#1-ภาพรวมระบบ-system-overview)
+2. [Technology Stack](#2-technology-stack)
+3. [โครงสร้างไฟล์โปรเจกต์](#3-โครงสร้างไฟล์โปรเจกต์)
+4. [สถาปัตยกรรมโดยรวม (Architecture Diagram)](#4-สถาปัตยกรรมโดยรวม)
+5. [ฐานข้อมูล (Database Design)](#5-ฐานข้อมูล-database-design)
+6. [ระบบความปลอดภัย (Security)](#6-ระบบความปลอดภัย-security)
+7. [ระบบ Authentication](#7-ระบบ-authentication)
+8. [LINE Integration](#8-line-integration)
+9. [ระบบ Image Upload](#9-ระบบ-image-upload)
+10. [AI Urgency Analysis](#10-ai-urgency-analysis)
+11. [ระบบ SLA (Service Level Agreement)](#11-ระบบ-sla)
+12. [Real-time Communication (WebSocket)](#12-real-time-communication)
+13. [API Endpoints](#13-api-endpoints)
+14. [Deployment Architecture](#14-deployment-architecture)
+15. [Data Flow Diagrams](#15-data-flow-diagrams)
+
+---
+
+## 1. ภาพรวมระบบ (System Overview)
+
+ResolveNow เป็น **Single-Page Application (SPA)** สำหรับรับแจ้งเรื่องร้องเรียนของประชาชน โดยมี 3 บทบาทผู้ใช้:
+
+| บทบาท | คำอธิบาย |
+|--------|-----------|
+| 🏠 **Citizen** (ประชาชน) | แจ้งเรื่องร้องเรียน ติดตามสถานะ ให้คะแนนความพึงพอใจ |
+| 🔧 **Technician** (ช่าง) | รับงานซ่อม อัปโหลดรูปก่อน-หลัง รายงานผลการดำเนินการ |
+| 👨‍💼 **Admin** (ผู้ดูแลระบบ) | จัดการ ticket ทั้งหมด มอบหมายช่าง ดู dashboard สถิติ |
+
+### วงจรชีวิตของ Ticket (Ticket Lifecycle)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: ประชาชนแจ้งเรื่อง
+    pending --> assigned: Admin มอบหมาย / ช่างรับงาน
+    pending --> rejected: Admin ปฏิเสธ
+    assigned --> in_progress: ช่างเริ่มดำเนินการ
+    assigned --> rejected: ช่างปฏิเสธ
+    in_progress --> completed: ช่างซ่อมเสร็จ
+    in_progress --> rejected: ช่างปฏิเสธ
+    completed --> [*]
+    rejected --> pending: Admin ส่งกลับ
+    completed --> in_progress: Admin reopen
+```
+
+---
+
+## 2. Technology Stack
+
+### Backend
+
+| เทคโนโลยี | เวอร์ชัน | วัตถุประสงค์ |
+|------------|---------|-------------|
+| **Node.js** | Runtime | JavaScript runtime สำหรับ server |
+| **Express.js** | 4.18.x | Web framework หลัก |
+| **Mongoose** | 9.3.x | MongoDB ODM (Object Document Mapper) |
+| **Socket.IO** | 4.8.x | Real-time bidirectional communication |
+| **Nodemailer** | 8.0.x | ส่ง OTP ทาง Email (Gmail SMTP) |
+
+### Database & Storage
+
+| เทคโนโลยี | วัตถุประสงค์ |
+|------------|-------------|
+| **MongoDB Atlas** | ฐานข้อมูลหลัก (Cloud) |
+| **connect-mongo** v6 | Session store บน MongoDB |
+| **Cloudinary** | Cloud image storage (CDN) |
+
+### Security
+
+| เทคโนโลยี | วัตถุประสงค์ |
+|------------|-------------|
+| **Helmet** v8 | HTTP security headers |
+| **bcryptjs** | Password hashing (10 rounds) |
+| **express-rate-limit** | Rate limiting ป้องกัน brute-force |
+| **express-mongo-sanitize** | ป้องกัน NoSQL injection |
+| **express-session** | Server-side session management |
+
+### Integrations
+
+| เทคโนโลยี | วัตถุประสงค์ |
+|------------|-------------|
+| **LINE Login** | OAuth 2.0 social login |
+| **LINE Messaging API** | Push notification ผ่าน LINE |
+| **Anthropic Claude** | AI วิเคราะห์ระดับความเร่งด่วน |
+| **OpenStreetMap (Nominatim)** | Reverse geocoding (GPS → ชื่อสถานที่) |
+
+### Frontend
+
+| เทคโนโลยี | วัตถุประสงค์ |
+|------------|-------------|
+| **Vanilla HTML/CSS/JS** | SPA ไม่ใช้ framework ใดๆ |
+| **Leaflet.js** | แสดงแผนที่ heatmap |
+| **Canvas API** | Admin pie chart (donut chart) |
+
+### DevOps
+
+| เทคโนโลยี | วัตถุประสงค์ |
+|------------|-------------|
+| **Render.com** | Cloud hosting (PaaS) |
+| **nodemon** | Hot-reload สำหรับ development |
+| **dotenv** | จัดการ environment variables |
+
+---
+
+## 3. โครงสร้างไฟล์โปรเจกต์
+
+```
+ResolvNow/
+├── server.js                  ← Entry point: DNS override → DB → Seed → Middleware → Routes
+├── package.json               ← Dependencies & scripts
+├── .env                       ← Environment variables (ไม่ commit)
+│
+├── config/                    ← ไฟล์ตั้งค่าทั้งหมด
+│   ├── db.js                  ← MongoDB connection (IPv4, Google DNS)
+│   ├── seed.js                ← Auto-seed admin + technicians + citizen
+│   ├── cloudinary.js          ← Cloudinary + multer storage config
+│   ├── mailer.js              ← Nodemailer Gmail OTP sender
+│   └── lineNotify.js          ← LINE Messaging API push functions
+│
+├── models/                    ← Mongoose schemas
+│   ├── User.js                ← ผู้ใช้ (citizen / technician / admin)
+│   ├── Ticket.js              ← เรื่องร้องเรียน
+│   ├── HelpRequest.js         ← คำขอช่วยเหลือระหว่างช่าง
+│   ├── Comment.js             ← ความคิดเห็นใน ticket
+│   └── Counter.js             ← Auto-increment (TKT-001, HELP-001)
+│
+├── routes/                    ← Express router files
+│   ├── auth.js                ← /api/auth — login, register, OTP, LINE link
+│   ├── tickets.js             ← /api/tickets — CRUD, assign, upload, rating
+│   ├── technicians.js         ← /api/technicians — ดึงรายชื่อช่าง
+│   ├── helpRequests.js        ← /api/help-requests — ขอช่วยเหลือ
+│   ├── ai.js                  ← /api/ai — วิเคราะห์ความเร่งด่วน
+│   └── lineAuth.js            ← /auth/line — LINE OAuth callback
+│
+├── data/
+│   └── store.js               ← otpStore (in-memory Map), STATUSES, DEPT_MAP
+│
+└── public/                    ← Static files (SPA)
+    ├── index.html             ← Single HTML file — ทุก section/modal
+    ├── css/
+    │   ├── style.css          ← Main stylesheet
+    │   └── animations.css     ← Splash, page-enter, 3D transitions
+    ├── js/
+    │   ├── ui.js              ← Shared helpers, toast, badges, clock
+    │   ├── app.js             ← Global state, enterApp(), session resume
+    │   ├── auth.js            ← Login, register, OTP, LINE linking
+    │   ├── admin.js           ← Admin dashboard, pie chart, queue
+    │   ├── citizen.js         ← Citizen ticket form, GPS, file upload
+    │   └── technician.js      ← Tech mission view, before/after upload
+    └── uploads/               ← Local image fallback (ถ้าไม่มี Cloudinary)
+```
+
+---
+
+## 4. สถาปัตยกรรมโดยรวม
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client (Browser)"]
+        SPA["SPA<br/>HTML + CSS + Vanilla JS"]
+        WS["WebSocket Client<br/>(Socket.IO)"]
+    end
+
+    subgraph Server["☁️ Render.com"]
+        Express["Express.js Server"]
+        SessionMW["Session Middleware<br/>(connect-mongo)"]
+        SecurityMW["Security Layer<br/>Helmet + Rate Limit + Sanitize"]
+        Routes["API Routes"]
+        SocketIO["Socket.IO Server"]
+    end
+
+    subgraph External["🌐 External Services"]
+        MongoDB["MongoDB Atlas<br/>(Database)"]
+        Cloudinary["Cloudinary<br/>(Image CDN)"]
+        Gmail["Gmail SMTP<br/>(OTP Email)"]
+        LINE_API["LINE Platform<br/>(Login + Push)"]
+        Claude["Anthropic Claude<br/>(AI Analysis)"]
+        OSM["OpenStreetMap<br/>(Geocoding)"]
+    end
+
+    SPA -->|HTTP/REST| Express
+    WS <-->|WebSocket| SocketIO
+    Express --> SecurityMW --> SessionMW --> Routes
+
+    Routes -->|Mongoose| MongoDB
+    Routes -->|multer-storage-cloudinary| Cloudinary
+    Routes -->|nodemailer| Gmail
+    Routes -->|HTTPS API| LINE_API
+    Routes -->|HTTPS API| Claude
+    Routes -->|HTTPS GET| OSM
+
+    SessionMW -->|Session Store| MongoDB
+```
+
+---
+
+## 5. ฐานข้อมูล (Database Design)
+
+ใช้ **MongoDB Atlas** (NoSQL Document Database) ผ่าน **Mongoose ODM**
+
+### 5.1 ER Diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ TICKET : "creates"
+    USER ||--o{ TICKET : "assigned to"
+    USER ||--o{ HELP_REQUEST : "creates"
+    USER ||--o{ HELP_REQUEST : "accepts"
+    USER ||--o{ COMMENT : "writes"
+    TICKET ||--o{ COMMENT : "has"
+    TICKET ||--o{ HELP_REQUEST : "references"
+    COUNTER ||--|| TICKET : "generates ID"
+    COUNTER ||--|| HELP_REQUEST : "generates ID"
+
+    USER {
+        ObjectId _id PK
+        String firstName
+        String lastName
+        String email UK "lowercase, unique"
+        String password "bcrypt hashed"
+        String role "citizen|technician|admin"
+        String specialty "เฉพาะ technician"
+        String lineUserId "LINE OAuth ID"
+        String lineDisplayName
+        String avatar "URL"
+        Boolean createdViaLine
+        Date createdAt
+        Date updatedAt
+    }
+
+    TICKET {
+        ObjectId _id PK
+        String ticketId UK "TKT-001 format"
+        ObjectId citizenId FK
+        String citizenName
+        String citizenLineId
+        String category
+        String description
+        String location "reverse-geocoded"
+        Number lat
+        Number lng
+        String urgency "normal|medium|urgent"
+        Number priorityScore "0-100"
+        String status "pending|assigned|in_progress|completed|rejected"
+        ObjectId assignedTo FK
+        String assignedName
+        String rejectReason
+        String citizenImage "URL"
+        String beforeImage "URL"
+        String afterImage "URL"
+        Number rating "1-5"
+        String ratingReason
+        Date slaAssignDeadline
+        Date slaCompleteDeadline
+        Boolean slaBreached
+        Array upvotes "userId + createdAt"
+        Number upvoteCount
+        Array followers "userId + lineUserId"
+        Number followerCount
+    }
+
+    HELP_REQUEST {
+        ObjectId _id PK
+        String helpId UK "HELP-001 format"
+        ObjectId citizenId FK
+        String citizenName
+        String message
+        String ticketId
+        String ticketCategory
+        String ticketLocation
+        String ticketDesc
+        ObjectId requesterId FK
+        String requesterName
+        String requesterDept
+        String targetDept
+        ObjectId acceptedById FK
+        String acceptedByName
+        String status "open|accepted|cancelled|resolved"
+    }
+
+    COMMENT {
+        ObjectId _id PK
+        String ticketId "TKT-xxx"
+        ObjectId userId FK
+        String userName
+        String userRole
+        String message "max 500 chars"
+        Date createdAt
+    }
+
+    COUNTER {
+        ObjectId _id PK
+        String name UK "ticket|help"
+        Number seq "auto-increment"
+    }
+```
+
+### 5.2 Collections Summary
+
+| Collection | จำนวน Documents เริ่มต้น | วัตถุประสงค์ |
+|------------|------------------------|-------------|
+| `users` | 9 (seeded) | ผู้ใช้ทั้งหมดในระบบ |
+| `tickets` | 0 | เรื่องร้องเรียนที่ประชาชนสร้าง |
+| `helprequests` | 0 | คำขอช่วยเหลือระหว่างช่าง |
+| `comments` | 0 | ความคิดเห็น/แชทใน ticket |
+| `counters` | 2 | ตัวนับ auto-increment สำหรับ TKT/HELP ID |
+| `sessions` | dynamic | Session store (connect-mongo) |
+
+### 5.3 Auto-Increment Counter Pattern
+
+ระบบใช้ `Counter` model สำหรับสร้าง running number แบบ atomic:
+
+```javascript
+// Counter.nextSeq('ticket') → 1, 2, 3, ...
+// ใช้ findOneAndUpdate + $inc เพื่อ atomic increment
+// ป้องกัน race condition ในกรณี concurrent requests
+const seq = await Counter.nextSeq('ticket');
+const ticketId = 'TKT-' + String(seq).padStart(3, '0'); // → TKT-001
+```
+
+### 5.4 Database Seeding
+
+ระบบจะ seed ข้อมูลเริ่มต้นอัตโนมัติเมื่อไม่พบ admin ใน database:
+
+| บทบาท | Email | Password | ความเชี่ยวชาญ |
+|--------|-------|----------|--------------|
+| Admin | admin@resolvenow.th | admin1234 | - |
+| Tech 1 | tech1@resolvenow.th | tech1234 | Road (ถนน) |
+| Tech 2 | tech2@resolvenow.th | tech1234 | Water (น้ำ) |
+| Tech 3 | tech3@resolvenow.th | tech1234 | Electricity (ไฟฟ้า) |
+| Tech 4 | tech4@resolvenow.th | tech1234 | Garbage (ขยะ) |
+| Tech 5 | tech5@resolvenow.th | tech1234 | Animal (สัตว์) |
+| Tech 6 | tech6@resolvenow.th | tech1234 | Tree (ต้นไม้) |
+| Tech 7 | tech7@resolvenow.th | tech1234 | Hazard (ภัยพิบัติ) |
+| Citizen | tenginpb@gmail.com | 123456 | - |
+
+---
+
+## 6. ระบบความปลอดภัย (Security)
+
+### 6.1 Security Architecture
+
+```mermaid
+graph LR
+    Request["🌐 HTTP Request"] --> Helmet
+    Helmet["🛡️ Helmet<br/>Security Headers"] --> Sanitize
+    Sanitize["🧹 Mongo Sanitize<br/>ป้องกัน NoSQL Injection"] --> RateLimit
+    RateLimit["⏱️ Rate Limiter<br/>จำกัดจำนวน Request"] --> Session
+    Session["🔑 Session Auth<br/>Cookie-based"] --> Routes["📡 API Routes"]
+```
+
+### 6.2 รายละเอียดมาตรการความปลอดภัย
+
+#### 🛡️ Helmet (HTTP Security Headers)
+
+```javascript
+app.use(helmet({
+  contentSecurityPolicy: false, // ปิดชั่วคราว เพราะมี inline scripts/styles
+}));
+```
+
+Helmet จะ set headers ต่อไปนี้โดยอัตโนมัติ:
+- `X-Content-Type-Options: nosniff` — ป้องกัน MIME-type sniffing
+- `X-Frame-Options: SAMEORIGIN` — ป้องกัน clickjacking
+- `X-XSS-Protection` — ป้องกัน XSS
+- `Strict-Transport-Security` — บังคับ HTTPS
+- `X-DNS-Prefetch-Control` — ควบคุม DNS prefetching
+
+#### 🧹 MongoDB Sanitize (NoSQL Injection Protection)
+
+```javascript
+app.use(mongoSanitize());
+```
+
+ป้องกันผู้โจมตีส่ง operator เช่น `$gt`, `$ne` ผ่าน request body/query:
+```json
+// ❌ ป้องกัน: { "email": {"$ne": ""}, "password": {"$ne": ""} }
+// ✅ ถูก sanitize ให้เป็น string ธรรมดา
+```
+
+#### ⏱️ Rate Limiting
+
+| Endpoint | หน้าต่างเวลา | จำกัด (ต่อ IP) | วัตถุประสงค์ |
+|----------|-------------|---------------|-------------|
+| `/api/auth/*` | 15 นาที | 30 requests | ป้องกัน brute-force login/OTP |
+| `/api/tickets` | 5 นาที | 300 requests | ป้องกัน API abuse |
+| `/api/technicians` | 5 นาที | 300 requests | ป้องกัน API abuse |
+| `/api/help-requests` | 5 นาที | 300 requests | ป้องกัน API abuse |
+| `/api/ai` | 5 นาที | 300 requests | ป้องกัน AI abuse |
+
+#### 🔐 Password Hashing (bcryptjs)
+
+```javascript
+// Hash password ด้วย 10 salt rounds
+const hashed = await bcrypt.hash(password, 10);
+
+// เปรียบเทียบ password
+const match = await bcrypt.compare(inputPassword, user.password);
+```
+
+- ใช้ **bcryptjs** (pure JavaScript implementation)
+- **10 rounds** ของ salt — สมดุลระหว่างความปลอดภัยและ performance
+- Password ไม่เคยถูกเก็บเป็น plaintext
+
+#### 🍪 Session Management
+
+```javascript
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'resolvenow-secret-2024',
+  resave: false,
+  saveUninitialized: true,    // เพื่อเก็บ lineLinkPending ก่อน login
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 7 * 24 * 60 * 60,        // Session อายุ 7 วัน
+    touchAfter: 24 * 3600,         // Update session ทุก 24 ชม. (ลด write)
+  }),
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 วัน
+    httpOnly: true,                    // ไม่เข้าถึง cookie จาก JavaScript ได้
+    sameSite: 'lax',                   // ป้องกัน CSRF แต่ยอม redirect (LINE callback)
+    secure: process.env.NODE_ENV === 'production'  // HTTPS only ใน production
+  }
+}));
+```
+
+| คุณสมบัติ | ค่า | เหตุผล |
+|-----------|-----|--------|
+| `httpOnly` | `true` | ป้องกัน XSS ขโมย cookie |
+| `sameSite` | `lax` | ป้องกัน CSRF, แต่ยอม LINE OAuth redirect |
+| `secure` | `true` (production) | ส่ง cookie ผ่าน HTTPS เท่านั้น |
+| `store` | MongoDB | Session persist ข้าม restart/deploy |
+
+#### 🔒 Authentication Middleware
+
+```javascript
+function requireAuth(req, res, next) {
+  if (!req.session.userId) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.userId || req.session.role !== 'admin')
+    return res.status(403).json({ error: 'Admin เท่านั้น' });
+  next();
+}
+```
+
+#### 🔧 Proxy Trust
+
+```javascript
+app.set('trust proxy', 1); // Trust first proxy (Render)
+```
+
+จำเป็นสำหรับ Render.com เพื่อให้ `secure` cookie ทำงานถูกต้องผ่าน reverse proxy
+
+---
+
+## 7. ระบบ Authentication
+
+### 7.1 Authentication Flows
+
+```mermaid
+graph TB
+    subgraph Normal["📧 สมัครสมาชิกปกติ (Email + OTP)"]
+        N1["กรอก ชื่อ/นามสกุล/Email/Password"] --> N2["POST /api/auth/send-otp"]
+        N2 --> N3["ส่ง OTP 6 หลักไปยัง Email"]
+        N3 --> N4["กรอก OTP"]
+        N4 --> N5["POST /api/auth/register"]
+        N5 --> N6["สร้าง User + session"]
+    end
+
+    subgraph Login["🔐 Login ปกติ"]
+        L1["กรอก Email/Password"] --> L2["POST /api/auth/login"]
+        L2 --> L3["bcrypt.compare()"]
+        L3 --> L4["Set session"]
+    end
+
+    subgraph LINE["💚 LINE Login"]
+        LINE1["กดปุ่ม LINE Login"] --> LINE2["GET /auth/line"]
+        LINE2 --> LINE3["Redirect → LINE OAuth"]
+        LINE3 --> LINE4["GET /auth/line/callback"]
+        LINE4 -->|User มีแล้ว| LINE5["Login + session"]
+        LINE4 -->|User ใหม่| LINE6["lineLinkPending → Modal"]
+        LINE6 -->|เชื่อมบัญชี| LINE7["POST /api/auth/link-line"]
+        LINE6 -->|สร้างใหม่| LINE8["POST /api/auth/register-line → OTP → verify-line-otp"]
+        LINE6 -->|ข้าม| LINE9["POST /api/auth/link-line-skip"]
+    end
+```
+
+### 7.2 OTP System
+
+| คุณสมบัติ | ค่า |
+|-----------|-----|
+| รูปแบบ | ตัวเลข 6 หลัก |
+| อายุ | 5 นาที |
+| จำนวนพยายามสูงสุด | 3 ครั้ง (สมัครปกติ) / 5 ครั้ง (LINE register) |
+| Storage | In-Memory `Map` (otpStore) |
+| Token | `Date.now().toString(36) + random` |
+
+> [!NOTE]
+> OTP store ใช้ **In-Memory Map** ซึ่งเหมาะสมเพราะ OTP มีอายุเพียง 5 นาที การใช้ Redis จะ over-engineer สำหรับกรณีนี้
+
+### 7.3 Email OTP (Nodemailer)
+
+```javascript
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,                      // SSL โดยตรง
+  secure: true,
+  family: 4,                      // Force IPv4 (Render ไม่รองรับ IPv6)
+  connectionTimeout: 30000,       // 30 วินาที
+  auth: {
+    user: process.env.MAIL_USER,  // Gmail address
+    pass: process.env.MAIL_PASS   // Gmail App Password
+  }
+});
+```
+
+---
+
+## 8. LINE Integration
+
+### 8.1 LINE Login (OAuth 2.0)
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 User
+    participant App as 🖥️ ResolveNow
+    participant LINE as 💚 LINE Platform
+
+    User->>App: กดปุ่ม "เข้าสู่ระบบด้วย LINE"
+    App->>App: สร้าง state token → เก็บ session
+    App->>LINE: Redirect → LINE Login page
+    LINE->>User: แสดงหน้าขออนุญาต
+    User->>LINE: อนุญาต
+    LINE->>App: Callback + code + state
+    App->>App: ตรวจสอบ state token
+    App->>LINE: POST /oauth2/v2.1/token (แลก code → access_token)
+    LINE-->>App: access_token
+    App->>LINE: GET /v2/profile (ดึงข้อมูลผู้ใช้)
+    LINE-->>App: userId, displayName, pictureUrl
+    
+    alt User มีในระบบ
+        App->>App: อัปเดต avatar + login session
+        App->>User: Redirect /
+    else User ใหม่
+        App->>App: เก็บ lineLinkPending ใน session
+        App->>User: Redirect /?line_link=pending
+        User->>App: เลือก: เชื่อมบัญชี / สร้างใหม่ / ข้าม
+    end
+```
+
+### 8.2 LINE Push Notifications (Messaging API)
+
+ระบบส่ง push notification ผ่าน LINE ทุกครั้งที่มีการเปลี่ยนสถานะ:
+
+| Event | ส่งถึง Admin | ส่งถึง Citizen | เนื้อหา |
+|-------|:---:|:---:|---------|
+| 🆕 Ticket ใหม่ | ✅ | ✅ | รายละเอียด ticket + รูปภาพ |
+| 🔧 มอบหมายช่าง | ✅ | ✅ | ชื่อช่าง + ticket info |
+| ⚙️ เริ่มดำเนินการ | ✅ | ✅ | ช่างกำลังซ่อม |
+| ✅ เสร็จสิ้น | ✅ | ✅ | สรุป + รูปก่อน-หลัง |
+| ❌ ปฏิเสธ | ✅ | ✅ | เหตุผล |
+| 🔔 ติดตาม Ticket | - | ✅ (Followers) | สถานะอัปเดต |
+
+**การส่ง LINE Push** ใช้ HTTPS request ตรง (ไม่ใช้ SDK):
+```javascript
+// POST https://api.line.me/v2/bot/message/push
+// Header: Authorization: Bearer {LINE_CHANNEL_TOKEN}
+// Body: { to: userId, messages: [...] }
+```
+
+---
+
+## 9. ระบบ Image Upload
+
+### 9.1 Dual-Storage Architecture
+
+```mermaid
+graph TB
+    Upload["📸 Image Upload"] --> Check{"Cloudinary<br/>Configured?"}
+    Check -->|Yes| Cloud["☁️ Cloudinary CDN"]
+    Check -->|No| Local["📁 Local /public/uploads/"]
+    
+    Cloud --> URL1["URL: https://res.cloudinary.com/..."]
+    Local --> URL2["URL: /uploads/filename.jpg"]
+```
+
+### 9.2 Cloudinary Configuration
+
+```javascript
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'resolvenow',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    transformation: [{ width: 1280, crop: 'limit', quality: 'auto' }]  // ย่อขนาดอัตโนมัติ
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }  // ไม่เกิน 10 MB
+});
+```
+
+### 9.3 ประเภทรูปภาพที่เก็บ
+
+| Field | อัปโหลดโดย | เมื่อไหร่ |
+|-------|-----------|----------|
+| `citizenImage` | Citizen | ตอนสร้าง ticket (บังคับ) |
+| `beforeImage` | Technician | ก่อนเริ่มซ่อม |
+| `afterImage` | Technician | หลังซ่อมเสร็จ |
+
+---
+
+## 10. AI Urgency Analysis
+
+### 10.1 Dual-Mode Analysis
+
+```mermaid
+graph TB
+    Input["📝 description + category"] --> Check{"Anthropic API Key<br/>ตั้งค่าแล้ว?"}
+    Check -->|Yes| AI["🤖 Claude AI<br/>(claude-haiku-4-5)"]
+    Check -->|No| Rule["📏 Rule-based<br/>Keyword Matching"]
+    
+    AI -->|timeout/error| Rule
+    AI --> Result["urgent | medium | normal"]
+    Rule --> Result
+```
+
+### 10.2 Rule-Based Fallback
+
+ระบบมี keyword matching เป็น fallback เมื่อ AI ไม่พร้อม:
+
+| Category | Default | ตัวอย่าง Urgent Keywords |
+|----------|---------|------------------------|
+| Animal (สัตว์) | urgent | งูพิษ, แมงป่อง, ตะขาบ, กัดคน |
+| Hazard (ภัยพิบัติ) | urgent | ไฟไหม้, ระเบิด, แก๊สรั่ว, ดินถล่ม |
+| Water (น้ำ) | medium | น้ำพุ่ง, ท่อระเบิด, น้ำท่วมถนน |
+| Electricity (ไฟฟ้า) | medium | ไฟช็อต, ไฟดูด, สายไฟขาด |
+| Road (ถนน) | normal | อุบัติเหตุ, ต้นไม้ล้มทับ, สะพานพัง |
+| Garbage (ขยะ) | normal | ขยะติดเชื้อ, สารพิษ, ควันพิษ |
+| Tree (ต้นไม้) | normal | ต้นไม้ล้ม, ทับสายไฟ, ทับรถ |
+
+### 10.3 Priority Score Calculation
+
+```
+Base Score:
+  urgent  → 90
+  medium  → 60
+  normal  → 30
+
+Keyword Bonus: +10 (ถ้าพบ keyword เช่น flood, fire, อันตราย, เร่งด่วน)
+Max: 100
+
+Upvote Boost:
+  ≥ 10 upvotes → score = 100 (Super Urgent)
+  ≥ 5 upvotes  → score + 15
+
+Display:
+  🔴 score ≥ 70 = เร่งด่วน
+  🟡 score ≥ 40 = ปานกลาง
+  🟢 score < 40 = ปกติ
+```
+
+---
+
+## 11. ระบบ SLA
+
+### 11.1 SLA Deadlines
+
+| ระดับความเร่งด่วน | กำหนดมอบหมาย | กำหนดเสร็จ |
+|-------------------|:---:|:---:|
+| 🔴 Urgent | 2 ชั่วโมง | 8 ชั่วโมง |
+| 🟡 Medium | 8 ชั่วโมง | 48 ชั่วโมง |
+| 🟢 Normal | 24 ชั่วโมง | 72 ชั่วโมง |
+
+### 11.2 SLA Breach Detection
+
+SLA breach จะถูก mark อัตโนมัติเมื่อ:
+- `status = assigned` แต่ `now > slaAssignDeadline` → **breached**
+- `status = completed` แต่ `now > slaCompleteDeadline` → **breached**
+
+---
+
+## 12. Real-time Communication
+
+### 12.1 Socket.IO Events
+
+```mermaid
+sequenceDiagram
+    participant Server as 🖥️ Server
+    participant All as 👥 All Connected Clients
+
+    Note over Server: Ticket สร้าง/อัปเดต/ลบ
+    Server->>All: emit('ticket_updated')
+    All->>All: Re-fetch tickets data
+
+    Note over Server: Comment ใหม่
+    Server->>All: emit('comment_added', { ticketId, comment })
+    All->>All: อัปเดต chat ใน ticket ที่เปิดอยู่
+```
+
+> [!IMPORTANT]
+> Socket.IO ใช้สำหรับ **trigger re-fetch** เท่านั้น ไม่ได้ส่งข้อมูล ticket ผ่าน WebSocket เพื่อป้องกัน data inconsistency
+
+---
+
+## 13. API Endpoints
+
+### 13.1 Authentication APIs — `/api/auth`
+
+| Method | Path | Auth | รายละเอียด |
+|--------|------|:----:|-----------|
+| `POST` | `/send-otp` | ❌ | ส่ง OTP 6 หลักไปยัง email (อายุ 5 นาที, 3 attempts) |
+| `POST` | `/register` | ❌ | ยืนยัน OTP + สร้าง user + auto-login |
+| `POST` | `/login` | ❌ | Login + set session (รองรับ remember me 30 วัน) |
+| `POST` | `/logout` | ❌ | Destroy session |
+| `GET` | `/me` | ❌ | ดึงข้อมูล user ปัจจุบัน (จาก session) |
+| `POST` | `/change-password` | ✅ | เปลี่ยน password (ต้องใส่ password เก่า) |
+| `GET` | `/line-pending` | ❌ | ดึงข้อมูล LINE ที่รอเชื่อมบัญชี |
+| `POST` | `/link-line` | ❌ | เชื่อม LINE กับ email account ที่มีอยู่ |
+| `POST` | `/link-line-skip` | ❌ | สร้าง LINE-only account (ไม่ต้อง email) |
+| `POST` | `/register-line` | ❌ | LINE user ใหม่ สร้างบัญชี + ส่ง OTP |
+| `POST` | `/verify-line-otp` | ❌ | ยืนยัน OTP + สร้าง user + ผูก LINE |
+| `POST` | `/admin-unlink-line` | 🔐 Admin | ลบ user ที่ผูก LINE (รายคน) |
+| `GET` | `/admin-linked-lines` | 🔐 Admin | ดึงรายชื่อ user ที่ผูก LINE ทั้งหมด |
+| `POST` | `/admin-unlink-all` | 🔐 Admin | ลบ user ที่ผูก LINE ทั้งหมด |
+
+### 13.2 Ticket APIs — `/api/tickets`
+
+| Method | Path | Auth | บทบาท | รายละเอียด |
+|--------|------|:----:|-------|-----------|
+| `GET` | `/` | ✅ | All | ดึง ticket (citizen=ของตัวเอง, tech=specialty, admin=ทั้งหมด) |
+| `POST` | `/` | ✅ | All | สร้าง ticket + upload image (GPS + reverse geocoding) |
+| `PUT` | `/:id/status` | ✅ | Tech/Admin | เปลี่ยนสถานะ (มี transition rules) |
+| `PUT` | `/:id/assign` | ✅ | Admin | มอบหมายช่าง → status=assigned |
+| `POST` | `/:id/upload/before` | ✅ | Tech | อัปโหลดรูปก่อนซ่อม |
+| `POST` | `/:id/upload/after` | ✅ | Tech | อัปโหลดรูปหลังซ่อม |
+| `PUT` | `/:id/rating` | ✅ | Citizen | ให้คะแนน 1-5 ดาว (เฉพาะ completed) |
+| `GET` | `/search` | ❌* | All | ค้นหา ticket (q, status, category) |
+| `GET` | `/public-map` | ❌ | Public | ข้อมูลสำหรับ heatmap (30 วันล่าสุด) |
+| `GET` | `/export` | ✅ | Admin | ส่งออก CSV |
+| `DELETE` | `/:id` | ✅ | Admin | ลบ ticket รายการเดียว |
+| `DELETE` | `/` | ✅ | Admin | ลบ ticket ทั้งหมด |
+| `GET` | `/:id/comments` | ✅ | All | ดึง comments ของ ticket |
+| `POST` | `/:id/comments` | ✅ | All | เพิ่ม comment (max 500 chars) |
+| `POST` | `/:id/upvote` | ✅ | All | Toggle upvote (ห้ามกด ticket ตัวเอง) |
+| `POST` | `/:id/follow` | ✅ | All | Toggle follow (รับการแจ้งเตือน LINE) |
+
+### 13.3 Status Transition Rules
+
+#### สำหรับ Technician:
+```
+pending      → [assigned]
+assigned     → [in_progress, rejected]
+in_progress  → [completed, rejected]
+completed    → (ไม่สามารถเปลี่ยน)
+rejected     → (ไม่สามารถเปลี่ยน)
+```
+
+#### สำหรับ Admin:
+```
+pending      → [assigned, rejected]
+assigned     → [in_progress, completed, rejected, pending]
+in_progress  → [completed, rejected, assigned]
+completed    → [in_progress]           ← reopen ได้
+rejected     → [pending]               ← ส่งกลับได้
+```
+
+### 13.4 Other APIs
+
+| Method | Path | Auth | รายละเอียด |
+|--------|------|:----:|-----------|
+| `GET` | `/api/technicians` | ✅ | รายชื่อช่าง + workload + capacity |
+| `GET` | `/api/help-requests` | ✅ | คำขอช่วยเหลือทั้งหมด |
+| `POST` | `/api/help-requests` | ✅ Tech | ส่งคำขอช่วยเหลือ |
+| `PUT` | `/api/help-requests/:id/accept` | ✅ Tech | รับงานช่วยเหลือ |
+| `PUT` | `/api/help-requests/:id/cancel` | ✅ Tech | ยกเลิกคำขอ |
+| `POST` | `/api/ai/urgency` | ❌ | AI วิเคราะห์ระดับความเร่งด่วน |
+| `GET` | `/auth/line` | ❌ | Redirect → LINE Login |
+| `GET` | `/auth/line/callback` | ❌ | LINE OAuth callback |
+
+### 13.5 Technician Capacity Logic
+
+```javascript
+// คำนวณ capacity จากจำนวนงานที่ active
+capacity = activeJobs >= 5 ? 100 :    // FULL
+           activeJobs >= 3 ? 75  :    // BUSY
+           activeJobs >= 1 ? 40  :    // มีงาน
+           10;                         // READY (ว่าง)
+```
+
+---
+
+## 14. Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph Render["☁️ Render.com"]
+        WebService["Web Service<br/>Node.js 18+"]
+        EnvVars["Environment Variables<br/>(13 keys)"]
+    end
+
+    subgraph MongoDB_Atlas["🍃 MongoDB Atlas"]
+        Cluster["Cluster: resolvenow<br/>Region: Auto"]
+        DB["Database: resolvenow"]
+    end
+
+    subgraph Cloudinary_CDN["☁️ Cloudinary"]
+        Images["Folder: resolvenow/<br/>Auto-optimized images"]
+    end
+
+    WebService -->|mongoose| Cluster
+    WebService -->|multer-storage-cloudinary| Images
+    EnvVars -.->|config| WebService
+
+    Users["👥 Users"] -->|HTTPS| WebService
+    WebService -->|HTTPS| LINE_Platform["💚 LINE"]
+    WebService -->|SMTP| Gmail["📧 Gmail"]
+    WebService -->|HTTPS| Anthropic["🤖 Claude"]
+```
+
+### 14.1 DNS Override
+
+```javascript
+// server.js — บรรทัดแรกสุด ก่อน require ใดๆ
+require('dns').setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+```
+
+> [!WARNING]
+> จำเป็นต้อง override DNS เพราะ ISP/network บางแห่ง block MongoDB Atlas SRV records ทำให้เชื่อมต่อ database ไม่ได้
+
+### 14.2 Environment Variables
+
+| Variable | Service | คำอธิบาย |
+|----------|---------|---------|
+| `MONGODB_URI` | MongoDB Atlas | Connection string |
+| `MAIL_USER` | Gmail | Email สำหรับส่ง OTP |
+| `MAIL_PASS` | Gmail | App Password (ไม่ใช่ password จริง) |
+| `LINE_CHANNEL_TOKEN` | LINE | Messaging API access token |
+| `LINE_ADMIN_USER_ID` | LINE | User ID ของ admin (รับ notification) |
+| `LINE_LOGIN_CLIENT_ID` | LINE | LINE Login Channel ID |
+| `LINE_LOGIN_CLIENT_SECRET` | LINE | LINE Login Channel Secret |
+| `LINE_LOGIN_CALLBACK_URL` | LINE | OAuth callback URL |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary | Cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary | API Key |
+| `CLOUDINARY_API_SECRET` | Cloudinary | API Secret |
+| `BASE_URL` | General | URL ของเว็บ (สำหรับ redirect, image URL) |
+| `ANTHROPIC_API_KEY` | Anthropic | Claude AI API Key |
+
+---
+
+## 15. Data Flow Diagrams
+
+### 15.1 การสร้าง Ticket (Citizen → System)
+
+```mermaid
+sequenceDiagram
+    participant C as 👤 Citizen
+    participant App as 🖥️ Frontend
+    participant API as 📡 API Server
+    participant AI as 🤖 AI Service
+    participant DB as 🍃 MongoDB
+    participant Cloud as ☁️ Cloudinary
+    participant LINE as 💚 LINE
+    participant WS as 🔌 Socket.IO
+
+    C->>App: กรอกข้อมูล + แนบรูป + GPS
+    App->>AI: POST /api/ai/urgency
+    AI-->>App: urgency: urgent/medium/normal
+    App->>API: POST /api/tickets (multipart/form-data)
+    API->>Cloud: อัปโหลดรูปไป Cloudinary
+    Cloud-->>API: Image URL
+    API->>API: reverseGeocode(lat, lng)
+    API->>API: คำนวณ priorityScore + SLA deadlines
+    API->>DB: Counter.nextSeq('ticket') → TKT-xxx
+    API->>DB: Ticket.save()
+    API->>LINE: notifyNewTicket() → Admin + Citizen
+    API->>WS: emit('ticket_updated')
+    API-->>App: 201 Created
+    App-->>C: แสดง toast "ส่งสำเร็จ"
+```
+
+### 15.2 การเปลี่ยนสถานะ Ticket
+
+```mermaid
+sequenceDiagram
+    participant T as 🔧 Technician
+    participant API as 📡 API Server
+    participant DB as 🍃 MongoDB
+    participant LINE as 💚 LINE
+    participant WS as 🔌 Socket.IO
+
+    T->>API: PUT /api/tickets/TKT-001/status
+    API->>API: ตรวจสอบ TRANSITIONS[role][currentStatus]
+    
+    alt Transition ไม่อนุญาต
+        API-->>T: 400 "ไม่สามารถเปลี่ยนสถานะได้"
+    else Transition อนุญาต
+        alt Initial Assign (ช่างรับงานเอง)
+            API->>DB: findOneAndUpdate (atomic — ป้องกัน race condition)
+        else Status Change ปกติ
+            API->>DB: ticket.save()
+        end
+        API->>API: ตรวจ SLA breach
+        API->>LINE: ส่ง notification ตามประเภท
+        API->>LINE: notifyFollowers (ถ้ามี)
+        API->>WS: emit('ticket_updated')
+        API-->>T: 200 OK
+    end
+```
+
+---
+
+> [!TIP]
+> **การ Run Development Server**
+> ```bash
+> npm run dev     # ใช้ nodemon (hot-reload)
+> npm start       # ใช้ node (production)
+> ```
+> เข้าใช้งานที่: `http://localhost:3000`
+
+---
+
+*เอกสารนี้สร้างขึ้นจากการวิเคราะห์ซอร์สโค้ดทั้งหมดของ ResolveNow v1.0*

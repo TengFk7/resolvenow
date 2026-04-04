@@ -145,6 +145,31 @@ async function loadTickets() {
     return;
   }
 
+  // ── ตรวจ LINE login success (callback จาก LINE OAuth สำหรับ user ที่เคยผูกแล้ว) ──
+  var lineLoginParam = params.get('line_login');
+  if (lineLoginParam === 'success') {
+    console.log('[App] ✅ LINE login success → ตรวจ session...');
+    window.history.replaceState({}, '', '/');
+
+    fetch('/api/auth/me')
+      .then(function(r) {
+        if (r.ok) return r.json();
+        throw new Error('no session');
+      })
+      .then(function(d) {
+        if (!d.loggedIn) throw new Error('no session');
+        console.log('[App] LINE login session ดี → enterApp() role:', d.role);
+        CU = d;
+        sessionStorage.setItem('rn_logged_in', '1');
+        enterApp();
+      })
+      .catch(function() {
+        console.log('[App] LINE login แต่ไม่มี session → หน้า login');
+        showE('authErr', 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่');
+      });
+    return;
+  }
+
 
   // ── ตรวจ session: resume เฉพาะเมื่อ user เคย login ใน tab นี้ (refresh) ──
   // ถ้าเปิด URL ใหม่ใน tab ใหม่ → จะไม่มี sessionStorage flag → ไปหน้า login ตลอด
