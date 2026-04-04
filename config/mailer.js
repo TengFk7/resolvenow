@@ -1,45 +1,63 @@
 // ─── config/mailer.js ─────────────────────────────────────────
-// Gmail SMTP with retry
-// IPv4 ถูกบังคับ global ใน server.js ด้วย dns.setDefaultResultOrder('ipv4first')
+// Gmail SMTP with retry + manual IPv4 DNS resolution
+// IPv4 ถูกบังคับ global ใน server.js แต่เพื่อความชัวร์ resolve เองด้วย
 
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+const { promisify } = require('util');
+const resolve4 = promisify(dns.resolve4);
 
 const MAIL_USER = process.env.MAIL_USER;
 const MAIL_PASS = process.env.MAIL_PASS;
 
 const MAX_RETRIES = 3;
-const RETRY_DELAYS = [2000, 4000, 6000]; // 2s, 4s, 6s — ไม่ให้ user รอนาน
+const RETRY_DELAYS = [2000, 4000, 6000];
 
-// ─── สร้าง transporter config ────────────────────────────────
-function createTransporterConfig() {
-  return {
-    host: 'smtp.gmail.com',
+// ─── Resolve Gmail IPv4 address ─────────────────────────────
+let _gmailIPv4 = null;
+async function getGmailIPv4() {
+  try {
+    const addrs = await resolve4('smtp.gmail.com');
+    _gmailIPv4 = addrs[0];
+    console.log('[Mailer] 🌐 Gmail IPv4:', _gmailIPv4);
+    return _gmailIPv4;
+  } catch (e) {
+    console.warn('[Mailer] DNS resolve4 failed, using hostname:', e.message);
+    return 'smtp.gmail.com';
+  }
+}
+
+// ─── สร้าง transporter ─────────────────────────────────────
+function createTransporter(host) {
+  return nodemailer.createTransport({
+    host: host,
     port: 465,
     secure: true,
+    name: 'smtp.gmail.com',       // EHLO hostname
+    tls: {
+      servername: 'smtp.gmail.com', // TLS SNI — ต้องตรงกับ cert
+      rejectUnauthorized: false
+    },
     pool: true,
     maxConnections: 2,
     maxMessages: 30,
-    connectionTimeout: 30000,  // 30 วินาที
+    connectionTimeout: 30000,
     greetingTimeout: 20000,
     socketTimeout: 30000,
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS
-    },
-    tls: {
-      rejectUnauthorized: false
     }
-  };
+  });
 }
 
-let transporter = nodemailer.createTransport(createTransporterConfig());
+let transporter = createTransporter('smtp.gmail.com');
 
-// ─── Recreate transporter ───────────────────────────────────
-function recreateTransporter() {
-  try { transporter.close(); } catch (_) {}
-  transporter = nodemailer.createTransport(createTransporterConfig());
-  console.log('[Mailer] ♻️ สร้าง transporter ใหม่');
-}
+// ── Init: resolve IPv4 ตั้งแต่เริ่มต้น ──
+getGmailIPv4().then(ip => {
+  transporter = createTransporter(ip);
+  console.log('[Mailer] ✅ transporter ใช้ IPv4:', ip);
+}).catch(() => {});
 
 // ─── Sleep helper ────────────────────────────────────────────
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -50,7 +68,13 @@ async function sendMailWithRetry(mailOptions) {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      if (attempt > 1) recreateTransporter();
+      if (attempt > 1) {
+        // Retry: resolve IPv4 ใหม่ + สร้าง transporter ใหม่
+        try { transporter.close(); } catch (_) {}
+        const ip = await getGmailIPv4();
+        transporter = createTransporter(ip);
+        console.log('[Mailer] ♻️ recreated with IPv4:', ip);
+      }
 
       const info = await transporter.sendMail(mailOptions);
       console.log('[Mailer] ✅ ส่งสำเร็จ (attempt ' + attempt + '):', info.messageId);

@@ -1,10 +1,15 @@
 // ─── Override DNS + บังคับ IPv4 ก่อน require อื่นๆ ──────────────
 // Render ไม่รองรับ IPv6 outbound → ต้อง force IPv4 ทุก connection
 const _dns = require('dns');
+const _net = require('net');
 _dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
+// ปิด Happy Eyeballs (autoSelectFamily) — Node 18.13+ จะลอง IPv6 ก่อนเสมอ
+if (typeof _net.setDefaultAutoSelectFamily === 'function') {
+  _net.setDefaultAutoSelectFamily(false);
+}
+
 // Monkey-patch dns.lookup → บังคับ family: 4 (IPv4) เสมอ
-// เพราะ setDefaultResultOrder('ipv4first') ไม่ work กับ Render
 const _originalLookup = _dns.lookup;
 _dns.lookup = function(hostname, options, callback) {
   if (typeof options === 'function') {
