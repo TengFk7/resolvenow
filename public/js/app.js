@@ -121,27 +121,69 @@ async function loadTickets() {
     sessionStorage.removeItem('rn_logged_in');
     window.history.replaceState({}, '', '/');
 
-    // ซ่อน app — แสดงเฉพาะ auth page
+    // ── ซ่อนทุกอย่างก่อน ──
     var _aa = ge('adminApp'); if (_aa) _aa.style.display = 'none';
     var _na = ge('normalApp'); if (_na) _na.style.display = 'none';
-    var _ap = ge('authPage'); if (_ap) _ap.style.display = 'flex';
+    var _ap = ge('authPage');
 
-    // Force-dismiss splash ทันที
+    // Force-kill splash ทันที (ไม่ให้ animation splash แข่งกัน)
     var splashEl = document.getElementById('splash');
-    if (splashEl) { splashEl.style.transition = 'opacity 0.3s'; splashEl.style.opacity = '0'; setTimeout(function(){ if (splashEl.parentNode) splashEl.parentNode.removeChild(splashEl); }, 320); }
+    if (splashEl && splashEl.parentNode) {
+      splashEl.parentNode.removeChild(splashEl);
+    }
 
-    setTimeout(function() {
-      // ซ่อน tabs + panels อื่น แสดง fLineLink panel
-      var tabsEl = document.querySelector('.tabs');
-      if (tabsEl) tabsEl.style.display = 'none';
-      ['fLogin','fReg','fSearch'].forEach(function(id){ var el=ge(id); if(el) el.style.display='none'; });
-      var otpEl = ge('fOtp'); if (otpEl) otpEl.style.display = 'none';
-      var fLL = ge('fLineLink');
-      if (fLL) { fLL.style.display = 'block'; }
-      if (typeof openLineLinkModal === 'function') {
-        openLineLinkModal().catch(function(err) { console.error('[LINE Link] error:', err); });
-      }
-    }, 350);
+    // ── ซ่อน auth page ก่อน → แล้ว fade in อย่างสมูท ──
+    if (_ap) {
+      _ap.style.display = 'flex';
+      _ap.style.opacity = '0';
+    }
+
+    // ซ่อน tabs + panels อื่น ทันที (ก่อน fade in)
+    var tabsEl = document.querySelector('.tabs');
+    if (tabsEl) tabsEl.style.display = 'none';
+    ['fLogin','fReg','fSearch','fHeatmap'].forEach(function(id){
+      var el = ge(id); if (el) el.style.display = 'none';
+    });
+    var otpEl = ge('fOtp'); if (otpEl) otpEl.style.display = 'none';
+    var fLLOtp = ge('fLineLinkOtp'); if (fLLOtp) fLLOtp.style.display = 'none';
+
+    // ── เตรียม LINE Link panel (ซ่อนก่อน → จะ animate เข้ามา) ──
+    var fLL = ge('fLineLink');
+    if (fLL) {
+      fLL.style.display = 'block';
+      fLL.style.opacity = '0';
+      fLL.style.transform = 'translateY(20px)';
+    }
+
+    // ── Animate: fade in auth page + slide up LINE panel ──
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        // Fade in auth page
+        if (_ap) {
+          _ap.style.transition = 'opacity .5s ease';
+          _ap.style.opacity = '1';
+        }
+
+        // Slide up + fade in LINE Link panel (slight delay for stagger)
+        setTimeout(function() {
+          if (fLL) {
+            fLL.style.transition = 'opacity .45s ease, transform .45s cubic-bezier(.22,1,.36,1)';
+            fLL.style.opacity = '1';
+            fLL.style.transform = 'translateY(0)';
+          }
+          // Clean up inline styles หลัง animation จบ
+          setTimeout(function() {
+            if (_ap) _ap.style.transition = '';
+            if (fLL) { fLL.style.transition = ''; fLL.style.transform = ''; }
+          }, 500);
+
+          // โหลด LINE profile
+          if (typeof openLineLinkModal === 'function') {
+            openLineLinkModal().catch(function(err) { console.error('[LINE Link] error:', err); });
+          }
+        }, 150);
+      });
+    });
     return;
   }
 
