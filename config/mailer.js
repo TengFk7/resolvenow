@@ -1,35 +1,49 @@
 // ─── config/mailer.js ─────────────────────────────────────────
-// Gmail SMTP with retry + connection pooling
+// Gmail SMTP with retry + FORCED IPv4 DNS lookup
 // Credentials อ่านจาก Environment Variables
 
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 
 const MAIL_USER = process.env.MAIL_USER;
 const MAIL_PASS = process.env.MAIL_PASS;
 
 const MAX_RETRIES = 3;
-const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
+const RETRY_DELAYS = [3000, 6000, 12000]; // 3s, 6s, 12s (เพิ่มเวลารอ)
+
+// ─── Custom DNS Lookup — บังคับ IPv4 เท่านั้น ────────────────
+// Render ไม่รองรับ IPv6 outbound → ต้อง force IPv4
+function ipv4Lookup(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+  options.family = 4; // บังคับ IPv4 เสมอ
+  return dns.lookup(hostname, options, callback);
+}
 
 // ─── สร้าง transporter config ────────────────────────────────
 function createTransporterConfig() {
   return {
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true,              // SSL โดยตรง (ไม่ใช้ STARTTLS)
-    family: 4,                 // Force IPv4 — Render ไม่รองรับ IPv6 outbound
-    pool: true,                // ใช้ connection pool (reuse connections)
-    maxConnections: 3,         // จำกัด connections พร้อมกัน
-    maxMessages: 50,           // ส่งได้ 50 ข้อความต่อ connection ก่อนสร้างใหม่
-    connectionTimeout: 45000,  // 45 วินาที (เผื่อ cold-start Render)
-    greetingTimeout: 30000,
-    socketTimeout: 45000,
+    secure: true,
+    pool: true,
+    maxConnections: 2,
+    maxMessages: 30,
+    connectionTimeout: 60000,  // 60 วินาที
+    greetingTimeout: 45000,
+    socketTimeout: 60000,
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS
     },
     tls: {
       rejectUnauthorized: false
-    }
+    },
+    // บังคับ IPv4 ผ่าน custom DNS lookup (แทน family: 4 ที่ไม่ทำงานกับ pool)
+    dnsLookup: ipv4Lookup
   };
 }
 
@@ -39,7 +53,7 @@ let transporter = nodemailer.createTransport(createTransporterConfig());
 function recreateTransporter() {
   try { transporter.close(); } catch (_) {}
   transporter = nodemailer.createTransport(createTransporterConfig());
-  console.log('[Mailer] ♻️ สร้าง transporter ใหม่');
+  console.log('[Mailer] ♻️ สร้าง transporter ใหม่ (IPv4 forced)');
 }
 
 // ─── Sleep helper ────────────────────────────────────────────
@@ -51,7 +65,7 @@ async function sendMailWithRetry(mailOptions) {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // ถ้าเป็น retry → สร้าง transporter ใหม่ (connection เดิมอาจเสีย)
+      // ถ้าเป็น retry → สร้าง transporter ใหม่
       if (attempt > 1) {
         recreateTransporter();
       }
@@ -62,9 +76,10 @@ async function sendMailWithRetry(mailOptions) {
     } catch (err) {
       lastError = err;
       console.warn('[Mailer] ❌ attempt ' + attempt + '/' + MAX_RETRIES + ' ล้มเหลว:', err.code || err.message);
+      if (err.address) console.warn('[Mailer]    address:', err.address, 'port:', err.port);
 
       if (attempt < MAX_RETRIES) {
-        const delay = RETRY_DELAYS[attempt - 1] || 5000;
+        const delay = RETRY_DELAYS[attempt - 1] || 6000;
         console.log('[Mailer] ⏳ รอ ' + (delay / 1000) + 's แล้วลองใหม่...');
         await sleep(delay);
       }
