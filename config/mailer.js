@@ -1,27 +1,14 @@
 // ─── config/mailer.js ─────────────────────────────────────────
-// Gmail SMTP with retry + FORCED IPv4 DNS lookup
-// Credentials อ่านจาก Environment Variables
+// Gmail SMTP with retry
+// IPv4 ถูกบังคับ global ใน server.js ด้วย dns.setDefaultResultOrder('ipv4first')
 
 const nodemailer = require('nodemailer');
-const dns = require('dns');
 
 const MAIL_USER = process.env.MAIL_USER;
 const MAIL_PASS = process.env.MAIL_PASS;
 
 const MAX_RETRIES = 3;
-const RETRY_DELAYS = [3000, 6000, 12000]; // 3s, 6s, 12s (เพิ่มเวลารอ)
-
-// ─── Custom DNS Lookup — บังคับ IPv4 เท่านั้น ────────────────
-// Render ไม่รองรับ IPv6 outbound → ต้อง force IPv4
-function ipv4Lookup(hostname, options, callback) {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  options = options || {};
-  options.family = 4; // บังคับ IPv4 เสมอ
-  return dns.lookup(hostname, options, callback);
-}
+const RETRY_DELAYS = [2000, 4000, 6000]; // 2s, 4s, 6s — ไม่ให้ user รอนาน
 
 // ─── สร้าง transporter config ────────────────────────────────
 function createTransporterConfig() {
@@ -32,28 +19,26 @@ function createTransporterConfig() {
     pool: true,
     maxConnections: 2,
     maxMessages: 30,
-    connectionTimeout: 60000,  // 60 วินาที
-    greetingTimeout: 45000,
-    socketTimeout: 60000,
+    connectionTimeout: 30000,  // 30 วินาที
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS
     },
     tls: {
       rejectUnauthorized: false
-    },
-    // บังคับ IPv4 ผ่าน custom DNS lookup (แทน family: 4 ที่ไม่ทำงานกับ pool)
-    dnsLookup: ipv4Lookup
+    }
   };
 }
 
 let transporter = nodemailer.createTransport(createTransporterConfig());
 
-// ─── Recreate transporter (เมื่อ connection pool เสีย) ──────
+// ─── Recreate transporter ───────────────────────────────────
 function recreateTransporter() {
   try { transporter.close(); } catch (_) {}
   transporter = nodemailer.createTransport(createTransporterConfig());
-  console.log('[Mailer] ♻️ สร้าง transporter ใหม่ (IPv4 forced)');
+  console.log('[Mailer] ♻️ สร้าง transporter ใหม่');
 }
 
 // ─── Sleep helper ────────────────────────────────────────────
@@ -65,28 +50,25 @@ async function sendMailWithRetry(mailOptions) {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // ถ้าเป็น retry → สร้าง transporter ใหม่
-      if (attempt > 1) {
-        recreateTransporter();
-      }
+      if (attempt > 1) recreateTransporter();
 
       const info = await transporter.sendMail(mailOptions);
       console.log('[Mailer] ✅ ส่งสำเร็จ (attempt ' + attempt + '):', info.messageId);
       return info;
     } catch (err) {
       lastError = err;
-      console.warn('[Mailer] ❌ attempt ' + attempt + '/' + MAX_RETRIES + ' ล้มเหลว:', err.code || err.message);
-      if (err.address) console.warn('[Mailer]    address:', err.address, 'port:', err.port);
+      console.warn('[Mailer] ❌ attempt ' + attempt + '/' + MAX_RETRIES + ':', err.code || err.message);
+      if (err.address) console.warn('[Mailer]    → ' + err.address + ':' + err.port);
 
       if (attempt < MAX_RETRIES) {
-        const delay = RETRY_DELAYS[attempt - 1] || 6000;
-        console.log('[Mailer] ⏳ รอ ' + (delay / 1000) + 's แล้วลองใหม่...');
+        const delay = RETRY_DELAYS[attempt - 1] || 4000;
+        console.log('[Mailer] ⏳ รอ ' + (delay / 1000) + 's...');
         await sleep(delay);
       }
     }
   }
 
-  console.error('[Mailer] 💀 ส่งไม่สำเร็จหลัง ' + MAX_RETRIES + ' ครั้ง:', lastError.message);
+  console.error('[Mailer] 💀 ล้มเหลว ' + MAX_RETRIES + ' ครั้ง:', lastError.message);
   throw lastError;
 }
 

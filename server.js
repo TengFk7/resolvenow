@@ -1,6 +1,7 @@
 // ─── Override DNS เป็น Google DNS ก่อน require อื่นๆ ────────────
 // แก้ปัญหา ISP/network บล็อก mongodb SRV records
 require('dns').setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+require('dns').setDefaultResultOrder('ipv4first'); // บังคับ IPv4 — Render ไม่รองรับ IPv6 outbound
 
 require('dotenv').config();
 const express    = require('express');
