@@ -71,7 +71,7 @@ function wizNext(step) {
     }
   }
   if (step === 4) {
-    if (!ge('cImg').files[0]) { showToast('กรุณาแนบรูปภาพก่อน', true); return; }
+    if (!_citizenImgDataUrl) { showToast('กรุณาแนบรูปภาพก่อน', true); return; }
   }
   if (step < TOTAL_STEPS) wizGoTo(step, step + 1);
 }
@@ -272,7 +272,7 @@ async function submitTicket() {
   if (!lat || !lng) { showToast('กรุณาระบุตำแหน่ง GPS ก่อนส่ง', true); ok = false; }
   if (!desc) { showToast('กรุณากรอกรายละเอียด', true); ok = false; }
   var f = ge('cImg').files[0];
-  if (!f) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
+  if (!f && !_citizenImgDataUrl) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
   if (!ok) return;
   try {
     var fd = new FormData();
@@ -293,6 +293,8 @@ async function submitTicket() {
       // Reset form fields
       ge('tDesc').value = '';
       ge('cImg').value = '';
+      ge('cImgCamera').value = '';
+      ge('cImgGallery').value = '';
       ge('tLat').value = '';
       ge('tLng').value = '';
       ge('tUrg').value = '';
@@ -308,7 +310,11 @@ async function submitTicket() {
       gpsBtn.style.background = ''; gpsBtn.style.borderColor = ''; gpsBtn.style.color = '';
       gpsIcon2.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
       document.querySelectorAll('#catGrid .catbox').forEach(function(b){ b.classList.remove('on'); });
-      ge('cImgPrev').innerHTML = '<div style="font-size:48px;margin-bottom:8px">📷</div><div style="font-weight:700;font-size:15px">กดเพื่อแนบรูปภาพ</div><div style="font-size:12px;margin-top:6px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>';
+      // Reset image picker UI
+      var pw = ge('cImgPreviewWrap'); var pb = ge('cImgPickerBtns');
+      if (pw) pw.style.display = 'none';
+      if (pb) pb.style.display = 'grid';
+      var pi = ge('cImgPreviewImg'); if (pi) pi.src = '';
       // Reset wizard to step 1
       _curStep = 1;
       document.querySelectorAll('.wiz-step').forEach(function(s){ s.classList.remove('active','enter-right','enter-left','enter-bottom','enter-top','exit-left','exit-right','exit-top'); });
@@ -325,12 +331,40 @@ async function submitTicket() {
 function prevCitizenImg(e) {
   var f = e.target.files[0];
   if (!f) return;
+
+  // Sync to the main #cImg input so FormData works as before
+  try {
+    var dt = new DataTransfer();
+    dt.items.add(f);
+    ge('cImg').files = dt.files;
+  } catch (ex) { /* Safari fallback — FormData will use _citizenImgDataUrl */ }
+
   var r = new FileReader();
   r.onload = function (ev) {
     _citizenImgDataUrl = ev.target.result;
-    ge('cImgPrev').innerHTML = '<img src="' + ev.target.result + '" style="max-width:100%;max-height:140px;border-radius:10px;object-fit:cover"/>';
+    // Show preview image, hide picker buttons
+    var pi = ge('cImgPreviewImg');
+    var pw = ge('cImgPreviewWrap');
+    var pb = ge('cImgPickerBtns');
+    if (pi) pi.src = ev.target.result;
+    if (pw) pw.style.display = 'block';
+    if (pb) pb.style.display = 'none';
   };
   r.readAsDataURL(f);
+}
+
+/* ── Clear selected image ───────────────────────────── */
+function clearCitizenImg() {
+  ge('cImg').value = '';
+  ge('cImgCamera').value = '';
+  ge('cImgGallery').value = '';
+  _citizenImgDataUrl = '';
+  var pi = ge('cImgPreviewImg');
+  var pw = ge('cImgPreviewWrap');
+  var pb = ge('cImgPickerBtns');
+  if (pi) pi.src = '';
+  if (pw) pw.style.display = 'none';
+  if (pb) pb.style.display = 'grid';
 }
 
 /* ── Render My Tickets ───────────────────────────────── */

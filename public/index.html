@@ -583,6 +583,7 @@
             </div>
           </div>
 
+
           <!-- STEP 4: รูปภาพ -->
           <div class="wiz-step" id="wiz4">
             <div class="ncard wiz-card">
@@ -593,20 +594,47 @@
                 </div>
                 <p class="wiz-sub">ถ่ายรูปหรือเลือกจากคลังภาพ เพื่อให้ช่างเห็นสภาพปัญหา</p>
               </div>
-              <label class="uarea" style="margin-bottom:16px">
-                <input type="file" id="cImg" accept="image/*" onchange="prevCitizenImg(event)" />
-                <div id="cImgPrev">
-                  <div style="font-size:48px;margin-bottom:8px">📷</div>
-                  <div style="font-weight:700;font-size:15px">กดเพื่อแนบรูปภาพ</div>
-                  <div style="font-size:12px;margin-top:6px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>
+
+              <!-- Hidden inputs -->
+              <input type="file" id="cImgCamera" accept="image/*" capture="environment" style="display:none" onchange="prevCitizenImg(event)" />
+              <input type="file" id="cImgGallery" accept="image/*" style="display:none" onchange="prevCitizenImg(event)" />
+              <!-- Unified hidden input used by rest of form -->
+              <input type="file" id="cImg" accept="image/*" style="display:none" />
+
+              <!-- Preview area -->
+              <div id="cImgPrev" style="margin-bottom:16px">
+                <!-- Image preview (hidden until selected) -->
+                <div id="cImgPreviewWrap" style="display:none;position:relative;margin-bottom:14px">
+                  <img id="cImgPreviewImg" src="" alt="preview"
+                    style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;border:2px solid var(--border)" />
+                  <button onclick="clearCitizenImg()" type="button"
+                    style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:99px;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
                 </div>
-              </label>
+
+                <!-- Two-button picker (shown when no image) -->
+                <div id="cImgPickerBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <!-- ถ่ายรูปด้วยกล้อง -->
+                  <button type="button" class="img-pick-btn" onclick="document.getElementById('cImgCamera').click()">
+                    <span style="font-size:32px;display:block;margin-bottom:8px">📸</span>
+                    <div style="font-weight:700;font-size:13px">ถ่ายรูป</div>
+                    <div style="font-size:11px;margin-top:4px;color:var(--muted)">ใช้กล้องอุปกรณ์</div>
+                  </button>
+                  <!-- เลือกจากคลัง -->
+                  <button type="button" class="img-pick-btn" onclick="document.getElementById('cImgGallery').click()">
+                    <span style="font-size:32px;display:block;margin-bottom:8px">🖼️</span>
+                    <div style="font-weight:700;font-size:13px">เลือกจากคลัง</div>
+                    <div style="font-size:11px;margin-top:4px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>
+                  </button>
+                </div>
+              </div>
+
               <div class="wiz-nav">
                 <button class="wiz-back btn-ripple" onclick="wizBack(4)">← ย้อนกลับ</button>
                 <button class="wiz-next btn-ripple" onclick="wizNext(4)">ถัดไป →</button>
               </div>
             </div>
           </div>
+
 
           <!-- STEP 5: ยืนยันและส่ง -->
           <div class="wiz-step" id="wiz5">
