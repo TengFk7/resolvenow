@@ -1,14 +1,14 @@
 // ─── routes/lineAuth.js ───────────────────────────────────────
 // LINE Login OAuth 2.0 flow
 const express = require('express');
-const https   = require('https');
-const router  = express.Router();
-const User    = require('../models/User');
+const https = require('https');
+const router = express.Router();
+const User = require('../models/User');
 
-const CLIENT_ID     = process.env.LINE_LOGIN_CLIENT_ID;
+const CLIENT_ID = process.env.LINE_LOGIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.LINE_LOGIN_CLIENT_SECRET;
-const CALLBACK_URL  = process.env.LINE_LOGIN_CALLBACK_URL ||
-                      (process.env.BASE_URL || 'http://localhost:3000') + '/auth/line/callback';
+const CALLBACK_URL = process.env.LINE_LOGIN_CALLBACK_URL ||
+  (process.env.BASE_URL || 'http://localhost:3000') + '/auth/line/callback';
 
 function httpsPost(hostname, path, body) {
   return new Promise((resolve, reject) => {
@@ -90,12 +90,12 @@ router.get('/callback', async (req, res) => {
     }
 
     // เจอ user แล้ว → อัปเดต avatar + เข้าระบบทันที
-    user.avatar          = pictureUrl || user.avatar;
+    user.avatar = pictureUrl || user.avatar;
     user.lineDisplayName = displayName;
     await user.save();
 
     req.session.userId = user._id.toString();
-    req.session.role   = user.role;
+    req.session.role = user.role;
     req.session.save((err) => {
       if (err) console.error('[LINE Login] session save error on login:', err);
       res.redirect('/?line_login=success');
