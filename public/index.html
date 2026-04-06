@@ -175,7 +175,8 @@
           <h3 style="font-size:17px;color:var(--navy);margin:0 0 4px">ยืนยันอีเมล</h3>
           <p style="font-size:12px;color:var(--muted);margin:0">กรอกรหัส OTP 6 หลักที่ส่งไปยัง Email</p>
         </div>
-        <div id="llOtpEmail" style="text-align:center;font-size:13px;color:var(--blue2);font-weight:700;margin-bottom:12px"></div>
+        <div id="llOtpEmail"
+          style="text-align:center;font-size:13px;color:var(--blue2);font-weight:700;margin-bottom:12px"></div>
         <div class="ebox" id="llOtpErr" style="margin-bottom:10px"></div>
         <div class="otp-wrap" id="llOtpWrap">
           <input class="otp-box" id="llOtp0" type="text" inputmode="numeric" maxlength="1" />
@@ -185,11 +186,14 @@
           <input class="otp-box" id="llOtp4" type="text" inputmode="numeric" maxlength="1" />
           <input class="otp-box" id="llOtp5" type="text" inputmode="numeric" maxlength="1" />
         </div>
-        <div id="llOtpAttempts" style="text-align:center;font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px"></div>
+        <div id="llOtpAttempts"
+          style="text-align:center;font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px"></div>
         <button class="btnp btn-ripple" onclick="doLineLinkVerifyOtp()" id="btnLineLinkVerify">✅ ยืนยัน OTP</button>
         <div style="text-align:center;margin-top:14px">
-          <span id="llOtpTimerWrap" style="font-size:13px;color:var(--muted)">ส่งอีกครั้งใน <strong id="llOtpTimer">5:00</strong></span>
-          <button id="btnLLResend" onclick="doLineLinkResendOtp()" class="btn-resend" style="display:none">🔄 ส่ง OTP ใหม่</button>
+          <span id="llOtpTimerWrap" style="font-size:13px;color:var(--muted)">ส่งอีกครั้งใน <strong
+              id="llOtpTimer">5:00</strong></span>
+          <button id="btnLLResend" onclick="doLineLinkResendOtp()" class="btn-resend" style="display:none">🔄 ส่ง OTP
+            ใหม่</button>
         </div>
         <button onclick="backToLineLinkForm()"
           style="width:100%;margin-top:10px;padding:10px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:13px;color:var(--muted);cursor:pointer;transition:var(--transition)"
@@ -416,14 +420,17 @@
         <div class="nav2" id="hAv">?</div>
         <div id="hName" class="h-username"></div>
       </div>
-      <!-- Logo — absolutely centered regardless of button width -->
-      <div class="nlogo nlogo-abs logo-anim">🏛️ <span>Resolve<span class="now-gold">Now</span></span></div>
-      <!-- Hamburger pushed to right -->
-      <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู"
-        style="margin-left:auto;flex-shrink:0">
+      <!-- Left placeholder (grid column 1) -->
+      <div style="justify-self:start"></div>
+      <!-- Logo — centered via grid column 2 -->
+      <div class="nlogo logo-anim">🏛️ <span>Resolve<span
+            class="now-gold">Now</span></span></div>
+      <!-- Hamburger pushed to right — grid column 3 -->
+      <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู" style="justify-self:end">
         <span></span><span></span><span></span>
       </button>
     </header>
+
 
 
     <div style="padding:16px 16px 0;max-width:760px;margin:0 auto;width:100%">
