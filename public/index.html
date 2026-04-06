@@ -39,7 +39,7 @@
       </div>
       <div class="tabs">
         <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
-        <button class="tab" id="tabReg" onclick="switchTab('reg')">สมัครสมาชิก</button>
+
         <button class="tab" id="tabSearch" onclick="switchTab('search')">🔍 ค้นหา</button>
         <button class="tab" id="tabHeatmap" onclick="switchTab('heatmap')">🗺️ แผนที่</button>
       </div>
@@ -68,17 +68,6 @@
           </a>
         </div>
 
-        <!-- Register Form -->
-        <div id="fReg" class="auth-flip-panel auth-flip-back">
-          <div class="row2">
-            <div class="fg"><label>ชื่อ</label><input type="text" id="rFirst" placeholder="ชื่อ" /></div>
-            <div class="fg"><label>นามสกุล</label><input type="text" id="rLast" placeholder="นามสกุล" /></div>
-          </div>
-          <div class="fg"><label>อีเมล</label><input type="email" id="rEmail" placeholder="example@gmail.com" /></div>
-          <div class="fg"><label>รหัสผ่าน</label><input type="password" id="rPass" placeholder="อย่างน้อย 6 ตัวอักษร" />
-          </div>
-          <button class="btnp btn-ripple" id="btnSendOtp" onclick="doRegister()">📧 ส่ง OTP ยืนยันอีเมล</button>
-        </div>
 
 
         <!-- Search Panel -->
@@ -209,33 +198,7 @@
       </div>
 
 
-      <!-- OTP Verification Step -->
-      <div id="fOtp" style="display:none">
-        <div class="otp-info" id="otpInfo"></div>
-        <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:12px;text-align:center">กรอกรหัส OTP
-          6 หลักที่ส่งไปยัง Email</div>
-        <div class="otp-wrap" id="otpWrap">
-          <input class="otp-box" id="otp0" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp1" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp2" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp3" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp4" type="text" inputmode="numeric" maxlength="1" />
-          <input class="otp-box" id="otp5" type="text" inputmode="numeric" maxlength="1" />
-        </div>
-        <div id="otpAttempts" style="text-align:center;font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px">
-        </div>
-        <button class="btnp btn-ripple" onclick="doVerifyOtp()" id="btnVerify">✅ ยืนยัน OTP</button>
-        <div style="text-align:center;margin-top:14px">
-          <span id="otpTimerWrap" style="font-size:13px;color:var(--muted)">ส่งอีกครั้งใน <strong
-              id="otpTimer">5:00</strong></span>
-          <button id="btnResend" onclick="doResendOtp()" class="btn-resend" style="display:none">🔄 ส่ง OTP
-            ใหม่</button>
-        </div>
-        <button onclick="backToRegForm()"
-          style="width:100%;margin-top:10px;padding:10px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:13px;color:var(--muted);cursor:pointer;transition:var(--transition)"
-          onmouseenter="this.style.borderColor='#94a3b8'" onmouseleave="this.style.borderColor='var(--border)'">←
-          แก้ไขข้อมูล</button>
-      </div>
+
     </div>
   </div>
 

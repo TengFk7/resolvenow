@@ -15,8 +15,8 @@ var _currentTab = 'login';
 var _switching = false;
 
 // panel id map
-var _panelId = { login: 'fLogin', reg: 'fReg', search: 'fSearch', heatmap: 'fHeatmap' };
-var _tabId = { login: 'tabLogin', reg: 'tabReg', search: 'tabSearch', heatmap: 'tabHeatmap' };
+var _panelId = { login: 'fLogin', search: 'fSearch', heatmap: 'fHeatmap' };
+var _tabId = { login: 'tabLogin', search: 'tabSearch', heatmap: 'tabHeatmap' };
 
 function switchTab(t) {
   if (t === _currentTab || _switching) return;
@@ -46,7 +46,7 @@ function switchTab(t) {
 
   var outClass, inClass;
   // Determine direction based on tab order: login < reg < search
-  var tabOrder = { login: 0, reg: 1, search: 2, heatmap: 3 };
+  var tabOrder = { login: 0, search: 1, heatmap: 2 };
   if (tabOrder[t] > tabOrder[_currentTab]) {
     outClass = 'lift-out'; inClass = 'lift-in';
   } else {
@@ -115,102 +115,9 @@ function switchTab(t) {
   }, 330);
 
   _currentTab = t;
-  ge('fOtp').style.display = 'none';
 }
 
 
-
-/* ── Back to Register Form ───────────────────────────────── */
-function backToRegForm() {
-  _stopOtpTimer();
-  _otpToken = null;
-  _otpLocked = false;
-  ge('fOtp').style.display = 'none';
-  ge('fReg').style.display = 'block';
-  ge('fLogin').style.display = 'none';
-  _currentTab = 'reg';
-  _switching = false;
-  hideE('authErr');
-}
-
-
-/* ── Step 1: Validate + Send OTP ────────────────────────── */
-async function doRegister() {
-  hideE('authErr');
-  var body = {
-    firstName: ge('rFirst').value.trim(),
-    lastName: ge('rLast').value.trim(),
-    email: ge('rEmail').value.trim(),
-    password: ge('rPass').value
-  };
-  if (!body.firstName || !body.lastName || !body.email || !body.password)
-    return showE('authErr', 'กรุณากรอกข้อมูลให้ครบ');
-
-  var btn = ge('btnSendOtp');
-  btn.disabled = true;
-  btn.textContent = 'กำลังส่ง OTP...';
-
-  try {
-    var res = await fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    var data = await res.json();
-    if (!res.ok) {
-      btn.disabled = false;
-      btn.innerHTML = '&#128231; ส่ง OTP ยืนยันอีเมล';
-      return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
-    }
-    _otpToken = data.token;
-    _otpLocked = false;
-    _showOtpStep(body.email);
-  } catch (e) {
-    btn.disabled = false;
-    btn.innerHTML = '&#128231; ส่ง OTP ยืนยันอีเมล';
-    showE('authErr', 'ไม่สามารถเชื่อมต่อได้');
-  }
-}
-
-/* ── Show OTP Step ───────────────────────────────────────── */
-function _showOtpStep(email) {
-  ge('fReg').style.display = 'none';
-  ge('fOtp').style.display = 'block';
-  ge('otpInfo').textContent = '📧 ส่ง OTP ไปที่ ' + email + ' แล้ว';
-  ge('otpAttempts').textContent = '';
-  ge('btnVerify').disabled = false;
-
-  // Clear boxes
-  for (var i = 0; i < 6; i++) {
-    var box = ge('otp' + i);
-    box.value = '';
-    box.className = 'otp-box';
-  }
-  ge('otp0').focus();
-  _setupOtpInputs();
-  _startOtpTimer(300); // 5 นาที
-}
-
-/* ── OTP Input Auto-focus ────────────────────────────────── */
-function _setupOtpInputs() {
-  for (var i = 0; i < 6; i++) {
-    (function (idx) {
-      var box = ge('otp' + idx);
-      box.oninput = function () {
-        var val = box.value.replace(/\D/g, '');
-        box.value = val.slice(-1);
-        box.className = 'otp-box' + (box.value ? ' filled' : '');
-        if (box.value && idx < 5) ge('otp' + (idx + 1)).focus();
-        if (idx === 5 && box.value) doVerifyOtp();
-      };
-      box.onkeydown = function (e) {
-        if (e.key === 'Backspace' && !box.value && idx > 0) {
-          ge('otp' + (idx - 1)).focus();
-        }
-      };
-    })(i);
-  }
-}
 
 /* ── LINE OTP Input Auto-focus ──────────────────────────── */
 (function() {
@@ -236,110 +143,6 @@ function _setupOtpInputs() {
     }
   }, 500);
 })();
-
-/* ── Get OTP value ───────────────────────────────────────── */
-function _getOtpValue() {
-  var code = '';
-  for (var i = 0; i < 6; i++) code += (ge('otp' + i).value || '');
-  return code;
-}
-
-/* ── Step 2: Verify OTP + Register ──────────────────────── */
-async function doVerifyOtp() {
-  if (_otpLocked) return;
-  var otp = _getOtpValue();
-  if (otp.length < 6) return showToast('กรุณากรอก OTP ให้ครบ 6 หลัก', true);
-
-  ge('btnVerify').disabled = true;
-  ge('btnVerify').textContent = 'กำลังตรวจสอบ...';
-
-  try {
-    var res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: _otpToken, otp: otp })
-    });
-    var data = await res.json();
-
-    if (!res.ok) {
-      ge('btnVerify').disabled = false;
-      ge('btnVerify').innerHTML = '&#9989; ยืนยัน OTP';
-
-      // Shake animation
-      for (var i = 0; i < 6; i++) {
-        var box = ge('otp' + i);
-        box.className = 'otp-box error shake';
-        (function (b) { setTimeout(function () { b.classList.remove('shake'); }, 450); })(box);
-      }
-
-      if (data.locked || data.expired) {
-        _otpLocked = true;
-        _stopOtpTimer();
-        ge('otpAttempts').textContent = data.error;
-        ge('btnVerify').disabled = true;
-        ge('otpTimerWrap').style.display = 'none';
-        ge('btnResend').style.display = 'inline-block';
-      } else {
-        ge('otpAttempts').textContent = data.error || 'OTP ไม่ถูกต้อง';
-        // Clear boxes for re-entry
-        for (var j = 0; j < 6; j++) {
-          ge('otp' + j).value = '';
-          ge('otp' + j).className = 'otp-box error';
-        }
-        ge('otp0').focus();
-      }
-      return;
-    }
-
-    // สำเร็จ
-    _stopOtpTimer();
-    CU = data.user;
-    sessionStorage.setItem('rn_logged_in', '1'); // mark: ยังอยู่ใน session
-    enterApp();
-  } catch (e) {
-    ge('btnVerify').disabled = false;
-    ge('btnVerify').innerHTML = '&#9989; ยืนยัน OTP';
-    showToast('ไม่สามารถเชื่อมต่อได้', true);
-  }
-}
-
-/* ── Resend OTP ──────────────────────────────────────────── */
-async function doResendOtp() {
-  _otpLocked = false;
-  ge('btnVerify').disabled = false;
-  ge('btnVerify').innerHTML = '&#9989; ยืนยัน OTP';
-  ge('btnResend').style.display = 'none';
-  ge('otpTimerWrap').style.display = 'inline';
-  ge('otpAttempts').textContent = '';
-
-  var body = {
-    firstName: ge('rFirst').value.trim(),
-    lastName: ge('rLast').value.trim(),
-    email: ge('rEmail').value.trim(),
-    password: ge('rPass').value
-  };
-
-  try {
-    var res = await fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    var data = await res.json();
-    if (!res.ok) return showToast(data.error || 'ส่ง OTP ไม่สำเร็จ', true);
-    _otpToken = data.token;
-
-    for (var i = 0; i < 6; i++) {
-      ge('otp' + i).value = '';
-      ge('otp' + i).className = 'otp-box';
-    }
-    ge('otp0').focus();
-    _startOtpTimer(300);
-    showToast('📧 ส่ง OTP ใหม่แล้ว!');
-  } catch (e) {
-    showToast('ไม่สามารถเชื่อมต่อได้', true);
-  }
-}
 
 /* ── OTP Countdown Timer ─────────────────────────────────── */
 function _startOtpTimer(seconds) {
@@ -444,7 +247,7 @@ async function doLogout() {
       });
     }
     // Reset flip state so switchTab always runs cleanly
-    _currentTab = 'reg';
+    _currentTab = 'login';
     _switching = false;
 
     // Clear dynamic DOM arrays to prevent state leakage between accounts
@@ -453,9 +256,8 @@ async function doLogout() {
     if (ge('queueBody')) ge('queueBody').innerHTML = '<tr><td colspan="4" class="empty">กำลังโหลด...</td></tr>';
     if (ge('allBody')) ge('allBody').innerHTML = '<tr><td colspan="11" class="empty">กำลังโหลด...</td></tr>';
 
-    // Hide all panels, show only fReg as baseline
-    ge('fLogin').style.display = 'none';
-    ge('fReg').style.display = 'block';
+    // Hide all panels, show only fLogin as baseline
+    ge('fLogin').style.display = 'block';
     var fSearch = ge('fSearch');
     if (fSearch) fSearch.style.display = 'none';
     switchTab('login');
