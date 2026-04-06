@@ -356,7 +356,6 @@ function prevCitizenImg(e) {
 /* ── Clear selected image ───────────────────────────── */
 function clearCitizenImg() {
   ge('cImg').value = '';
-  ge('cImgCamera').value = '';
   ge('cImgGallery').value = '';
   _citizenImgDataUrl = '';
   var pi = ge('cImgPreviewImg');
@@ -365,6 +364,131 @@ function clearCitizenImg() {
   if (pi) pi.src = '';
   if (pw) pw.style.display = 'none';
   if (pb) pb.style.display = 'grid';
+}
+
+/* ══════════════════════════════════════════
+   IN-APP CAMERA (getUserMedia — Android/iOS/Desktop)
+══════════════════════════════════════════ */
+var _camStream = null;
+var _camFacing = 'environment'; // 'environment' = rear, 'user' = front
+
+async function openCameraCapture() {
+  var modal = ge('mCamera');
+  var video = ge('camVideo');
+  var errBox = ge('camError');
+  if (!modal || !video) return;
+
+  // Reset error
+  errBox.style.display = 'none';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Stop any existing stream
+  _stopCamStream();
+
+  try {
+    _camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _camFacing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    video.srcObject = _camStream;
+  } catch (err) {
+    var msg = 'ไม่สามารถเปิดกล้องได้';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg = 'ปกุดอนุญาตการเข้าถึงกล้องในเบราว์เซอร์ท่านก่อน';
+    } else if (err.name === 'NotFoundError') {
+      msg = 'ไม่พบกล้องในอุปกรณ์';
+    } else if (err.name === 'NotReadableError') {
+      msg = 'กล้องถูกแอปอื่นใช้งานอยู่ กรุณาปิดแอปอื่นแล้วลองใหม่';
+    }
+    errBox.innerHTML = '⚠️ ' + msg + '<br><small style="opacity:.7">' + err.name + '</small><br><br>' +
+      '<button onclick="closeCameraCapture()" style="background:#fff;color:#000;border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:700">ปิด</button>';
+    errBox.style.display = 'block';
+  }
+}
+
+function closeCameraCapture() {
+  _stopCamStream();
+  var modal = ge('mCamera');
+  var video = ge('camVideo');
+  if (modal) modal.style.display = 'none';
+  if (video) video.srcObject = null;
+  document.body.style.overflow = '';
+}
+
+function _stopCamStream() {
+  if (_camStream) {
+    _camStream.getTracks().forEach(function(t) { t.stop(); });
+    _camStream = null;
+  }
+}
+
+async function switchCamera() {
+  _camFacing = _camFacing === 'environment' ? 'user' : 'environment';
+  _stopCamStream();
+  var video = ge('camVideo');
+  var errBox = ge('camError');
+  try {
+    _camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _camFacing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    video.srcObject = _camStream;
+    errBox.style.display = 'none';
+  } catch (err) {
+    // Switch back if failed
+    _camFacing = _camFacing === 'environment' ? 'user' : 'environment';
+    showToast('ไม่สามารถสลับกล้องได้', true);
+  }
+}
+
+function takeCameraPhoto() {
+  var video = ge('camVideo');
+  var canvas = ge('camCanvas');
+  if (!video || !canvas || !_camStream) return;
+
+  // Draw current video frame to canvas
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  var ctx = canvas.getContext('2d');
+  // Mirror front camera
+  if (_camFacing === 'user') {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Flash effect
+  var flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;opacity:.8;pointer-events:none;transition:opacity .3s';
+  document.body.appendChild(flash);
+  setTimeout(function() { flash.style.opacity = '0'; setTimeout(function() { flash.remove(); }, 300); }, 50);
+
+  // Convert canvas to Blob then to File
+  canvas.toBlob(function(blob) {
+    var file = new File([blob], 'camera_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+
+    // Sync to main cImg input
+    try {
+      var dt = new DataTransfer();
+      dt.items.add(file);
+      ge('cImg').files = dt.files;
+    } catch(ex) { /* fallback */ }
+
+    // Show preview
+    var url = URL.createObjectURL(blob);
+    _citizenImgDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    var pi = ge('cImgPreviewImg');
+    var pw = ge('cImgPreviewWrap');
+    var pb = ge('cImgPickerBtns');
+    if (pi) pi.src = url;
+    if (pw) pw.style.display = 'block';
+    if (pb) pb.style.display = 'none';
+
+    // Close camera
+    closeCameraCapture();
+    showToast('ถ่ายรูปสำเร็จ! ✅');
+  }, 'image/jpeg', 0.85);
 }
 
 /* ── Render My Tickets ───────────────────────────────── */
