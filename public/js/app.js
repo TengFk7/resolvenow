@@ -38,6 +38,9 @@ function enterApp() {
   ge('authPage').style.display = 'none';
   clearAppIntervals(); // BUG-001: clear any previous intervals before creating new ones
 
+  // Load categories from DB to populate DEPT/DEPT_ICON dynamically
+  loadCategories();
+
   if (CU.role === 'admin') {
 
     ge('adminApp').style.display = 'flex';

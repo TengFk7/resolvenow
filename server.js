@@ -109,6 +109,7 @@ app.set('io', io);
   app.use('/api/technicians',   require('./routes/technicians'));
   app.use('/api/help-requests', require('./routes/helpRequests'));
   app.use('/api/ai',            require('./routes/ai'));
+  app.use('/api/categories',    require('./routes/categories'));
   app.use('/auth/line',         require('./routes/lineAuth'));
 
   // ─── Fallback (SPA) ──────────────────────────────────────────

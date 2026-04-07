@@ -14,6 +14,7 @@
 
 /* ── Load All Admin Data ─────────────────────────────── */
 let _lastAdminTickets = [];
+let _lastAdminTechs = [];
 async function loadAdmin() {
   try {
     var r1 = await fetch('/api/tickets');
@@ -63,8 +64,10 @@ async function loadAdmin() {
     // Sub-pages
     if (currentPage === 'queue') renderAllQueue(tks);
     if (currentPage === 'techs') renderTechFull(techs);
+    if (currentPage === 'categories') renderCategories();
 
     _lastAdminTickets = tks;
+    _lastAdminTechs = techs;
     if (typeof updateMapMarkers === 'function') updateMapMarkers();
   } catch (e) { console.error(e); }
 }
@@ -369,10 +372,124 @@ function renderTechFull(techs) {
     h += '<span class="cstatus '+csClass+'">'+t.statusLabel+'</span>';
     h += '</div>';
     h += '<div class="tech-bar-wrap" style="margin-bottom:8px"><div class="tech-bar" style="width:'+t.capacity+'%"></div></div>';
-    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>งานค้าง: <strong style="color:var(--navy)">'+t.activeJobs+'</strong></span><span>รวมทั้งหมด: <strong style="color:var(--navy)">'+t.totalJobs+'</strong></span></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:10px"><span>งานค้าง: <strong style="color:var(--navy)">'+t.activeJobs+'</strong></span><span>รวมทั้งหมด: <strong style="color:var(--navy)">'+t.totalJobs+'</strong></span></div>';
+    h += '<div style="display:flex;gap:6px">';
+    h += '<button class="cat-btn cat-btn-edit btn-ripple" style="font-size:11px;padding:7px 0" onclick="openEditTechModal(\''+t.id+'\')">✏️ แก้ไข</button>';
+    h += '<button class="cat-btn cat-btn-del btn-ripple" style="font-size:11px;padding:7px 0;max-width:42px" onclick="deleteTech(\''+t.id+'\',\''+escapeHTML(t.name)+'\')">🗑️</button>';
+    h += '</div>';
     h += '</div>';
   }
   el.innerHTML = h;
+}
+
+/* ── Add Tech Modal ──────────────────────────────────── */
+var _editTechId = null;
+
+function _populateSpecialtySelect(selId) {
+  var sel = ge(selId);
+  if (!sel) return;
+  var cats = _categoriesCache || [];
+  sel.innerHTML = '<option value="">— ไม่ระบุ —</option>';
+  for (var i = 0; i < cats.length; i++) {
+    sel.innerHTML += '<option value="' + escapeHTML(cats[i].name) + '">' + cats[i].icon + ' ' + escapeHTML(cats[i].label) + '</option>';
+  }
+}
+
+function openAddTechModal() {
+  ge('addTechFname').value = '';
+  ge('addTechLname').value = '';
+  ge('addTechEmail').value = '';
+  ge('addTechPwd').value = '';
+  hideE('addTechErr');
+  _populateSpecialtySelect('addTechSpecialty');
+  ge('mAddTech').classList.add('on');
+  setTimeout(function() { ge('addTechFname').focus(); }, 200);
+}
+
+function closeAddTechModal() {
+  ge('mAddTech').classList.remove('on');
+}
+
+async function submitAddTech() {
+  var fn = ge('addTechFname').value.trim();
+  var ln = ge('addTechLname').value.trim();
+  var em = ge('addTechEmail').value.trim();
+  var pw = ge('addTechPwd').value;
+  var sp = ge('addTechSpecialty').value;
+  if (!fn) return showE('addTechErr', 'กรุณากรอกชื่อ');
+  if (!em) return showE('addTechErr', 'กรุณากรอกอีเมล');
+  if (!pw || pw.length < 6) return showE('addTechErr', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+  hideE('addTechErr');
+
+  try {
+    var res = await fetch('/api/technicians', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: fn, lastName: ln || '-', email: em, password: pw, specialty: sp })
+    });
+    var data = await res.json();
+    if (!res.ok) return showE('addTechErr', data.error || 'เกิดข้อผิดพลาด');
+    closeAddTechModal();
+    showToast('เพิ่มช่าง "' + data.name + '" สำเร็จ 👷', 'success');
+    loadAdmin();
+  } catch (e) { showE('addTechErr', 'เกิดข้อผิดพลาด'); }
+}
+
+/* ── Edit Tech Modal ─────────────────────────────────── */
+function openEditTechModal(techId) {
+  _editTechId = techId;
+  // Find tech from last admin data
+  var techs = _lastAdminTechs || [];
+  var tech = techs.find(function(t) { return t.id === techId; });
+  if (!tech) return;
+
+  ge('editTechFname').value = tech.firstName || '';
+  ge('editTechLname').value = tech.lastName || '';
+  ge('editTechEmail').textContent = tech.email || '';
+  hideE('editTechErr');
+  _populateSpecialtySelect('editTechSpecialty');
+  ge('editTechSpecialty').value = tech.specialty || '';
+  ge('mEditTech').classList.add('on');
+  setTimeout(function() { ge('editTechFname').focus(); }, 200);
+}
+
+function closeEditTechModal() {
+  ge('mEditTech').classList.remove('on');
+  _editTechId = null;
+}
+
+async function submitEditTech() {
+  if (!_editTechId) return;
+  var fn = ge('editTechFname').value.trim();
+  var ln = ge('editTechLname').value.trim();
+  var sp = ge('editTechSpecialty').value;
+  if (!fn) return showE('editTechErr', 'กรุณากรอกชื่อ');
+  hideE('editTechErr');
+
+  try {
+    var res = await fetch('/api/technicians/' + _editTechId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: fn, lastName: ln || '-', specialty: sp })
+    });
+    var data = await res.json();
+    if (!res.ok) return showE('editTechErr', data.error || 'เกิดข้อผิดพลาด');
+    closeEditTechModal();
+    showToast('อัปเดตข้อมูลช่างสำเร็จ ✏️', 'success');
+    loadAdmin();
+  } catch (e) { showE('editTechErr', 'เกิดข้อผิดพลาด'); }
+}
+
+/* ── Delete Tech ─────────────────────────────────────── */
+async function deleteTech(techId, techName) {
+  if (!confirm('ลบช่าง "' + techName + '" ? (ถ้ามีงานค้างจะลบไม่ได้)')) return;
+  try {
+    var res = await fetch('/api/technicians/' + techId, { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) { showToast(data.error || 'ลบไม่สำเร็จ', 'error'); return; }
+    showToast('ลบช่างสำเร็จ 🗑️', 'success');
+    loadAdmin();
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
 }
 
 /* ── Delete Ticket Modal ───────────────────────────────── */
@@ -457,4 +574,300 @@ async function confirmDeleteAll() {
   btn.disabled = false;
   btn.textContent = '🗑️ ลบทั้งหมด';
   loadAdmin();
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   CATEGORY MANAGEMENT
+══════════════════════════════════════════════════════════ */
+
+var EMOJI_PRESETS = [
+  '🛣️','💧','💡','🗑️','🐍','🌿','🚨','🌊','🔥','🏗️',
+  '🚗','🚰','🏠','🏥','🏫','🏢','🚧','⚡','🌳','🐕',
+  '🐈','🐀','🦟','💨','🌧️','🌪️','☀️','🔔','📢','🔇',
+  '🚽','🚿','🛠️','🔨','⛽','🅿️','♻️','🧹','🧪','🏭',
+  '🎵','📡','🚦','🛤️','🏖️','🌉','⚠️','🔌','🚲','🛵',
+  '🏕️','🗼','🏗️','🧱','🪵','🪨','🛶','⛲','🗺️','📌',
+  '🔧','🔩','⚙️','🧰','🪛','🔬','🔭','💊','💉','🩺',
+  '🐾','🦎','🐢','🦅','🐝','🦇','🐟','🪴','🌻','🍂'
+];
+
+var _editCatId = null;
+var _deleteCatId = null;
+var _techLinkCatId = null;
+var _techLinkCatName = null;
+
+/* ── Render Category Cards ──────────────────────────── */
+async function renderCategories() {
+  var el = ge('catMgmtGrid');
+  if (!el) return;
+  try {
+    var res = await fetch('/api/categories');
+    if (!res.ok) { el.innerHTML = '<div class="empty">โหลดไม่สำเร็จ</div>'; return; }
+    var cats = await res.json();
+    if (!cats.length) { el.innerHTML = '<div class="empty">ยังไม่มีหมวดหมู่</div>'; return; }
+
+    var h = '';
+    for (var i = 0; i < cats.length; i++) {
+      var c = cats[i];
+      var techNames = c.technicians.map(function(t) { return t.name; }).join(', ') || '<span style="color:var(--muted)">ยังไม่มีช่าง</span>';
+      h += '<div class="cat-mgmt-card">';
+      h += '<div class="cat-mgmt-header">';
+      h += '<div class="cat-mgmt-icon">' + c.icon + '</div>';
+      h += '<div class="cat-mgmt-info">';
+      h += '<div class="cat-mgmt-name">' + escapeHTML(c.label) + '</div>';
+      h += '<div class="cat-mgmt-key">' + escapeHTML(c.name) + (c.isDefault ? ' <span class="cat-default-badge">ค่าเริ่มต้น</span>' : '') + '</div>';
+      h += '</div>';
+      h += '</div>';
+      h += '<div class="cat-mgmt-techs">';
+      h += '<div class="cat-mgmt-tech-label">🔧 ช่างที่ผูก (' + c.techCount + ')</div>';
+      h += '<div class="cat-mgmt-tech-names">' + techNames + '</div>';
+      h += '</div>';
+      h += '<div class="cat-mgmt-actions">';
+      h += '<button class="cat-btn cat-btn-tech btn-ripple" onclick="openTechLinkModal(\'' + c._id + '\',\'' + escapeHTML(c.label) + '\')">🔧 จัดการช่าง</button>';
+      h += '<button class="cat-btn cat-btn-edit btn-ripple" onclick="openEditCategoryModal(\'' + c._id + '\')">✏️ แก้ไข</button>';
+      h += '<button class="cat-btn cat-btn-del btn-ripple" onclick="openDeleteCategoryModal(\'' + c._id + '\',\'' + escapeHTML(c.icon + ' ' + c.label) + '\')" ' + (c.isDefault ? 'title="หมวดค่าเริ่มต้น"' : '') + '>🗑️</button>';
+      h += '</div>';
+      h += '</div>';
+    }
+    el.innerHTML = h;
+  } catch (e) { console.error(e); el.innerHTML = '<div class="empty">เกิดข้อผิดพลาด</div>'; }
+}
+
+/* ── Emoji Picker ───────────────────────────────────── */
+function renderEmojiPicker(gridId, inputId) {
+  var grid = ge(gridId);
+  if (!grid) return;
+  var h = '';
+  for (var i = 0; i < EMOJI_PRESETS.length; i++) {
+    var em = EMOJI_PRESETS[i];
+    h += '<button type="button" class="emoji-pick-btn" data-emoji="' + em + '" onclick="selectEmoji(this,\'' + inputId + '\')">' + em + '</button>';
+  }
+  grid.innerHTML = h;
+}
+
+function selectEmoji(btn, inputId) {
+  // Remove selection from siblings
+  var parent = btn.parentElement;
+  parent.querySelectorAll('.emoji-pick-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  ge(inputId).value = btn.dataset.emoji;
+  // Preview
+  var preview = inputId === 'addCatIcon' ? ge('selectedEmojiPreview') : null;
+  if (preview) preview.innerHTML = 'เลือก: <strong style="font-size:20px">' + btn.dataset.emoji + '</strong>';
+}
+
+/* ── Add Category Modal ─────────────────────────────── */
+function openAddCategoryModal() {
+  ge('addCatName').value = '';
+  ge('addCatLabel').value = '';
+  ge('addCatIcon').value = '';
+  hideE('addCatErr');
+  ge('selectedEmojiPreview').innerHTML = '';
+  renderEmojiPicker('emojiPickerGrid', 'addCatIcon');
+  ge('mAddCategory').classList.add('on');
+  setTimeout(function() { ge('addCatName').focus(); }, 200);
+}
+
+function closeAddCategoryModal() {
+  ge('mAddCategory').classList.remove('on');
+}
+
+async function submitAddCategory() {
+  var name = ge('addCatName').value.trim();
+  var label = ge('addCatLabel').value.trim();
+  var icon = ge('addCatIcon').value.trim();
+  if (!name) return showE('addCatErr', 'กรุณากรอกชื่อ Key');
+  if (!label) return showE('addCatErr', 'กรุณากรอกชื่อแสดงผล');
+  if (!icon) return showE('addCatErr', 'กรุณาเลือก Emoji');
+  hideE('addCatErr');
+
+  try {
+    var res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, label: label, icon: icon })
+    });
+    var data = await res.json();
+    if (!res.ok) return showE('addCatErr', data.error || 'เกิดข้อผิดพลาด');
+    closeAddCategoryModal();
+    showToast('สร้างหมวดหมู่ "' + label + '" สำเร็จ 🎉', 'success');
+    await loadCategories();
+    renderCategories();
+  } catch (e) { showE('addCatErr', 'เกิดข้อผิดพลาด'); }
+}
+
+/* ── Edit Category Modal ────────────────────────────── */
+function openEditCategoryModal(catId) {
+  _editCatId = catId;
+  var cats = _categoriesCache || [];
+  var cat = cats.find(function(c) { return c._id === catId; });
+  if (!cat) return;
+
+  ge('editCatCurrentIcon').textContent = cat.icon;
+  ge('editCatCurrentName').textContent = cat.name;
+  ge('editCatLabel').value = cat.label;
+  ge('editCatIcon').value = cat.icon;
+  hideE('editCatErr');
+  renderEmojiPicker('editEmojiPickerGrid', 'editCatIcon');
+  // Pre-select current emoji
+  setTimeout(function() {
+    var btns = ge('editEmojiPickerGrid').querySelectorAll('.emoji-pick-btn');
+    btns.forEach(function(b) {
+      if (b.dataset.emoji === cat.icon) b.classList.add('selected');
+    });
+  }, 50);
+  ge('mEditCategory').classList.add('on');
+}
+
+function closeEditCategoryModal() {
+  ge('mEditCategory').classList.remove('on');
+  _editCatId = null;
+}
+
+async function submitEditCategory() {
+  if (!_editCatId) return;
+  var label = ge('editCatLabel').value.trim();
+  var icon = ge('editCatIcon').value.trim();
+  if (!label) return showE('editCatErr', 'กรุณากรอกชื่อแสดงผล');
+  hideE('editCatErr');
+
+  try {
+    var res = await fetch('/api/categories/' + _editCatId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: label, icon: icon })
+    });
+    var data = await res.json();
+    if (!res.ok) return showE('editCatErr', data.error || 'เกิดข้อผิดพลาด');
+    closeEditCategoryModal();
+    showToast('แก้ไขหมวดหมู่สำเร็จ ✏️', 'success');
+    await loadCategories();
+    renderCategories();
+  } catch (e) { showE('editCatErr', 'เกิดข้อผิดพลาด'); }
+}
+
+/* ── Delete Category Modal ──────────────────────────── */
+function openDeleteCategoryModal(catId, catLabel) {
+  _deleteCatId = catId;
+  ge('mDeleteCatLabel').textContent = catLabel;
+  hideE('deleteCatErr');
+  ge('mDeleteCategory').classList.add('on');
+}
+
+function closeDeleteCategoryModal() {
+  ge('mDeleteCategory').classList.remove('on');
+  _deleteCatId = null;
+}
+
+async function confirmDeleteCategory() {
+  if (!_deleteCatId) return;
+  var btn = ge('btnConfirmDeleteCat');
+  btn.disabled = true;
+  btn.textContent = 'กำลังลบ...';
+  try {
+    var res = await fetch('/api/categories/' + _deleteCatId, { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) {
+      showE('deleteCatErr', data.error || 'ลบไม่สำเร็จ');
+      btn.disabled = false;
+      btn.textContent = '🗑️ ลบถาวร';
+      return;
+    }
+    closeDeleteCategoryModal();
+    showToast('ลบหมวดหมู่สำเร็จ 🗑️', 'success');
+    await loadCategories();
+    renderCategories();
+  } catch (e) { showE('deleteCatErr', 'เกิดข้อผิดพลาด'); }
+  btn.disabled = false;
+  btn.textContent = '🗑️ ลบถาวร';
+}
+
+/* ── Tech Link Modal ────────────────────────────────── */
+async function openTechLinkModal(catId, catLabel) {
+  _techLinkCatId = catId;
+  _techLinkCatName = catLabel;
+  ge('techLinkCatName').textContent = catLabel;
+  ge('techLinkList').innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>';
+  ge('mTechLink').classList.add('on');
+
+  try {
+    // Fetch all technicians + current category data
+    var res1 = await fetch('/api/technicians');
+    var res2 = await fetch('/api/categories');
+    if (!res1.ok || !res2.ok) return;
+    var allTechs = await res1.json();
+    var cats = await res2.json();
+    var cat = cats.find(function(c) { return c._id === catId; });
+    var linkedIds = cat ? cat.technicians.map(function(t) { return t._id; }) : [];
+
+    var el = ge('techLinkList');
+    if (!allTechs.length) { el.innerHTML = '<div class="empty" style="padding:20px;text-align:center">ไม่มีช่างในระบบ</div>'; return; }
+
+    var h = '';
+    for (var i = 0; i < allTechs.length; i++) {
+      var t = allTechs[i];
+      var isLinked = linkedIds.indexOf(t.id) >= 0;
+      var specialtyTH = (DEPT[t.specialty] || t.specialty || 'ไม่ระบุแผนก');
+      h += '<label class="tech-link-item' + (isLinked ? ' linked' : '') + '">';
+      h += '<input type="checkbox" class="tech-link-cb" value="' + t.id + '"' + (isLinked ? ' checked' : '') + ' />';
+      h += '<div class="tech-link-info">';
+      h += '<div class="tech-link-name">' + (DEPT_ICON[t.specialty] || '👤') + ' ' + escapeHTML(t.name) + '</div>';
+      h += '<div class="tech-link-dept">' + escapeHTML(specialtyTH) + ' — ' + t.statusLabel + '</div>';
+      h += '</div>';
+      h += '<span class="tech-link-status ' + (isLinked ? 'tls-on' : 'tls-off') + '">' + (isLinked ? '✅' : '—') + '</span>';
+      h += '</label>';
+    }
+    el.innerHTML = h;
+
+    // Toggle visual on change
+    el.querySelectorAll('.tech-link-cb').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var item = this.closest('.tech-link-item');
+        var status = item.querySelector('.tech-link-status');
+        if (this.checked) {
+          item.classList.add('linked');
+          status.className = 'tech-link-status tls-on';
+          status.textContent = '✅';
+        } else {
+          item.classList.remove('linked');
+          status.className = 'tech-link-status tls-off';
+          status.textContent = '—';
+        }
+      });
+    });
+  } catch (e) { console.error(e); }
+}
+
+function closeTechLinkModal() {
+  ge('mTechLink').classList.remove('on');
+  _techLinkCatId = null;
+}
+
+async function saveTechLinks() {
+  if (!_techLinkCatId) return;
+  var checkboxes = ge('techLinkList').querySelectorAll('.tech-link-cb:checked');
+  var ids = [];
+  checkboxes.forEach(function(cb) { ids.push(cb.value); });
+
+  var btn = ge('btnSaveTechLinks');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+  try {
+    var res = await fetch('/api/categories/' + _techLinkCatId + '/technicians', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ technicianIds: ids })
+    });
+    var data = await res.json();
+    if (!res.ok) { showToast(data.error || 'เกิดข้อผิดพลาด', 'error'); }
+    else {
+      showToast('อัปเดตช่างสำเร็จ — ' + data.techCount + ' คน 🔧', 'success');
+      closeTechLinkModal();
+      await loadCategories();
+      renderCategories();
+    }
+  } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
 }

@@ -92,6 +92,50 @@ var DEPT_ICON = {
   Road:'🛣️', Water:'💧', Electricity:'💡',
   Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨'
 };
+var _categoriesCache = null;
+
+async function loadCategories() {
+  try {
+    var res = await fetch('/api/categories');
+    if (!res.ok) return;
+    var cats = await res.json();
+    _categoriesCache = cats;
+    // Update DEPT and DEPT_ICON dynamically
+    DEPT = {};
+    DEPT_ICON = {};
+    cats.forEach(function(c) {
+      DEPT[c.name] = c.label;
+      DEPT_ICON[c.name] = c.icon;
+    });
+    // Update dynamic dropdowns
+    _updateDynamicSelects(cats);
+    // Update citizen catGrid if visible
+    if (typeof renderDynamicCatGrid === 'function') renderDynamicCatGrid(cats);
+  } catch (e) { console.error('[loadCategories]', e); }
+}
+
+function _updateDynamicSelects(cats) {
+  // Search category filter
+  var srchCat = ge('srchCat');
+  if (srchCat) {
+    var val = srchCat.value;
+    srchCat.innerHTML = '<option value="all">ทุกประเภท</option>';
+    cats.forEach(function(c) {
+      srchCat.innerHTML += '<option value="' + escapeHTML(c.name) + '">' + c.icon + ' ' + escapeHTML(c.label) + '</option>';
+    });
+    srchCat.value = val;
+  }
+  // Help request target dept
+  var helpDept = ge('helpTargetDept');
+  if (helpDept) {
+    var hval = helpDept.value;
+    helpDept.innerHTML = '<option value="">— ทุกแผนก —</option>';
+    cats.forEach(function(c) {
+      helpDept.innerHTML += '<option value="' + escapeHTML(c.name) + '">' + c.icon + ' ' + escapeHTML(c.label) + '</option>';
+    });
+    helpDept.value = hval;
+  }
+}
 
 /* ── DOM Helper ──────────────────────────────────────── */
 function ge(id) { return document.getElementById(id); }
@@ -136,8 +180,8 @@ function startClock() {
 }
 
 /* ── Page Transition (admin pages) ──────────────────── */
-var _pages = ['pageDashboard','pageQueue','pageTechs'];
-var _navIds = { dashboard:'nav-dashboard', queue:'nav-queue', techs:'nav-techs' };
+var _pages = ['pageDashboard','pageQueue','pageTechs','pageCategories'];
+var _navIds = { dashboard:'nav-dashboard', queue:'nav-queue', techs:'nav-techs', categories:'nav-categories' };
 
 function showPage(name) {
   _pages.forEach(function(pid) {
@@ -159,14 +203,14 @@ function showPage(name) {
     nav.classList.toggle('on', k === name);
   });
   // Update admin mobile bottom nav active state
-  var mobMap = { dashboard: 'amob-dashboard', queue: 'amob-queue', techs: 'amob-techs' };
+  var mobMap = { dashboard: 'amob-dashboard', queue: 'amob-queue', techs: 'amob-techs', categories: 'amob-categories' };
   Object.keys(mobMap).forEach(function(k) {
     var btn = ge(mobMap[k]);
     if (!btn) return;
     btn.classList.toggle('on', k === name);
   });
   // Update page title
-  var titles = { dashboard:'Smart Dispatcher Dashboard', queue:'Ticket ทั้งหมด', techs:'สถานะทีมช่าง' };
+  var titles = { dashboard:'Smart Dispatcher Dashboard', queue:'Ticket ทั้งหมด', techs:'สถานะทีมช่าง', categories:'จัดการหมวดหมู่เรื่องร้องเรียน' };
   var pt = ge('pageTitle');
   if (pt && titles[name]) pt.textContent = titles[name];
   currentPage = name;

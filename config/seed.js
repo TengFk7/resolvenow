@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Category = require('../models/Category');
 
 const DEPT_MAP = {
   Road: { th: 'ถนน/ทางเท้า', icon: '🛣️' },
@@ -24,6 +25,8 @@ const techNames = [
 async function seedDB() {
   const existingAdmin = await User.findOne({ role: 'admin' });
   if (existingAdmin) {
+    // ── Seed categories ถ้ายังไม่มี (รองรับ DB เดิมที่มี user แล้ว) ──
+    await seedCategories();
     console.log('✅ Seed ข้ามแล้ว (มีข้อมูลใน DB)');
     return;
   }
@@ -57,10 +60,33 @@ async function seedDB() {
     role: 'citizen',
   }).save();
 
+  // ── Seed default categories ──
+  await seedCategories();
+
   console.log('✅ Seed สำเร็จ');
   console.log('   Admin:   admin@resolvenow.th / admin1234');
   console.log('   Tech:    tech1@resolvenow.th ~ tech7@resolvenow.th / tech1234');
   console.log('   Citizen: tenginpb@gmail.com / 123456');
+}
+
+// ── Seed Default Categories + Link Technicians ──────────────────
+async function seedCategories() {
+  const catCount = await Category.countDocuments();
+  if (catCount > 0) return; // มีแล้ว ข้าม
+
+  console.log('📂 กำลัง Seed หมวดหมู่เริ่มต้น...');
+  for (const [name, info] of Object.entries(DEPT_MAP)) {
+    // หาช่างที่ specialty ตรง
+    const matchingTechs = await User.find({ role: 'technician', specialty: name }).select('_id');
+    await new Category({
+      name,
+      label: info.th,
+      icon: info.icon,
+      technicianIds: matchingTechs.map(t => t._id),
+      isDefault: true,
+    }).save();
+  }
+  console.log('✅ Seed หมวดหมู่ 7 รายการสำเร็จ');
 }
 
 module.exports = { seedDB, DEPT_MAP };

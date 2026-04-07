@@ -227,6 +227,9 @@
         <div class="sb-item" id="nav-techs" onclick="showPage('techs')">
           <span class="sb-icon">🔧</span> สถานะทีมช่าง
         </div>
+        <div class="sb-item" id="nav-categories" onclick="showPage('categories')">
+          <span class="sb-icon">📂</span> หมวดหมู่
+        </div>
       </div>
     </div>
 
@@ -382,11 +385,32 @@
         <div id="pageTechs" style="display:none">
           <div class="panel">
             <div class="panel-head">
-              <h3>🔧 ทีมช่างทั้งหมด 7 แผนก</h3>
+              <h3>🔧 ทีมช่างทั้งหมด</h3>
+              <button class="btn-ripple" onclick="openAddTechModal()"
+                style="display:flex;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Prompt,sans-serif">
+                👷 เพิ่มช่างใหม่
+              </button>
             </div>
             <div class="tech-full-grid" id="techFullList"></div>
           </div>
         </div>
+
+        <!-- Category Management Page -->
+        <div id="pageCategories" style="display:none">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>📂 หมวดหมู่เรื่องร้องเรียนทั้งหมด</h3>
+              <button class="btn-ripple" onclick="openAddCategoryModal()"
+                style="display:flex;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Prompt,sans-serif">
+                ➕ เพิ่มหมวดใหม่
+              </button>
+            </div>
+            <div class="cat-mgmt-grid" id="catMgmtGrid">
+              <div class="empty">กำลังโหลด...</div>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /content -->
     </div><!-- /main -->
 
@@ -403,6 +427,10 @@
       <button class="admin-mob-btn" id="amob-techs" onclick="showPage('techs')">
         <span class="admin-mob-icon">🔧</span>
         <span class="admin-mob-label">ทีมช่าง</span>
+      </button>
+      <button class="admin-mob-btn" id="amob-categories" onclick="showPage('categories')">
+        <span class="admin-mob-icon">📂</span>
+        <span class="admin-mob-label">หมวดหมู่</span>
       </button>
     </nav>
 
@@ -946,6 +974,170 @@
         <button onclick="doAdminUnlinkAll()" id="btnUnlinkAll"
           style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.3)">🗑️
           ล้างทั้งหมด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Add Category ──────────────────────────────── -->
+  <div class="mo" id="mAddCategory">
+    <div class="mb" style="max-width:480px;width:95%">
+      <button class="mc" onclick="closeAddCategoryModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">📂</div>
+        <h3 style="margin:0 0 4px;font-size:17px">เพิ่มหมวดหมู่ใหม่</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">สร้างหมวดเรื่องร้องเรียนใหม่สำหรับประชาชน</p>
+      </div>
+      <div class="fg">
+        <label>ชื่อ Key (ภาษาอังกฤษ) <span style="color:var(--r)">*</span></label>
+        <input type="text" id="addCatName" placeholder="เช่น Flood, Noise, Parking" />
+      </div>
+      <div class="fg">
+        <label>ชื่อแสดงผล (ภาษาไทย) <span style="color:var(--r)">*</span></label>
+        <input type="text" id="addCatLabel" placeholder="เช่น น้ำท่วม, เสียงรบกวน" />
+      </div>
+      <div class="fg">
+        <label>เลือก Emoji Icon <span style="color:var(--r)">*</span></label>
+        <div class="emoji-picker-grid" id="emojiPickerGrid"></div>
+        <input type="hidden" id="addCatIcon" />
+        <div id="selectedEmojiPreview" style="margin-top:8px;font-size:13px;color:var(--muted);min-height:20px"></div>
+      </div>
+      <div class="ebox" id="addCatErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeAddCategoryModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitAddCategory()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)">➕ สร้างหมวดหมู่</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Edit Category ──────────────────────────────── -->
+  <div class="mo" id="mEditCategory">
+    <div class="mb" style="max-width:480px;width:95%">
+      <button class="mc" onclick="closeEditCategoryModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px" id="editCatCurrentIcon">📂</div>
+        <h3 style="margin:0 0 4px;font-size:17px">แก้ไขหมวดหมู่</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0" id="editCatCurrentName"></p>
+      </div>
+      <div class="fg">
+        <label>ชื่อแสดงผล (ภาษาไทย)</label>
+        <input type="text" id="editCatLabel" />
+      </div>
+      <div class="fg">
+        <label>เปลี่ยน Emoji Icon</label>
+        <div class="emoji-picker-grid" id="editEmojiPickerGrid"></div>
+        <input type="hidden" id="editCatIcon" />
+      </div>
+      <div class="ebox" id="editCatErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeEditCategoryModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitEditCategory()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Tech Link ──────────────────────────────── -->
+  <div class="mo" id="mTechLink">
+    <div class="mb" style="max-width:520px;width:95%">
+      <button class="mc" onclick="closeTechLinkModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">🔧</div>
+        <h3 style="margin:0 0 4px;font-size:17px">จัดการช่าง — <span id="techLinkCatName"></span></h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">เลือกช่างที่ต้องการผูกกับหมวดหมู่นี้</p>
+      </div>
+      <div id="techLinkList" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:14px">
+        <div class="empty" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeTechLinkModal()"
+          style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ปิด</button>
+        <button onclick="saveTechLinks()" id="btnSaveTechLinks"
+          style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.3)">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Add Technician ────────────────────────────── -->
+  <div class="mo" id="mAddTech">
+    <div class="mb" style="max-width:460px;width:95%">
+      <button class="mc" onclick="closeAddTechModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">👷</div>
+        <h3 style="margin:0 0 4px;font-size:17px">เพิ่มช่างใหม่</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">สร้างบัญชีช่างใหม่ในระบบ</p>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>ชื่อ <span style="color:var(--r)">*</span></label><input type="text" id="addTechFname" placeholder="ชื่อ" /></div>
+        <div class="fg"><label>นามสกุล</label><input type="text" id="addTechLname" placeholder="นามสกุล" /></div>
+      </div>
+      <div class="fg"><label>อีเมล <span style="color:var(--r)">*</span></label><input type="email" id="addTechEmail" placeholder="email@example.com" /></div>
+      <div class="fg"><label>รหัสผ่าน <span style="color:var(--r)">*</span></label><input type="password" id="addTechPwd" placeholder="รหัสผ่าน (6+ ตัวอักษร)" /></div>
+      <div class="fg">
+        <label>แผนกเริ่มต้น</label>
+        <select id="addTechSpecialty" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
+          <option value="">— ไม่ระบุ —</option>
+        </select>
+      </div>
+      <div class="ebox" id="addTechErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeAddTechModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitAddTech()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.35)">👷 เพิ่มช่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Edit Technician ───────────────────────────── -->
+  <div class="mo" id="mEditTech">
+    <div class="mb" style="max-width:460px;width:95%">
+      <button class="mc" onclick="closeEditTechModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">✏️</div>
+        <h3 style="margin:0 0 4px;font-size:17px">แก้ไขข้อมูลช่าง</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0" id="editTechEmail"></p>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>ชื่อ</label><input type="text" id="editTechFname" /></div>
+        <div class="fg"><label>นามสกุล</label><input type="text" id="editTechLname" /></div>
+      </div>
+      <div class="fg">
+        <label>แผนก</label>
+        <select id="editTechSpecialty" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
+          <option value="">— ไม่ระบุ —</option>
+        </select>
+      </div>
+      <div class="ebox" id="editTechErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeEditTechModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitEditTech()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Delete Category Confirm ──────────────────── -->
+  <div class="mo" id="mDeleteCategory">
+    <div class="mb">
+      <button class="mc" onclick="closeDeleteCategoryModal()">✕</button>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:44px;margin-bottom:10px">🗑️</div>
+        <h3 style="margin:0 0 6px;font-size:18px">ลบหมวดหมู่?</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="mDeleteCatLabel"></p>
+      </div>
+      <p style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff1f1;border-radius:10px;padding:12px;border:1px solid #fecaca">
+        ⚠️ หมวดหมู่จะถูกลบถาวร หากมีเรื่องร้องเรียนค้างอยู่จะ<strong>ไม่สามารถลบได้</strong>
+      </p>
+      <div class="ebox" id="deleteCatErr"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeDeleteCategoryModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">✕ ยกเลิก</button>
+        <button onclick="confirmDeleteCategory()" id="btnConfirmDeleteCat"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">🗑️ ลบถาวร</button>
       </div>
     </div>
   </div>

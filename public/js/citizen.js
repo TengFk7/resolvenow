@@ -103,10 +103,9 @@ function wizBuildSummary() {
   var urg = ge('tUrg').value || 'ไม่ระบุ';
   var urgTH = { urgent: '⚡ ด่วนมาก', medium: '⏰ ด่วน', normal: '🔵 ปกติ' }[urg] || urg;
   var catTH = DEPT[cat] || cat || '—';
-  var icon  = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
 
   var h = '';
-  h += sumRow(icon[cat] || '📋', 'ประเภทปัญหา', catTH);
+  h += sumRow(DEPT_ICON[cat] || '📋', 'ประเภทปัญหา', catTH);
   h += sumRow('📝', 'รายละเอียด', escapeHTML(desc) || '—');
   h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + escapeHTML(_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
   // Show image thumbnail instead of filename
@@ -116,6 +115,21 @@ function wizBuildSummary() {
   h += sumRowRaw('📷', 'รูปภาพ', imgHtml);
   h += sumRow('🤖', 'ระดับความเร่งด่วน', urgTH);
   ge('wizSummary').innerHTML = h;
+}
+
+/* ── Dynamic Category Grid (from API) ───────────────── */
+function renderDynamicCatGrid(cats) {
+  var grid = ge('catGrid');
+  if (!grid) return;
+  var h = '';
+  for (var i = 0; i < cats.length; i++) {
+    var c = cats[i];
+    var isLast = (i === cats.length - 1 && cats.length % 2 === 1);
+    h += '<div class="catbox" data-val="' + escapeHTML(c.name) + '" onclick="toggleCat(this)"' + (isLast ? ' style="grid-column:1/-1"' : '') + '>';
+    h += '<span class="caticon">' + c.icon + '</span>' + escapeHTML(c.label);
+    h += '</div>';
+  }
+  grid.innerHTML = h;
 }
 
 function sumRow(icon, label, val) {
