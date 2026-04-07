@@ -288,6 +288,11 @@ async function submitTicket() {
   var f = ge('cImg').files[0];
   if (!f && !_citizenImgDataUrl) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
   if (!ok) return;
+
+  // ── Disable submit button to prevent double-submit ────
+  var submitBtn = document.querySelector('.wiz-submit');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ กำลังส่ง...'; }
+
   try {
     var fd = new FormData();
     fd.append('category', cat);
@@ -300,15 +305,19 @@ async function submitTicket() {
     if (f) fd.append('image', f);
     var res = await fetch('/api/tickets', { method: 'POST', body: fd });
     var data = await res.json();
-    if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', true);
+    if (!res.ok) {
+      // Re-enable button on API error
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ส่งเรื่องร้องเรียน'; }
+      return showToast(data.error || 'เกิดข้อผิดพลาด', true);
+    }
 
     // ── Success Animation ─────────────────────────────────
     _showSubmitSuccess(data.ticketId, function() {
       // Reset form fields
       ge('tDesc').value = '';
       ge('cImg').value = '';
-      ge('cImgCamera').value = '';
-      ge('cImgGallery').value = '';
+      var _camInp = ge('cImgCamera'); if (_camInp) _camInp.value = '';
+      var _galInp = ge('cImgGallery'); if (_galInp) _galInp.value = '';
       ge('tLat').value = '';
       ge('tLng').value = '';
       ge('tUrg').value = '';
@@ -335,10 +344,19 @@ async function submitTicket() {
       var wiz1 = ge('wiz1');
       if (wiz1) { wiz1.classList.add('active'); var h2 = wiz1.querySelector('h2'); if (h2) h2.textContent = 'ประเภทปัญหา'; }
       wizUpdateProgress(1);
+      // Re-enable submit button for next submission
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ส่งเรื่องร้องเรียน'; }
+      // ── Scroll กลับขึ้นไปที่ยอด wizard ────────────────
+      var prog = ge('stepProgress');
+      if (prog) prog.scrollIntoView({ behavior: 'smooth', block: 'start' });
       loadTickets();
     });
 
-  } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
+  } catch (e) {
+    // Re-enable button on network error
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ส่งเรื่องร้องเรียน'; }
+    showToast('เกิดข้อผิดพลาด', true);
+  }
 }
 
 /* ── Image Preview (before upload) ──────────────────── */
