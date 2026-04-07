@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt  = require('bcryptjs');
 const router  = express.Router();
 const User    = require('../models/User');
+const Ticket  = require('../models/Ticket');
+const Comment = require('../models/Comment');
 const { otpStore } = require('../data/store');
 const { sendOtpEmail } = require('../config/mailer');
 
@@ -71,14 +73,31 @@ router.post('/register', async (req, res) => {
     }
 
     const { firstName, lastName, email, password } = entry.userData;
-    const exists = await User.findOne({ email: email.toLowerCase() });
-    if (exists) return res.status(400).json({ error: 'Email นี้ถูกใช้แล้ว' });
 
-    const user = await new User({
-      firstName, lastName, email,
-      password: await bcrypt.hash(password, 10),
-      role: 'citizen',
-    }).save();
+    // FIX-3.1: ตรวจ email ซ้ำก่อน (กรณีปกติ) เพื่อ error message ที่เข้าใจได้
+    const exists = await User.findOne({ email: email.toLowerCase() });
+    if (exists) {
+      otpStore.delete(token);
+      return res.status(400).json({ error: 'Email นี้ถูกใช้แล้ว' });
+    }
+
+    // FIX-3.1: ใช้ User.create() แทน new User().save()
+    // ถ้า double-submit ผ่านพร้อมกัน → MongoDB E11000 unique index จะ throw
+    // → catch แล้วคืน 400 แทน 500
+    let user;
+    try {
+      user = await User.create({
+        firstName, lastName, email,
+        password: await bcrypt.hash(password, 10),
+        role: 'citizen',
+      });
+    } catch (createErr) {
+      if (createErr.code === 11000) {
+        otpStore.delete(token);
+        return res.status(400).json({ error: 'Email นี้ถูกใช้แล้ว' });
+      }
+      throw createErr;
+    }
     otpStore.delete(token);
 
     req.session.userId = user._id.toString();
@@ -394,8 +413,20 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
     if (!user.lineUserId && !user.createdViaLine)
       return res.status(400).json({ error: 'บัญชีนี้ไม่ได้สร้างหรือผูกผ่าน LINE' });
 
-    await User.deleteOne({ _id: user._id });
-    console.log('[Admin] ลบ user ที่ผูก/สร้างผ่าน LINE:', user.email);
+    const userId = user._id;
+    // CASCADE-FIX: clean up all data belonging to this user before deleting
+    await Ticket.deleteMany({ citizenId: userId });         // tickets they created
+    await Comment.deleteMany({ userId });                   // comments they wrote
+    await Ticket.updateMany(                               // remove from other tickets' upvotes
+      { 'upvotes.userId': userId },
+      { $pull: { upvotes: { userId } } }
+    );
+    await Ticket.updateMany(                               // remove from other tickets' followers
+      { 'followers.userId': userId },
+      { $pull: { followers: { userId } } }
+    );
+    await User.deleteOne({ _id: userId });
+    console.log('[Admin] ลบ user + cascade:', user.email);
     res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} สำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-line error:', e);
@@ -434,13 +465,36 @@ router.get('/admin-linked-lines', requireAdmin, async (req, res) => {
 // Admin ลบ user ทุกคนที่ผูก LINE หรือสร้างผ่าน LINE ออกจาก DB
 router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
   try {
+    // Find IDs of all users being deleted before removing them
+    const usersToDelete = await User.find({
+      $or: [
+        { lineUserId: { $exists: true, $ne: null } },
+        { createdViaLine: true }
+      ]
+    }).select('_id');
+    const userIds = usersToDelete.map(u => u._id);
+
     const result = await User.deleteMany({
       $or: [
         { lineUserId: { $exists: true, $ne: null } },
         { createdViaLine: true }
       ]
     });
-    console.log(`[Admin] ลบ user ที่ผูก/สร้างผ่าน LINE: ${result.deletedCount} คน`);
+
+    // CASCADE-FIX: clean up all data belonging to deleted users
+    if (userIds.length > 0) {
+      await Ticket.deleteMany({ citizenId: { $in: userIds } });
+      await Comment.deleteMany({ userId: { $in: userIds } });
+      await Ticket.updateMany(
+        { 'upvotes.userId': { $in: userIds } },
+        { $pull: { upvotes: { userId: { $in: userIds } } } }
+      );
+      await Ticket.updateMany(
+        { 'followers.userId': { $in: userIds } },
+        { $pull: { followers: { userId: { $in: userIds } } } }
+      );
+    }
+    console.log(`[Admin] ลบ user + cascade: ${result.deletedCount} คน`);
     res.json({ message: `ลบบัญชีที่เชื่อม/สร้างผ่าน LINE จำนวน ${result.deletedCount} บัญชีสำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-all error:', e);

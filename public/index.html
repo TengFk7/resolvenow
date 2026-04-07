@@ -252,19 +252,19 @@
       <div class="content">
         <!-- Stat Cards -->
         <div class="stat-grid">
-          <div class="scard red">
+          <div class="scard red scard-clickable" onclick="filterAndGoQueue('urgent')" title="ดูงานด่วนมาก">
             <div class="slabel">งานด่วนมาก</div>
             <div class="sval" id="sUrgent">0</div>
           </div>
-          <div class="scard or">
+          <div class="scard or scard-clickable" onclick="filterAndGoQueue('medium')" title="ดูงานด่วน">
             <div class="slabel">งานด่วน</div>
             <div class="sval" id="sMed">0</div>
           </div>
-          <div class="scard blue">
+          <div class="scard blue scard-clickable" onclick="filterAndGoQueue('normal')" title="ดูงานปกติ">
             <div class="slabel">งานปกติ</div>
             <div class="sval" id="sNorm">0</div>
           </div>
-          <div class="scard sla-card" id="slaStatCard">
+          <div class="scard sla-card scard-clickable" id="slaStatCard" onclick="filterAndGoQueue('sla')" title="ดูงานล่าช้า">
             <div class="slabel">⏰ งานล่าช้า</div>
             <div class="sval sla-val" id="sSLA">0</div>
           </div>
@@ -273,11 +273,12 @@
             <div class="sval" id="sTR" style="color:var(--g)">0</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sTT"></div>
           </div>
-          <div class="scard white">
+          <div class="scard white scard-clickable" onclick="filterAndGoQueue('all')" title="ดูงานทั้งหมดวันนี้">
             <div class="slabel">ยอดวันนี้</div>
             <div class="sval" id="sTD" style="color:var(--blue2)">0</div>
           </div>
         </div>
+
 
         <!-- Dashboard Page -->
         <div id="pageDashboard" class="page-enter">
@@ -353,6 +354,8 @@
                 <span class="del-icon">🗑️</span> ลบทั้งหมด
               </button>
             </div>
+            <!-- Filter chip — shown when stat card filter is active -->
+            <div id="queueFilterChip" style="display:none;padding:8px 16px 4px"></div>
             <div style="overflow-x:auto">
               <table class="queue-table">
                 <thead>
@@ -969,9 +972,7 @@
       <div style="display:flex;gap:10px">
         <button onclick="closeUnlinkLineModal()"
           style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ปิด</button>
-        <button onclick="doAdminUnlinkAll()" id="btnUnlinkAll"
-          style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.3)">🗑️
-          ล้างทั้งหมด</button>
+        <button onclick="doAdminUnlinkAll()" id="btnUnlinkAll" class="btn-danger-animated">🗑️ ล้างทั้งหมด</button>
       </div>
     </div>
   </div>

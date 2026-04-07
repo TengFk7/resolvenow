@@ -18,6 +18,11 @@ var _adminInterval = null;
 var _ticketsInterval = null;
 var _helpInterval = null;
 
+/* ── Socket-aware polling state (FIX-4.2) ──────────────── */
+// ถ้า socket connected → ไม่ต้อง poll บ่อย (แค่ 30s heartbeat ป้องกัน socket หลุด)
+// ถ้า socket ขาด → ยังคง poll 30s ต่อจนกว่า socket กลับมา
+var _socketConnected = false;
+
 /* ── Show Auth Page ──────────────────────────────────── */
 function showAuth() {
   ge('authPage').style.display = 'flex';
@@ -50,7 +55,12 @@ function enterApp() {
     ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
     showPage('dashboard');
     loadAdmin();
-    _adminInterval = setInterval(loadAdmin, 6000);
+    // FIX-ADMIN-POLL: ใช้ socket-aware 30s fallback แทน 6s spam
+    // Socket.io จะ trigger loadAdmin() ทันทีเมื่อมี ticket_updated event
+    // interval นี้จะทำงานเฉพาะเมื่อ socket ขาดการเชื่อมต่อเท่านั้น
+    _adminInterval = setInterval(function() {
+      if (!_socketConnected) loadAdmin();
+    }, 30000);
   } else {
     ge('normalApp').style.display = 'flex';
     ge('adminApp').style.display = 'none';
@@ -67,10 +77,17 @@ function enterApp() {
     ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
     ge('secTech').style.display   = CU.role === 'technician' ? 'block' : 'none';
     loadTickets();
-    _ticketsInterval = setInterval(loadTickets, 8000);
+    // FIX-4.2: ใช้ 30s heartbeat แทน 8s — Socket.io จะ trigger loadTickets() แทนเมื่อมี event
+    _ticketsInterval = setInterval(function() {
+      // ถ้า socket connected อยู่ → ข้ามไป (Socket จัดการแล้ว)
+      // ถ้า socket ขาด → poll เป็น safety net
+      if (!_socketConnected) loadTickets();
+    }, 30000);
     if (CU.role === 'technician') {
       loadHelpRequests();
-      _helpInterval = setInterval(loadHelpRequests, 8000);
+      _helpInterval = setInterval(function() {
+        if (!_socketConnected) loadHelpRequests();
+      }, 30000);
     }
   }
 }
@@ -217,15 +234,15 @@ async function loadTickets() {
 
 
   // ── ตรวจ session: resume เฉพาะเมื่อ user เคย login ใน tab นี้ (refresh) ──
-  // ถ้าเปิด URL ใหม่ใน tab ใหม่ → จะไม่มี sessionStorage flag → ไปหน้า login ตลอด
+  // FIX-1.1: ถ้าเปิด tab ใหม่ → sessionStorage ว่าง → แค่แสดงหน้า login
+  //           ห้าม POST /logout เพราะจะทำลาย session ของ tab อื่นที่ login อยู่!
   var wasLoggedIn = sessionStorage.getItem('rn_logged_in');
   sessionStorage.removeItem('rn_line_pending');
 
   if (!wasLoggedIn) {
-    // Fresh visit (new tab / paste URL) → clear server session, show login
-    console.log('[App] Fresh visit → logout server session → หน้า login');
-    fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
-    return;
+    // Fresh/new tab visit → แค่แสดงหน้า login โดยไม่แตะ server session
+    console.log('[App] Fresh/new-tab visit → แสดงหน้า login (ไม่ยิง logout)');
+    return; // FIX-1.1: ลบ fetch logout ออก
   }
 
   // Tab refresh → try to resume session

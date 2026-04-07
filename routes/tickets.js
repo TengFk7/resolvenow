@@ -1,4 +1,5 @@
 const express = require('express');
+const xss = require('xss');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
@@ -173,6 +174,18 @@ router.get('/', requireAuth, async (req, res) => {
       $or: [{ category: user.specialty }, { assignedTo: user._id }]
     };
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
+
+    // SLA breach evaluation — in-memory only (DB update handled by slaJob.js background job)
+    const now = new Date();
+    for (const t of tickets) {
+      if (t.slaBreached) continue;
+      if (t.status === 'pending' && t.slaAssignDeadline && now > t.slaAssignDeadline) {
+        t.slaBreached = true;
+      } else if (['assigned', 'in_progress'].includes(t.status) && t.slaCompleteDeadline && now > t.slaCompleteDeadline) {
+        t.slaBreached = true;
+      }
+    }
+
     res.json(tickets.map(t => formatTicket(t, user._id)));
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
@@ -180,12 +193,15 @@ router.get('/', requireAuth, async (req, res) => {
 // ─── POST /api/tickets ───────────────────────────────────────────
 router.post('/', requireAuth, upload.single('image'), async (req, res) => {
   try {
-    const { category, description, location, urgency, lat, lng } = req.body;
+    const { category, description: rawDescription, location, urgency, lat, lng } = req.body;
     const user = await User.findById(req.session.userId);
-    if (!category || !description || !location)
+    if (!category || !rawDescription || !location)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (!req.file)
       return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่ง' });
+
+    // XSS-FIX: sanitize user-supplied text before storing
+    const description = xss(rawDescription.trim());
 
     let score = urgency === 'urgent' ? 90 : urgency === 'medium' ? 60 : 30;
     const desc = description.toLowerCase();
@@ -232,7 +248,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
 // ─── PUT /api/tickets/:id/status ─────────────────────────────────
 router.put('/:id/status', requireAuth, async (req, res) => {
   try {
-    const { status, reason } = req.body;
+    const { status, reason: rawReason } = req.body;
+    const reason = rawReason ? xss(rawReason.trim()) : undefined;
     if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Status ไม่ถูกต้อง' });
 
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
@@ -398,13 +415,13 @@ router.get('/public-map', async (req, res) => {
     const since = new Date();
     since.setDate(since.getDate() - 30); // 30 days
     const tickets = await Ticket.find({ createdAt: { $gte: since }, lat: { $ne: null }, lng: { $ne: null } })
-      .select('ticketId category lat lng status description location upvoteCount createdAt')
+      .select('ticketId category lat lng status location upvoteCount createdAt')
       .sort({ createdAt: -1 })
       .limit(200);
+    // PII-FIX: description ถูกตัดออก — ผู้ร้องเรียนมักใส่ชื่อ/เบอร์/ข้อมูลส่วนตัวในบรรทัดแรก
     res.json(tickets.map(t => ({
       ticketId: t.ticketId, category: t.category,
       lat: t.lat, lng: t.lng, status: t.status,
-      description: (t.description || '').slice(0, 60),
       location: t.location, upvoteCount: t.upvoteCount || 0,
       createdAt: t.createdAt
     })));
@@ -499,9 +516,11 @@ router.get('/:id/comments', requireAuth, async (req, res) => {
 // POST /api/tickets/:id/comments
 router.post('/:id/comments', requireAuth, async (req, res) => {
   try {
-    const { message } = req.body;
-    if (!message || !message.trim()) return res.status(400).json({ error: 'กรุณาพิมพ์ข้อความ' });
-    if (message.length > 500) return res.status(400).json({ error: 'ข้อความยาวเกินไป (สูงสุด 500 ตัวอักษร)' });
+    const { message: rawMessage } = req.body;
+    if (!rawMessage || !rawMessage.trim()) return res.status(400).json({ error: 'กรุณาพิมพ์ข้อความ' });
+    if (rawMessage.length > 500) return res.status(400).json({ error: 'ข้อความยาวเกินไป (สูงสุด 500 ตัวอักษร)' });
+    // XSS-FIX: sanitize message before storing
+    const message = xss(rawMessage.trim());
 
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
@@ -539,40 +558,51 @@ router.post('/:id/upvote', requireAuth, async (req, res) => {
     const user = await User.findById(req.session.userId);
     if (!user) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
 
-    const ticket = await Ticket.findOne({ ticketId: req.params.id });
-    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
-
-    // ห้ามกด upvote ticket ตัวเอง
-    if (ticket.citizenId.toString() === user._id.toString())
+    // ตรวจก่อนว่ามี ticket และไม่ใช่ของตัวเอง (ไม่ต้องทำ atomic)
+    const ticketCheck = await Ticket.findOne({ ticketId: req.params.id }).select('citizenId upvotes');
+    if (!ticketCheck) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+    if (ticketCheck.citizenId.toString() === user._id.toString())
       return res.status(400).json({ error: 'ไม่สามารถโหวต Ticket ของตัวเองได้' });
 
-    const idx = (ticket.upvotes || []).findIndex(u => u.userId && u.userId.toString() === user._id.toString());
-    let action;
-    if (idx >= 0) {
-      // Already upvoted → remove
-      ticket.upvotes.splice(idx, 1);
-      action = 'removed';
+    const alreadyVoted = (ticketCheck.upvotes || []).some(u => u.userId && u.userId.toString() === user._id.toString());
+
+    let updated;
+    if (alreadyVoted) {
+      // FIX-3.3: atomic $pull — ป้องกัน lost update จาก concurrent operations
+      updated = await Ticket.findOneAndUpdate(
+        { ticketId: req.params.id },
+        { $pull: { upvotes: { userId: user._id } } },
+        { new: true }
+      );
     } else {
-      // Add upvote
-      ticket.upvotes.push({ userId: user._id });
-      action = 'added';
+      // FIX-3.3: atomic $addToSet — ป้องกัน duplicate upvote จาก race condition
+      updated = await Ticket.findOneAndUpdate(
+        { ticketId: req.params.id, 'upvotes.userId': { $ne: user._id } },
+        { $addToSet: { upvotes: { userId: user._id } } },
+        { new: true }
+      );
+      if (!updated) {
+        // ถ้า null — มีคนอื่น vote พร้อมกัน หรือมี duplicate → ดึงล่าสุด
+        updated = await Ticket.findOne({ ticketId: req.params.id });
+      }
     }
-    ticket.upvoteCount = ticket.upvotes.length;
+    if (!updated) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
-    // Priority boost based on upvote count
-    let basePriority = ticket.urgency === 'urgent' ? 90 : ticket.urgency === 'medium' ? 60 : 30;
-    if (ticket.upvoteCount >= 10) basePriority = 100; // Super Urgent
-    else if (ticket.upvoteCount >= 5) basePriority = Math.min(basePriority + 15, 100);
-    ticket.priorityScore = basePriority;
+    // คำนวณ upvoteCount และ priority จาก upvotes array ที่ atomic แล้ว
+    updated.upvoteCount = (updated.upvotes || []).length;
+    let basePriority = updated.urgency === 'urgent' ? 90 : updated.urgency === 'medium' ? 60 : 30;
+    if (updated.upvoteCount >= 10) basePriority = 100;
+    else if (updated.upvoteCount >= 5) basePriority = Math.min(basePriority + 15, 100);
+    updated.priorityScore = basePriority;
+    await updated.save();
 
-    await ticket.save();
     emitUpdate(req);
-
+    const action = alreadyVoted ? 'removed' : 'added';
     res.json({
       action,
-      upvoteCount: ticket.upvoteCount,
-      hasUpvoted: action === 'added',
-      priorityScore: ticket.priorityScore
+      upvoteCount: updated.upvoteCount,
+      hasUpvoted: !alreadyVoted,
+      priorityScore: updated.priorityScore
     });
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });

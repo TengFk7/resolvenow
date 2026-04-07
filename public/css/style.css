@@ -1200,6 +1200,27 @@ a {
   box-shadow: var(--shadow)
 }
 
+/* Clickable stat cards — from stat card click-to-filter feature */
+.scard-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.scard-clickable:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+}
+
+.scard-clickable:hover .slabel {
+  color: var(--navy);
+}
+
+.scard-clickable:active {
+  transform: translateY(-1px) scale(.99);
+  box-shadow: 0 4px 14px rgba(0,0,0,.10);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
 .scard::before {
   content: '';
   position: absolute;
@@ -5093,6 +5114,84 @@ a {
 }
 
 #btnDeleteAll:disabled::before {
+  animation: none;
+}
+
+/* ════════════════════════════════════════════════════════
+   .btn-danger-animated — Reusable danger button class
+   Used by: #btnUnlinkAll (LINE modal "ล้างทั้งหมด")
+════════════════════════════════════════════════════════ */
+.btn-danger-animated {
+  flex: 1;
+  padding: 11px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: 'Prompt', sans-serif;
+  position: relative;
+  overflow: hidden;
+  /* Entrance + persistent danger pulse */
+  animation:
+    btnDeleteAppear .5s .15s cubic-bezier(.34, 1.56, .64, 1) both,
+    btnDeletePulse 2.6s 1s ease-in-out infinite;
+  transition:
+    transform .18s cubic-bezier(.34, 1.56, .64, 1),
+    box-shadow .18s ease,
+    filter .18s ease;
+}
+
+/* Shimmer sweep — same as #btnDeleteAll */
+.btn-danger-animated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg,
+      transparent 30%,
+      rgba(255, 255, 255, .26) 50%,
+      transparent 70%);
+  background-size: 200% 100%;
+  animation: btnDeleteShimmer 2.6s 1.8s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Hover: lift + brighten — use !important to override animation values
+   WITHOUT setting animation:none (which restarts animations on mouse-out,
+   causing a brief opacity:0 flash from btnDeleteAppear fill-mode:both) */
+.btn-danger-animated:hover {
+  transform: translateY(-3px) scale(1.04) !important;
+  box-shadow:
+    0 10px 28px rgba(185, 28, 28, .5),
+    0 0 0 3px rgba(239, 68, 68, .2) !important;
+  filter: brightness(1.08) !important;
+}
+
+/* Trash icon wiggle on hover */
+.btn-danger-animated:hover .del-icon {
+  animation: trashShake .5s ease-in-out;
+}
+
+/* Active / pressed */
+.btn-danger-animated:active {
+  transform: translateY(1px) scale(.96);
+  box-shadow: 0 3px 8px rgba(185, 28, 28, .4);
+  filter: brightness(.93);
+  transition: transform .07s ease, box-shadow .07s ease;
+}
+
+/* Disabled (while API call is running) */
+.btn-danger-animated:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  animation: none;
+  transform: none;
+}
+
+.btn-danger-animated:disabled::before {
   animation: none;
 }
 

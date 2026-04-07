@@ -35,6 +35,7 @@ const http       = require('http');            // socket.io requirement
 const { Server } = require('socket.io');       // socket.io requirement
 const connectDB  = require('./config/db');
 const { seedDB } = require('./config/seed');
+const { startSlaJob } = require('./config/slaJob');
 
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Render/Heroku)
@@ -48,6 +49,7 @@ app.set('io', io);
 (async () => {
   await connectDB();
   await seedDB();
+  startSlaJob(); // SLA breach checker — runs every 5 min in background
 
   // ─── Security Middleware ────────────────────────────────────
   app.use(helmet({
@@ -93,11 +95,28 @@ app.set('io', io);
   });
   app.use('/api/auth', authLimiter);
 
-  // BUG-012: Apply apiLimiter only to non-auth routes to prevent double-limiting
-  const apiLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 300
+  // FIX-1.2: แยก 2 limiter:
+  //   pollingLimiter → GET-only read endpoints (tickets, technicians, help-requests)
+  //     หลังแก้ FIX-4.2 แล้ว: citizen/tech จะ poll ทุก 30s (ไม่ใช่ 8s)
+  //     1500 req / 5 min = 5 req/sec → รองรับ admin 50 คน + tech 50 คน พร้อมกันได้
+  //   apiLimiter → POST/PUT/DELETE (write operations) ยังคง 300/5min
+  const pollingLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 1500,
+    skip: (req) => req.method !== 'GET', // เฉพาะ GET เท่านั้น
+    message: { error: 'Too many requests, please try again later.' }
   });
+  const apiLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 300,
+    skip: (req) => req.method === 'GET', // ข้าม GET (จัดการโดย pollingLimiter)
+    message: { error: 'Too many requests, please try again later.' }
+  });
+  // GET reads → pollingLimiter (หลวม)
+  app.use('/api/tickets',       pollingLimiter);
+  app.use('/api/technicians',   pollingLimiter);
+  app.use('/api/help-requests', pollingLimiter);
+  // Write ops → apiLimiter (เข้มงวด)
   app.use('/api/tickets',       apiLimiter);
   app.use('/api/technicians',   apiLimiter);
   app.use('/api/help-requests', apiLimiter);

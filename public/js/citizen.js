@@ -419,8 +419,12 @@ async function openCameraCapture() {
   _stopCamStream();
 
   try {
+    // FIX-4.1: ใช้ aspectRatio แทน fixed 1920x1080
+    // เหตุผล: fixed landscape resolution บนมือถือ portrait ทำให้ sensor
+    //         ส่ง resolution ที่ผิด → canvas ยืดภาพเมื่อวาด videoWidth/Height
+    // aspectRatio 4:3 เข้ากันได้กับ sensor ทั้ง landscape และ portrait
     _camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: _camFacing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: { facingMode: _camFacing, aspectRatio: { ideal: 4/3 } },
       audio: false
     });
     video.srcObject = _camStream;
@@ -461,8 +465,9 @@ async function switchCamera() {
   var video = ge('camVideo');
   var errBox = ge('camError');
   try {
+    // FIX-4.1: ใช้ aspectRatio เหมือน openCameraCapture (ป้องกัน portrait stretch)
     _camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: _camFacing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: { facingMode: _camFacing, aspectRatio: { ideal: 4/3 } },
       audio: false
     });
     video.srcObject = _camStream;

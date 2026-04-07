@@ -10,15 +10,7 @@
    ───────────────────────────────────────────── */
 
 /* ── Utilities ───────────────────────────────────────── */
-function escapeHTML(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+// FIX-2.1: escapeHTML นิยามครั้งเดียวที่นี่ (ลบ duplicate ที่บรรทัด 144 ออกแล้ว)
 /* ── Splash Screen ───────────────────────────────────── */
 (function initSplash() {
   var splash = document.getElementById('splash');
@@ -140,7 +132,7 @@ function _updateDynamicSelects(cats) {
 /* ── DOM Helper ──────────────────────────────────────── */
 function ge(id) { return document.getElementById(id); }
 
-/* ── HTML Escape (BUG-005: prevent XSS in dynamic HTML) */
+/* ── HTML Escape (FIX-2.1: prevent XSS — single definition) */
 function escapeHTML(str) {
   if (str == null) return '';
   return String(str)
@@ -236,10 +228,11 @@ function animateNum(el, target) {
 var _toastTimer;
 function showToast(msg, type) {
   // type: 'success' | 'error' | 'warning' | default
+  // FIX-2.1a: escape msg ก่อนใส่ innerHTML (ป้องกัน XSS จาก error messages)
   var t = ge('toast');
   var icons = { success:'✅', error:'❌', warning:'⚠️' };
   var icon = icons[type] || 'ℹ️';
-  t.innerHTML = '<span style="font-size:16px">'+icon+'</span><span>'+msg+'</span>';
+  t.innerHTML = '<span style="font-size:16px">'+icon+'</span><span>'+escapeHTML(String(msg))+'</span>';
   t.className = 'toast show' + (type ? ' '+type : '');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(function() {
@@ -389,12 +382,32 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeTicketChat();
 });
 
-// ─── Socket.io Auto-refresh ──────────────────────────────────
+// ─── Socket.io Auto-refresh (FIX-4.2) ───────────────────────
+// socket.on('ticket_updated') จัดการ real-time update แทน setInterval
+// _socketConnected flag บอก app.js ว่าไม่ต้อง poll (ประหยัด bandwidth)
 if (typeof io !== 'undefined') {
   var socket = io();
+
+  // Track connection state สำหรับ adaptive polling ใน app.js
+  socket.on('connect', function() {
+    _socketConnected = true;
+    console.log('[Socket] Connected — switching to event-driven mode');
+  });
+  socket.on('disconnect', function() {
+    _socketConnected = false;
+    console.log('[Socket] Disconnected — 30s polling fallback active');
+  });
+  socket.on('connect_error', function() {
+    _socketConnected = false;
+  });
+
   socket.on('ticket_updated', function() {
     if (typeof loadTickets === 'function' && window.CU) {
       loadTickets();
+    }
+    // Admin: socket จะ trigger loadAdmin() ด้วย
+    if (typeof loadAdmin === 'function' && window.CU && window.CU.role === 'admin') {
+      loadAdmin();
     }
   });
   // Live chat: auto-append new comments
@@ -618,13 +631,14 @@ async function loadHeatmap() {
       var marker = L.marker([t.lat, t.lng], { icon: icon }).addTo(_publicMap);
       var iText = ICONS_MAP[t.category] || '📍';
       var stTH = { pending:'⏳ รอ', assigned:'🔧 รับงาน', in_progress:'🔨 กำลังซ่อม', completed:'✅ เสร็จ', rejected:'❌ ปฏิเสธ' };
+      // FIX-2.1b: escape ticketId และ status ก่อนใส่ใน HTML
       marker.bindPopup(
         '<div style="font-size:13px;min-width:150px">' +
-        '<b>' + t.ticketId + '</b><br>' +
+        '<b>' + escapeHTML(t.ticketId) + '</b><br>' +
         iText + ' ' + escapeHTML(t.category) + '<br>' +
         '<span style="font-size:12px">' + escapeHTML(t.description || '') + '</span><br>' +
-        '<b>' + (stTH[t.status] || t.status) + '</b>' +
-        (t.upvoteCount ? '<br>👍 ' + t.upvoteCount + ' โหวต' : '') +
+        '<b>' + escapeHTML(stTH[t.status] || t.status) + '</b>' +
+        (t.upvoteCount ? '<br>👍 ' + parseInt(t.upvoteCount || 0) + ' โหวต' : '') +
         '</div>'
       );
       _publicMarkers.push(marker);

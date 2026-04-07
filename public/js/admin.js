@@ -15,6 +15,7 @@
 /* ── Load All Admin Data ─────────────────────────────── */
 let _lastAdminTickets = [];
 let _lastAdminTechs = [];
+var _queueFilter = 'all'; // 'all' | 'urgent' | 'medium' | 'normal' | 'sla'
 async function loadAdmin() {
   try {
     var r1 = await fetch('/api/tickets');
@@ -62,7 +63,7 @@ async function loadAdmin() {
     renderQueue(pendTks, techs);
 
     // Sub-pages
-    if (currentPage === 'queue') renderAllQueue(tks);
+    if (currentPage === 'queue') renderAllQueue(tks, _queueFilter);
     if (currentPage === 'techs') renderTechFull(techs);
     if (currentPage === 'categories') renderCategories();
 
@@ -70,6 +71,12 @@ async function loadAdmin() {
     _lastAdminTechs = techs;
     if (typeof updateMapMarkers === 'function') updateMapMarkers();
   } catch (e) { console.error(e); }
+}
+
+/* ── Stat Card Filter → Queue Page ──────────────────── */
+function filterAndGoQueue(filter) {
+  _queueFilter = filter || 'all';
+  showPage('queue');
 }
 
 /* ── Pie Chart ───────────────────────────────────────── */
@@ -108,15 +115,17 @@ function renderTechStatus(techs) {
   for (var i = 0; i < techs.length; i++) {
     var t = techs[i];
     var csClass = t.statusLabel==='READY' ? 'cs-ready' : t.statusLabel==='BUSY' ? 'cs-busy' : 'cs-full';
+    // FIX-2.1c: escape name ก่อนแสดงผล
+    var safeName = escapeHTML(t.name || '?');
     var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('');
     h += '<div class="tech-item">';
-    h += '<div class="tech-av">' + initials + '</div>';
+    h += '<div class="tech-av">' + escapeHTML(initials) + '</div>';
     h += '<div class="tech-info">';
-    h += '<div class="tech-name">' + (DEPT_ICON[t.specialty]||'') + ' ' + t.name + '</div>';
-    h += '<div class="tech-dept">' + (DEPT[t.specialty]||t.specialty) + '</div>';
-    h += '<div class="tech-bar-wrap"><div class="tech-bar" style="width:'+t.capacity+'%"></div></div>';
+    h += '<div class="tech-name">' + (DEPT_ICON[t.specialty]||'') + ' ' + safeName + '</div>';
+    h += '<div class="tech-dept">' + escapeHTML(DEPT[t.specialty]||t.specialty||'') + '</div>';
+    h += '<div class="tech-bar-wrap"><div class="tech-bar" style="width:'+parseInt(t.capacity||0)+'%"></div></div>';
     h += '</div>';
-    h += '<span class="cstatus ' + csClass + '">' + t.statusLabel + '</span>';
+    h += '<span class="cstatus ' + csClass + '">' + escapeHTML(t.statusLabel||'') + '</span>';
     h += '</div>';
   }
   el.innerHTML = h;
@@ -136,10 +145,11 @@ function renderQueue(tks, techs) {
       opts += '<option value="'+tc.id+'"'+(tc.statusLabel==='FULL' ? ' disabled' : '')+'>'+(match ? '⭐ ' : '')+(DEPT_ICON[tc.specialty]||'')+' '+tc.name+' — '+tc.statusLabel+'</option>';
     }
     var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '';
+    // FIX-2.1c: escape citizen data ก่อน render
     h += '<tr>';
-    h += '<td><div style="font-weight:700;color:var(--navy);font-family:Inter,sans-serif">#'+t.ticketId+'</div><div style="font-size:11px;color:var(--muted)">'+t.citizenName+'</div></td>';
-    h += '<td>'+pLabel(t.priorityScore)+(t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 '+t.upvoteCount+'</div>' : '')+'</td>';
-    h += '<td><div style="font-weight:600;font-size:13px">'+( DEPT_ICON[t.category]||'')+' '+(DEPT[t.category]||t.category)+gpsLink+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">📍 '+t.location+'</div><div style="font-size:12px;color:var(--text);margin-top:2px">'+t.description+'</div>'+(t.citizenImage ? '<img src="'+t.citizenImage+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb" style="margin-top:6px"/>' : '')+'</td>';
+    h += '<td><div style="font-weight:700;color:var(--navy);font-family:Inter,sans-serif">#'+escapeHTML(t.ticketId)+'</div><div style="font-size:11px;color:var(--muted)">'+escapeHTML(t.citizenName)+'</div></td>';
+    h += '<td>'+pLabel(t.priorityScore)+(t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 '+parseInt(t.upvoteCount||0)+'</div>' : '')+'</td>';
+    h += '<td><div style="font-weight:600;font-size:13px">'+( DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+gpsLink+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">📍 '+escapeHTML(t.location||'')+'</div><div style="font-size:12px;color:var(--text);margin-top:2px">'+escapeHTML(t.description||'')+'</div>'+(t.citizenImage ? '<img src="'+escapeHTML(t.citizenImage)+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb" style="margin-top:6px"/>' : '')+'</td>';
     h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
     h += '<td><div style="font-size:11px;font-weight:700;color:var(--blue2);margin-bottom:6px">🤖 AI RECOMMEND</div>';
     h += '<select id="tsel_'+t.ticketId+'" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:Prompt,sans-serif;outline:none;background:#fff">'+opts+'</select>';
@@ -282,13 +292,55 @@ async function submitReject() {
 
 
 /* ── All Tickets Table ───────────────────────────────── */
-function renderAllQueue(tks) {
+function renderAllQueue(tks, filter) {
   var el = ge('allBody');
-  if (!tks.length) { el.innerHTML = '<tr><td colspan="11" class="empty">ยังไม่มี Ticket</td></tr>'; return; }
-  tks.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
+  var now = new Date();
+
+  // ── Apply filter ──
+  var filtered = tks;
+  var filterLabel = null;
+  if (filter === 'urgent') {
+    filtered = tks.filter(function(t) { return t.priorityScore >= 70 && t.status !== 'completed' && t.status !== 'rejected'; });
+    filterLabel = '🔴 งานด่วนมาก (คะแนน ≥ 70)';
+  } else if (filter === 'medium') {
+    filtered = tks.filter(function(t) { return t.priorityScore >= 40 && t.priorityScore < 70 && t.status !== 'completed' && t.status !== 'rejected'; });
+    filterLabel = '🟡 งานด่วน (คะแนน 40–69)';
+  } else if (filter === 'normal') {
+    filtered = tks.filter(function(t) { return t.priorityScore < 40 && t.status !== 'completed' && t.status !== 'rejected'; });
+    filterLabel = '🟢 งานปกติ (คะแนน < 40)';
+  } else if (filter === 'sla') {
+    filtered = tks.filter(function(t) {
+      if (t.status === 'completed' || t.status === 'rejected') return t.slaBreached;
+      if (t.status === 'pending' && t.slaAssignDeadline) return new Date() > new Date(t.slaAssignDeadline);
+      if ((t.status === 'assigned' || t.status === 'in_progress') && t.slaCompleteDeadline) return new Date() > new Date(t.slaCompleteDeadline);
+      return false;
+    });
+    filterLabel = '⏰ งานล่าช้า (SLA เกินกำหนด)';
+  }
+
+  // ── Filter chip above table ──
+  var chipEl = ge('queueFilterChip');
+  if (chipEl) {
+    if (filterLabel) {
+      chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff0f0;border:1.5px solid #fca5a5;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#b91c1c">' +
+        filterLabel +
+        '<button onclick="clearQueueFilter()" style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:#b91c1c;padding:0;margin-left:2px" title="ล้างตัวกรอง">✕</button>' +
+        '</span>';
+      chipEl.style.display = 'block';
+    } else {
+      chipEl.innerHTML = '';
+      chipEl.style.display = 'none';
+    }
+  }
+
+  if (!filtered.length) {
+    el.innerHTML = '<tr><td colspan="11" class="empty">' + (filterLabel ? '✅ ไม่มีงานในหมวดนี้' : 'ยังไม่มี Ticket') + '</td></tr>';
+    return;
+  }
+  filtered.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
   var h = '';
-  for (var i = 0; i < tks.length; i++) {
-    var t = tks[i];
+  for (var i = 0; i < filtered.length; i++) {
+    var t = filtered[i];
     var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
     h += '<tr>';
     h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+t.ticketId+'</td>';
@@ -319,6 +371,11 @@ function renderAllQueue(tks) {
     h += '</tr>';
   }
   el.innerHTML = h;
+}
+
+function clearQueueFilter() {
+  _queueFilter = 'all';
+  renderAllQueue(_lastAdminTickets, 'all');
 }
 
 function adminChSt(sel) {
