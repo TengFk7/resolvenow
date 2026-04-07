@@ -6747,3 +6747,95 @@ a {
   .cat-btn { font-size: 11px; padding: 8px 0; }
   .cat-btn-del { max-width: none; }
 }
+
+/* ════════════════════════════════════════════════════════
+   ADD BUTTONS — Premium Animated (เพิ่มช่างใหม่ / เพิ่มหมวดใหม่)
+════════════════════════════════════════════════════════ */
+@keyframes btnShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30%       { transform: translateY(-4px) scale(1.2); }
+  60%       { transform: translateY(1px) scale(.95); }
+}
+
+@keyframes btnGlowPulse {
+  0%, 100% { box-shadow: 0 4px 16px var(--btn-glow-color, rgba(34,197,94,.35)); }
+  50%       { box-shadow: 0 6px 28px var(--btn-glow-color, rgba(34,197,94,.6)), 0 0 0 4px var(--btn-glow-ring, rgba(34,197,94,.15)); }
+}
+
+.btn-add-anim {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Prompt', sans-serif;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
+  animation: btnGlowPulse 2.5s ease-in-out infinite;
+  background-size: 200% auto;
+}
+
+/* Shimmer overlay */
+.btn-add-anim::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,.35) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: btnShimmer 2.2s linear infinite;
+  pointer-events: none;
+}
+
+/* Hover: lift + faster shimmer */
+.btn-add-anim:hover {
+  transform: translateY(-3px) scale(1.04);
+}
+.btn-add-anim:hover::before {
+  animation-duration: .8s;
+}
+
+/* Active press */
+.btn-add-anim:active {
+  transform: translateY(0) scale(.97);
+}
+
+/* Icon bounce on hover */
+.btn-add-anim:hover .btn-add-icon {
+  display: inline-block;
+  animation: iconBounce .5s ease forwards;
+}
+.btn-add-icon {
+  display: inline-block;
+  transition: transform .2s;
+  line-height: 1;
+}
+
+/* ── Green variant (เพิ่มช่างใหม่) ── */
+.btn-add-green {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+  --btn-glow-color: rgba(34,197,94,.4);
+  --btn-glow-ring:  rgba(34,197,94,.18);
+}
+
+/* ── Blue variant (เพิ่มหมวดใหม่) ── */
+.btn-add-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  --btn-glow-color: rgba(37,99,235,.4);
+  --btn-glow-ring:  rgba(37,99,235,.18);
+}
