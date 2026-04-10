@@ -941,3 +941,313 @@ async function saveTechLinks() {
   btn.disabled = false;
   btn.textContent = '💾 บันทึก';
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   REPORT EXPORT SYSTEM
+══════════════════════════════════════════════════════════ */
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function _getSelectedRange() {
+  var radios = document.querySelectorAll('input[name="reportRange"]');
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) return radios[i].value;
+  }
+  return 'this_month';
+}
+
+function _thMonthName(d) {
+  return d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+}
+
+/* ── Open / Close Report Modal ─────────────────────────── */
+function openReportModal() {
+  // Populate month labels
+  var now = new Date();
+  var thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  var lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var el1 = ge('rngThisMonthLabel');
+  var el2 = ge('rngLastMonthLabel');
+  if (el1) el1.textContent = _thMonthName(thisMonth);
+  if (el2) el2.textContent = _thMonthName(lastMonth);
+
+  // Reset status
+  var st = ge('reportStatus');
+  if (st) st.textContent = '';
+
+  // Radio highlight binding
+  var opts = document.querySelectorAll('.report-range-opt');
+  opts.forEach(function(opt) {
+    opt.addEventListener('change', function() {
+      opts.forEach(function(o) { o.classList.remove('on'); });
+      this.classList.add('on');
+    });
+  });
+
+  ge('mReport').classList.add('on');
+}
+
+function closeReportModal() {
+  ge('mReport').classList.remove('on');
+}
+
+/* ── Download Excel ────────────────────────────────────── */
+async function downloadExcel() {
+  var range = _getSelectedRange();
+  var btn = ge('btnReportExcel');
+  var st = ge('reportStatus');
+  btn.disabled = true;
+  st.textContent = '⏳ กำลังสร้างไฟล์ Excel...';
+
+  try {
+    var res = await fetch('/api/tickets/report/excel?range=' + range);
+    if (!res.ok) {
+      var err = await res.json().catch(function() { return {}; });
+      showToast(err.error || 'ไม่สามารถดาวน์โหลดได้', 'error');
+      st.textContent = '';
+      btn.disabled = false;
+      return;
+    }
+    var blob = await res.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ResolveNow_Report_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); a.remove(); }, 200);
+    st.textContent = '✅ ดาวน์โหลดสำเร็จ!';
+    showToast('ดาวน์โหลด Excel สำเร็จ 📊', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('เกิดข้อผิดพลาด', 'error');
+    st.textContent = '';
+  }
+  btn.disabled = false;
+}
+
+/* ── Print PDF ─────────────────────────────────────────── */
+async function printPDF() {
+  var range = _getSelectedRange();
+  var btn = ge('btnReportPdf');
+  var st = ge('reportStatus');
+  btn.disabled = true;
+  st.textContent = '⏳ กำลังโหลดข้อมูลรายงาน...';
+
+  try {
+    var res = await fetch('/api/tickets/report?range=' + range);
+    if (!res.ok) {
+      var err = await res.json().catch(function() { return {}; });
+      showToast(err.error || 'ไม่สามารถโหลดได้', 'error');
+      st.textContent = '';
+      btn.disabled = false;
+      return;
+    }
+    var data = await res.json();
+    st.textContent = '🖨️ กำลังเปิดหน้าพิมพ์...';
+    _openPdfWindow(data);
+    st.textContent = '✅ เปิดหน้าพิมพ์แล้ว';
+  } catch (e) {
+    console.error(e);
+    showToast('เกิดข้อผิดพลาด', 'error');
+    st.textContent = '';
+  }
+  btn.disabled = false;
+}
+
+/* ── Build PDF Report Window ────────────────────────────── */
+function _openPdfWindow(data) {
+  var tickets = data.tickets || [];
+  var rangeLabel = data.rangeLabel || 'ทั้งหมด';
+  var now = new Date();
+
+  // Status counts
+  var stMap = { pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ' };
+  var catMap = { Road: 'ถนน/ทางเท้า', Water: 'ท่อแตก/น้ำ', Electricity: 'ไฟฟ้า', Garbage: 'ขยะ', Animal: 'สัตว์', Tree: 'กิ่งไม้', Hazard: 'ภัยพิบัติ' };
+  // Also use dynamic DEPT if available
+  if (typeof DEPT !== 'undefined') { for (var k in DEPT) catMap[k] = DEPT[k]; }
+
+  var counts = { pending: 0, assigned: 0, in_progress: 0, completed: 0, rejected: 0 };
+  tickets.forEach(function(t) { if (counts[t.status] !== undefined) counts[t.status]++; });
+
+  var completed = tickets.filter(function(t) { return t.status === 'completed'; });
+  completed.sort(function(a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+
+  // Build HTML
+  var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"/>';
+  html += '<meta name="viewport" content="width=device-width, initial-scale=1.0"/>';
+  html += '<title>ResolveNow — รายงานสำหรับผู้บริหาร</title>';
+  html += '<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
+  html += '<style>';
+  html += _getPdfStyles();
+  html += '</style></head><body>';
+
+  // ── Page 1: Header + Summary ──
+  html += '<div class="rpt-page">';
+  // Header
+  html += '<div class="rpt-header">';
+  html += '<div class="rpt-logo">Resolve<span>Now</span></div>';
+  html += '<div class="rpt-title">รายงานสรุปเรื่องร้องเรียน</div>';
+  html += '<div class="rpt-subtitle">ช่วงเวลา: ' + escapeHTML(rangeLabel) + ' • จัดทำเมื่อ ' + now.toLocaleDateString('th-TH', { dateStyle: 'long' }) + ' เวลา ' + now.toLocaleTimeString('th-TH', { timeStyle: 'short' }) + '</div>';
+  html += '<div class="rpt-line"></div>';
+  html += '</div>';
+
+  // Summary cards
+  html += '<div class="rpt-section-title">📊 สรุปภาพรวม</div>';
+  html += '<div class="rpt-stats">';
+  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#f59e0b">' + counts.pending + '</div><div class="rpt-stat-label">รอดำเนินการ</div></div>';
+  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#8b5cf6">' + (counts.assigned + counts.in_progress) + '</div><div class="rpt-stat-label">กำลังดำเนินการ</div></div>';
+  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#22c55e">' + counts.completed + '</div><div class="rpt-stat-label">เสร็จสิ้น</div></div>';
+  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#ef4444">' + counts.rejected + '</div><div class="rpt-stat-label">ปฏิเสธ</div></div>';
+  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#0f172a">' + tickets.length + '</div><div class="rpt-stat-label">รวมทั้งหมด</div></div>';
+  html += '</div>';
+
+  // Pie chart placeholder — will be drawn via canvas
+  html += '<div style="text-align:center;margin:24px 0 16px"><canvas id="rptPie" width="200" height="200"></canvas></div>';
+  html += '<div class="rpt-pie-legend">';
+  html += '<div class="rpt-leg"><span class="rpt-dot" style="background:#f59e0b"></span> รอ (' + counts.pending + ')</div>';
+  html += '<div class="rpt-leg"><span class="rpt-dot" style="background:#8b5cf6"></span> กำลังดำเนินการ (' + (counts.assigned + counts.in_progress) + ')</div>';
+  html += '<div class="rpt-leg"><span class="rpt-dot" style="background:#22c55e"></span> เสร็จสิ้น (' + counts.completed + ')</div>';
+  html += '<div class="rpt-leg"><span class="rpt-dot" style="background:#ef4444"></span> ปฏิเสธ (' + counts.rejected + ')</div>';
+  html += '</div>';
+
+  html += '</div>'; // end page 1
+
+  // ── Page 2+: ALL Tickets Table ──
+  if (tickets.length > 0) {
+    // Status display config
+    var stColors = { pending: '#f59e0b', assigned: '#3b82f6', in_progress: '#8b5cf6', completed: '#22c55e', rejected: '#ef4444' };
+    var stIcons = { pending: '🟡', assigned: '🔵', in_progress: '🟣', completed: '🟢', rejected: '🔴' };
+
+    // Sort: pending first, then assigned, in_progress, completed, rejected
+    var stOrder = { pending: 0, assigned: 1, in_progress: 2, completed: 3, rejected: 4 };
+    var sorted = tickets.slice().sort(function(a, b) { return (stOrder[a.status] || 9) - (stOrder[b.status] || 9); });
+
+    html += '<div class="rpt-page">';
+    html += '<div class="rpt-section-title">📋 รายการเคสทั้งหมด (' + tickets.length + ' รายการ)</div>';
+    html += '<table class="rpt-table"><thead><tr>';
+    html += '<th>รหัสเคส</th><th>สถานะ</th><th>หมวดหมู่</th><th>วันที่รับแจ้ง</th><th>ช่างผู้รับผิดชอบ</th><th>ระยะเวลา</th><th>คะแนน</th><th>รูปภาพ</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var i = 0; i < sorted.length; i++) {
+      var t = sorted[i];
+      var created = new Date(t.createdAt);
+      var updated = new Date(t.updatedAt);
+
+      // Duration calculation
+      var duration = '—';
+      if (t.status === 'completed') {
+        var diffMs = updated - created;
+        var diffMins = Math.round(diffMs / 60000);
+        duration = diffMins < 60 ? diffMins + ' นาที' : (Math.floor(diffMins / 60) + ' ชม. ' + (diffMins % 60) + ' นาที');
+      } else if (t.status !== 'rejected') {
+        // Show elapsed time for active tickets
+        var elapsedMs = now - created;
+        var elapsedMins = Math.round(elapsedMs / 60000);
+        if (elapsedMins < 60) duration = elapsedMins + ' นาที (ดำเนินการอยู่)';
+        else {
+          var eh = Math.floor(elapsedMins / 60);
+          var em = elapsedMins % 60;
+          if (eh < 24) duration = eh + ' ชม. ' + em + ' น. (ดำเนินการอยู่)';
+          else duration = Math.floor(eh / 24) + ' วัน ' + (eh % 24) + ' ชม. (ดำเนินการอยู่)';
+        }
+      }
+
+      // Stars
+      var stars = '';
+      if (t.rating) { for (var s = 0; s < 5; s++) { stars += s < t.rating ? '★' : '☆'; } }
+      else { stars = '—'; }
+
+      // Image
+      var imgCell = '';
+      if (t.afterImage) { imgCell = '<img src="' + escapeHTML(t.afterImage) + '" class="rpt-img" alt="ผลซ่อม"/>'; }
+      else if (t.citizenImage) { imgCell = '<img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img" alt="แจ้งปัญหา"/>'; }
+      else { imgCell = '<span style="color:#94a3b8;font-size:11px">—</span>'; }
+
+      // Status badge
+      var stColor = stColors[t.status] || '#94a3b8';
+      var stIcon = stIcons[t.status] || '⚪';
+      var stLabel = stMap[t.status] || t.status;
+      var statusBadge = '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;background:' + stColor + '15;color:' + stColor + ';border:1px solid ' + stColor + '30;white-space:nowrap">' + stIcon + ' ' + stLabel + '</span>';
+
+      html += '<tr>';
+      html += '<td style="font-weight:700;font-family:Inter,sans-serif;color:#0f172a">' + escapeHTML(t.ticketId) + '</td>';
+      html += '<td>' + statusBadge + '</td>';
+      html += '<td>' + escapeHTML(catMap[t.category] || t.category) + '</td>';
+      html += '<td>' + created.toLocaleDateString('th-TH', { dateStyle: 'short' }) + '<br/><span style="font-size:10px;color:#94a3b8">' + created.toLocaleTimeString('th-TH', { timeStyle: 'short' }) + '</span></td>';
+      html += '<td>' + escapeHTML(t.assignedName || '—') + '</td>';
+      html += '<td style="font-size:10px">' + duration + '</td>';
+      html += '<td style="color:#f59e0b;font-weight:700">' + stars + '</td>';
+      html += '<td>' + imgCell + '</td>';
+      html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    html += '</div>';
+  }
+
+  // Footer
+  html += '<div class="rpt-footer">รายงานนี้จัดทำโดยระบบ ResolveNow — ข้อมูล ณ ' + now.toLocaleDateString('th-TH', { dateStyle: 'long' }) + '</div>';
+
+  html += '<script>';
+  // Draw pie chart after load
+  html += '(function(){';
+  html += 'var c=document.getElementById("rptPie");if(!c)return;';
+  html += 'var ctx=c.getContext("2d");';
+  html += 'var data=[{v:' + counts.pending + ',c:"#f59e0b"},{v:' + (counts.assigned + counts.in_progress) + ',c:"#8b5cf6"},{v:' + counts.completed + ',c:"#22c55e"},{v:' + counts.rejected + ',c:"#ef4444"}];';
+  html += 'var total=0;data.forEach(function(d){total+=d.v;});if(!total)total=1;';
+  html += 'var start=-Math.PI/2,cx=100,cy=100,r=85;';
+  html += 'data.forEach(function(d){var sl=(d.v/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+sl);ctx.closePath();ctx.fillStyle=d.c;ctx.fill();start+=sl;});';
+  html += 'ctx.beginPath();ctx.arc(cx,cy,45,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();';
+  html += 'ctx.font="700 22px Inter,sans-serif";ctx.fillStyle="#0f172a";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("'+tickets.length+'",cx,cy-6);';
+  html += 'ctx.font="500 11px Prompt,sans-serif";ctx.fillStyle="#94a3b8";ctx.fillText("รายการ",cx,cy+12);';
+  html += '})();';
+  // Auto-print
+  html += 'window.onload=function(){setTimeout(function(){window.print();},600);};';
+  html += '<\/script>';
+
+  html += '</body></html>';
+
+  var w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+  else { showToast('กรุณาอนุญาต Pop-up Window', 'warning'); }
+}
+
+/* ── PDF Styles ─────────────────────────────────────────── */
+function _getPdfStyles() {
+  return '*{margin:0;padding:0;box-sizing:border-box}' +
+    'body{font-family:"Prompt",sans-serif;color:#0f172a;background:#fff;padding:20px 28px;font-size:12px;line-height:1.6}' +
+    '.rpt-page{page-break-after:auto;margin-bottom:32px}' +
+    '.rpt-header{text-align:center;margin-bottom:28px;padding-bottom:20px}' +
+    '.rpt-logo{font-family:"Inter","Prompt",sans-serif;font-size:38px;font-weight:800;color:#0f172a;letter-spacing:-1px;margin-bottom:6px}' +
+    '.rpt-logo span{background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}' +
+    '.rpt-title{font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:6px}' +
+    '.rpt-subtitle{font-size:12px;color:#64748b;margin-bottom:16px}' +
+    '.rpt-line{height:3px;background:linear-gradient(90deg,#2563eb,#f59e0b,#22c55e);border-radius:4px}' +
+    '.rpt-section-title{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px;padding-left:4px;border-left:3px solid #2563eb;padding:4px 12px}' +
+    '.rpt-stats{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}' +
+    '.rpt-stat{text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 20px;min-width:100px}' +
+    '.rpt-stat-num{font-size:28px;font-weight:800;font-family:"Inter",sans-serif;line-height:1}' +
+    '.rpt-stat-label{font-size:11px;color:#64748b;margin-top:4px;font-weight:600}' +
+    '.rpt-pie-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}' +
+    '.rpt-leg{display:flex;align-items:center;gap:6px;font-size:12px;color:#334155;font-weight:600}' +
+    '.rpt-dot{width:10px;height:10px;border-radius:50%;display:inline-block}' +
+    '.rpt-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}' +
+    '.rpt-table th{background:#0f172a;color:#fff;padding:8px 10px;font-weight:700;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px}' +
+    '.rpt-table td{padding:8px 10px;border-bottom:1px solid #e2e8f0;vertical-align:middle}' +
+    '.rpt-table tr:nth-child(even){background:#f8fafc}' +
+    '.rpt-table tr:hover{background:#eff6ff}' +
+    '.rpt-img{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0}' +
+    '.rpt-footer{text-align:center;font-size:10px;color:#94a3b8;padding-top:20px;border-top:1px solid #e2e8f0;margin-top:32px}' +
+    '@media print{' +
+      'body{padding:16px 20px;font-size:11px}' +
+      '.rpt-page{page-break-after:auto}' +
+      '.rpt-stat{padding:10px 14px;min-width:80px}' +
+      '.rpt-stat-num{font-size:22px}' +
+      '.rpt-table{font-size:10px}' +
+      '.rpt-table th{padding:6px 8px}' +
+      '.rpt-table td{padding:6px 8px}' +
+      '.rpt-img{width:40px;height:40px}' +
+    '@page{size:A4;margin:12mm 10mm}' +
+    '}';
+}

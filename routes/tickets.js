@@ -132,6 +132,132 @@ function formatTicket(t, currentUserId) {
   return obj;
 }
 
+// ─── Report Date-Range Helper ────────────────────────────────────
+function getDateRange(range) {
+  const now = new Date();
+  if (range === 'this_month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end, label: 'เดือน ' + start.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) };
+  }
+  if (range === 'last_month') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    return { start, end, label: 'เดือน ' + start.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) };
+  }
+  return { start: null, end: null, label: 'ทั้งหมด' };
+}
+
+// ─── GET /api/tickets/report (JSON for PDF) ─────────────────────
+router.get('/report', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบ' });
+
+    const { range } = req.query;
+    const dr = getDateRange(range);
+    const query = dr.start ? { createdAt: { $gte: dr.start, $lte: dr.end } } : {};
+    const tickets = await Ticket.find(query).sort({ createdAt: -1 });
+
+    res.json({
+      rangeLabel: dr.label,
+      tickets: tickets.map(t => ({
+        ticketId: t.ticketId,
+        citizenName: t.citizenName,
+        category: t.category,
+        description: t.description,
+        location: t.location,
+        urgency: t.urgency,
+        priorityScore: t.priorityScore,
+        status: t.status,
+        assignedName: t.assignedName || null,
+        rating: t.rating || null,
+        ratingReason: t.ratingReason || null,
+        citizenImage: t.citizenImage || null,
+        beforeImage: t.beforeImage || null,
+        afterImage: t.afterImage || null,
+        slaBreached: t.slaBreached || false,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      }))
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'ไม่สามารถออกรายงานได้' });
+  }
+});
+
+// ─── GET /api/tickets/report/excel (.xlsx) ──────────────────────
+router.get('/report/excel', requireAuth, async (req, res) => {
+  try {
+    const XLSX = require('xlsx');
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบ' });
+
+    const { range } = req.query;
+    const dr = getDateRange(range);
+    const query = dr.start ? { createdAt: { $gte: dr.start, $lte: dr.end } } : {};
+    const tickets = await Ticket.find(query).sort({ createdAt: -1 });
+
+    // Status translation map
+    const stMap = { pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ' };
+    // Category translation
+    const catMap = { Road: 'ถนน/ทางเท้า', Water: 'ท่อแตก/น้ำ', Electricity: 'ไฟฟ้า', Garbage: 'ขยะ', Animal: 'สัตว์', Tree: 'กิ่งไม้', Hazard: 'ภัยพิบัติ' };
+
+    const rows = tickets.map(t => {
+      const created = new Date(t.createdAt);
+      const updated = new Date(t.updatedAt);
+      let durationText = '—';
+      if (t.status === 'completed') {
+        const diffMs = updated - created;
+        const diffMins = Math.round(diffMs / 60000);
+        if (diffMins < 60) durationText = diffMins + ' นาที';
+        else {
+          const hrs = Math.floor(diffMins / 60);
+          const mins = diffMins % 60;
+          durationText = hrs + ' ชม. ' + mins + ' นาที';
+        }
+      }
+      return {
+        'รหัสเคส': t.ticketId,
+        'วันที่รับแจ้ง': created.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }),
+        'วันที่ปิดงาน': t.status === 'completed' ? updated.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '—',
+        'ระยะเวลาดำเนินการ': durationText,
+        'สถานะ': stMap[t.status] || t.status,
+        'หมวดหมู่': catMap[t.category] || t.category,
+        'ช่างที่รับผิดชอบ': t.assignedName || '—',
+        'คะแนนดาว': t.rating ? t.rating + ' / 5' : '—',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // Set column widths for readability
+    ws['!cols'] = [
+      { wch: 12 }, // รหัสเคส
+      { wch: 22 }, // วันที่รับแจ้ง
+      { wch: 22 }, // วันที่ปิดงาน
+      { wch: 20 }, // ระยะเวลา
+      { wch: 16 }, // สถานะ
+      { wch: 18 }, // หมวดหมู่
+      { wch: 22 }, // ช่าง
+      { wch: 12 }, // คะแนน
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ResolveNow Report');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const fname = 'ResolveNow_Report_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+
+    res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.header('Content-Disposition', 'attachment; filename="' + fname + '"');
+    res.send(buf);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'ไม่สามารถออกรายงานได้' });
+  }
+});
+
 // ─── GET /api/tickets/export ─────────────────────────────────────
 router.get('/export', requireAuth, async (req, res) => {
   try {

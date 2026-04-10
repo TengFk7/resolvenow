@@ -239,14 +239,20 @@
         <div class="topbar-title">
           <h2 id="pageTitle">Dashboard</h2>
         </div>
-        <!-- Hidden: used by JS/Drawer -->
-        <div style="display:none">
-          <div id="adminAv">A</div>
-          <div id="adminName">Admin</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <!-- Premium Report Button -->
+          <button class="btn-report btn-ripple" onclick="openReportModal()" id="btnReportTopbar">
+            <span class="btn-report-icon">📥</span> ดาวน์โหลดรายงาน
+          </button>
+          <!-- Hidden: used by JS/Drawer -->
+          <div style="display:none">
+            <div id="adminAv">A</div>
+            <div id="adminName">Admin</div>
+          </div>
+          <button class="hbg-btn hbg-light btn-ripple" onclick="openDrawer()" aria-label="เมนู">
+            <span></span><span></span><span></span>
+          </button>
         </div>
-        <button class="hbg-btn hbg-light btn-ripple" onclick="openDrawer()" aria-label="เมนู">
-          <span></span><span></span><span></span>
-        </button>
       </div>
 
       <div class="content">
@@ -264,7 +270,8 @@
             <div class="slabel">งานปกติ</div>
             <div class="sval" id="sNorm">0</div>
           </div>
-          <div class="scard sla-card scard-clickable" id="slaStatCard" onclick="filterAndGoQueue('sla')" title="ดูงานล่าช้า">
+          <div class="scard sla-card scard-clickable" id="slaStatCard" onclick="filterAndGoQueue('sla')"
+            title="ดูงานล่าช้า">
             <div class="slabel">⏰ งานล่าช้า</div>
             <div class="sval sla-val" id="sSLA">0</div>
           </div>
@@ -327,9 +334,6 @@
               <div class="panel">
                 <div class="panel-head">
                   <h3>📊 ภาพรวมงาน</h3>
-                  <button class="btn-ripple" onclick="window.location.href='/api/tickets/export'"
-                    style="background:var(--blue2);color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📥
-                    Export CSV</button>
                 </div>
                 <div class="pie-wrap">
                   <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140"
@@ -456,8 +460,7 @@
       <!-- Left placeholder (grid column 1) -->
       <div style="justify-self:start"></div>
       <!-- Logo — centered via grid column 2 -->
-      <div class="nlogo logo-anim">🏛️ <span>Resolve<span
-            class="now-gold">Now</span></span></div>
+      <div class="nlogo logo-anim">🏛️ <span>Resolve<span class="now-gold">Now</span></span></div>
       <!-- Hamburger pushed to right — grid column 3 -->
       <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู" style="justify-self:end">
         <span></span><span></span><span></span>
@@ -629,7 +632,8 @@
               </div>
 
               <!-- Hidden gallery input only -->
-              <input type="file" id="cImgGallery" accept="image/*" style="display:none" onchange="prevCitizenImg(event)" />
+              <input type="file" id="cImgGallery" accept="image/*" style="display:none"
+                onchange="prevCitizenImg(event)" />
               <!-- Unified hidden input used by rest of form -->
               <input type="file" id="cImg" accept="image/*" style="display:none" />
 
@@ -1009,7 +1013,8 @@
         <button onclick="closeAddCategoryModal()"
           style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
         <button onclick="submitAddCategory()"
-          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)">➕ สร้างหมวดหมู่</button>
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)">➕
+          สร้างหมวดหมู่</button>
       </div>
     </div>
   </div>
@@ -1037,7 +1042,8 @@
         <button onclick="closeEditCategoryModal()"
           style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
         <button onclick="submitEditCategory()"
-          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾 บันทึก</button>
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾
+          บันทึก</button>
       </div>
     </div>
   </div>
@@ -1051,14 +1057,16 @@
         <h3 style="margin:0 0 4px;font-size:17px">จัดการช่าง — <span id="techLinkCatName"></span></h3>
         <p style="font-size:12px;color:var(--muted);margin:0">เลือกช่างที่ต้องการผูกกับหมวดหมู่นี้</p>
       </div>
-      <div id="techLinkList" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:14px">
+      <div id="techLinkList"
+        style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:14px">
         <div class="empty" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>
       </div>
       <div style="display:flex;gap:10px">
         <button onclick="closeTechLinkModal()"
           style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ปิด</button>
         <button onclick="saveTechLinks()" id="btnSaveTechLinks"
-          style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.3)">💾 บันทึก</button>
+          style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.3)">💾
+          บันทึก</button>
       </div>
     </div>
   </div>
@@ -1073,14 +1081,18 @@
         <p style="font-size:12px;color:var(--muted);margin:0">สร้างบัญชีช่างใหม่ในระบบ</p>
       </div>
       <div class="row2">
-        <div class="fg"><label>ชื่อ <span style="color:var(--r)">*</span></label><input type="text" id="addTechFname" placeholder="ชื่อ" /></div>
+        <div class="fg"><label>ชื่อ <span style="color:var(--r)">*</span></label><input type="text" id="addTechFname"
+            placeholder="ชื่อ" /></div>
         <div class="fg"><label>นามสกุล</label><input type="text" id="addTechLname" placeholder="นามสกุล" /></div>
       </div>
-      <div class="fg"><label>อีเมล <span style="color:var(--r)">*</span></label><input type="email" id="addTechEmail" placeholder="email@example.com" /></div>
-      <div class="fg"><label>รหัสผ่าน <span style="color:var(--r)">*</span></label><input type="password" id="addTechPwd" placeholder="รหัสผ่าน (6+ ตัวอักษร)" /></div>
+      <div class="fg"><label>อีเมล <span style="color:var(--r)">*</span></label><input type="email" id="addTechEmail"
+          placeholder="email@example.com" /></div>
+      <div class="fg"><label>รหัสผ่าน <span style="color:var(--r)">*</span></label><input type="password"
+          id="addTechPwd" placeholder="รหัสผ่าน (6+ ตัวอักษร)" /></div>
       <div class="fg">
         <label>แผนกเริ่มต้น</label>
-        <select id="addTechSpecialty" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
+        <select id="addTechSpecialty"
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
           <option value="">— ไม่ระบุ —</option>
         </select>
       </div>
@@ -1089,7 +1101,8 @@
         <button onclick="closeAddTechModal()"
           style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
         <button onclick="submitAddTech()"
-          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.35)">👷 เพิ่มช่าง</button>
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.35)">👷
+          เพิ่มช่าง</button>
       </div>
     </div>
   </div>
@@ -1109,7 +1122,8 @@
       </div>
       <div class="fg">
         <label>แผนก</label>
-        <select id="editTechSpecialty" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
+        <select id="editTechSpecialty"
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
           <option value="">— ไม่ระบุ —</option>
         </select>
       </div>
@@ -1118,7 +1132,8 @@
         <button onclick="closeEditTechModal()"
           style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
         <button onclick="submitEditTech()"
-          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾 บันทึก</button>
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾
+          บันทึก</button>
       </div>
     </div>
   </div>
@@ -1132,15 +1147,78 @@
         <h3 style="margin:0 0 6px;font-size:18px">ลบหมวดหมู่?</h3>
         <p style="font-size:13px;color:var(--muted);margin:0" id="mDeleteCatLabel"></p>
       </div>
-      <p style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff1f1;border-radius:10px;padding:12px;border:1px solid #fecaca">
+      <p
+        style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff1f1;border-radius:10px;padding:12px;border:1px solid #fecaca">
         ⚠️ หมวดหมู่จะถูกลบถาวร หากมีเรื่องร้องเรียนค้างอยู่จะ<strong>ไม่สามารถลบได้</strong>
       </p>
       <div class="ebox" id="deleteCatErr"></div>
       <div style="display:flex;gap:10px">
         <button onclick="closeDeleteCategoryModal()"
-          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">✕ ยกเลิก</button>
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">✕
+          ยกเลิก</button>
         <button onclick="confirmDeleteCategory()" id="btnConfirmDeleteCat"
-          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">🗑️ ลบถาวร</button>
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">🗑️
+          ลบถาวร</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Report Download ───────────────────────────── -->
+  <div class="mo" id="mReport">
+    <div class="mb report-modal">
+      <button class="mc" onclick="closeReportModal()">✕</button>
+      <div class="report-modal-header">
+        <div class="report-modal-icon">📊</div>
+        <h3> ออกรายงาน</h3>
+      </div>
+      <!-- Time range selection -->
+      <div class="report-range-group">
+        <label class="report-range-label">📅 ช่วงเวลา</label>
+        <div class="report-range-options">
+          <label class="report-range-opt on" id="rngThisMonth">
+            <input type="radio" name="reportRange" value="this_month" checked />
+            <span class="report-range-radio"></span>
+            <div>
+              <div class="report-range-title">เดือนนี้</div>
+              <div class="report-range-sub" id="rngThisMonthLabel"></div>
+            </div>
+          </label>
+          <label class="report-range-opt" id="rngLastMonth">
+            <input type="radio" name="reportRange" value="last_month" />
+            <span class="report-range-radio"></span>
+            <div>
+              <div class="report-range-title">เดือนที่แล้ว</div>
+              <div class="report-range-sub" id="rngLastMonthLabel"></div>
+            </div>
+          </label>
+          <label class="report-range-opt" id="rngAll">
+            <input type="radio" name="reportRange" value="all" />
+            <span class="report-range-radio"></span>
+            <div>
+              <div class="report-range-title">ทั้งหมด</div>
+              <div class="report-range-sub">ข้อมูลทุกรายการในระบบ</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <!-- Action buttons -->
+      <div class="report-actions">
+        <button class="report-btn report-btn-excel btn-ripple" onclick="downloadExcel()" id="btnReportExcel">
+          <span class="report-btn-icon">📊</span>
+          <div>
+            <div class="report-btn-title">ดาวน์โหลดเป็น Excel</div>
+            <div class="report-btn-sub">.xlsx — พร้อมทำ Pivot Table</div>
+          </div>
+        </button>
+        <button class="report-btn report-btn-pdf btn-ripple" onclick="printPDF()" id="btnReportPdf">
+          <span class="report-btn-icon">🖨️</span>
+          <div>
+            <div class="report-btn-title">พิมพ์รายงาน PDF</div>
+            <div class="report-btn-sub">เปิดหน้า Print → Save as PDF</div>
+          </div>
+        </button>
+      </div>
+      <div id="reportStatus" style="text-align:center;font-size:12px;color:var(--muted);min-height:20px;margin-top:8px">
       </div>
     </div>
   </div>
@@ -1267,11 +1345,14 @@
     });
   </script>
   <!-- ── MODAL: Camera Capture (getUserMedia) ───────── -->
-  <div id="mCamera" style="display:none;position:fixed;inset:0;z-index:9500;background:#000;flex-direction:column;align-items:center;justify-content:center">
+  <div id="mCamera"
+    style="display:none;position:fixed;inset:0;z-index:9500;background:#000;flex-direction:column;align-items:center;justify-content:center">
     <!-- Top bar -->
-    <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);z-index:1">
+    <div
+      style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);z-index:1">
       <span style="color:#fff;font-size:14px;font-weight:700;font-family:'Prompt',sans-serif">📸 ถ่ายรูป</span>
-      <button onclick="closeCameraCapture()" style="background:rgba(255,255,255,.15);border:none;border-radius:99px;width:36px;height:36px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      <button onclick="closeCameraCapture()"
+        style="background:rgba(255,255,255,.15);border:none;border-radius:99px;width:36px;height:36px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <!-- Video preview -->
     <video id="camVideo" autoplay playsinline muted
@@ -1279,9 +1360,12 @@
     <!-- Hidden canvas for snapshot -->
     <canvas id="camCanvas" style="display:none"></canvas>
     <!-- Error message -->
-    <div id="camError" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:24px;border-radius:16px;text-align:center;font-family:'Prompt',sans-serif;font-size:14px;max-width:280px;line-height:1.6"></div>
+    <div id="camError"
+      style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:24px;border-radius:16px;text-align:center;font-family:'Prompt',sans-serif;font-size:14px;max-width:280px;line-height:1.6">
+    </div>
     <!-- Bottom controls -->
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:24px 24px 40px;display:flex;align-items:center;justify-content:center;gap:28px;background:linear-gradient(to top,rgba(0,0,0,.7),transparent)">
+    <div
+      style="position:absolute;bottom:0;left:0;right:0;padding:24px 24px 40px;display:flex;align-items:center;justify-content:center;gap:28px;background:linear-gradient(to top,rgba(0,0,0,.7),transparent)">
       <!-- Switch camera -->
       <button id="camSwitchBtn" onclick="switchCamera()" title="สลับกล้อง"
         style="width:48px;height:48px;border-radius:99px;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">🔄</button>
@@ -1295,4 +1379,5 @@
   </div>
 
 </body>
+
 </html>
