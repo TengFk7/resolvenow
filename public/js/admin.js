@@ -1113,77 +1113,108 @@ function _openPdfWindow(data) {
 
   html += '</div>'; // end page 1
 
-  // ── Page 2+: ALL Tickets Table ──
+  // ── Page 2+: Case cards grouped by status ──
   if (tickets.length > 0) {
-    // Status display config
     var stColors = { pending: '#f59e0b', assigned: '#3b82f6', in_progress: '#8b5cf6', completed: '#22c55e', rejected: '#ef4444' };
-    var stIcons = { pending: '🟡', assigned: '🔵', in_progress: '🟣', completed: '🟢', rejected: '🔴' };
+    var stIcons  = { pending: '⏳', assigned: '📋', in_progress: '🔧', completed: '✅', rejected: '❌' };
 
-    // Sort: pending first, then assigned, in_progress, completed, rejected
-    var stOrder = { pending: 0, assigned: 1, in_progress: 2, completed: 3, rejected: 4 };
-    var sorted = tickets.slice().sort(function(a, b) { return (stOrder[a.status] || 9) - (stOrder[b.status] || 9); });
+    // Define status groups order
+    var groups = [
+      { key: 'pending',     label: 'รอดำเนินการ',      color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', icon: '⏳' },
+      { key: 'in_progress', label: 'กำลังดำเนินการ',   color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', icon: '🔧' },
+      { key: 'assigned',    label: 'รับงานแล้ว',        color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', icon: '📋' },
+      { key: 'completed',   label: 'เสร็จสิ้นแล้ว',    color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' },
+      { key: 'rejected',    label: 'ปฏิเสธ',           color: '#ef4444', bg: '#fff1f2', border: '#fecaca', icon: '❌' }
+    ];
 
     html += '<div class="rpt-page">';
-    html += '<div class="rpt-section-title">📋 รายการเคสทั้งหมด (' + tickets.length + ' รายการ)</div>';
-    html += '<table class="rpt-table"><thead><tr>';
-    html += '<th>รหัสเคส</th><th>สถานะ</th><th>หมวดหมู่</th><th>วันที่รับแจ้ง</th><th>ช่างผู้รับผิดชอบ</th><th>ระยะเวลา</th><th>คะแนน</th><th>รูปภาพ</th>';
-    html += '</tr></thead><tbody>';
+    html += '<div class="rpt-section-title">📋 รายละเอียดเคสทั้งหมด (' + tickets.length + ' รายการ)</div>';
 
-    for (var i = 0; i < sorted.length; i++) {
-      var t = sorted[i];
+    // helper: build one card
+    function buildCard(t) {
       var created = new Date(t.createdAt);
       var updated = new Date(t.updatedAt);
+      var stColor = stColors[t.status] || '#94a3b8';
+      var stIcon  = stIcons[t.status]  || '⚪';
+      var stLabel = stMap[t.status]    || t.status;
 
-      // Duration calculation
+      // Duration
       var duration = '—';
       if (t.status === 'completed') {
-        var diffMs = updated - created;
-        var diffMins = Math.round(diffMs / 60000);
+        var diffMins = Math.round((updated - created) / 60000);
         duration = diffMins < 60 ? diffMins + ' นาที' : (Math.floor(diffMins / 60) + ' ชม. ' + (diffMins % 60) + ' นาที');
       } else if (t.status !== 'rejected') {
-        // Show elapsed time for active tickets
-        var elapsedMs = now - created;
-        var elapsedMins = Math.round(elapsedMs / 60000);
-        if (elapsedMins < 60) duration = elapsedMins + ' นาที (ดำเนินการอยู่)';
-        else {
-          var eh = Math.floor(elapsedMins / 60);
-          var em = elapsedMins % 60;
-          if (eh < 24) duration = eh + ' ชม. ' + em + ' น. (ดำเนินการอยู่)';
-          else duration = Math.floor(eh / 24) + ' วัน ' + (eh % 24) + ' ชม. (ดำเนินการอยู่)';
-        }
+        var elMins = Math.round((now - created) / 60000);
+        var eh = Math.floor(elMins / 60);
+        if (elMins < 60) duration = elMins + ' นาที (ดำเนินการอยู่)';
+        else if (eh < 24) duration = eh + ' ชม. ' + (elMins % 60) + ' น. (ดำเนินการอยู่)';
+        else duration = Math.floor(eh / 24) + ' วัน ' + (eh % 24) + ' ชม. (ดำเนินการอยู่)';
       }
 
-      // Stars
-      var stars = '';
-      if (t.rating) { for (var s = 0; s < 5; s++) { stars += s < t.rating ? '★' : '☆'; } }
-      else { stars = '—'; }
+      var stars = t.rating ? '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) : '—';
 
-      // Image
-      var imgCell = '';
-      if (t.afterImage) { imgCell = '<img src="' + escapeHTML(t.afterImage) + '" class="rpt-img" alt="ผลซ่อม"/>'; }
-      else if (t.citizenImage) { imgCell = '<img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img" alt="แจ้งปัญหา"/>'; }
-      else { imgCell = '<span style="color:#94a3b8;font-size:11px">—</span>'; }
+      var imgHtml = '';
+      if (t.afterImage || t.citizenImage) {
+        imgHtml += '<div class="rpt-card-imgs">';
+        if (t.citizenImage) imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img-card" alt="รูปปัญหา"/><div class="rpt-img-label">📸 ก่อนซ่อม</div></div>';
+        if (t.afterImage)   imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.afterImage)   + '" class="rpt-img-card" alt="รูปผลงาน"/><div class="rpt-img-label">✅ หลังซ่อม</div></div>';
+        imgHtml += '</div>';
+      }
 
-      // Status badge
-      var stColor = stColors[t.status] || '#94a3b8';
-      var stIcon = stIcons[t.status] || '⚪';
-      var stLabel = stMap[t.status] || t.status;
-      var statusBadge = '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;background:' + stColor + '15;color:' + stColor + ';border:1px solid ' + stColor + '30;white-space:nowrap">' + stIcon + ' ' + stLabel + '</span>';
+      var rejectHtml = (t.status === 'rejected' && t.rejectReason)
+        ? '<div class="rpt-card-reject">⚠️ เหตุผลที่ปฏิเสธ: ' + escapeHTML(t.rejectReason) + '</div>'
+        : '';
 
-      html += '<tr>';
-      html += '<td style="font-weight:700;font-family:Inter,sans-serif;color:#0f172a">' + escapeHTML(t.ticketId) + '</td>';
-      html += '<td>' + statusBadge + '</td>';
-      html += '<td>' + escapeHTML(catMap[t.category] || t.category) + '</td>';
-      html += '<td>' + created.toLocaleDateString('th-TH', { dateStyle: 'short' }) + '<br/><span style="font-size:10px;color:#94a3b8">' + created.toLocaleTimeString('th-TH', { timeStyle: 'short' }) + '</span></td>';
-      html += '<td>' + escapeHTML(t.assignedName || '—') + '</td>';
-      html += '<td style="font-size:10px">' + duration + '</td>';
-      html += '<td style="color:#f59e0b;font-weight:700">' + stars + '</td>';
-      html += '<td>' + imgCell + '</td>';
-      html += '</tr>';
+      var ratingHtml = t.rating
+        ? '<div class="rpt-card-row"><span class="rpt-card-key">⭐ คะแนน</span><span class="rpt-card-val rpt-stars">' + stars + ' (' + t.rating + '/5)' + (t.ratingNote ? ' — ' + escapeHTML(t.ratingNote) : '') + '</span></div>'
+        : '';
+
+      var card = '<div class="rpt-card" style="border-left:4px solid ' + stColor + '">';
+      card += '<div class="rpt-card-head" style="background:' + stColor + '15;border-bottom:1px solid ' + stColor + '30">';
+      card += '<div class="rpt-card-id">' + escapeHTML(t.ticketId) + '</div>';
+      card += '<div class="rpt-card-badge" style="background:' + stColor + '">' + stIcon + ' ' + stLabel + '</div>';
+      card += '</div>';
+      card += '<div class="rpt-card-body">';
+      card += '<div class="rpt-card-info">';
+      card += '<div class="rpt-card-row"><span class="rpt-card-key">📂 หมวดหมู่</span><span class="rpt-card-val">' + escapeHTML(catMap[t.category] || t.category) + '</span></div>';
+      card += '<div class="rpt-card-row"><span class="rpt-card-key">📅 วันที่แจ้ง</span><span class="rpt-card-val">' + created.toLocaleDateString('th-TH', { dateStyle: 'long' }) + ' เวลา ' + created.toLocaleTimeString('th-TH', { timeStyle: 'short' }) + '</span></div>';
+      card += '<div class="rpt-card-row"><span class="rpt-card-key">🔧 ช่างผู้รับผิดชอบ</span><span class="rpt-card-val">' + escapeHTML(t.assignedName || '(ยังไม่มอบหมาย)') + '</span></div>';
+      card += '<div class="rpt-card-row"><span class="rpt-card-key">⏱️ ระยะเวลา</span><span class="rpt-card-val">' + duration + '</span></div>';
+      if (t.description) card += '<div class="rpt-card-row rpt-card-desc"><span class="rpt-card-key">📝 รายละเอียด</span><span class="rpt-card-val">' + escapeHTML(t.description) + '</span></div>';
+      card += ratingHtml;
+      card += rejectHtml;
+      card += '</div>';
+      if (imgHtml) card += imgHtml;
+      card += '</div>';
+      card += '</div>';
+      return card;
     }
 
-    html += '</tbody></table>';
-    html += '</div>';
+    // Render each group
+    for (var g = 0; g < groups.length; g++) {
+      var grp = groups[g];
+      var grpTickets = tickets.filter(function(t) { return t.status === grp.key; });
+      if (!grpTickets.length) continue;
+
+      // Sort by date newest first within group
+      grpTickets.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+      // Group section header — bold full-band style
+      html += '<div class="rpt-group-header" style="background:linear-gradient(135deg,' + grp.color + 'dd,' + grp.color + 'aa);border-top:3px solid ' + grp.color + ';border-bottom:1px solid ' + grp.border + '">';
+      html += '<span class="rpt-group-icon">' + grp.icon + '</span>';
+      html += '<span class="rpt-group-label">' + grp.label + '</span>';
+      html += '<span class="rpt-group-count">' + grpTickets.length + ' เคส</span>';
+      html += '</div>';
+
+      html += '<div class="rpt-cards">';
+      for (var j = 0; j < grpTickets.length; j++) {
+        html += buildCard(grpTickets[j]);
+      }
+      html += '</div>';
+      html += '<div style="height:20px"></div>'; // spacer between groups
+    }
+
+    html += '</div>'; // end rpt-page
   }
 
   // Footer
@@ -1217,14 +1248,14 @@ function _openPdfWindow(data) {
 function _getPdfStyles() {
   return '*{margin:0;padding:0;box-sizing:border-box}' +
     'body{font-family:"Prompt",sans-serif;color:#0f172a;background:#fff;padding:20px 28px;font-size:12px;line-height:1.6}' +
-    '.rpt-page{page-break-after:auto;margin-bottom:32px}' +
+    '.rpt-page{margin-bottom:32px}' +
     '.rpt-header{text-align:center;margin-bottom:28px;padding-bottom:20px}' +
     '.rpt-logo{font-family:"Inter","Prompt",sans-serif;font-size:38px;font-weight:800;color:#0f172a;letter-spacing:-1px;margin-bottom:6px}' +
     '.rpt-logo span{background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}' +
     '.rpt-title{font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:6px}' +
     '.rpt-subtitle{font-size:12px;color:#64748b;margin-bottom:16px}' +
     '.rpt-line{height:3px;background:linear-gradient(90deg,#2563eb,#f59e0b,#22c55e);border-radius:4px}' +
-    '.rpt-section-title{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px;padding-left:4px;border-left:3px solid #2563eb;padding:4px 12px}' +
+    '.rpt-section-title{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px;padding:4px 12px;border-left:3px solid #2563eb}' +
     '.rpt-stats{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}' +
     '.rpt-stat{text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 20px;min-width:100px}' +
     '.rpt-stat-num{font-size:28px;font-weight:800;font-family:"Inter",sans-serif;line-height:1}' +
@@ -1232,22 +1263,39 @@ function _getPdfStyles() {
     '.rpt-pie-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}' +
     '.rpt-leg{display:flex;align-items:center;gap:6px;font-size:12px;color:#334155;font-weight:600}' +
     '.rpt-dot{width:10px;height:10px;border-radius:50%;display:inline-block}' +
-    '.rpt-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}' +
-    '.rpt-table th{background:#0f172a;color:#fff;padding:8px 10px;font-weight:700;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px}' +
-    '.rpt-table td{padding:8px 10px;border-bottom:1px solid #e2e8f0;vertical-align:middle}' +
-    '.rpt-table tr:nth-child(even){background:#f8fafc}' +
-    '.rpt-table tr:hover{background:#eff6ff}' +
-    '.rpt-img{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0}' +
+    /* ── Case Cards ── */
+    '.rpt-cards{display:flex;flex-direction:column;gap:14px}' +
+    '.rpt-card{border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;page-break-inside:avoid;break-inside:avoid;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}' +
+    '.rpt-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px}' +
+    '.rpt-card-id{font-family:"Inter",sans-serif;font-size:13px;font-weight:800;color:#0f172a;letter-spacing:.5px}' +
+    '.rpt-card-badge{padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.3px}' +
+    '.rpt-card-body{display:flex;gap:16px;padding:12px 14px 14px;align-items:flex-start}' +
+    '.rpt-card-info{flex:1;min-width:0}' +
+    '.rpt-card-row{display:flex;gap:8px;margin-bottom:6px;font-size:11px;line-height:1.5}' +
+    '.rpt-card-key{color:#64748b;font-weight:600;flex-shrink:0;min-width:130px}' +
+    '.rpt-card-val{color:#0f172a;font-weight:500;flex:1}' +
+    '.rpt-card-desc .rpt-card-val{color:#334155;font-style:italic}' +
+    '.rpt-stars{color:#f59e0b;font-weight:700;font-family:"Inter",sans-serif;letter-spacing:1px}' +
+    '.rpt-card-reject{margin-top:8px;background:#fff1f1;border:1px solid #fecaca;border-radius:6px;padding:6px 10px;font-size:11px;color:#b91c1c}' +
+    '.rpt-card-imgs{display:flex;flex-direction:column;gap:8px;flex-shrink:0}' +
+    '.rpt-img-wrap{text-align:center}' +
+    '.rpt-img-card{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;display:block}' +
+    '.rpt-img-label{font-size:9px;color:#64748b;margin-top:3px;font-weight:600}' +
+    /* ── Status Group Headers ── */
+    '.rpt-group-header{display:flex;align-items:center;gap:12px;padding:13px 20px;border-radius:0;margin:20px -4px 12px;page-break-inside:avoid;break-inside:avoid;box-shadow:0 2px 8px rgba(0,0,0,.12)}' +
+    '.rpt-group-icon{font-size:20px;flex-shrink:0}' +
+    '.rpt-group-label{font-size:15px;font-weight:900;flex:1;letter-spacing:.4px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.2)}' +
+    '.rpt-group-count{padding:4px 14px;border-radius:99px;color:#fff;font-size:12px;font-weight:800;flex-shrink:0;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.4)}' +
     '.rpt-footer{text-align:center;font-size:10px;color:#94a3b8;padding-top:20px;border-top:1px solid #e2e8f0;margin-top:32px}' +
     '@media print{' +
-      'body{padding:16px 20px;font-size:11px}' +
-      '.rpt-page{page-break-after:auto}' +
+      'body{padding:10px 14px;font-size:11px}' +
+      '.rpt-card{page-break-inside:avoid;break-inside:avoid;margin-bottom:10px}' +
+      '.rpt-group-header{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;margin:16px -2px 10px}' +
       '.rpt-stat{padding:10px 14px;min-width:80px}' +
       '.rpt-stat-num{font-size:22px}' +
-      '.rpt-table{font-size:10px}' +
-      '.rpt-table th{padding:6px 8px}' +
-      '.rpt-table td{padding:6px 8px}' +
-      '.rpt-img{width:40px;height:40px}' +
+      '.rpt-card-key{min-width:110px}' +
+      '.rpt-img-card{width:75px;height:75px}' +
     '@page{size:A4;margin:12mm 10mm}' +
     '}';
-}
+}
+

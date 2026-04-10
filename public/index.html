@@ -1164,12 +1164,15 @@
   </div>
 
   <!-- ── MODAL: Report Download ───────────────────────────── -->
-  <div class="mo" id="mReport">
-    <div class="mb report-modal">
+  <div class="mo" id="mReport" onclick="closeReportModal()">
+    <div class="mb report-modal" onclick="event.stopPropagation()">
       <button class="mc" onclick="closeReportModal()">✕</button>
       <div class="report-modal-header">
+        <!-- Glow orbs for shimmer effect -->
+        <span class="rmh-orb rmh-orb-gold"></span>
+        <span class="rmh-orb rmh-orb-teal"></span>
         <div class="report-modal-icon">📊</div>
-        <h3> ออกรายงาน</h3>
+        <h3>ออกรายงาน</h3>
       </div>
       <!-- Time range selection -->
       <div class="report-range-group">
