@@ -6,7 +6,7 @@
 //   CLOUDINARY_API_SECRET = API Secret
 
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const CloudinaryStorage = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 cloudinary.config({
