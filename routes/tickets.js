@@ -315,6 +315,12 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       await ticket.save();
     }
 
+    // Chat expiry — set 24-hour window when ticket is completed
+    if (status === 'completed' && !ticket.chatExpiresAt) {
+      ticket.chatExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await ticket.save();
+    }
+
     try {
       const ft = formatTicket(ticket, caller._id);
       if (status === 'assigned') await notifyAssigned(ft);
@@ -508,6 +514,11 @@ router.delete('/', requireAuth, async (req, res) => {
 // GET /api/tickets/:id/comments
 router.get('/:id/comments', requireAuth, async (req, res) => {
   try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('chatExpiresAt status');
+    // ถ้า chat หมดอายุแล้ว ให้คืน array เปล่า
+    if (ticket && ticket.chatExpiresAt && new Date() > ticket.chatExpiresAt) {
+      return res.json([]);
+    }
     const comments = await Comment.find({ ticketId: req.params.id }).sort({ createdAt: 1 });
     res.json(comments);
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
@@ -524,6 +535,11 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
 
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // Block new messages after chat expiry
+    if (ticket.chatExpiresAt && new Date() > ticket.chatExpiresAt) {
+      return res.status(403).json({ error: 'แชทนี้ปิดแล้ว เนื่องจากงานเสร็จสิ้นมากกว่า 24 ชั่วโมง' });
+    }
 
     const user = await User.findById(req.session.userId);
     if (!user) return res.status(401).json({ error: 'ไม่พบผู้ใช้' });

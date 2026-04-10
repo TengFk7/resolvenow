@@ -34,6 +34,8 @@ const ticketSchema = new mongoose.Schema({
   // ── Follow/Subscribe System ──
   followers:     [{ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, lineUserId: { type: String, default: null } }],
   followerCount: { type: Number, default: 0 },
+  // ── Chat Expiry ──
+  chatExpiresAt:   { type: Date, default: null },   // set when status → completed; null = no expiry
 }, {
   timestamps: true,   // createdAt, updatedAt อัตโนมัติ
   toJSON: { virtuals: true },

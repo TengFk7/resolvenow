@@ -28,10 +28,12 @@ async function loadAdmin() {
     var med = tks.filter(function (t) { return t.priorityScore >= 40 && t.priorityScore < 70 && t.status !== 'completed' && t.status !== 'rejected'; }).length;
     var nor = tks.filter(function (t) { return t.priorityScore < 40 && t.status !== 'completed' && t.status !== 'rejected'; }).length;
     var rdy = techs.filter(function (t) { return t.statusLabel === 'READY'; }).length;
+    var done = tks.filter(function (t) { return t.status === 'completed'; }).length;
     animateNum(ge('sUrgent'), urg);
     animateNum(ge('sMed'), med);
     animateNum(ge('sNorm'), nor);
     animateNum(ge('sTR'), rdy);
+    animateNum(ge('sDone'), done);
     ge('sTT').textContent = '/ ' + techs.length;
     animateNum(ge('sTD'), tks.length);
 
@@ -316,15 +318,21 @@ function renderAllQueue(tks, filter) {
       return false;
     });
     filterLabel = '⏰ งานล่าช้า (SLA เกินกำหนด)';
+  } else if (filter === 'completed') {
+    filtered = tks.filter(function(t) { return t.status === 'completed'; });
+    filterLabel = '✅ งานสำเร็จแล้ว';
   }
 
   // ── Filter chip above table ──
   var chipEl = ge('queueFilterChip');
   if (chipEl) {
     if (filterLabel) {
-      chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff0f0;border:1.5px solid #fca5a5;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#b91c1c">' +
+      var chipColor = filter === 'completed' ? '#f0fdf4' : '#fff0f0';
+      var chipBorder = filter === 'completed' ? '#86efac' : '#fca5a5';
+      var chipText = filter === 'completed' ? '#15803d' : '#b91c1c';
+      chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + chipColor + ';border:1.5px solid ' + chipBorder + ';border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:' + chipText + '">' +
         filterLabel +
-        '<button onclick="clearQueueFilter()" style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:#b91c1c;padding:0;margin-left:2px" title="ล้างตัวกรอง">✕</button>' +
+        '<button onclick="clearQueueFilter()" style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:' + chipText + ';padding:0;margin-left:2px" title="ล้างตัวกรอง">✕</button>' +
         '</span>';
       chipEl.style.display = 'block';
     } else {
@@ -334,10 +342,15 @@ function renderAllQueue(tks, filter) {
   }
 
   if (!filtered.length) {
-    el.innerHTML = '<tr><td colspan="11" class="empty">' + (filterLabel ? '✅ ไม่มีงานในหมวดนี้' : 'ยังไม่มี Ticket') + '</td></tr>';
+    el.innerHTML = '<tr><td colspan="11" class="empty">' + (filterLabel ? (filter === 'completed' ? '🎉 ยังไม่มีงานที่สำเร็จ' : '✅ ไม่มีงานในหมวดนี้') : 'ยังไม่มี Ticket') + '</td></tr>';
     return;
   }
-  filtered.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
+  // completed: เรียงตามเวลาอัปเดตล่าสุดก่อน; อื่นๆ เรียงตาม priority
+  if (filter === 'completed') {
+    filtered.sort(function(a, b) { return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt); });
+  } else {
+    filtered.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
+  }
   var h = '';
   for (var i = 0; i < filtered.length; i++) {
     var t = filtered[i];
@@ -367,7 +380,7 @@ function renderAllQueue(tks, filter) {
       h += '<option value="'+s+'"'+(t.status===s ? ' selected' : '')+'>'+stTH(s)+'</option>';
     });
     h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+t.createdAt+'</td>';
-    h += '<td><div style="display:flex;gap:4px;flex-direction:column"><button class="btn-chat" onclick="openTicketChat(\''+t.ticketId+'\')">💬</button><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
+    h += '<td><div style="display:flex;gap:6px;flex-direction:column;align-items:center;padding:2px 6px"><button class="btn-chat" onclick="openTicketChat(\''+t.ticketId+'\')">💬</button><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
     h += '</tr>';
   }
   el.innerHTML = h;
