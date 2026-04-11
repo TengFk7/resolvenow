@@ -147,13 +147,56 @@
       color: #fff;
       letter-spacing: -1px;
       margin-bottom: 4px;
-      filter: drop-shadow(0 0 20px rgba(37,99,235,.4));
     }
     .track-logo a {
       color: inherit;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
-    .track-logo .now-gold { color: var(--gold2) }
+
+    /* ── ResolveNow Logo Animation (mirrored from main style.css) ── */
+    @keyframes logoBreathe {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.025); }
+    }
+    @keyframes nowGlow {
+      0%, 100% { text-shadow: 0 0 6px rgba(251,191,36,.0), 0 0 12px rgba(251,191,36,.0); }
+      50%       { text-shadow: 0 0 8px rgba(251,191,36,.7), 0 0 22px rgba(251,191,36,.4), 0 0 40px rgba(245,158,11,.2); }
+    }
+    @keyframes resolveShimmer {
+      0%   { background-position: 0% center; }
+      100% { background-position: 300% center; }
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0px); filter: drop-shadow(0 0 12px rgba(37,99,235,.55)); }
+      50%       { transform: translateY(-4px); filter: drop-shadow(0 0 22px rgba(37,99,235,.85)); }
+    }
+
+    .logo-anim {
+      animation: logoBreathe 5s ease-in-out infinite;
+      display: inline-block;
+    }
+    .resolve-shimmer {
+      background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 25%, #818cf8 50%, #3b82f6 75%, #1e3a8a 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: resolveShimmer 4s linear infinite;
+    }
+    .now-gold {
+      color: #fbbf24;
+      display: inline;
+      animation: nowGlow 2.8s ease-in-out infinite;
+    }
+    .logo-icon {
+      font-size: 28px;
+      display: inline-block;
+      animation: iconFloat 4s ease-in-out infinite;
+    }
+
     .track-title {
       font-size: 14px;
       color: rgba(255,255,255,.45);
@@ -577,7 +620,14 @@
 
     <!-- Header -->
     <div class="track-header">
-      <div class="track-logo"><a href="/">🏛️ Resolve<span class="now-gold">Now</span></a></div>
+      <div class="track-logo">
+        <a href="/">
+          <span class="logo-anim" style="display:inline-flex;align-items:center;gap:10px;">
+            <span class="logo-icon">🏛️</span>
+            <span><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></span>
+          </span>
+        </a>
+      </div>
       <div class="track-title">ระบบติดตามสถานะเรื่องร้องเรียน</div>
     </div>
 
