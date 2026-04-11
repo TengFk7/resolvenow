@@ -6,7 +6,7 @@
 //   CLOUDINARY_API_SECRET = API Secret
 
 const cloudinary = require('cloudinary').v2;
-const CloudinaryStorage = require('multer-storage-cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 cloudinary.config({
@@ -17,11 +17,11 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
+  params: (req, file) => ({
     folder: 'resolvenow',          // โฟลเดอร์ใน Cloudinary
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
     transformation: [{ width: 1280, crop: 'limit', quality: 'auto' }]
-  }
+  })
 });
 
 const upload = multer({
