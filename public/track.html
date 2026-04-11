@@ -515,6 +515,44 @@
       line-height: 1.5;
     }
 
+    /* ── Location Pin Animation ───────────────────────── */
+    .pin-animated {
+      display: inline-block;
+      animation: pinBounce 1.8s cubic-bezier(.36,.07,.19,.97) infinite;
+      will-change: transform;
+      filter: drop-shadow(0 0 0px rgba(239,68,68,0));
+    }
+    @keyframes pinBounce {
+      0%   { transform: translateY(0px);   filter: drop-shadow(0 0 2px rgba(239,68,68,.4)); }
+      30%  { transform: translateY(-7px);  filter: drop-shadow(0 3px 8px rgba(239,68,68,.7)); }
+      45%  { transform: translateY(-9px);  filter: drop-shadow(0 4px 12px rgba(239,68,68,.9)); }
+      60%  { transform: translateY(-5px);  filter: drop-shadow(0 2px 6px rgba(239,68,68,.6)); }
+      75%  { transform: translateY(-7px);  filter: drop-shadow(0 3px 9px rgba(239,68,68,.75)); }
+      100% { transform: translateY(0px);   filter: drop-shadow(0 0 2px rgba(239,68,68,.4)); }
+    }
+    /* Ripple ring under pin */
+    .pin-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pin-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%; transform: translateX(-50%);
+      width: 14px; height: 6px;
+      border-radius: 50%;
+      background: rgba(239,68,68,.25);
+      animation: pinShadow 1.8s cubic-bezier(.36,.07,.19,.97) infinite;
+    }
+    @keyframes pinShadow {
+      0%   { transform: translateX(-50%) scale(1);    opacity: .5; }
+      45%  { transform: translateX(-50%) scale(.4);   opacity: .15; }
+      100% { transform: translateX(-50%) scale(1);    opacity: .5; }
+    }
+
     /* ── Progress Timeline ─────────────────────────────── */
     .progress-timeline {
       margin-top: 28px;
@@ -547,16 +585,41 @@
       border-radius: 99px;
       z-index: 0;
     }
+
+    /* ── Timeline fill track ─────────────────────────── */
     .timeline-fill {
       position: absolute;
       top: 15px;
       left: 20px;
       height: 3px;
-      background: linear-gradient(90deg, var(--blue2), var(--g));
+      background: linear-gradient(90deg, var(--blue2), var(--blue3));
       border-radius: 99px;
       z-index: 1;
+      clip-path: inset(0 0 0 0 round 99px); /* reliable clipping for thin bars */
       transition: width .8s cubic-bezier(.22,1,.36,1);
     }
+    /* Comet light running inside the fill bar */
+    .timeline-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -55%;
+      width: 55%; height: 100%;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,.10) 25%,
+        rgba(255,255,255,.80) 50%,
+        rgba(255,255,255,.10) 75%,
+        transparent 100%);
+      border-radius: 99px;
+      animation: cometRun 1.8s ease-in-out infinite;
+    }
+    @keyframes cometRun {
+      0%   { left: -55%; opacity: 0; }
+      6%   { opacity: 1; }
+      80%  { left:  80%; opacity: 1; }
+      100% { left:  80%; opacity: 0; }
+    }
+
     .tl-step {
       position: relative;
       z-index: 2;
@@ -575,12 +638,41 @@
       transition: all .4s ease;
       border: 3px solid #fff;
       box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      position: relative;
     }
+    /* ── Active dot: bob + pulse ring ─────────────────── */
     .tl-dot.active {
       background: linear-gradient(135deg, var(--blue2), var(--blue));
       box-shadow: 0 4px 14px rgba(37,99,235,.35);
       transform: scale(1.15);
+      animation: dotBob 2s ease-in-out infinite;
     }
+    @keyframes dotBob {
+      0%, 100% { transform: scale(1.15) translateY(0px); }
+      50%       { transform: scale(1.18) translateY(-3px); }
+    }
+    /* Expanding ring around active dot */
+    .tl-dot.active::before,
+    .tl-dot.active::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(37,99,235,.5);
+      animation: ringPulse 2s ease-out infinite;
+      pointer-events: none;
+    }
+    .tl-dot.active::after {
+      inset: -8px;
+      border-color: rgba(37,99,235,.25);
+      animation-delay: .4s;
+    }
+    @keyframes ringPulse {
+      0%   { transform: scale(.85); opacity: 0; }
+      20%  { opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
     .tl-dot.done {
       background: var(--g);
       box-shadow: 0 4px 14px rgba(34,197,94,.3);
@@ -766,7 +858,7 @@
       <!-- Info Rows -->
       <div class="info-rows">
         <div class="info-row">
-          <div class="info-row-icon">📍</div>
+          <div class="info-row-icon"><span class="pin-wrap"><span class="pin-animated">📍</span></span></div>
           <div class="info-row-content">
             <div class="info-row-label">สถานที่เกิดเหตุ</div>
             <div class="info-row-value" id="resultLocation">—</div>
