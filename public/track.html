@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ติดตามสถานะ — ResolveNow</title>
+  <meta name="description" content="ตรวจสอบสถานะเรื่องร้องเรียนของคุณ ด้วยรหัสอ้างอิง Ticket ID บนระบบ ResolveNow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ── Variables (matching main theme) ─────────────────── */
+    :root {
+      --navy: #0a1628;
+      --navy2: #0f2040;
+      --navy3: #162a52;
+      --blue: #1a4fa0;
+      --blue2: #2563eb;
+      --blue3: #3b82f6;
+      --gold: #f59e0b;
+      --gold2: #fbbf24;
+      --surface: #f0f4ff;
+      --white: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: rgba(99, 130, 200, .18);
+      --glass: rgba(255, 255, 255, .08);
+      --glass2: rgba(255, 255, 255, .92);
+      --shadow: 0 8px 32px rgba(10, 22, 40, .18);
+      --shadow2: 0 2px 12px rgba(10, 22, 40, .10);
+      --r: #ef4444;
+      --g: #22c55e;
+      --transition: .3s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    /* ── Reset ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { font-size: 15px; scroll-behavior: smooth }
+    body {
+      font-family: 'Prompt', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background: linear-gradient(160deg, #07111f 0%, #0c1e3a 50%, #101627 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px }
+    ::-webkit-scrollbar-track { background: transparent }
+    ::-webkit-scrollbar-thumb { background: rgba(37,99,235,.25); border-radius: 99px }
+
+    /* ── Orb Background System ──────────────────────────── */
+    #orbCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Individual floating orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(var(--orb-blur, 60px));
+      opacity: 0;
+      animation: orbDrift var(--orb-dur, 22s) var(--orb-delay, 0s) ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+
+    /* Gold orbs */
+    .orb-gold {
+      background: radial-gradient(circle at 40% 40%,
+        rgba(251, 191, 36, 0.55) 0%,
+        rgba(245, 158, 11, 0.25) 40%,
+        transparent 70%);
+    }
+    /* Blue-steel complementary orbs */
+    .orb-blue {
+      background: radial-gradient(circle at 40% 40%,
+        rgba(96, 165, 250, 0.38) 0%,
+        rgba(37, 99, 235, 0.18) 40%,
+        transparent 70%);
+    }
+    /* Teal accent orbs */
+    .orb-teal {
+      background: radial-gradient(circle at 40% 40%,
+        rgba(45, 212, 191, 0.32) 0%,
+        rgba(20, 184, 166, 0.14) 45%,
+        transparent 70%);
+    }
+
+    /* Drift path: orbs translate along a gentle figure-8 like curve */
+    @keyframes orbDrift {
+      0%   { opacity: 0;    transform: translate(0px,   0px)   scale(1);   }
+      8%   { opacity: 1; }
+      25%  { opacity: 0.85; transform: translate(var(--tx1), var(--ty1)) scale(1.06); }
+      50%  { opacity: 0.7;  transform: translate(var(--tx2), var(--ty2)) scale(0.96); }
+      75%  { opacity: 0.85; transform: translate(var(--tx3), var(--ty3)) scale(1.04); }
+      92%  { opacity: 1; }
+      100% { opacity: 0;    transform: translate(0px,   0px)   scale(1);   }
+    }
+
+    /* Sparkle micro-dots */
+    .sparkle {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      animation: sparkleTwinkle var(--sp-dur, 4s) var(--sp-delay, 0s) ease-in-out infinite;
+    }
+    @keyframes sparkleTwinkle {
+      0%, 100% { opacity: 0;   transform: scale(0.4); }
+      40%       { opacity: 0.9; transform: scale(1); }
+      70%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ── Main Container ────────────────────────────────── */
+    .track-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      animation: containerIn .8s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes containerIn {
+      from { opacity: 0; transform: translateY(30px) }
+      to { opacity: 1; transform: translateY(0) }
+    }
+
+    /* ── Logo / Header ─────────────────────────────────── */
+    .track-header {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: containerIn .8s .15s cubic-bezier(.22,1,.36,1) both;
+    }
+    .track-logo {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 0 20px rgba(37,99,235,.4));
+    }
+    .track-logo a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .track-logo .now-gold { color: var(--gold2) }
+    .track-title {
+      font-size: 14px;
+      color: rgba(255,255,255,.45);
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+
+    /* ── Search Card ───────────────────────────────────── */
+    .search-card {
+      background: var(--glass2);
+      backdrop-filter: blur(24px);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      animation: containerIn .8s .3s cubic-bezier(.22,1,.36,1) both;
+      transition: all .5s cubic-bezier(.22,1,.36,1);
+    }
+    .search-card.collapsed {
+      max-height: 0;
+      padding: 0 32px;
+      opacity: 0;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+
+    .search-card-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .search-card-header .icon-wrap {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(37,99,235,.3);
+    }
+    .search-card-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+    .search-card-header p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Input Group ───────────────────────────────────── */
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .input-group input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 15px;
+      font-family: 'Inter', 'Prompt', sans-serif;
+      font-weight: 600;
+      letter-spacing: 1px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: var(--transition);
+      text-transform: uppercase;
+    }
+    .input-group input::placeholder {
+      text-transform: none;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .input-group input:focus {
+      border-color: var(--blue2);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .btn-search {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Prompt', sans-serif;
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      color: #fff;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 16px rgba(37,99,235,.35);
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-search:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37,99,235,.45);
+    }
+    .btn-search:active { transform: translateY(0) }
+    .btn-search:disabled {
+      opacity: .7;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Spinner inside button */
+    .btn-search .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    .btn-search.loading .btn-text { display: none }
+    .btn-search.loading .spinner { display: inline-block }
+    @keyframes spin { to { transform: rotate(360deg) } }
+
+    .search-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Error Message ─────────────────────────────────── */
+    .error-box {
+      background: rgba(239,68,68,.08);
+      border: 1px solid rgba(239,68,68,.25);
+      color: #dc2626;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      text-align: center;
+      display: none;
+      animation: fadeSlideIn .3s ease both;
+    }
+    .error-box.show { display: block }
+
+    /* ── Result Card ───────────────────────────────────── */
+    .result-card {
+      background: var(--glass2);
+      backdrop-filter: blur(24px);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      display: none;
+      animation: resultIn .6s cubic-bezier(.22,1,.36,1) both;
+      margin-top: 20px;
+    }
+    .result-card.show { display: block }
+    @keyframes resultIn {
+      from { opacity: 0; transform: translateY(20px) scale(.97) }
+      to { opacity: 1; transform: translateY(0) scale(1) }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(0,0,0,.06);
+    }
+    .result-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .result-header-text h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 2px;
+    }
+    .result-header-text p {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Status Badge (large) ──────────────────────────── */
+    .status-display {
+      margin-bottom: 24px;
+    }
+    .status-badge-lg {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .status-badge-lg .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Status colors */
+    .status-pending     { background: rgba(245,158,11,.12); color: #b45309 }
+    .status-pending .status-dot { background: #f59e0b }
+    .status-assigned    { background: rgba(37,99,235,.10); color: #1d4ed8 }
+    .status-assigned .status-dot { background: #3b82f6 }
+    .status-in_progress { background: rgba(168,85,247,.10); color: #7c3aed }
+    .status-in_progress .status-dot { background: #a855f7; animation: dotPulse 1.5s ease-in-out infinite }
+    .status-completed   { background: rgba(34,197,94,.12); color: #15803d }
+    .status-completed .status-dot { background: #22c55e }
+    .status-rejected    { background: rgba(239,68,68,.10); color: #dc2626 }
+    .status-rejected .status-dot { background: #ef4444 }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1) }
+      50% { opacity: .5; transform: scale(1.3) }
+    }
+
+    /* ── Info Row ──────────────────────────────────────── */
+    .info-rows { display: flex; flex-direction: column; gap: 14px }
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #f8fafc;
+      transition: var(--transition);
+    }
+    .info-row:hover { background: #f1f5f9 }
+    .info-row-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      background: rgba(37,99,235,.08);
+    }
+    .info-row-content { flex: 1 }
+    .info-row-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 3px;
+    }
+    .info-row-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* ── Progress Timeline ─────────────────────────────── */
+    .progress-timeline {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(0,0,0,.06);
+    }
+    .progress-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .timeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      padding: 0 4px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      height: 3px;
+      background: #e2e8f0;
+      border-radius: 99px;
+      z-index: 0;
+    }
+    .timeline-fill {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue2), var(--g));
+      border-radius: 99px;
+      z-index: 1;
+      transition: width .8s cubic-bezier(.22,1,.36,1);
+    }
+    .tl-step {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      flex: 1;
+    }
+    .tl-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 6px;
+      font-size: 14px;
+      transition: all .4s ease;
+      border: 3px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .tl-dot.active {
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      box-shadow: 0 4px 14px rgba(37,99,235,.35);
+      transform: scale(1.15);
+    }
+    .tl-dot.done {
+      background: var(--g);
+      box-shadow: 0 4px 14px rgba(34,197,94,.3);
+    }
+    .tl-dot.rejected-dot {
+      background: var(--r);
+      box-shadow: 0 4px 14px rgba(239,68,68,.3);
+    }
+    .tl-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .tl-label.active { color: var(--blue2); font-weight: 700 }
+    .tl-label.done { color: var(--g) }
+
+    /* ── Back / Search Again ────────────────────────────── */
+    .btn-back {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Prompt', sans-serif;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 20px;
+      text-align: center;
+    }
+    .btn-back:hover {
+      border-color: var(--blue2);
+      color: var(--blue2);
+      background: rgba(37,99,235,.04);
+    }
+
+    /* ── Home link ──────────────────────────────────────── */
+    .home-link {
+      margin-top: 24px;
+      text-align: center;
+      animation: containerIn .8s .45s cubic-bezier(.22,1,.36,1) both;
+    }
+    .home-link a {
+      color: rgba(255,255,255,.4);
+      font-size: 13px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .home-link a:hover { color: rgba(255,255,255,.7) }
+
+    /* ── Animations ────────────────────────────────────── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px) }
+      to { opacity: 1; transform: translateY(0) }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0) }
+      20%, 60% { transform: translateX(-6px) }
+      40%, 80% { transform: translateX(6px) }
+    }
+    .shake { animation: shake .4s ease }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 16px 12px }
+      .search-card, .result-card { padding: 28px 20px; border-radius: 16px }
+      .input-group { flex-direction: column }
+      .btn-search { width: 100% }
+      .track-logo { font-size: 26px }
+      .timeline { gap: 0 }
+      .tl-label { font-size: 9px }
+      .tl-dot { width: 28px; height: 28px; font-size: 12px }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background Canvas (sparkle micro-dots drawn here) -->
+  <canvas id="orbCanvas"></canvas>
+
+  <!-- Orbs -->
+  <div id="orbLayer"></div>
+
+  <div class="track-container">
+
+    <!-- Header -->
+    <div class="track-header">
+      <div class="track-logo"><a href="/">🏛️ Resolve<span class="now-gold">Now</span></a></div>
+      <div class="track-title">ระบบติดตามสถานะเรื่องร้องเรียน</div>
+    </div>
+
+    <!-- Search Card -->
+    <div class="search-card" id="searchCard">
+      <div class="search-card-header">
+        <div class="icon-wrap">🔍</div>
+        <h2>ติดตามสถานะ</h2>
+        <p>กรอกรหัสอ้างอิงเพื่อตรวจสอบสถานะเรื่องร้องเรียน</p>
+      </div>
+      <form id="trackForm" onsubmit="event.preventDefault(); doTrack();">
+        <div class="input-group">
+          <input type="text" id="ticketInput" placeholder="เช่น TKT-001" autocomplete="off" autofocus />
+          <button type="submit" class="btn-search" id="btnSearch">
+            <span class="btn-text">ค้นหา</span>
+            <span class="spinner"></span>
+          </button>
+        </div>
+        <div class="search-hint">💡 กรอกรหัส Ticket ID ที่ได้รับจากระบบ</div>
+      </form>
+      <div class="error-box" id="errBox"></div>
+    </div>
+
+    <!-- Result Card -->
+    <div class="result-card" id="resultCard">
+      <div class="result-header">
+        <div class="result-icon" id="resultIcon">📋</div>
+        <div class="result-header-text">
+          <h3 id="resultTicketId">TKT-001</h3>
+          <p id="resultDate">วันที่แจ้ง: —</p>
+        </div>
+      </div>
+
+      <!-- Status Badge -->
+      <div class="status-display">
+        <div class="status-badge-lg" id="statusBadge">
+          <span class="status-dot"></span>
+          <span id="statusText">—</span>
+        </div>
+      </div>
+
+      <!-- Info Rows -->
+      <div class="info-rows">
+        <div class="info-row">
+          <div class="info-row-icon">📍</div>
+          <div class="info-row-content">
+            <div class="info-row-label">สถานที่เกิดเหตุ</div>
+            <div class="info-row-value" id="resultLocation">—</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-row-icon" id="catIcon">📂</div>
+          <div class="info-row-content">
+            <div class="info-row-label">ประเภท</div>
+            <div class="info-row-value" id="resultCategory">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Timeline -->
+      <div class="progress-timeline">
+        <div class="progress-title">📊 ความคืบหน้า</div>
+        <div class="timeline" id="timeline">
+          <div class="timeline-fill" id="timelineFill"></div>
+          <div class="tl-step">
+            <div class="tl-dot" id="tlDot0">📝</div>
+            <div class="tl-label" id="tlLabel0">รอดำเนินการ</div>
+          </div>
+          <div class="tl-step">
+            <div class="tl-dot" id="tlDot1">👷</div>
+            <div class="tl-label" id="tlLabel1">รับงานแล้ว</div>
+          </div>
+          <div class="tl-step">
+            <div class="tl-dot" id="tlDot2">🔧</div>
+            <div class="tl-label" id="tlLabel2">กำลังดำเนินการ</div>
+          </div>
+          <div class="tl-step">
+            <div class="tl-dot" id="tlDot3">✅</div>
+            <div class="tl-label" id="tlLabel3">เสร็จสิ้น</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-back" onclick="searchAgain()">🔍 ค้นหาใหม่</button>
+    </div>
+
+    <!-- Home Link -->
+    <div class="home-link">
+      <a href="/">← กลับหน้าหลัก ResolveNow</a>
+    </div>
+  </div>
+
+  <!-- Floating Particles (generated by JS) -->
+
+  <script>
+    // ── Department Maps ──────────────────────────────────────
+    const DEPT = {
+      Road: 'ถนน/ทางเท้า', Water: 'ท่อแตก/น้ำ', Electricity: 'ไฟฟ้า',
+      Garbage: 'ขยะ', Animal: 'สัตว์', Tree: 'กิ่งไม้', Hazard: 'ภัยพิบัติ'
+    };
+    const DEPT_ICON = {
+      Road: '🛣️', Water: '💧', Electricity: '💡', Garbage: '🗑️',
+      Animal: '🐍', Tree: '🌿', Hazard: '🚨'
+    };
+
+    const STATUS_MAP = {
+      pending:     'รอดำเนินการ',
+      assigned:    'รับงานแล้ว',
+      in_progress: 'กำลังดำเนินการ',
+      completed:   'เสร็จสิ้น',
+      rejected:    'ปฏิเสธ'
+    };
+
+    const STATUS_ORDER = ['pending', 'assigned', 'in_progress', 'completed'];
+
+    // ── Helpers ──────────────────────────────────────────────
+    const ge = id => document.getElementById(id);
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      const d = new Date(dateStr);
+      const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} เวลา ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`;
+    }
+
+    // ── Main Track Function ──────────────────────────────────
+    async function doTrack() {
+      const input = ge('ticketInput');
+      const btn = ge('btnSearch');
+      const errBox = ge('errBox');
+      const resultCard = ge('resultCard');
+
+      const ticketId = input.value.trim();
+      if (!ticketId) {
+        errBox.textContent = 'กรุณากรอกรหัสอ้างอิง (Ticket ID)';
+        errBox.classList.add('show');
+        input.classList.add('shake');
+        setTimeout(() => input.classList.remove('shake'), 500);
+        return;
+      }
+
+      // Reset
+      errBox.classList.remove('show');
+      resultCard.classList.remove('show');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errBox.textContent = data.error || 'ไม่พบข้อมูล กรุณาตรวจสอบรหัสอีกครั้ง';
+          errBox.classList.add('show');
+          input.classList.add('shake');
+          setTimeout(() => input.classList.remove('shake'), 500);
+          return;
+        }
+
+        // Show result
+        showResult(data);
+
+      } catch (err) {
+        errBox.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่';
+        errBox.classList.add('show');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    // ── Display Result ───────────────────────────────────────
+    function showResult(data) {
+      const searchCard = ge('searchCard');
+      const resultCard = ge('resultCard');
+
+      // Collapse search
+      searchCard.classList.add('collapsed');
+
+      // Populate data
+      ge('resultTicketId').textContent = data.ticketId;
+      ge('resultDate').textContent = 'วันที่แจ้ง: ' + formatDate(data.createdAt);
+
+      // Status badge
+      const badge = ge('statusBadge');
+      badge.className = 'status-badge-lg status-' + data.status;
+      ge('statusText').textContent = STATUS_MAP[data.status] || data.status;
+
+      // Location
+      ge('resultLocation').textContent = data.location || '—';
+
+      // Category
+      ge('resultCategory').textContent = DEPT[data.category] || data.category || '—';
+      ge('catIcon').textContent = DEPT_ICON[data.category] || '📂';
+
+      // Result icon
+      const resultIcon = ge('resultIcon');
+      resultIcon.textContent = DEPT_ICON[data.category] || '📋';
+      resultIcon.style.background = `rgba(37,99,235,.08)`;
+
+      // Timeline
+      updateTimeline(data.status);
+
+      // Show
+      setTimeout(() => {
+        resultCard.classList.add('show');
+      }, 350);
+    }
+
+    // ── Timeline Progress ────────────────────────────────────
+    function updateTimeline(status) {
+      const dots = [ge('tlDot0'), ge('tlDot1'), ge('tlDot2'), ge('tlDot3')];
+      const labels = [ge('tlLabel0'), ge('tlLabel1'), ge('tlLabel2'), ge('tlLabel3')];
+      const fill = ge('timelineFill');
+
+      // Reset
+      dots.forEach(d => { d.className = 'tl-dot' });
+      labels.forEach(l => { l.className = 'tl-label' });
+
+      if (status === 'rejected') {
+        // Show rejected state — only first dot done, last dot is red
+        dots[0].classList.add('done');
+        labels[0].classList.add('done');
+        dots[3].textContent = '❌';
+        dots[3].classList.add('rejected-dot');
+        labels[3].textContent = 'ปฏิเสธ';
+        labels[3].style.color = 'var(--r)';
+        fill.style.width = '0%';
+        return;
+      }
+
+      // Reset the last dot text in case it was changed
+      dots[3].textContent = '✅';
+      labels[3].textContent = 'เสร็จสิ้น';
+      labels[3].style.color = '';
+
+      const idx = STATUS_ORDER.indexOf(status);
+      const fillPercents = [0, 33, 66, 100];
+
+      for (let i = 0; i < dots.length; i++) {
+        if (i < idx) {
+          dots[i].classList.add('done');
+          labels[i].classList.add('done');
+        } else if (i === idx) {
+          dots[i].classList.add('active');
+          labels[i].classList.add('active');
+        }
+      }
+
+      // Animate fill after a short delay
+      setTimeout(() => {
+        fill.style.width = fillPercents[idx] + '%';
+      }, 400);
+    }
+
+    // ── Search Again ─────────────────────────────────────────
+    function searchAgain() {
+      const searchCard = ge('searchCard');
+      const resultCard = ge('resultCard');
+
+      resultCard.classList.remove('show');
+
+      setTimeout(() => {
+        searchCard.classList.remove('collapsed');
+        ge('ticketInput').value = '';
+        ge('errBox').classList.remove('show');
+        ge('ticketInput').focus();
+      }, 300);
+    }
+
+    // ── Auto-uppercase input ─────────────────────────────────
+    ge('ticketInput').addEventListener('input', function() {
+      this.value = this.value.toUpperCase();
+    });
+
+    // ── Premium Orb Background System ────────────────────────
+    (function initOrbs() {
+      const layer = document.getElementById('orbLayer');
+
+      // Orb config: [type, size-px, left%, top%, dur-s, delay-s, blur-px, tx1,ty1, tx2,ty2, tx3,ty3]
+      const orbConfigs = [
+        // Gold orbs — large, very soft, slow
+        { type: 'gold', w: 520, h: 480, l: 12,  t: -8,  dur: 28, delay: 0,    blur: 80, tx1:'60px',  ty1:'80px',  tx2:'120px', ty2:'30px',  tx3:'30px',  ty3:'110px' },
+        { type: 'gold', w: 380, h: 380, l: 62,  t: 55,  dur: 32, delay: 7,    blur: 70, tx1:'-80px', ty1:'-60px', tx2:'-40px', ty2:'-120px',tx3:'-100px',ty3:'-30px' },
+        { type: 'gold', w: 280, h: 260, l: 42,  t: 75,  dur: 24, delay: 14,   blur: 55, tx1:'50px',  ty1:'-70px', tx2:'-30px', ty2:'-100px',tx3:'70px',  ty3:'-40px' },
+        // Blue orbs — medium, cooler
+        { type: 'blue', w: 450, h: 430, l: 68,  t: -5,  dur: 30, delay: 4,    blur: 75, tx1:'-70px', ty1:'90px',  tx2:'-130px',ty2:'40px',  tx3:'-50px', ty3:'120px' },
+        { type: 'blue', w: 320, h: 300, l: -5,  t: 60,  dur: 26, delay: 11,   blur: 65, tx1:'90px',  ty1:'-50px', tx2:'60px',  ty2:'-110px',tx3:'110px', ty3:'-20px' },
+        // Teal accent orbs — smaller, punchy
+        { type: 'teal', w: 240, h: 220, l: 80,  t: 72,  dur: 20, delay: 2,    blur: 50, tx1:'-60px', ty1:'-80px', tx2:'-100px',ty2:'-30px', tx3:'-40px', ty3:'-100px'},
+        { type: 'teal', w: 180, h: 180, l: 22,  t: 38,  dur: 22, delay: 16,   blur: 45, tx1:'70px',  ty1:'60px',  tx2:'40px',  ty2:'100px', tx3:'90px',  ty3:'20px'  },
+      ];
+
+      orbConfigs.forEach(cfg => {
+        const el = document.createElement('div');
+        el.className = `orb orb-${cfg.type}`;
+        el.style.cssText = [
+          `width:${cfg.w}px`, `height:${cfg.h}px`,
+          `left:${cfg.l}%`, `top:${cfg.t}%`,
+          `--orb-dur:${cfg.dur}s`, `--orb-delay:${cfg.delay}s`,
+          `--orb-blur:${cfg.blur}px`,
+          `--tx1:${cfg.tx1}`, `--ty1:${cfg.ty1}`,
+          `--tx2:${cfg.tx2}`, `--ty2:${cfg.ty2}`,
+          `--tx3:${cfg.tx3}`, `--ty3:${cfg.ty3}`,
+        ].join(';');
+        layer.appendChild(el);
+      });
+
+      // ── Sparkle micro-dots (stars) ────────────────────────
+      // Gold sparkles
+      const goldSparkleCfg = [
+        [8, 10, 20, 3.5, 0   ], [5, 25, 45, 4.2, 0.8 ], [7, 55, 15, 5.0, 1.6 ],
+        [6, 75, 30, 3.8, 2.4 ], [9, 88, 60, 4.5, 0.5 ], [5, 40, 72, 3.2, 1.9 ],
+        [6, 18, 85, 5.5, 3.1 ], [8, 62, 88, 4.0, 0.3 ], [5, 92, 12, 3.6, 2.7 ],
+      ];
+      // Blue sparkles
+      const blueSparkleCfg = [
+        [6, 30, 10, 4.8, 1.2 ], [7, 50, 50, 3.9, 2.0 ], [5, 70, 80, 5.2, 0.7 ],
+        [8, 15, 65, 4.1, 3.3 ], [6, 82, 42, 3.7, 1.5 ], [5, 45, 25, 4.6, 2.8 ],
+      ];
+
+      goldSparkleCfg.forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`,
+          `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle, rgba(251,191,36,.95) 0%, rgba(245,158,11,.4) 60%, transparent 100%)`,
+          `box-shadow:0 0 ${sz*2}px ${sz}px rgba(251,191,36,.35)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+
+      blueSparkleCfg.forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`,
+          `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle, rgba(147,197,253,.9) 0%, rgba(96,165,250,.4) 60%, transparent 100%)`,
+          `box-shadow:0 0 ${sz*2}px ${sz}px rgba(96,165,250,.3)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+    })();
+
+    // ── Check URL params for pre-filled ticket ID ────────────
+    (function checkParams() {
+      const params = new URLSearchParams(window.location.search);
+      const tid = params.get('id') || params.get('ticket');
+      if (tid) {
+        ge('ticketInput').value = tid.toUpperCase();
+        setTimeout(() => doTrack(), 300);
+      }
+    })();
+  </script>
+
+</body>
+</html>
