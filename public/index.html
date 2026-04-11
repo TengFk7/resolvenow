@@ -40,7 +40,6 @@
       <div class="tabs">
         <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
 
-        <button class="tab" id="tabSearch" onclick="switchTab('search')">🔍 ค้นหา</button>
         <button class="tab" id="tabHeatmap" onclick="switchTab('heatmap')">🗺️ แผนที่</button>
       </div>
       <div class="ebox" id="authErr"></div>
@@ -70,42 +69,6 @@
 
 
 
-        <!-- Search Panel -->
-        <div id="fSearch" class="auth-flip-panel auth-flip-back">
-          <div class="search-panel-header">
-            <div class="search-icon-wrap">🔍</div>
-            <h3>ค้นหาเรื่องร้องเรียน</h3>
-            <p>ค้นหาด้วย Ticket ID หรือรายละเอียด</p>
-          </div>
-          <div class="search-input-wrap">
-            <div class="glow-field-wrap">
-              <input type="text" id="srchQ" placeholder="Ticket ID, รายละเอียด, สถานที่..." oninput="liveSearch()" />
-            </div>
-          </div>
-          <div class="search-filters">
-            <select id="srchStatus" onchange="liveSearch()" class="search-select">
-              <option value="all">ทุกสถานะ</option>
-              <option value="pending">รอดำเนินการ</option>
-              <option value="assigned">รับงานแล้ว</option>
-              <option value="in_progress">กำลังดำเนินการ</option>
-              <option value="completed">เสร็จสิ้น</option>
-              <option value="rejected">ปฏิเสธ</option>
-            </select>
-            <select id="srchCat" onchange="liveSearch()" class="search-select">
-              <option value="all">ทุกประเภท</option>
-              <option value="Road">🛣️ ถนน</option>
-              <option value="Water">💧 ท่อน้ำ</option>
-              <option value="Electricity">💡 ไฟฟ้า</option>
-              <option value="Garbage">🗑️ ขยะ</option>
-              <option value="Animal">🐍 สัตว์</option>
-              <option value="Tree">🌿 กิ่งไม้</option>
-              <option value="Hazard">🚨 ภัยพิบัติ</option>
-            </select>
-          </div>
-          <div id="srchResults" class="search-results">
-            <div class="search-empty">🔍 พิมพ์เพื่อค้นหา...</div>
-          </div>
-        </div>
 
         <!-- Heatmap Panel -->
         <div id="fHeatmap" class="auth-flip-panel auth-flip-back">

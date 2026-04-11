@@ -158,8 +158,8 @@
 
     /* ── ResolveNow Logo Animation (mirrored from main style.css) ── */
     @keyframes logoBreathe {
-      0%, 100% { transform: scale(1); }
-      50%       { transform: scale(1.025); }
+      0%, 100% { transform: translateY(0px);  }
+      50%       { transform: translateY(-3px); }
     }
     @keyframes nowGlow {
       0%, 100% { text-shadow: 0 0 6px rgba(251,191,36,.0), 0 0 12px rgba(251,191,36,.0); }
@@ -170,13 +170,16 @@
       100% { background-position: 300% center; }
     }
     @keyframes iconFloat {
-      0%, 100% { transform: translateY(0px); filter: drop-shadow(0 0 12px rgba(37,99,235,.55)); }
-      50%       { transform: translateY(-4px); filter: drop-shadow(0 0 22px rgba(37,99,235,.85)); }
+      0%, 100% { transform: translateY(0px);  filter: drop-shadow(0 0 10px rgba(37,99,235,.5)); }
+      50%       { transform: translateY(-3px); filter: drop-shadow(0 0 20px rgba(37,99,235,.8)); }
     }
 
+    /* GPU-composited float — isolation prevents gradient-clip repaint cascade */
     .logo-anim {
       animation: logoBreathe 5s ease-in-out infinite;
       display: inline-block;
+      will-change: transform;
+      isolation: isolate;
     }
     .resolve-shimmer {
       background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 25%, #818cf8 50%, #3b82f6 75%, #1e3a8a 100%);
@@ -185,16 +188,20 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
       animation: resolveShimmer 4s linear infinite;
+      will-change: background-position;
+      display: inline-block;
     }
     .now-gold {
       color: #fbbf24;
-      display: inline;
-      animation: nowGlow 2.8s ease-in-out infinite;
+      display: inline-block;
+      animation: nowGlow 3.5s ease-in-out infinite;
+      will-change: text-shadow;
     }
     .logo-icon {
       font-size: 28px;
       display: inline-block;
       animation: iconFloat 4s ease-in-out infinite;
+      will-change: transform;
     }
 
     .track-title {
@@ -204,7 +211,7 @@
       letter-spacing: 1px;
     }
 
-    /* ── Search Card ───────────────────────────────────── */
+    /* ── Search Card ───────────────────────────────── */
     .search-card {
       background: var(--glass2);
       backdrop-filter: blur(24px);
@@ -213,6 +220,8 @@
       box-shadow: var(--shadow);
       animation: containerIn .8s .3s cubic-bezier(.22,1,.36,1) both;
       transition: all .5s cubic-bezier(.22,1,.36,1);
+      position: relative;
+      overflow: hidden;
     }
     .search-card.collapsed {
       max-height: 0;
@@ -220,6 +229,18 @@
       opacity: 0;
       overflow: hidden;
       margin-bottom: 0;
+    }
+
+
+
+
+    /* ── Icon wrapper ───────────────────────────── */
+    .icon-wrap-outer {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
     }
 
     .search-card-header {
@@ -234,8 +255,17 @@
       align-items: center;
       justify-content: center;
       font-size: 26px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 16px rgba(37,99,235,.3);
+      box-shadow:
+        0 4px 16px rgba(37,99,235,.35),
+        0 0 20px rgba(37,99,235,.15);
+      animation: iconBounce 3s ease-in-out infinite;
+      will-change: transform, box-shadow;
+      position: relative;
+      z-index: 1;
+    }
+    @keyframes iconBounce {
+      0%, 100% { transform: translateY(0px);  box-shadow: 0 4px 16px rgba(37,99,235,.3),  0 0 20px rgba(37,99,235,.15); }
+      50%       { transform: translateY(-5px); box-shadow: 0 8px 28px rgba(37,99,235,.5),  0 0 40px rgba(37,99,235,.25); }
     }
     .search-card-header h2 {
       font-size: 20px;
@@ -325,6 +355,29 @@
       font-size: 11px;
       color: var(--muted);
       margin-top: 4px;
+    }
+    /* ── Bulb glow flicker ──────────────────────── */
+    .bulb {
+      display: inline-block;
+      animation: bulbFlicker 2.6s ease-in-out infinite;
+      will-change: filter;
+    }
+    @keyframes bulbFlicker {
+      0%,  45%, 55%, 100% {
+        filter: drop-shadow(0 0 0px rgba(251,191,36,0));
+        opacity: .7;
+      }
+      48%, 52% {
+        filter: drop-shadow(0 0 6px rgba(251,191,36,.9))
+                drop-shadow(0 0 14px rgba(245,158,11,.6));
+        opacity: 1;
+      }
+      50% {
+        filter: drop-shadow(0 0 10px rgba(251,191,36,1))
+                drop-shadow(0 0 24px rgba(245,158,11,.8))
+                drop-shadow(0 0 40px rgba(251,191,36,.4));
+        opacity: 1;
+      }
     }
 
     /* ── Error Message ─────────────────────────────────── */
@@ -568,19 +621,57 @@
       background: rgba(37,99,235,.04);
     }
 
-    /* ── Home link ──────────────────────────────────────── */
+    /* ── Home link pill ─────────────────────────── */
     .home-link {
-      margin-top: 24px;
+      margin-top: 28px;
       text-align: center;
       animation: containerIn .8s .45s cubic-bezier(.22,1,.36,1) both;
     }
     .home-link a {
-      color: rgba(255,255,255,.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 99px;
       font-size: 13px;
+      font-weight: 500;
       text-decoration: none;
-      transition: var(--transition);
+      color: rgba(255,255,255,.75);
+      background: linear-gradient(
+        110deg,
+        rgba(255,255,255,.06) 0%,
+        rgba(96,165,250,.14) 40%,
+        rgba(251,191,36,.10) 70%,
+        rgba(255,255,255,.06) 100%
+      );
+      background-size: 250% 100%;
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 2px 16px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.08);
+      transition: all .35s cubic-bezier(.4,0,.2,1);
+      animation: homePillShimmer 4s ease-in-out infinite;
+      will-change: background-position;
     }
-    .home-link a:hover { color: rgba(255,255,255,.7) }
+    @keyframes homePillShimmer {
+      0%   { background-position: 100% 0; }
+      50%  { background-position:   0% 0; }
+      100% { background-position: 100% 0; }
+    }
+    .home-link a:hover {
+      color: #fff;
+      border-color: rgba(96,165,250,.4);
+      box-shadow: 0 4px 24px rgba(37,99,235,.3), inset 0 1px 0 rgba(255,255,255,.12);
+      transform: translateY(-2px);
+    }
+    .home-link .arrow {
+      display: inline-block;
+      animation: arrowBounce 2s ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes arrowBounce {
+      0%, 100% { transform: translateX(0); }
+      50%       { transform: translateX(-4px); }
+    }
 
     /* ── Animations ────────────────────────────────────── */
     @keyframes fadeSlideIn {
@@ -634,7 +725,10 @@
     <!-- Search Card -->
     <div class="search-card" id="searchCard">
       <div class="search-card-header">
-        <div class="icon-wrap">🔍</div>
+        <!-- Icon with radar rings -->
+        <div class="icon-wrap-outer">
+          <div class="icon-wrap">🔍</div>
+        </div>
         <h2>ติดตามสถานะ</h2>
         <p>กรอกรหัสอ้างอิงเพื่อตรวจสอบสถานะเรื่องร้องเรียน</p>
       </div>
@@ -646,7 +740,7 @@
             <span class="spinner"></span>
           </button>
         </div>
-        <div class="search-hint">💡 กรอกรหัส Ticket ID ที่ได้รับจากระบบ</div>
+        <div class="search-hint"><span class="bulb">💡</span> กรอกรหัส Ticket ID ที่ได้รับจากระบบ</div>
       </form>
       <div class="error-box" id="errBox"></div>
     </div>
@@ -716,7 +810,7 @@
 
     <!-- Home Link -->
     <div class="home-link">
-      <a href="/">← กลับหน้าหลัก ResolveNow</a>
+      <a href="/"><span class="arrow">←</span> กลับหน้าหลัก ResolveNow</a>
     </div>
   </div>
 

@@ -5926,15 +5926,8 @@ a {
 
 /* 1. Gentle float up-down */
 @keyframes logoBreathe {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.025);
-  }
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-3px); }
 }
 
 /* 2. "Now" golden glow pulse */
@@ -5964,10 +5957,12 @@ a {
   }
 }
 
-/* Apply subtle breathe to the whole logo */
+/* Apply subtle float to the whole logo — translateY composites on GPU */
 .logo-anim {
   animation: logoBreathe 5s ease-in-out infinite;
   display: inline-block;
+  will-change: transform;
+  isolation: isolate;
 }
 
 /* "Resolve" — gradient shimmer sweep (navy → blue → indigo) */
@@ -5978,6 +5973,8 @@ a {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: resolveShimmer 4s linear infinite;
+  will-change: background-position;
+  display: inline-block;
 }
 
 @keyframes resolveShimmer {
@@ -5990,11 +5987,12 @@ a {
   }
 }
 
-/* "Now" — simple gold color, shimmer sweep */
+/* "Now" — gold color with gentle glow pulse */
 .now-gold {
   color: #fbbf24;
-  display: inline;
-  animation: nowGlow 2.8s ease-in-out infinite;
+  display: inline-block;
+  animation: nowGlow 3.5s ease-in-out infinite;
+  will-change: text-shadow;
 }
 
 

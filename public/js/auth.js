@@ -15,8 +15,8 @@ var _currentTab = 'login';
 var _switching = false;
 
 // panel id map
-var _panelId = { login: 'fLogin', search: 'fSearch', heatmap: 'fHeatmap' };
-var _tabId = { login: 'tabLogin', search: 'tabSearch', heatmap: 'tabHeatmap' };
+var _panelId = { login: 'fLogin', heatmap: 'fHeatmap' };
+var _tabId = { login: 'tabLogin', heatmap: 'tabHeatmap' };
 
 function switchTab(t) {
   if (t === _currentTab || _switching) return;
@@ -45,8 +45,8 @@ function switchTab(t) {
   });
 
   var outClass, inClass;
-  // Determine direction based on tab order: login < reg < search
-  var tabOrder = { login: 0, search: 1, heatmap: 2 };
+  // Determine direction based on tab order: login < heatmap
+  var tabOrder = { login: 0, heatmap: 1 };
   if (tabOrder[t] > tabOrder[_currentTab]) {
     outClass = 'lift-out'; inClass = 'lift-in';
   } else {
@@ -258,8 +258,6 @@ async function doLogout() {
 
     // Hide all panels, show only fLogin as baseline
     ge('fLogin').style.display = 'block';
-    var fSearch = ge('fSearch');
-    if (fSearch) fSearch.style.display = 'none';
     switchTab('login');
   }, 500);
 }
@@ -280,75 +278,6 @@ async function doChPw() {
   } catch (e) { showE('chErr', 'เกิดข้อผิดพลาด'); }
 }
 
-/* ── Live Search (search tab) ─────────────────────── */
-var _srchTimer = null;
-function liveSearch() {
-  clearTimeout(_srchTimer);
-  _srchTimer = setTimeout(doSearch, 350);
-}
-
-async function doSearch() {
-  var q = (ge('srchQ') ? ge('srchQ').value : '');
-  var st = (ge('srchStatus') ? ge('srchStatus').value : 'all');
-  var cat = (ge('srchCat') ? ge('srchCat').value : 'all');
-  var res_el = ge('srchResults');
-  if (!res_el) return;
-
-  // ถ้ายังไม่ได้พิมพ์อะไรเลย → แสดงข้อความเชิญชวน
-  if (!q.trim() && st === 'all' && cat === 'all') {
-    res_el.innerHTML = '<div class="search-empty">🔍 พิมพ์ Ticket ID หรือรายละเอียดเพื่อค้นหา</div>';
-    return;
-  }
-
-  try {
-    var url = '/api/tickets/search?q=' + encodeURIComponent(q) +
-      '&status=' + st + '&category=' + cat;
-    var r = await fetch(url);
-    if (!r.ok) { res_el.innerHTML = '<div class="search-empty">⚠️ เกิดข้อผิดพลาด</div>'; return; }
-    var data = await r.json();
-    if (!data.length) { res_el.innerHTML = '<div class="search-empty">🔍 ไม่พบผลลัพธ์</div>'; return; }
-
-    var DEPT_ICON2 = { Road: '🛣️', Water: '💧', Electricity: '💡', Garbage: '🗑️', Animal: '🐍', Tree: '🌿', Hazard: '🚨' };
-    var DEPT2 = { Road: 'ถนน', Water: 'ท่อน้ำ', Electricity: 'ไฟฟ้า', Garbage: 'ขยะ', Animal: 'สัตว์', Tree: 'กิ่งไม้', Hazard: 'ภัยพิบัติ' };
-    var STATUS_TH = { pending: 'รอ', assigned: 'รับงาน', in_progress: 'ดำเนินการ', completed: 'เสร็จ', rejected: 'ปฏิเสธ' };
-
-    var h = '';
-    data.forEach(function (t, idx) {
-      var stars = t.rating ? '⭐'.repeat(t.rating) : '';
-      h += '<div class="srch-card badge-' + t.status + '" style="animation-delay:' + (idx * 0.05) + 's">';
-      h += '<div class="srch-row">';
-      h += '<span class="srch-id">' + escapeHTML(t.ticketId) + '</span>';
-      h += '<span class="srch-status ' + t.status + '">' + (STATUS_TH[t.status] || t.status) + '</span>';
-      h += '</div>';
-      h += '<div class="srch-cat">' + (DEPT_ICON2[t.category] || '') + ' ' + escapeHTML(DEPT2[t.category] || t.category) + '</div>';
-      h += '<div class="srch-desc">' + escapeHTML((t.description || '').slice(0, 80)) + '</div>';
-      h += '<div class="srch-meta">';
-      h += '<span>📍 ' + escapeHTML(t.location || '—') + '</span>';
-      if (t.assignedName) h += '<span>🔧 ' + escapeHTML(t.assignedName) + '</span>';
-      if (stars) h += '<span>' + stars + '</span>';
-      h += '</div>';
-      // Social action bar: Upvote + Follow
-      h += '<div class="social-action-bar">';
-      var upCls = (t.hasUpvoted ? ' voted' : '');
-      h += '<button class="upvote-btn' + upCls + '" data-id="' + t.ticketId + '" onclick="toggleUpvote(this)">';
-      h += '<span class="upvote-icon">👍</span>';
-      h += '<span class="upvote-count">' + (t.upvoteCount || 0) + '</span>';
-      h += '<span style="font-size:11px">ได้รับผลกระทบ</span>';
-      h += '</button>';
-      var foCls = (t.isFollowing ? ' following' : '');
-      h += '<button class="follow-btn' + foCls + '" data-id="' + t.ticketId + '" onclick="toggleFollow(this)">';
-      h += '<span class="follow-icon">' + (t.isFollowing ? '🔔' : '🔕') + '</span>';
-      h += '<span class="follow-count">' + (t.followerCount || 0) + '</span>';
-      h += '<span style="font-size:11px">' + (t.isFollowing ? 'กำลังติดตาม' : 'ติดตาม') + '</span>';
-      h += '</button>';
-      h += '</div>';
-      h += '</div>';
-    });
-    res_el.innerHTML = h;
-  } catch (e) {
-    res_el.innerHTML = '<div class="search-empty">⚠️ เกิดข้อผิดพลาด</div>';
-  }
-}
 
 /* ══════════════════════════════════════════════════════════
    LINE Account Linking Modal
