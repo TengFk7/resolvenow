@@ -540,14 +540,14 @@ function renderCitizen(data) {
 
   // Keep current filter selection if any
   var sel = ge('cgStatusFilter');
-  var filter = sel ? sel.value : 'all';
+  var filter = sel ? (sel.getAttribute('data-value') || 'all') : 'all';
   _cgRenderGrid(filter);
 }
 
 /* ── Filter handler ── */
 function cgApplyFilter() {
   var sel = ge('cgStatusFilter');
-  var filter = sel ? sel.value : 'all';
+  var filter = sel ? (sel.getAttribute('data-value') || 'all') : 'all';
   // Close any open panel first
   if (_cgOpen) { _cgClose(_cgOpen); _cgOpen = null; }
   _cgRenderGrid(filter);
@@ -569,32 +569,52 @@ function _cgRenderGrid(filter) {
     return;
   }
 
+  var isDoneCg = function(t){ return t.status === 'completed' || t.status === 'rejected'; };
+
+  /* ── Split active / done ── */
+  var cgActive = data.filter(function(t){ return !isDoneCg(t); });
+  var cgDone   = data.filter(function(t){ return isDoneCg(t); });
+
   var h = '<div class="citizen-grid">';
-  for (var i = 0; i < data.length; i++) {
-    var t = data[i];
-    var done = t.status === 'completed';
 
-    // Thumbnail
-    var thumbHtml = t.citizenImage
-      ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
-      : '<div class="cg-thumb cg-thumb-placeholder">' + (DEPT_ICON[t.category] || '📋') + '</div>';
-
-    h += '<div class="cg-card' + (done ? ' cg-card--done' : '') + '" id="cgcard-' + t.ticketId + '" onclick="cgToggle(\'' + t.ticketId + '\')">';
-    h += '<div class="cg-left">' + thumbHtml + '</div>';
-    h += '<div class="cg-right">';
-    h += '<div class="cg-row1">';
-    h += '<span class="cg-tid">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(t.ticketId) + '</span>';
-    h += '<span class="badge ' + t.status + ' cg-badge">' + stTH(t.status) + '</span>';
-    h += '</div>';
-    h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
-    h += '<div class="cg-date">' + t.createdAt + '</div>';
-    h += '</div></div>'; // /cg-right /cg-card
-
-    // Collapsed detail panel — hidden until card is tapped
-    h += '<div class="cg-detail" id="cgdetail-' + t.ticketId + '" style="display:none"></div>';
+  /* active cards */
+  for (var i = 0; i < cgActive.length; i++) {
+    h += _cgCardHtml(cgActive[i]);
   }
+
+  /* divider — only when "all" and both groups have items */
+  if (filter === 'all' && cgActive.length && cgDone.length) {
+    h += '<div class="cg-section-divider"><span>✅ เรื่องร้องเรียนที่เสร็จสิ้นแล้ว</span></div>';
+  }
+
+  /* done cards */
+  for (var j = 0; j < cgDone.length; j++) {
+    h += _cgCardHtml(cgDone[j]);
+  }
+
+  /* edge-case: filter = specific status but no active/done split needed — already filtered */
   h += '</div>';
   el.innerHTML = h;
+}
+
+/* ── Card HTML builder (citizen) ── */
+function _cgCardHtml(t) {
+  var isDone = t.status === 'completed';
+  var thumbHtml = t.citizenImage
+    ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
+    : '<div class="cg-thumb cg-thumb-placeholder">' + (DEPT_ICON[t.category] || '📋') + '</div>';
+  var h = '<div class="cg-card' + (isDone ? ' cg-card--done' : '') + '" id="cgcard-' + t.ticketId + '" onclick="cgToggle(\'' + t.ticketId + '\')">';
+  h += '<div class="cg-left">' + thumbHtml + '</div>';
+  h += '<div class="cg-right">';
+  h += '<div class="cg-row1">';
+  h += '<span class="cg-tid">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(t.ticketId) + '</span>';
+  h += '<span class="badge ' + t.status + ' cg-badge">' + stTH(t.status) + '</span>';
+  h += '</div>';
+  h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
+  h += '<div class="cg-date">' + t.createdAt + '</div>';
+  h += '</div></div>';
+  h += '<div class="cg-detail" id="cgdetail-' + t.ticketId + '" style="display:none"></div>';
+  return h;
 }
 
 /* ── Toggle expand/collapse a ticket detail ── */

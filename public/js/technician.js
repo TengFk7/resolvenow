@@ -48,16 +48,41 @@ function renderTech(data) {
 
   /* ── apply current filter ── */
   var sel = ge('tcPriorityFilter');
-  var filter = sel ? sel.value : 'all';
+  var filter = sel ? (sel.getAttribute('data-value') || 'all') : 'all';
   _tcRenderGrid(filter, true);
 }
 
 /* ── Priority filter handler ── */
 function tcApplyFilter() {
   var sel = ge('tcPriorityFilter');
-  var filter = sel ? sel.value : 'all';
+  var filter = sel ? (sel.getAttribute('data-value') || 'all') : 'all';
   if (_tcOpen) { _tcClose(_tcOpen); _tcOpen = null; }
   _tcRenderGrid(filter, false);
+}
+
+/* ── Card HTML builder ── */
+function _tcCardHtml(t) {
+  var bucket = _tcPrioBucket(t);
+  var isDone = t.status === 'completed' || t.status === 'rejected';
+  var prioBadgeCls = bucket === 'urgent' ? 'urgent' : (bucket === 'medium' ? 'medium' : 'normal');
+  var prioBadgeTxt = bucket === 'urgent' ? '⚡ ด่วนมาก' : (bucket === 'medium' ? '⏰ ด่วน' : '🔵 ปกติ');
+  if (isDone) { prioBadgeCls = t.status; prioBadgeTxt = t.status === 'completed' ? '✅ เสร็จ' : '❌ ปฏิเสธ'; }
+  var thumbHtml = t.citizenImage
+    ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
+    : '<div class="cg-thumb cg-thumb-placeholder tc-placeholder-' + prioBadgeCls + '">' + (DEPT_ICON[t.category] || '🔧') + '</div>';
+  var cardCls = 'cg-card' + (isDone ? (t.status === 'completed' ? ' cg-card--done' : ' cg-card--rejected') : (bucket === 'urgent' ? ' cg-card--urgent' : ''));
+  var h = '<div class="' + cardCls + '" id="tccard-' + t.ticketId + '" onclick="tcToggle(\'' + t.ticketId + '\')">';
+  h += '<div class="cg-left">' + thumbHtml + '</div>';
+  h += '<div class="cg-right">';
+  h += '<div class="cg-row1">';
+  h += '<span class="cg-tid">' + (DEPT_ICON[t.category] || '') + ' #' + escapeHTML(t.ticketId) + '</span>';
+  h += '<span class="badge ' + prioBadgeCls + ' cg-badge">' + prioBadgeTxt + '</span>';
+  h += '</div>';
+  h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
+  h += '<div class="cg-date">' + t.createdAt + '</div>';
+  h += '</div></div>';
+  h += '<div class="cg-detail" id="tcdetail-' + t.ticketId + '" style="display:none"></div>';
+  return h;
 }
 
 /* ── Draw the tech grid ── */
@@ -65,54 +90,47 @@ function _tcRenderGrid(filter, animate) {
   var el = ge('techCards');
   if (!el) return;
 
-  var data = filter === 'all'
-    ? _tcAllTickets
-    : _tcAllTickets.filter(function(t){ return _tcPrioBucket(t) === filter; });
+  var isDoneStatus = function(t){ return t.status === 'completed' || t.status === 'rejected'; };
+
+  var data;
+  if (filter === 'all') {
+    data = _tcAllTickets;
+  } else if (filter === 'completed' || filter === 'rejected') {
+    // Done filter: show only tickets with that exact status
+    data = _tcAllTickets.filter(function(t){ return t.status === filter; });
+  } else {
+    // Priority filter (urgent/medium/normal): active tickets only
+    data = _tcAllTickets.filter(function(t){
+      return _tcPrioBucket(t) === filter && !isDoneStatus(t);
+    });
+  }
 
   if (!data.length) {
-    var lm = { urgent:'ด่วนมาก', medium:'ด่วน', normal:'ปกติ' };
-    var msg = filter === 'all' ? 'ไม่มีงานในแผนกของคุณ' : 'ไม่มีงานระดับ "' + (lm[filter] || filter) + '"';
+    var lm = { urgent:'ด่วนมาก', medium:'ด่วน', normal:'ปกติ', completed:'เสร็จสิ้น', rejected:'ปฏิเสธ' };
+    var msg = filter === 'all' ? 'ไม่มีงานในแผนกของคุณ' : 'ไม่มีงานในสถานะ "' + (lm[filter] || filter) + '"';
     el.innerHTML = '<div class="empty">' + msg + '</div>';
     return;
   }
 
-  /* sort: active first, then done */
-  var active = data.filter(function(t){ return t.status !== 'completed' && t.status !== 'rejected'; });
-  var done   = data.filter(function(t){ return t.status === 'completed' || t.status === 'rejected'; });
-  var sorted = active.concat(done);
+  /* ── Split into active / done, active always first ── */
+  var active = data.filter(function(t){ return !isDoneStatus(t); });
+  var done   = data.filter(function(t){ return isDoneStatus(t); });
 
   var h = '<div class="citizen-grid">';
 
-  for (var i = 0; i < sorted.length; i++) {
-    var t = sorted[i];
-    var bucket = _tcPrioBucket(t);
-    var isDone = t.status === 'completed' || t.status === 'rejected';
+  /* ── Render active cards ── */
+  for (var i = 0; i < active.length; i++) {
+    h += _tcCardHtml(active[i]);
+  }
 
-    /* priority badge label + class */
-    var prioBadgeCls = bucket === 'urgent' ? 'urgent' : (bucket === 'medium' ? 'medium' : 'normal');
-    var prioBadgeTxt = bucket === 'urgent' ? '⚡ ด่วนมาก' : (bucket === 'medium' ? '⏰ ด่วน' : '🔵 ปกติ');
-    if (isDone) { prioBadgeCls = t.status; prioBadgeTxt = t.status === 'completed' ? '✅ เสร็จ' : '❌ ปฏิเสธ'; }
+  /* ── Divider only in "all" mode when both groups exist ── */
+  if (filter === 'all' && active.length && done.length) {
+    h += '<div class="cg-section-divider"><span>✅ งานที่เสร็จแล้ว</span></div>';
+  }
 
-    /* thumbnail: citizenImage or icon placeholder */
-    var thumbHtml = t.citizenImage
-      ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
-      : '<div class="cg-thumb cg-thumb-placeholder tc-placeholder-' + prioBadgeCls + '">' + (DEPT_ICON[t.category] || '🔧') + '</div>';
-
-    var cardCls = 'cg-card' + (isDone ? (t.status === 'completed' ? ' cg-card--done' : ' cg-card--rejected') : (bucket === 'urgent' ? ' cg-card--urgent' : ''));
-
-    h += '<div class="' + cardCls + '" id="tccard-' + t.ticketId + '" onclick="tcToggle(\'' + t.ticketId + '\')">';
-    h += '<div class="cg-left">' + thumbHtml + '</div>';
-    h += '<div class="cg-right">';
-    h += '<div class="cg-row1">';
-    h += '<span class="cg-tid">' + (DEPT_ICON[t.category] || '') + ' #' + escapeHTML(t.ticketId) + '</span>';
-    h += '<span class="badge ' + prioBadgeCls + ' cg-badge">' + prioBadgeTxt + '</span>';
-    h += '</div>';
-    h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
-    h += '<div class="cg-date">' + t.createdAt + '</div>';
-    h += '</div></div>'; // /cg-right /cg-card
-
-    /* hidden detail panel */
-    h += '<div class="cg-detail" id="tcdetail-' + t.ticketId + '" style="display:none"></div>';
+  /* ── Render done cards ── */
+  for (var j = 0; j < done.length; j++) {
+    h += _tcCardHtml(done[j]);
   }
 
   h += '</div>';

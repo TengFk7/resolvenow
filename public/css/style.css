@@ -7352,30 +7352,147 @@ a {
    CITIZEN TICKET GRID — 2-column card layout
 ════════════════════════════════════════════════════════ */
 
-/* ── Status filter dropdown ── */
-.cg-status-filter {
-  appearance: none;
-  -webkit-appearance: none;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E") no-repeat right 10px center;
+/* ── Custom Animated Dropdown ── */
+.cg-select {
+  position: relative;
+  flex-shrink: 0;
+}
+.cg-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px 6px 12px;
+  background: #fff;
   border: 1.5px solid var(--border);
   border-radius: 10px;
-  padding: 6px 30px 6px 11px;
   font-size: 12px;
   font-weight: 600;
   font-family: 'Prompt', sans-serif;
   color: var(--navy);
   cursor: pointer;
-  transition: var(--transition);
-  outline: none;
+  transition: border-color .2s, box-shadow .2s, transform .15s cubic-bezier(.34,1.56,.64,1);
   white-space: nowrap;
-  flex-shrink: 0;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.cg-status-filter:hover {
+.cg-select-trigger:hover {
   border-color: var(--blue2);
+  box-shadow: 0 2px 8px rgba(37,99,235,.08);
 }
-.cg-status-filter:focus {
+.cg-select.open .cg-select-trigger {
   border-color: var(--blue2);
-  box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.11);
+}
+
+/* Rotating chevron */
+.cg-select-arrow {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--muted);
+  transition: transform .26s cubic-bezier(.4,0,.2,1), color .2s;
+  line-height: 1;
+}
+.cg-select.open .cg-select-arrow {
+  transform: rotate(-180deg);
+  color: var(--blue2);
+}
+
+/* Label slot (animated on pick) */
+.cg-select-label {
+  display: inline-block;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+/* Dropdown panel */
+.cg-select-panel {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  min-width: 170px;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 13px;
+  box-shadow: 0 10px 32px rgba(10,22,40,.13), 0 2px 8px rgba(10,22,40,.06);
+  overflow: hidden;
+  z-index: 300;
+  padding: 4px 0;
+  /* closed state */
+  opacity: 0;
+  transform: translateY(-10px) scale(.96);
+  pointer-events: none;
+  transition: opacity .22s cubic-bezier(.22,1,.36,1), transform .22s cubic-bezier(.22,1,.36,1);
+  transform-origin: top right;
+}
+.cg-select.open .cg-select-panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Options */
+.cg-select-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: 'Prompt', sans-serif;
+  color: var(--text);
+  cursor: pointer;
+  position: relative;
+  /* closed: invisible */
+  opacity: 0;
+  transform: translateX(-8px);
+}
+/* Staggered slide-in when open */
+.cg-select.open .cg-select-opt {
+  animation: cgOptIn .24s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes cgOptIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+/* Stagger delays */
+.cg-select.open .cg-select-opt:nth-child(1) { animation-delay: .00s }
+.cg-select.open .cg-select-opt:nth-child(2) { animation-delay: .04s }
+.cg-select.open .cg-select-opt:nth-child(3) { animation-delay: .08s }
+.cg-select.open .cg-select-opt:nth-child(4) { animation-delay: .12s }
+.cg-select.open .cg-select-opt:nth-child(5) { animation-delay: .16s }
+.cg-select.open .cg-select-opt:nth-child(6) { animation-delay: .20s }
+
+.cg-select-opt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #f1f5f9;
+  opacity: 0;
+  transition: opacity .14s;
+  z-index: -1;
+  border-radius: 8px;
+}
+.cg-select-opt:hover::after {
+  opacity: 1;
+}
+.cg-select-opt.selected {
+  color: var(--blue2);
+  font-weight: 700;
+}
+.cg-select-opt.selected::before {
+  content: '✓';
+  position: absolute;
+  right: 14px;
+  font-size: 11px;
+  color: var(--blue2);
+  animation: cgCheckIn .2s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes cgCheckIn {
+  from { opacity: 0; transform: scale(.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Divider between options (optional) */
+.cg-select-opt + .cg-select-opt {
+  border-top: 1px solid rgba(226,232,240,.6);
 }
 
 .citizen-grid {
@@ -7384,11 +7501,33 @@ a {
   gap: 10px;
 }
 
+/* ── Section divider (active vs done) ── */
+.cg-section-divider {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.cg-section-divider::before,
+.cg-section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 /* ── Card ── */
 .cg-card {
   display: flex;
   align-items: stretch;
   gap: 0;
+  height: 96px;          /* fixed height — all cards equal */
   border: 1.5px solid var(--bd);
   border-radius: 14px;
   overflow: hidden;
@@ -7424,17 +7563,18 @@ a {
 .cg-left {
   flex-shrink: 0;
   width: 80px;
+  height: 100%;      /* fill the fixed card height */
+  overflow: hidden;
 }
 .cg-thumb {
   width: 80px;
-  height: 100%;
-  min-height: 80px;
+  height: 100%;      /* fills .cg-left which is fixed */
   object-fit: cover;
   display: block;
 }
 .cg-thumb-placeholder {
   width: 80px;
-  min-height: 80px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;

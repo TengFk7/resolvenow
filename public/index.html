@@ -659,14 +659,20 @@
         <div class="ncard" style="margin-top:12px" id="myTicketsCard">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
             <h2 style="margin:0">📋 เรื่องร้องเรียนของฉัน</h2>
-            <select id="cgStatusFilter" class="cg-status-filter" onchange="cgApplyFilter()">
-              <option value="all">🗂️ ทั้งหมด</option>
-              <option value="pending">⏳ รอดำเนินการ</option>
-              <option value="assigned">🔧 รับงานแล้ว</option>
-              <option value="in_progress">🔨 กำลังดำเนินการ</option>
-              <option value="completed">✅ เสร็จสิ้น</option>
-              <option value="rejected">❌ ปฏิเสธ</option>
-            </select>
+            <div class="cg-select" id="cgStatusFilter" data-value="all">
+              <button class="cg-select-trigger" onclick="cgDropToggle('cgStatusFilter')">
+                <span class="cg-select-label">🗂️ ทั้งหมด</span>
+                <span class="cg-select-arrow">▾</span>
+              </button>
+              <div class="cg-select-panel">
+                <div class="cg-select-opt selected" data-value="all" onclick="cgDropPick('cgStatusFilter','all','🗂️ ทั้งหมด',cgApplyFilter)">🗂️ ทั้งหมด</div>
+                <div class="cg-select-opt" data-value="pending" onclick="cgDropPick('cgStatusFilter','pending','⏳ รอดำเนินการ',cgApplyFilter)">⏳ รอดำเนินการ</div>
+                <div class="cg-select-opt" data-value="assigned" onclick="cgDropPick('cgStatusFilter','assigned','🔧 รับงานแล้ว',cgApplyFilter)">🔧 รับงานแล้ว</div>
+                <div class="cg-select-opt" data-value="in_progress" onclick="cgDropPick('cgStatusFilter','in_progress','🔨 กำลังดำเนินการ',cgApplyFilter)">🔨 กำลังดำเนินการ</div>
+                <div class="cg-select-opt" data-value="completed" onclick="cgDropPick('cgStatusFilter','completed','✅ เสร็จสิ้น',cgApplyFilter)">✅ เสร็จสิ้น</div>
+                <div class="cg-select-opt" data-value="rejected" onclick="cgDropPick('cgStatusFilter','rejected','❌ ปฏิเสธ',cgApplyFilter)">❌ ปฏิเสธ</div>
+              </div>
+            </div>
           </div>
           <div id="citizenCards">
             <div class="empty">ยังไม่มีเรื่องร้องเรียน</div>
@@ -691,12 +697,20 @@
         <div class="ncard" style="margin-top:12px" id="myTechCard">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
             <h2 style="margin:0">🔧 งานของฉัน</h2>
-            <select id="tcPriorityFilter" class="cg-status-filter" onchange="tcApplyFilter()">
-              <option value="all">🗂️ ทั้งหมด</option>
-              <option value="urgent">⚡ ด่วนมาก</option>
-              <option value="medium">⏰ ด่วน</option>
-              <option value="normal">🔵 ปกติ</option>
-            </select>
+            <div class="cg-select" id="tcPriorityFilter" data-value="all">
+              <button class="cg-select-trigger" onclick="cgDropToggle('tcPriorityFilter')">
+                <span class="cg-select-label">🗂️ ทั้งหมด</span>
+                <span class="cg-select-arrow">▾</span>
+              </button>
+              <div class="cg-select-panel">
+                <div class="cg-select-opt selected" data-value="all" onclick="cgDropPick('tcPriorityFilter','all','🗂️ ทั้งหมด',tcApplyFilter)">🗂️ ทั้งหมด</div>
+                <div class="cg-select-opt" data-value="urgent" onclick="cgDropPick('tcPriorityFilter','urgent','⚡ ด่วนมาก',tcApplyFilter)">⚡ ด่วนมาก</div>
+                <div class="cg-select-opt" data-value="medium" onclick="cgDropPick('tcPriorityFilter','medium','⏰ ด่วน',tcApplyFilter)">⏰ ด่วน</div>
+                <div class="cg-select-opt" data-value="normal" onclick="cgDropPick('tcPriorityFilter','normal','🔵 ปกติ',tcApplyFilter)">🔵 ปกติ</div>
+                <div class="cg-select-opt" data-value="completed" onclick="cgDropPick('tcPriorityFilter','completed','✅ เสร็จสิ้น',tcApplyFilter)">✅ เสร็จสิ้น</div>
+                <div class="cg-select-opt" data-value="rejected" onclick="cgDropPick('tcPriorityFilter','rejected','❌ ปฏิเสธ',tcApplyFilter)">❌ ปฏิเสธ</div>
+              </div>
+            </div>
           </div>
           <div id="techCards"></div>
         </div>

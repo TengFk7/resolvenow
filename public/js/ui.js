@@ -143,6 +143,70 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
+/* ══════════════════════════════════════════
+   CUSTOM ANIMATED DROPDOWN
+══════════════════════════════════════════ */
+var _cgDropOpen = null;
+
+function cgDropToggle(id) {
+  var el = ge(id);
+  if (!el) return;
+  // Close previous if different
+  if (_cgDropOpen && _cgDropOpen !== id) {
+    var prev = ge(_cgDropOpen);
+    if (prev) prev.classList.remove('open');
+  }
+  var isOpen = el.classList.toggle('open');
+  _cgDropOpen = isOpen ? id : null;
+  // Micro-bounce on trigger button
+  var btn = el.querySelector('.cg-select-trigger');
+  if (btn) {
+    btn.style.transform = 'scale(.95)';
+    setTimeout(function(){ btn.style.transform = ''; }, 120);
+  }
+}
+
+function cgDropPick(id, value, label, callback) {
+  var el = ge(id);
+  if (!el) return;
+  // Update displayed label
+  var labelEl = el.querySelector('.cg-select-label');
+  if (labelEl) {
+    labelEl.style.transform = 'translateY(-4px)';
+    labelEl.style.opacity = '0';
+    setTimeout(function(){
+      labelEl.textContent = label;
+      labelEl.style.transition = 'transform .18s ease, opacity .18s ease';
+      labelEl.style.transform = 'translateY(0)';
+      labelEl.style.opacity   = '1';
+      setTimeout(function(){ labelEl.style.transition = ''; }, 200);
+    }, 100);
+  }
+  // Update selected opt highlight
+  el.querySelectorAll('.cg-select-opt').forEach(function(o) {
+    o.classList.toggle('selected', o.getAttribute('data-value') === value);
+  });
+  el.setAttribute('data-value', value);
+  // Close with slight delay for visual feedback
+  setTimeout(function(){
+    el.classList.remove('open');
+    _cgDropOpen = null;
+  }, 80);
+  // Fire filter callback
+  if (typeof callback === 'function') setTimeout(callback, 130);
+}
+
+// Auto-close on outside click
+document.addEventListener('click', function(e) {
+  if (_cgDropOpen) {
+    var el = ge(_cgDropOpen);
+    if (el && !el.contains(e.target)) {
+      el.classList.remove('open');
+      _cgDropOpen = null;
+    }
+  }
+});
+
 /* ── Ripple Effect ───────────────────────────────────── */
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-ripple');
