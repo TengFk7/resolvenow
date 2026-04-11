@@ -529,52 +529,150 @@ function takeCameraPhoto() {
 }
 
 /* ── Render My Tickets ───────────────────────────────── */
+var _cgAllTickets = []; // master list for filter
+
 function renderCitizen(data) {
+  _cgAllTickets = data;
+
+  // Store ticket lookup for expand panel
+  window._cgTickets = {};
+  data.forEach(function(t){ window._cgTickets[t.ticketId] = t; });
+
+  // Keep current filter selection if any
+  var sel = ge('cgStatusFilter');
+  var filter = sel ? sel.value : 'all';
+  _cgRenderGrid(filter);
+}
+
+/* ── Filter handler ── */
+function cgApplyFilter() {
+  var sel = ge('cgStatusFilter');
+  var filter = sel ? sel.value : 'all';
+  // Close any open panel first
+  if (_cgOpen) { _cgClose(_cgOpen); _cgOpen = null; }
+  _cgRenderGrid(filter);
+}
+
+/* ── Draw the grid with optional status filter ── */
+function _cgRenderGrid(filter) {
   var el = ge('citizenCards');
-  if (!data.length) { el.innerHTML = '<div class="empty">ยังไม่มีเรื่องร้องเรียน</div>'; return; }
-  var h = '';
+  if (!el) return;
+
+  var data = filter === 'all'
+    ? _cgAllTickets
+    : _cgAllTickets.filter(function(t){ return t.status === filter; });
+
+  if (!data.length) {
+    var labelMap = { pending:'รอดำเนินการ', assigned:'รับงานแล้ว', in_progress:'กำลังดำเนินการ', completed:'เสร็จสิ้น', rejected:'ปฏิเสธ' };
+    var msg = filter === 'all' ? 'ยังไม่มีเรื่องร้องเรียน' : 'ไม่มีเรื่องร้องเรียนในสถานะ "' + (labelMap[filter] || filter) + '"';
+    el.innerHTML = '<div class="empty">' + msg + '</div>';
+    return;
+  }
+
+  var h = '<div class="citizen-grid">';
   for (var i = 0; i < data.length; i++) {
     var t = data[i];
     var done = t.status === 'completed';
-    h += '<div style="border:1.5px solid ' + (done ? 'var(--g)' : 'var(--bd)') + ';border-radius:12px;padding:14px;margin-bottom:10px">';
-    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
-    h += '<div><div style="font-size:11px;color:var(--mu);font-weight:600">' + t.ticketId + '</div>';
-    h += '<div style="font-size:14px;font-weight:700">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + ' - ' + escapeHTML(t.location) + '</div></div>';
-    h += '<span class="badge ' + t.status + '">' + stTH(t.status) + '</span></div>';
-    h += '<div style="font-size:13px;color:#4a5568;margin-bottom:4px">' + escapeHTML(t.description) + '</div>';
-    h += '<div style="font-size:12px;color:var(--mu);margin-bottom:8px">' + t.createdAt + '</div>';
-    if (t.citizenImage)
-      h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูป\')" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;cursor:pointer"/>';
-    if (done && (t.beforeImage || t.afterImage)) {
-      h += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div style="display:flex;gap:8px">';
-      if (t.beforeImage) h += '<div style="flex:1;text-align:center"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" style="width:100%;height:80px;object-fit:cover;border-radius:8px;cursor:pointer"/><div style="font-size:11px;color:#065f46;margin-top:3px;font-weight:600">ก่อน</div></div>';
-      if (t.afterImage) h += '<div style="flex:1;text-align:center"><img src="' + t.afterImage + '" onclick="viewImg(this.src,\'หลัง\')" style="width:100%;height:80px;object-fit:cover;border-radius:8px;cursor:pointer"/><div style="font-size:11px;color:#065f46;margin-top:3px;font-weight:600">หลัง</div></div>';
-      h += '</div></div>';
-    } else if (!done && t.status !== 'pending' && t.status !== 'rejected' && t.beforeImage) {
-      h += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px">&#128295; ช่างกำลังดำเนินการ</div><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปปัญหา\')" style="width:100%;max-height:70px;object-fit:cover;border-radius:8px;cursor:pointer"/></div>';
-    }
-    // Chat button — show for non-pending tickets
-    if (t.status !== 'rejected') {
-      h += '<div style="margin-top:8px"><button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับช่าง</button></div>';
-    }
+
+    // Thumbnail
+    var thumbHtml = t.citizenImage
+      ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
+      : '<div class="cg-thumb cg-thumb-placeholder">' + (DEPT_ICON[t.category] || '📋') + '</div>';
+
+    h += '<div class="cg-card' + (done ? ' cg-card--done' : '') + '" id="cgcard-' + t.ticketId + '" onclick="cgToggle(\'' + t.ticketId + '\')">';
+    h += '<div class="cg-left">' + thumbHtml + '</div>';
+    h += '<div class="cg-right">';
+    h += '<div class="cg-row1">';
+    h += '<span class="cg-tid">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(t.ticketId) + '</span>';
+    h += '<span class="badge ' + t.status + ' cg-badge">' + stTH(t.status) + '</span>';
     h += '</div>';
-    // Rating section for completed tickets
-    if (done) {
-      if (t.rating) {
-        var starsHtml = '<span style="color:#f59e0b;font-size:16px">';
-        for (var s = 0; s < t.rating; s++) starsHtml += '⭐';
-        for (var s2 = t.rating; s2 < 5; s2++) starsHtml += '☆';
-        starsHtml += '</span>';
-        h += '<div style="margin-top:8px;padding:8px 12px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fde68a;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:8px">';
-        h += '<span style="font-weight:700;color:#92400e">คะแนน:</span>' + starsHtml;
-        if (t.ratingReason) h += '<span style="color:#92400e;font-size:11px">— ' + escapeHTML(t.ratingReason) + '</span>';
-        h += '</div>';
-      } else {
-        h += '<button onclick="openRatingModal(\'' + t.ticketId + '\',\'' + escapeHTML(t.citizenName) + '\')" style="margin-top:8px;width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,.3)">⭐ ประเมินความพึงพอใจ</button>';
-      }
+    h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
+    h += '<div class="cg-date">' + t.createdAt + '</div>';
+    h += '</div></div>'; // /cg-right /cg-card
+
+    // Collapsed detail panel — hidden until card is tapped
+    h += '<div class="cg-detail" id="cgdetail-' + t.ticketId + '" style="display:none"></div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+/* ── Toggle expand/collapse a ticket detail ── */
+var _cgOpen = null;
+function cgToggle(ticketId) {
+  // If clicking the same card — close it
+  if (_cgOpen === ticketId) {
+    _cgClose(ticketId);
+    _cgOpen = null;
+    return;
+  }
+  // Close previous
+  if (_cgOpen) _cgClose(_cgOpen);
+  _cgOpen = ticketId;
+  _cgOpen = ticketId;
+  var t = (window._cgTickets || {})[ticketId];
+  if (!t) return;
+  var panel = ge('cgdetail-' + ticketId);
+  if (!panel) return;
+
+  var done = t.status === 'completed';
+  var h = '<div class="cg-detail-inner">';
+
+  // Citizen image (clickable full view)
+  if (t.citizenImage) {
+    h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" />';
+  }
+
+  // Description + location
+  h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">📅 วันที่</span><span class="cg-dv">' + t.createdAt + '</span></div>';
+
+  // Tech work images
+  if (done && (t.beforeImage || t.afterImage)) {
+    h += '<div class="cg-techwork"><div class="cg-techwork-title">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div class="cg-techwork-imgs">';
+    if (t.beforeImage) h += '<div class="cg-techwork-img"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" /><span>ก่อน</span></div>';
+    if (t.afterImage)  h += '<div class="cg-techwork-img"><img src="' + t.afterImage  + '" onclick="viewImg(this.src,\'หลัง\')" /><span>หลัง</span></div>';
+    h += '</div></div>';
+  } else if (!done && t.status !== 'pending' && t.status !== 'rejected' && t.beforeImage) {
+    h += '<div class="cg-inprog"><div class="cg-inprog-title">&#128295; ช่างกำลังดำเนินการ</div>';
+    h += '<img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปปัญหา\')" class="cg-inprog-img"/></div>';
+  }
+
+  // Chat button
+  if (t.status !== 'rejected') {
+    h += '<button class="btn-chat cg-chat-btn" onclick="event.stopPropagation();openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับช่าง</button>';
+  }
+
+  // Rating
+  if (done) {
+    if (t.rating) {
+      var starsHtml = '';
+      for (var s = 0; s < t.rating; s++) starsHtml += '⭐';
+      for (var s2 = t.rating; s2 < 5; s2++) starsHtml += '<span style="color:#d1d5db">☆</span>';
+      h += '<div class="cg-rating-done"><span class="cg-rating-label">คะแนน:</span><span class="cg-stars">' + starsHtml + '</span>';
+      if (t.ratingReason) h += '<span class="cg-rating-reason">— ' + escapeHTML(t.ratingReason) + '</span>';
+      h += '</div>';
+    } else {
+      h += '<button onclick="event.stopPropagation();openRatingModal(\'' + t.ticketId + '\',\'' + escapeHTML(t.citizenName) + '\')" class="cg-rating-btn">⭐ ประเมินความพึงพอใจ</button>';
     }
   }
-  el.innerHTML = h;
+
+  h += '</div>'; // /cg-detail-inner
+
+  panel.innerHTML = h;
+  panel.style.display = 'block';
+  // Highlight active card
+  var card = ge('cgcard-' + ticketId);
+  if (card) card.classList.add('cg-card--active');
+  // Smooth scroll to panel
+  setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
+}
+
+function _cgClose(ticketId) {
+  var panel = ge('cgdetail-' + ticketId);
+  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  var card = ge('cgcard-' + ticketId);
+  if (card) card.classList.remove('cg-card--active');
 }
 
 /* ── Submit Success Overlay Animation ───────────────── */

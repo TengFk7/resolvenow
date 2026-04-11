@@ -68,6 +68,8 @@ function notifyNewTicket(ticket) {
     ticket.urgency === 'urgent' ? '🔴 เร่งด่วน' :
       ticket.urgency === 'medium' ? '🟡 ปานกลาง' : '🟢 ปกติ';
 
+  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+
   const msg = '🆕 มีเรื่องร้องเรียนใหม่เข้ามา!\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
@@ -76,11 +78,15 @@ function notifyNewTicket(ticket) {
     '⏱️  ความเร่งด่วน: ' + urgencyLabel + '\n' +
     '👤 ผู้แจ้ง: ' + ticket.citizenName + '\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
-    '🔗 กรุณาตรวจสอบและมอบหมายงานในระบบ';
+    '🔗 กรุณาตรวจสอบและมอบหมายงานในระบบ' +
+    (BASE_URL ? '\n' + BASE_URL : '');
 
   const citizenMsg = '✅ ระบบได้รับเรื่องของคุณเรียบร้อยแล้ว\n' +
-    'หมายเลขคำร้องของคุณคือ: ' + ticket.ticketId + '\n\n' +
-    'เจ้าหน้าที่จะทำการตรวจสอบและดำเนินการโดยเร็วที่สุด';
+    '━━━━━━━━━━━━━━━━━━\n' +
+    '📋 Ticket: ' + ticket.ticketId + '\n' +
+    '━━━━━━━━━━━━━━━━━━\n' +
+    'เจ้าหน้าที่จะทำการตรวจสอบและดำเนินการโดยเร็วที่สุด\n' +
+    (trackLink ? '\n🔍 ติดตามสถานะเรื่องร้องเรียนได้ที่:\n' + trackLink : '');
 
   return pushAll(
     ticket.citizenLineId,
@@ -91,6 +97,7 @@ function notifyNewTicket(ticket) {
 
 function notifyAssigned(ticket) {
   const techName = ticket.assignedName || 'ยังไม่ได้ระบุ';
+  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
   const adminMsg = '🔧 มอบหมายงานให้ช่างแล้ว\n' +
     '━━━━━━━━━━━━━━━━\n' +
@@ -106,7 +113,8 @@ function notifyAssigned(ticket) {
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้รับงาน: ' + techName + '\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    '⏳ ช่างกำลังเดินทางไปยังสถานที่';
+    '⏳ ช่างกำลังเดินทางไปยังสถานที่' +
+    (trackLink ? '\n\n🔍 ติดตามสถานะได้ที่:\n' + trackLink : '');
 
   return pushAll(
     ticket.citizenLineId,
@@ -117,6 +125,7 @@ function notifyAssigned(ticket) {
 
 function notifyInProgress(ticket) {
   const techName = ticket.assignedName || 'ยังไม่ได้ระบุ';
+  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
   const adminMsg = '⚙️  เริ่มดำเนินการแล้ว\n' +
     '━━━━━━━━━━━━━━━━\n' +
@@ -132,7 +141,8 @@ function notifyInProgress(ticket) {
     '📍 สถานที่: ' + ticket.location + '\n' +
     '👷 ช่างผู้ดำเนินการ: ' + techName + '\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    '🔨 กำลังแก้ไข กรุณารอสักครู่...';
+    '🔨 กำลังแก้ไข กรุณารอสักครู่...' +
+    (trackLink ? '\n\n🔍 ติดตามสถานะได้ที่:\n' + trackLink : '');
 
   return pushAll(
     ticket.citizenLineId,
@@ -161,6 +171,8 @@ async function notifyCompleted(ticket) {
     'หากพบปัญหาใหม่สามารถแจ้งเรื่องเข้ามาได้ตลอดเวลา\n' +
     '📲 ระบบ ResolveNow พร้อมรับเรื่องร้องเรียนทุกเมื่อ';
 
+  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+
   const citizenMsg = '🎉 เรื่องร้องเรียนของคุณได้รับการแก้ไขแล้ว!\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
@@ -169,7 +181,8 @@ async function notifyCompleted(ticket) {
     '🕐 เสร็จสิ้นเมื่อ: ' + now + '\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '🙏 ขอบคุณที่แจ้งเรื่องมายังระบบ ResolveNow\n' +
-    'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!';
+    'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!' +
+    (trackLink ? '\n\n🔍 ดูสรุปผลการดำเนินการได้ที่:\n' + trackLink : '');
 
   // ส่งข้อความสรุปทั้ง admin และ citizen
   await pushAll(
@@ -220,13 +233,16 @@ function notifyRejected(ticket, reason) {
     '━━━━━━━━━━━━━━━━\n' +
     '📌 กรุณาตรวจสอบและดำเนินการต่อไป';
 
+  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+
   const citizenMsg = '❌ ขออภัย เรื่องร้องเรียนของคุณถูกปฏิเสธ\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     (reason ? '📝 เหตุผล: ' + reason + '\n' : '') +
     '━━━━━━━━━━━━━━━━\n' +
-    '📞 หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่ @ResolveNow.com';
+    '📞 หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่ @ResolveNow.com' +
+    (trackLink ? '\n\n🔍 ดูรายละเอียดเรื่องร้องเรียนได้ที่:\n' + trackLink : '');
 
   return pushAll(
     ticket.citizenLineId,
@@ -253,13 +269,15 @@ async function notifyFollowers(ticket, newStatus) {
     rejected: 'ถูกปฏิเสธ'
   };
   const statusLabel = statusTH[newStatus] || newStatus;
+  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+
   const msg = '🔔 Ticket ที่คุณติดตามมีการอัปเดต!\n' +
     '━━━━━━━━━━━━━━━━\n' +
     '📋 Ticket: ' + ticket.ticketId + '\n' +
     '📍 สถานที่: ' + ticket.location + '\n' +
     '📊 สถานะใหม่: ' + statusLabel + '\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    '📲 เข้าระบบ ResolveNow เพื่อดูรายละเอียดเพิ่มเติม';
+    (trackLink ? '🔍 ติดตามสถานะได้ที่:\n' + trackLink : '📲 เข้าระบบ ResolveNow เพื่อดูรายละเอียดเพิ่มเติม');
 
   const tasks = [];
   for (const f of ticket.followers) {

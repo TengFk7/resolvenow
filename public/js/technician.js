@@ -8,15 +8,20 @@
    ───────────────────────────────────────────── */
 
 /* ── Render Tech Tickets ─────────────────────────────── */
-var _lastTechJSON = null; // diff-guard to prevent flicker
-var _suppressCardAnim = false; // set true after completion
+var _lastTechJSON = null;
+var _suppressCardAnim = false;
+var _tcAllTickets = [];   // master list for filter
+var _tcOpen = null;       // currently expanded ticketId
+
+/* priority bucket helper */
+function _tcPrioBucket(t) {
+  var u = t.urgency || '';
+  if (t.priorityScore >= 70 || u === 'urgent')  return 'urgent';
+  if (t.priorityScore >= 40 || u === 'medium')  return 'medium';
+  return 'normal';
+}
 
 function renderTech(data) {
-  var el = ge('techCards');
-  var active = data.filter(function (t) { return t.status !== 'completed' && t.status !== 'rejected'; });
-  var inProg = data.filter(function (t) { return t.status === 'in_progress' || t.status === 'assigned'; });
-  var done = data.filter(function (t) { return t.status === 'completed'; });
-
   /* ── Welcome banner (inject once) ── */
   if (!ge('techWelcome')) {
     var initials = (CU.firstName[0] || '') + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
@@ -31,163 +36,228 @@ function renderTech(data) {
     );
   }
 
-  /* ── If data unchanged, skip card re-render (prevents flicker) ── */
+  /* ── diff-guard ── */
   var dataJSON = JSON.stringify(data);
   if (dataJSON === _lastTechJSON && ge('techCards').innerHTML) return;
   _lastTechJSON = dataJSON;
 
-  if (!data.length) { el.innerHTML = '<div class="empty">ไม่มีงานในแผนกของคุณ</div>'; return; }
+  /* ── store master list ── */
+  _tcAllTickets = data;
+  window._tcTickets = {};
+  data.forEach(function(t){ window._tcTickets[t.ticketId] = t; });
 
-  var sorted = active.concat(data.filter(function (t) { return t.status === 'completed' || t.status === 'rejected'; }));
-  var h = '';
+  /* ── apply current filter ── */
+  var sel = ge('tcPriorityFilter');
+  var filter = sel ? sel.value : 'all';
+  _tcRenderGrid(filter, true);
+}
+
+/* ── Priority filter handler ── */
+function tcApplyFilter() {
+  var sel = ge('tcPriorityFilter');
+  var filter = sel ? sel.value : 'all';
+  if (_tcOpen) { _tcClose(_tcOpen); _tcOpen = null; }
+  _tcRenderGrid(filter, false);
+}
+
+/* ── Draw the tech grid ── */
+function _tcRenderGrid(filter, animate) {
+  var el = ge('techCards');
+  if (!el) return;
+
+  var data = filter === 'all'
+    ? _tcAllTickets
+    : _tcAllTickets.filter(function(t){ return _tcPrioBucket(t) === filter; });
+
+  if (!data.length) {
+    var lm = { urgent:'ด่วนมาก', medium:'ด่วน', normal:'ปกติ' };
+    var msg = filter === 'all' ? 'ไม่มีงานในแผนกของคุณ' : 'ไม่มีงานระดับ "' + (lm[filter] || filter) + '"';
+    el.innerHTML = '<div class="empty">' + msg + '</div>';
+    return;
+  }
+
+  /* sort: active first, then done */
+  var active = data.filter(function(t){ return t.status !== 'completed' && t.status !== 'rejected'; });
+  var done   = data.filter(function(t){ return t.status === 'completed' || t.status === 'rejected'; });
+  var sorted = active.concat(done);
+
+  var h = '<div class="citizen-grid">';
 
   for (var i = 0; i < sorted.length; i++) {
     var t = sorted[i];
-    var urgent = t.priorityScore >= 70;
+    var bucket = _tcPrioBucket(t);
     var isDone = t.status === 'completed' || t.status === 'rejected';
-    var s1 = t.status === 'pending' ? 'active' : 'done';
-    var s2 = t.status === 'pending' ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
-    var s3 = t.status === 'in_progress' ? 'active' : (t.status === 'completed' ? 'done' : 'idle');
 
-    var cardCls = 'tcard' + (isDone ? (t.status === 'completed' ? ' is-done' : ' is-rejected') : (urgent ? ' is-urgent' : ''));
+    /* priority badge label + class */
+    var prioBadgeCls = bucket === 'urgent' ? 'urgent' : (bucket === 'medium' ? 'medium' : 'normal');
+    var prioBadgeTxt = bucket === 'urgent' ? '⚡ ด่วนมาก' : (bucket === 'medium' ? '⏰ ด่วน' : '🔵 ปกติ');
+    if (isDone) { prioBadgeCls = t.status; prioBadgeTxt = t.status === 'completed' ? '✅ เสร็จ' : '❌ ปฏิเสธ'; }
 
-    h += '<div class="' + cardCls + '">';
+    /* thumbnail: citizenImage or icon placeholder */
+    var thumbHtml = t.citizenImage
+      ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
+      : '<div class="cg-thumb cg-thumb-placeholder tc-placeholder-' + prioBadgeCls + '">' + (DEPT_ICON[t.category] || '🔧') + '</div>';
 
-    /* ── Header ── */
-    h += '<div class="tchead">'
-      + '<div><div class="tcid">TICKET #' + t.ticketId + '</div>'
-      + '<div class="tctitle">' + (DEPT_ICON[t.category] || '') + ' ' + (DEPT[t.category] || t.category) + ' — ' + t.location + '</div></div>'
-      + '<span class="badge ' + (urgent ? 'urgent' : (isDone ? t.status : 'normal')) + '">'
-      + (isDone ? (t.status === 'completed' ? '✅ เสร็จ' : '❌ ปฏิเสธ') : (urgent ? '⚡ เร่งด่วน' : '🔵 ' + pLabel(t.priorityScore)))
-      + '</span></div>';
+    var cardCls = 'cg-card' + (isDone ? (t.status === 'completed' ? ' cg-card--done' : ' cg-card--rejected') : (bucket === 'urgent' ? ' cg-card--urgent' : ''));
 
-    /* ── Body ── */
-    h += '<div class="tcbody">'
-      + '<div class="mrow"><span class="mi">⚠️</span><span>' + escapeHTML(t.description) + '</span></div>'
-      + '<div class="mrow"><span class="mi">📍</span><span>' + escapeHTML(t.location) + '</span></div>'
-      + '<div class="mrow"><span class="mi">👤</span><span>' + escapeHTML(t.citizenName) + '</span></div>'
-      + '<div class="mrow" style="margin-bottom:12px"><span class="mi">🕐</span><span>' + escapeHTML(t.createdAt) + '</span></div>';
-
-    if (t.citizenImage)
-      h += '<div style="margin-bottom:14px"><div class="citizen-img-label">รูปจากผู้แจ้ง</div>'
-        + '<img class="citizen-img" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/></div>';
-
-    if (isDone) {
-      /* Done / Rejected */
-      h += '<div class="status-done-box ' + t.status + '">'
-        + (t.status === 'completed' ? '✅ งานเสร็จสิ้นแล้ว' : '❌ ปฏิเสธงานนี้แล้ว') + '</div>';
-      if (t.beforeImage || t.afterImage) {
-        h += '<div class="irow">';
-        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-        if (t.afterImage) h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลังซ่อม</div></div>';
-        h += '</div>';
-      }
-    } else {
-      /* ── STEP 1 ── */
-      h += '<div class="step"><div class="shead">'
-        + '<div class="snum ' + s1 + '">' + (s1 === 'done' ? '✓' : '1') + '</div>'
-        + '<div class="slbl">ข้อมูลการร้องเรียน</div>'
-        + '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
-      if (t.status === 'pending')
-        h += '<div class="sbody"><p>กดรับงานเพื่อเริ่มลงพื้นที่</p>'
-          + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)">🔧 รับเรื่องและลงพื้นที่</button></div>';
-      h += '</div>';
-
-      /* ── STEP 2 ── */
-      h += '<div class="step"><div class="shead">'
-        + '<div class="snum ' + s2 + '">' + (s2 === 'done' ? '✓' : '2') + '</div>'
-        + '<div class="slbl">ยืนยันการเข้าตรวจสอบ</div>'
-        + '<span class="sstat ' + s2 + '">' + (s2 === 'done' ? 'เสร็จ' : s2 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
-      if (s2 === 'active') {
-        h += '<div class="sbody"><p>ถ่ายรูปสภาพก่อนซ่อม</p>';
-        if (t.beforeImage)
-          h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
-            + '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover"/>'
-            + '<div class="ilbl">✅ อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
-        else
-          h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
-            + '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
-        h += '<div style="margin-bottom:12px">'
-          + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บันทึกเพิ่มเติม</label>'
-          + '<textarea class="tech-note" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
-        h += '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px">'
-          + '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div>'
-          + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
-        h += '<div style="display:flex;gap:8px">'
-          + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="rejectJob(this)">❌ ปฏิเสธ</button>'
-          + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
-          + '</div></div>';
-      }
-      h += '</div>';
-
-      /* ── STEP 3 ── */
-      h += '<div class="step"><div class="shead">'
-        + '<div class="snum ' + s3 + '">' + (s3 === 'done' ? '✓' : '3') + '</div>'
-        + '<div class="slbl">หลักฐานหลังการดำเนินการ</div>'
-        + '<span class="sstat ' + s3 + '">' + (s3 === 'done' ? 'เสร็จ' : s3 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
-      if (s3 === 'active') {
-        h += '<div class="sbody"><p>ถ่ายรูปหลังซ่อม เพื่อปิดงาน</p><div class="irow">';
-        if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
-        if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl">✅ คลิกเปลี่ยน</div></div>';
-        else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
-        h += '</div>';
-        h += '<div style="margin-bottom:12px">'
-          + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บรรยายงานที่ทำ</label>'
-          + '<textarea class="tech-note" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
-        h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
-        if (!t.afterImage) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
-        h += '</div>';
-      }
-      h += '</div>';
-    }
-
-    // Chat button for technician
-    h += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">';
-    h += '<button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+    h += '<div class="' + cardCls + '" id="tccard-' + t.ticketId + '" onclick="tcToggle(\'' + t.ticketId + '\')">';
+    h += '<div class="cg-left">' + thumbHtml + '</div>';
+    h += '<div class="cg-right">';
+    h += '<div class="cg-row1">';
+    h += '<span class="cg-tid">' + (DEPT_ICON[t.category] || '') + ' #' + escapeHTML(t.ticketId) + '</span>';
+    h += '<span class="badge ' + prioBadgeCls + ' cg-badge">' + prioBadgeTxt + '</span>';
     h += '</div>';
+    h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
+    h += '<div class="cg-date">' + t.createdAt + '</div>';
+    h += '</div></div>'; // /cg-right /cg-card
 
-    h += '</div></div>'; /* .tcbody + .tcard */
+    /* hidden detail panel */
+    h += '<div class="cg-detail" id="tcdetail-' + t.ticketId + '" style="display:none"></div>';
   }
 
-  /* ── Preserve scroll to avoid page-jump on innerHTML replace ── */
-  var savedScroll = window.scrollY;
+  h += '</div>';
 
-  if (_suppressCardAnim) {
-    /* Suppress tcardIn bounce, then fade-in smoothly */
+  /* ── write to DOM with animation handling ── */
+  var savedScroll = window.scrollY;
+  if (animate && _suppressCardAnim) {
     el.classList.add('tcard-instant');
     el.innerHTML = h;
     window.scrollTo(0, savedScroll);
     _suppressCardAnim = false;
-
-    /* Double rAF: first frame paints DOM, second starts opacity tween */
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        el.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1)';
-        el.style.opacity = '1';
-        setTimeout(function () {
-          el.style.transition = '';
-          el.style.opacity = '';
-          el.classList.remove('tcard-instant');
-        }, 480);
-      });
-    });
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      el.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1)';
+      el.style.opacity = '1';
+      setTimeout(function(){ el.style.transition = ''; el.style.opacity = ''; el.classList.remove('tcard-instant'); }, 480);
+    }); });
   } else {
     el.innerHTML = h;
     window.scrollTo(0, savedScroll);
-
-    /* Normal post-render: fade-in if cards were hidden */
     if (el.style.opacity === '0') {
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          el.style.transition = 'opacity 0.42s cubic-bezier(.22,1,.36,1)';
-          el.style.opacity = '1';
-          setTimeout(function () { el.style.transition = ''; el.style.opacity = ''; }, 450);
-        });
-      });
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        el.style.transition = 'opacity 0.42s cubic-bezier(.22,1,.36,1)';
+        el.style.opacity = '1';
+        setTimeout(function(){ el.style.transition = ''; el.style.opacity = ''; }, 450);
+      }); });
     }
   }
 }
+
+/* ── Toggle expand/collapse tech ticket detail ── */
+function tcToggle(ticketId) {
+  if (_tcOpen === ticketId) { _tcClose(ticketId); _tcOpen = null; return; }
+  if (_tcOpen) _tcClose(_tcOpen);
+  _tcOpen = ticketId;
+
+  var t = (window._tcTickets || {})[ticketId];
+  if (!t) return;
+  var panel = ge('tcdetail-' + ticketId);
+  if (!panel) return;
+
+  var isDone = t.status === 'completed' || t.status === 'rejected';
+  var s1 = t.status === 'pending' ? 'active' : 'done';
+  var s2 = t.status === 'pending' ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
+  var s3 = t.status === 'in_progress' ? 'active' : (t.status === 'completed' ? 'done' : 'idle');
+
+  var h = '<div class="cg-detail-inner tc-detail-inner">';
+
+  /* citizen info rows */
+  h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">📍 สถานที่</span><span class="cg-dv">' + escapeHTML(t.location) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">👤 ผู้แจ้ง</span><span class="cg-dv">' + escapeHTML(t.citizenName) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">🕐 วันที่</span><span class="cg-dv">' + escapeHTML(t.createdAt) + '</span></div>';
+
+  /* citizen image */
+  if (t.citizenImage) {
+    h += '<div><div class="citizen-img-label">รูปจากผู้แจ้ง</div><img class="citizen-img" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/></div>';
+  }
+
+  if (isDone) {
+    h += '<div class="status-done-box ' + t.status + '">' + (t.status === 'completed' ? '✅ งานเสร็จสิ้นแล้ว' : '❌ ปฏิเสธงานนี้แล้ว') + '</div>';
+    if (t.beforeImage || t.afterImage) {
+      h += '<div class="irow">';
+      if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
+      if (t.afterImage)  h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage  + '\',\'หลัง\')"><img src="' + t.afterImage  + '"/><div class="ilbl">หลังซ่อม</div></div>';
+      h += '</div>';
+    }
+  } else {
+    /* STEP 1 */
+    h += '<div class="step"><div class="shead">'
+      + '<div class="snum ' + s1 + '">' + (s1 === 'done' ? '✓' : '1') + '</div>'
+      + '<div class="slbl">ข้อมูลการร้องเรียน</div>'
+      + '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
+    if (t.status === 'pending')
+      h += '<div class="sbody"><p>กดรับงานเพื่อเริ่มลงพื้นที่</p>'
+        + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="event.stopPropagation();acceptJob(this)">🔧 รับเรื่องและลงพื้นที่</button></div>';
+    h += '</div>';
+
+    /* STEP 2 */
+    h += '<div class="step"><div class="shead">'
+      + '<div class="snum ' + s2 + '">' + (s2 === 'done' ? '✓' : '2') + '</div>'
+      + '<div class="slbl">ยืนยันการเข้าตรวจสอบ</div>'
+      + '<span class="sstat ' + s2 + '">' + (s2 === 'done' ? 'เสร็จ' : s2 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
+    if (s2 === 'active') {
+      h += '<div class="sbody"><p>ถ่ายรูปสภาพก่อนซ่อม</p>';
+      if (t.beforeImage)
+        h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="event.stopPropagation();triggerUpload(this)">'
+          + '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover"/>'
+          + '<div class="ilbl">✅ อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
+      else
+        h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="event.stopPropagation();triggerUpload(this)">'
+          + '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
+      h += '<div style="margin-bottom:12px">'
+        + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บันทึกเพิ่มเติม</label>'
+        + '<textarea class="tech-note" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
+      h += '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px">'
+        + '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div>'
+        + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="event.stopPropagation();openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
+      h += '<div style="display:flex;gap:8px">'
+        + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="event.stopPropagation();rejectJob(this)">❌ ปฏิเสธ</button>'
+        + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="event.stopPropagation();startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
+        + '</div></div>';
+    }
+    h += '</div>';
+
+    /* STEP 3 */
+    h += '<div class="step"><div class="shead">'
+      + '<div class="snum ' + s3 + '">' + (s3 === 'done' ? '✓' : '3') + '</div>'
+      + '<div class="slbl">หลักฐานหลังการดำเนินการ</div>'
+      + '<span class="sstat ' + s3 + '">' + (s3 === 'done' ? 'เสร็จ' : s3 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
+    if (s3 === 'active') {
+      h += '<div class="sbody"><p>ถ่ายรูปหลังซ่อม เพื่อปิดงาน</p><div class="irow">';
+      if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
+      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="event.stopPropagation();triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
+      if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="event.stopPropagation();triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl">✅ คลิกเปลี่ยน</div></div>';
+      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="event.stopPropagation();triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
+      h += '</div>';
+      h += '<div style="margin-bottom:12px">'
+        + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บรรยายงานที่ทำ</label>'
+        + '<textarea class="tech-note" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
+      h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="event.stopPropagation();completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
+      if (!t.afterImage) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+
+  /* Chat button */
+  h += '<button class="btn-chat cg-chat-btn" onclick="event.stopPropagation();openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+
+  h += '</div>'; // /cg-detail-inner
+
+  panel.innerHTML = h;
+  panel.style.display = 'block';
+  var card = ge('tccard-' + ticketId);
+  if (card) card.classList.add('cg-card--active');
+  setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
+}
+
+function _tcClose(ticketId) {
+  var panel = ge('tcdetail-' + ticketId);
+  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  var card = ge('tccard-' + ticketId);
+  if (card) card.classList.remove('cg-card--active');
+}
+
 
 /* ── Job Actions ─────────────────────────────────────── */
 function acceptJob(btn) { apiStatus(btn.getAttribute('data-id'), 'assigned'); showToast('✅ รับงานแล้ว'); }

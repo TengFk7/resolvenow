@@ -657,7 +657,17 @@
 
         <!-- ── My Tickets ──────────────────────────────── -->
         <div class="ncard" style="margin-top:12px" id="myTicketsCard">
-          <h2>📋 เรื่องร้องเรียนของฉัน</h2>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+            <h2 style="margin:0">📋 เรื่องร้องเรียนของฉัน</h2>
+            <select id="cgStatusFilter" class="cg-status-filter" onchange="cgApplyFilter()">
+              <option value="all">🗂️ ทั้งหมด</option>
+              <option value="pending">⏳ รอดำเนินการ</option>
+              <option value="assigned">🔧 รับงานแล้ว</option>
+              <option value="in_progress">🔨 กำลังดำเนินการ</option>
+              <option value="completed">✅ เสร็จสิ้น</option>
+              <option value="rejected">❌ ปฏิเสธ</option>
+            </select>
+          </div>
           <div id="citizenCards">
             <div class="empty">ยังไม่มีเรื่องร้องเรียน</div>
           </div>
@@ -678,7 +688,18 @@
           </div>
           <div id="helpList"></div>
         </div>
-        <div id="techCards"></div>
+        <div class="ncard" style="margin-top:12px" id="myTechCard">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+            <h2 style="margin:0">🔧 งานของฉัน</h2>
+            <select id="tcPriorityFilter" class="cg-status-filter" onchange="tcApplyFilter()">
+              <option value="all">🗂️ ทั้งหมด</option>
+              <option value="urgent">⚡ ด่วนมาก</option>
+              <option value="medium">⏰ ด่วน</option>
+              <option value="normal">🔵 ปกติ</option>
+            </select>
+          </div>
+          <div id="techCards"></div>
+        </div>
       </div><!-- /secTech -->
 
     </div><!-- /nwrap -->
