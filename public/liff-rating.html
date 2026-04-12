@@ -9,272 +9,353 @@
   <!-- LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Google Fonts (matching track.html) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    /* === Variables (identical to track.html) === */
     :root {
-      --bg-start: #0f0c1a;
-      --bg-mid:   #1a1230;
-      --bg-end:   #0d1b2a;
-      --gold:     #f5c518;
-      --gold-glow:#f5c51855;
-      --gray-star:#3a3a5c;
-      --surface:  rgba(255,255,255,0.06);
-      --border:   rgba(255,255,255,0.10);
-      --text:     #f0eeff;
-      --text-muted: #8880a8;
-      --accent:   #7c5ce8;
-      --accent2:  #a78bfa;
-      --success:  #34d399;
-      --radius:   20px;
+      --navy: #0a1628;
+      --navy2: #0f2040;
+      --navy3: #162a52;
+      --blue: #1a4fa0;
+      --blue2: #2563eb;
+      --blue3: #3b82f6;
+      --gold: #f59e0b;
+      --gold2: #fbbf24;
+      --surface: #f0f4ff;
+      --white: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: rgba(99, 130, 200, .18);
+      --glass: rgba(255, 255, 255, .08);
+      --glass2: rgba(255, 255, 255, .92);
+      --shadow: 0 8px 32px rgba(10, 22, 40, .18);
+      --shadow2: 0 2px 12px rgba(10, 22, 40, .10);
+      --r: #ef4444;
+      --g: #22c55e;
+      --gold-glow: rgba(251, 191, 36, .55);
+      --transition: .3s cubic-bezier(.4, 0, .2, 1);
     }
 
-    html, body {
-      height: 100%;
-      font-family: 'Noto Sans Thai', 'Inter', sans-serif;
-      background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
-      color: var(--text);
-      overflow-x: hidden;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 15px; scroll-behavior: smooth; }
 
-    /* ─── Ambient particles ──────── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(124,92,232,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(245,197,24,0.08) 0%, transparent 60%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ─── Layout ──────────── */
-    .wrapper {
-      position: relative;
-      z-index: 1;
+    body {
+      font-family: 'Prompt', sans-serif;
       min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background: linear-gradient(160deg, #07111f 0%, #0c1e3a 50%, #101627 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 20px 40px;
+      padding: 24px 16px;
     }
 
-    /* ─── Logo / Brand ─────── */
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 28px;
+    /* === Orb Background (from track.html) === */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(var(--orb-blur, 60px));
+      opacity: 0;
+      animation: orbDrift var(--orb-dur, 22s) var(--orb-delay, 0s) ease-in-out infinite;
+      will-change: transform, opacity;
     }
-    .brand-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 4px 20px rgba(124,92,232,0.4);
+    .orb-gold {
+      background: radial-gradient(circle at 40% 40%, rgba(251, 191, 36, 0.55) 0%, rgba(245, 158, 11, 0.25) 40%, transparent 70%);
     }
-    .brand-name {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      background: linear-gradient(135deg, var(--accent2), var(--text));
+    .orb-blue {
+      background: radial-gradient(circle at 40% 40%, rgba(96, 165, 250, 0.38) 0%, rgba(37, 99, 235, 0.18) 40%, transparent 70%);
+    }
+    .orb-teal {
+      background: radial-gradient(circle at 40% 40%, rgba(45, 212, 191, 0.32) 0%, rgba(20, 184, 166, 0.14) 45%, transparent 70%);
+    }
+    @keyframes orbDrift {
+      0%   { opacity: 0; transform: translate(0px, 0px) scale(1); }
+      8%   { opacity: 1; }
+      25%  { opacity: 0.85; transform: translate(var(--tx1), var(--ty1)) scale(1.06); }
+      50%  { opacity: 0.7;  transform: translate(var(--tx2), var(--ty2)) scale(0.96); }
+      75%  { opacity: 0.85; transform: translate(var(--tx3), var(--ty3)) scale(1.04); }
+      92%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(0px, 0px) scale(1); }
+    }
+    .sparkle {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      animation: sparkleTwinkle var(--sp-dur, 4s) var(--sp-delay, 0s) ease-in-out infinite;
+    }
+    @keyframes sparkleTwinkle {
+      0%, 100% { opacity: 0; transform: scale(0.4); }
+      40%      { opacity: 0.9; transform: scale(1); }
+      70%      { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* === Logo (identical to track.html) === */
+    @keyframes logoBreathe {
+      0%, 100% { transform: translateY(0px); }
+      50%      { transform: translateY(-3px); }
+    }
+    @keyframes nowGlow {
+      0%, 100% { text-shadow: 0 0 6px rgba(251,191,36,.0), 0 0 12px rgba(251,191,36,.0); }
+      50%      { text-shadow: 0 0 8px rgba(251,191,36,.7), 0 0 22px rgba(251,191,36,.4), 0 0 40px rgba(245,158,11,.2); }
+    }
+    @keyframes resolveShimmer {
+      0%   { background-position: 0% center; }
+      100% { background-position: 300% center; }
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0px); filter: drop-shadow(0 0 10px rgba(37,99,235,.5)); }
+      50%      { transform: translateY(-3px); filter: drop-shadow(0 0 20px rgba(37,99,235,.8)); }
+    }
+    .logo-anim {
+      animation: logoBreathe 5s ease-in-out infinite;
+      display: inline-block;
+      will-change: transform;
+      isolation: isolate;
+    }
+    .resolve-shimmer {
+      background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 25%, #818cf8 50%, #3b82f6 75%, #1e3a8a 100%);
+      background-size: 300% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      animation: resolveShimmer 4s linear infinite;
+      will-change: background-position;
+      display: inline-block;
+    }
+    .now-gold {
+      color: #fbbf24;
+      display: inline-block;
+      animation: nowGlow 3.5s ease-in-out infinite;
+      will-change: text-shadow;
+    }
+    .logo-icon {
+      font-size: 28px;
+      display: inline-block;
+      animation: iconFloat 4s ease-in-out infinite;
+      will-change: transform;
     }
 
-    /* ─── Card ──────────── */
-    .card {
+    /* === Header === */
+    .liff-header {
+      text-align: center;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+      animation: containerIn .8s .15s cubic-bezier(.22, 1, .36, 1) both;
+    }
+    .liff-logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+    .liff-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+
+    @keyframes containerIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === Main Card (matching track.html search-card) === */
+    .liff-card {
+      position: relative;
+      z-index: 1;
       width: 100%;
       max-width: 420px;
-      background: var(--surface);
-      backdrop-filter: blur(24px) saturate(1.4);
-      -webkit-backdrop-filter: blur(24px) saturate(1.4);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px 28px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
-      animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      background: var(--glass2);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      animation: containerIn .8s .3s cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(32px) scale(0.97); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    /* ─── Ticket info badge ─── */
+    /* === Ticket Badge === */
     .ticket-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(124,92,232,0.15);
-      border: 1px solid rgba(124,92,232,0.3);
+      background: rgba(37, 99, 235, .10);
+      border: 1px solid rgba(37, 99, 235, .25);
       border-radius: 10px;
       padding: 6px 14px;
       font-size: 13px;
-      color: var(--accent2);
-      font-weight: 600;
+      color: var(--blue2);
+      font-weight: 700;
       margin-bottom: 20px;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.5px;
     }
 
-    /* ─── Heading ─────────── */
+    /* === Heading === */
     .heading {
       font-size: 22px;
       font-weight: 700;
       line-height: 1.3;
       margin-bottom: 6px;
+      color: var(--navy);
     }
     .subtext {
       font-size: 14px;
-      color: var(--text-muted);
+      color: var(--muted);
       line-height: 1.6;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
-    /* ─── Stars ──────────── */
+    /* === Stars === */
     .stars-wrap {
       display: flex;
       justify-content: center;
-      gap: 14px;
-      margin-bottom: 14px;
-      padding: 12px 0;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 10px 0;
     }
-
     .star {
       cursor: pointer;
-      font-size: 46px;
+      font-size: 44px;
       line-height: 1;
-      color: var(--gray-star);
-      transition: color 0.18s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.18s ease;
+      color: #cbd5e1;
+      transition: color .18s ease, transform .15s cubic-bezier(.34,1.56,.64,1), filter .18s ease;
       user-select: none;
       -webkit-user-select: none;
-      /* Use text for crisp rendering */
-      text-shadow: none;
       will-change: transform;
     }
-
-    .star:hover,
-    .star.hovered {
-      transform: scale(1.2);
-    }
-
+    .star:hover, .star.hovered { transform: scale(1.2); }
     .star.filled {
-      color: var(--gold);
-      text-shadow: 0 0 18px var(--gold-glow), 0 0 6px rgba(245,197,24,0.4);
+      color: var(--gold2);
+      text-shadow: 0 0 18px rgba(251,191,36,.55), 0 0 6px rgba(245,158,11,.4);
     }
-
-    .star.pop {
-      animation: starPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    }
-
+    .star.pop { animation: starPop .3s cubic-bezier(.34,1.56,.64,1) both; }
     @keyframes starPop {
       0%   { transform: scale(1); }
       50%  { transform: scale(1.4); }
       100% { transform: scale(1.1); }
     }
 
-    /* ─── Rating label ──── */
+    /* === Rating Label === */
     .rating-label {
       text-align: center;
       font-size: 15px;
       font-weight: 600;
       color: var(--gold);
       min-height: 22px;
-      margin-bottom: 24px;
-      transition: opacity 0.2s;
+      margin-bottom: 22px;
       letter-spacing: 0.2px;
     }
 
-    /* ─── Reason textarea ─ */
-    .reason-wrap {
-      margin-bottom: 24px;
-      animation: fadeIn 0.3s ease both;
-    }
+    /* === Reason Textarea === */
+    .reason-wrap { margin-bottom: 22px; animation: fadeIn .3s ease both; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     .reason-label {
       font-size: 13px;
-      color: var(--text-muted);
+      color: var(--muted);
       margin-bottom: 8px;
-      font-weight: 500;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
     }
     textarea {
       width: 100%;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
       border-radius: 12px;
       color: var(--text);
-      font-family: 'Noto Sans Thai', sans-serif;
+      font-family: 'Prompt', sans-serif;
       font-size: 14px;
       padding: 12px 14px;
       resize: none;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color .2s;
       line-height: 1.6;
     }
-    textarea::placeholder { color: var(--text-muted); }
-    textarea:focus { border-color: rgba(124,92,232,0.5); }
+    textarea::placeholder { color: #94a3b8; }
+    textarea:focus { border-color: var(--blue2); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 
-    /* ─── Submit button ─── */
+    /* === Submit Button (matching btn-search) === */
     .btn-submit {
       width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, var(--accent) 0%, #9b59f4 100%);
-      color: #fff;
-      font-family: 'Noto Sans Thai', sans-serif;
-      font-size: 16px;
-      font-weight: 700;
+      padding: 14px 24px;
       border: none;
       border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Prompt', sans-serif;
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      color: #fff;
       cursor: pointer;
-      box-shadow: 0 8px 28px rgba(124,92,232,0.45);
-      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      transition: var(--transition);
+      box-shadow: 0 4px 16px rgba(37,99,235,.35);
       letter-spacing: 0.2px;
       position: relative;
       overflow: hidden;
     }
-    .btn-submit::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent);
-      transform: translateX(-100%);
-      transition: transform 0.6s;
-    }
-    .btn-submit:hover::after { transform: translateX(100%); }
-    .btn-submit:hover:not(:disabled) { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 12px 36px rgba(124,92,232,0.55); }
+    .btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.45); }
     .btn-submit:active:not(:disabled) { transform: translateY(0); }
-    .btn-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-submit:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
 
-    /* ─── Loading state ─── */
+    /* === Spinner === */
     .spinner {
       display: inline-block;
-      width: 18px;
-      height: 18px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.3);
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+      animation: spin .7s linear infinite;
       vertical-align: -3px;
       margin-right: 8px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ─── Success Screen ─── */
+    /* === Error Message === */
+    .error-msg {
+      display: none;
+      background: rgba(239,68,68,.08);
+      border: 1px solid rgba(239,68,68,.25);
+      color: #dc2626;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    /* === Initial Loader === */
+    .loader-init {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 0;
+    }
+    .loader-init .big-spinner {
+      width: 42px; height: 42px;
+      border: 3px solid rgba(37,99,235,.15);
+      border-top-color: var(--blue2);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    .loader-init p { color: var(--muted); font-size: 14px; }
+
+    /* === Success Screen === */
     .success-screen {
       display: none;
       flex-direction: column;
@@ -285,37 +366,16 @@
     .success-icon {
       font-size: 72px;
       margin-bottom: 20px;
-      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      animation: bounceIn .6s cubic-bezier(.34,1.56,.64,1) both;
     }
     @keyframes bounceIn {
       from { opacity: 0; transform: scale(0.4); }
       to   { opacity: 1; transform: scale(1); }
     }
-    .success-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .success-sub {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.7;
-    }
+    .success-title { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .success-sub   { font-size: 14px; color: var(--muted); line-height: 1.7; }
 
-    /* ─── Error / Empty state ─── */
-    .error-msg {
-      display: none;
-      background: rgba(239,68,68,0.12);
-      border: 1px solid rgba(239,68,68,0.25);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      color: #fca5a5;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-
-    /* ─── Already rated state ─── */
+    /* === Already Rated === */
     .already-rated {
       display: none;
       flex-direction: column;
@@ -324,38 +384,45 @@
       padding: 8px 0;
     }
 
-    /* ─── Skeleton / loading initial ─── */
-    .loader-init {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 20px 0;
+    /* === Error State (bad params) === */
+    #errorState {
+      display: none;
+      text-align: center;
+      padding: 8px 0;
     }
-    .loader-init .big-spinner {
-      width: 42px;
-      height: 42px;
-      border: 3px solid rgba(124,92,232,0.2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    .loader-init p {
-      color: var(--text-muted);
-      font-size: 14px;
+    #errorState .err-icon { font-size: 52px; margin-bottom: 16px; }
+    #errorState .err-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    #errorState .err-sub   { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* === Scrollbar === */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(37,99,235,.25); border-radius: 99px; }
+
+    @media (max-width: 420px) {
+      .liff-card { padding: 28px 20px; border-radius: 16px; }
+      .star { font-size: 38px; gap: 8px; }
     }
   </style>
 </head>
 <body>
-<div class="wrapper">
-  <!-- Brand -->
-  <div class="brand">
-    <div class="brand-icon">🏙️</div>
-    <div class="brand-name">ResolveNow</div>
+
+  <!-- Orb layer (filled by JS) -->
+  <div id="orbLayer"></div>
+
+  <!-- Header -->
+  <div class="liff-header">
+    <div class="liff-logo">
+      <span class="logo-anim" style="display:inline-flex;align-items:center;gap:10px;">
+        <span class="logo-icon">🏛️</span>
+        <span><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></span>
+      </span>
+    </div>
+    <div class="liff-subtitle">ระบบประเมินความพึงพอใจ</div>
   </div>
 
   <!-- Main Card -->
-  <div class="card" id="mainCard">
+  <div class="liff-card" id="mainCard">
 
     <!-- Initial loading -->
     <div class="loader-init" id="loaderInit">
@@ -407,15 +474,74 @@
     </div>
 
     <!-- Error state (bad params) -->
-    <div id="errorState" style="display:none; text-align:center; padding: 8px 0;">
-      <div style="font-size:52px; margin-bottom:16px;">⚠️</div>
-      <div class="heading" style="font-size:18px; margin-bottom:8px;">ลิงก์ไม่ถูกต้อง</div>
-      <div class="subtext">ไม่พบข้อมูล Ticket<br>กรุณาใช้ลิงก์ที่ได้รับจากระบบ</div>
+    <div id="errorState">
+      <div class="err-icon">⚠️</div>
+      <div class="err-title">ลิงก์ไม่ถูกต้อง</div>
+      <div class="err-sub">ไม่พบข้อมูล Ticket<br>กรุณาใช้ลิงก์ที่ได้รับจากระบบ</div>
     </div>
 
-  </div><!-- /card -->
-</div><!-- /wrapper -->
+  </div><!-- /liff-card -->
 
+  <!-- Orb init JS -->
+  <script>
+    (function initOrbs() {
+      var layer = document.getElementById("orbLayer");
+      var orbConfigs = [
+        { type: "gold", w: 520, h: 480, l: 12, t: -8, dur: 28, delay: 0, blur: 80, tx1: "60px", ty1: "80px", tx2: "120px", ty2: "30px", tx3: "30px", ty3: "110px" },
+        { type: "gold", w: 380, h: 380, l: 62, t: 55, dur: 32, delay: 7, blur: 70, tx1: "-80px", ty1: "-60px", tx2: "-40px", ty2: "-120px", tx3: "-100px", ty3: "-30px" },
+        { type: "gold", w: 260, h: 240, l: 42, t: 75, dur: 24, delay: 14, blur: 55, tx1: "50px", ty1: "-70px", tx2: "-30px", ty2: "-100px", tx3: "70px", ty3: "-40px" },
+        { type: "blue", w: 450, h: 430, l: 68, t: -5, dur: 30, delay: 4, blur: 75, tx1: "-70px", ty1: "90px", tx2: "-130px", ty2: "40px", tx3: "-50px", ty3: "120px" },
+        { type: "blue", w: 320, h: 300, l: -5, t: 60, dur: 26, delay: 11, blur: 65, tx1: "90px", ty1: "-50px", tx2: "60px", ty2: "-110px", tx3: "110px", ty3: "-20px" },
+        { type: "teal", w: 240, h: 220, l: 80, t: 72, dur: 20, delay: 2, blur: 50, tx1: "-60px", ty1: "-80px", tx2: "-100px", ty2: "-30px", tx3: "-40px", ty3: "-100px" },
+        { type: "teal", w: 180, h: 180, l: 22, t: 38, dur: 22, delay: 16, blur: 45, tx1: "70px", ty1: "60px", tx2: "40px", ty2: "100px", tx3: "90px", ty3: "20px" },
+      ];
+      orbConfigs.forEach(function(cfg) {
+        var el = document.createElement("div");
+        el.className = "orb orb-" + cfg.type;
+        el.style.cssText = [
+          "width:" + cfg.w + "px", "height:" + cfg.h + "px",
+          "left:" + cfg.l + "%", "top:" + cfg.t + "%",
+          "--orb-dur:" + cfg.dur + "s", "--orb-delay:" + cfg.delay + "s",
+          "--orb-blur:" + cfg.blur + "px",
+          "--tx1:" + cfg.tx1, "--ty1:" + cfg.ty1,
+          "--tx2:" + cfg.tx2, "--ty2:" + cfg.ty2,
+          "--tx3:" + cfg.tx3, "--ty3:" + cfg.ty3,
+        ].join(";");
+        layer.appendChild(el);
+      });
+      var goldSparkleCfg = [
+        [8,10,20,3.5,0],[5,25,45,4.2,0.8],[7,55,15,5.0,1.6],
+        [6,75,30,3.8,2.4],[9,88,60,4.5,0.5],[5,40,72,3.2,1.9],
+        [6,18,85,5.5,3.1],[8,62,88,4.0,0.3],[5,92,12,3.6,2.7],
+      ];
+      var blueSparkleCfg = [
+        [6,30,10,4.8,1.2],[7,50,50,3.9,2.0],[5,70,80,5.2,0.7],
+        [8,15,65,4.1,3.3],[6,82,42,3.7,1.5],[5,45,25,4.6,2.8],
+      ];
+      function addSparkle(sz, l, t, dur, delay, color, glow) {
+        var s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.cssText = [
+          "width:" + sz + "px", "height:" + sz + "px",
+          "left:" + l + "%", "top:" + t + "%",
+          "background:radial-gradient(circle, " + color + ")",
+          "box-shadow:0 0 " + (sz*2) + "px " + sz + "px " + glow,
+          "--sp-dur:" + dur + "s", "--sp-delay:" + delay + "s",
+        ].join(";");
+        layer.appendChild(s);
+      }
+      goldSparkleCfg.forEach(function(c) {
+        addSparkle(c[0],c[1],c[2],c[3],c[4],
+          "rgba(251,191,36,.95) 0%, rgba(245,158,11,.4) 60%, transparent 100%",
+          "rgba(251,191,36,.35)");
+      });
+      blueSparkleCfg.forEach(function(c) {
+        addSparkle(c[0],c[1],c[2],c[3],c[4],
+          "rgba(147,197,253,.9) 0%, rgba(96,165,250,.4) 60%, transparent 100%",
+          "rgba(96,165,250,.3)");
+      });
+    })();
+  </script>
 <script>
 (() => {
   "use strict";
