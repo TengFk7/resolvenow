@@ -337,9 +337,9 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     let locationName = location;
     if (lat && lng) locationName = await reverseGeocode(lat, lng);
 
-    // สร้าง ticketId แบบ TKT-001
+    // สร้าง ticketId แบบ TKT-00001 (5 หลัก รองรับถึง 99,999 เคส)
     const seq = await Counter.nextSeq('ticket');
-    const ticketId = 'TKT-' + String(seq).padStart(3, '0');
+    const ticketId = 'TKT-' + String(seq).padStart(5, '0');
 
     // คำนวณ SLA deadlines
     const urg = urgency || 'normal';

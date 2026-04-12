@@ -71,7 +71,7 @@ async function seedTickets() {
         let score = urgency === 'urgent' ? 90 : urgency === 'medium' ? 60 : 30;
         
         const seq = await Counter.nextSeq('ticket');
-        const ticketId = 'TKT-' + String(seq).padStart(3, '0');
+        const ticketId = 'TKT-' + String(seq).padStart(5, '0');
 
         const ticket = new Ticket({
             ticketId,
