@@ -171,19 +171,27 @@ async function notifyCompleted(ticket) {
     'หากพบปัญหาใหม่สามารถแจ้งเรื่องเข้ามาได้ตลอดเวลา\n' +
     '📲 ระบบ ResolveNow พร้อมรับเรื่องร้องเรียนทุกเมื่อ';
 
+  // ── สร้าง LIFF URL พร้อม encode params ────────────────────────
   const LIFF_ID = process.env.LINE_LIFF_ID || '';
-  const liffUrl = LIFF_ID
-    ? `https://liff.line.me/${LIFF_ID}?ticketId=${ticket.ticketId}&lineUserId=${ticket.citizenLineId || ''}`
-    : (BASE_URL ? `${BASE_URL}/liff-rating?ticketId=${ticket.ticketId}&lineUserId=${ticket.citizenLineId || ''}` : null);
+  const encodedTicketId = encodeURIComponent(ticket.ticketId);
+  const encodedLineUserId = encodeURIComponent(ticket.citizenLineId || '');
+
+  function makeLiffUrl(rating) {
+    const base = LIFF_ID
+      ? 'https://liff.line.me/' + LIFF_ID
+      : BASE_URL + '/liff-rating';
+    return base + '?ticketId=' + encodedTicketId +
+      '&lineUserId=' + encodedLineUserId +
+      (rating ? '&rating=' + rating : '');
+  }
 
   // ── Flex Message สำหรับ citizen ─────────────────────────────────
   const citizenMessages = [];
 
-  if (liffUrl) {
-    // Flex Message พร้อมปุ่มประเมิน
+  if (LIFF_ID || BASE_URL) {
     citizenMessages.push({
       type: 'flex',
-      altText: `🎉 เรื่องร้องเรียน ${ticket.ticketId} ได้รับการแก้ไขแล้ว! กรุณาประเมินบริการ`,
+      altText: '\uD83C\uDF89 เรื่องร้องเรียน ' + ticket.ticketId + ' ได้รับการแก้ไขแล้ว! กดดาวเพื่อประเมินบริการได้เลย',
       contents: {
         type: 'bubble',
         size: 'mega',
@@ -197,7 +205,7 @@ async function notifyCompleted(ticket) {
               contents: [
                 {
                   type: 'text',
-                  text: '🏙️ ResolveNow',
+                  text: '\uD83C\uDFD9\uFE0F ResolveNow',
                   size: 'sm',
                   color: '#a78bfa',
                   weight: 'bold'
@@ -206,7 +214,7 @@ async function notifyCompleted(ticket) {
             },
             {
               type: 'text',
-              text: '🎉 งานเสร็จสิ้นแล้ว!',
+              text: '\uD83C\uDF89 งานเสร็จสิ้นแล้ว!',
               size: 'xl',
               weight: 'bold',
               color: '#ffffff',
@@ -224,7 +232,7 @@ async function notifyCompleted(ticket) {
               type: 'box',
               layout: 'horizontal',
               contents: [
-                { type: 'text', text: '📋 Ticket', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: '#8880a8', flex: 2 },
                 { type: 'text', text: ticket.ticketId, size: 'sm', color: '#f0eeff', weight: 'bold', flex: 3, align: 'end' }
               ],
               margin: 'md'
@@ -233,7 +241,7 @@ async function notifyCompleted(ticket) {
               type: 'box',
               layout: 'horizontal',
               contents: [
-                { type: 'text', text: '📍 สถานที่', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: '\uD83D\uDCCD สถานที่', size: 'sm', color: '#8880a8', flex: 2 },
                 { type: 'text', text: ticket.location || '-', size: 'sm', color: '#f0eeff', flex: 3, align: 'end', wrap: true }
               ],
               margin: 'sm'
@@ -242,7 +250,7 @@ async function notifyCompleted(ticket) {
               type: 'box',
               layout: 'horizontal',
               contents: [
-                { type: 'text', text: '👷 ช่าง', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: '\uD83D\uDC77 ช่าง', size: 'sm', color: '#8880a8', flex: 2 },
                 { type: 'text', text: techName, size: 'sm', color: '#f0eeff', flex: 3, align: 'end' }
               ],
               margin: 'sm'
@@ -251,7 +259,7 @@ async function notifyCompleted(ticket) {
               type: 'box',
               layout: 'horizontal',
               contents: [
-                { type: 'text', text: '🕐 เสร็จเมื่อ', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: '\uD83D\uDD50 เสร็จเมื่อ', size: 'sm', color: '#8880a8', flex: 2 },
                 { type: 'text', text: now, size: 'sm', color: '#f0eeff', flex: 3, align: 'end', wrap: true }
               ],
               margin: 'sm'
@@ -263,7 +271,7 @@ async function notifyCompleted(ticket) {
             },
             {
               type: 'text',
-              text: 'คุณพอใจกับบริการของเราไหม?',
+              text: '\u2B50 กดดาวเพื่อให้คะแนนบริการ',
               size: 'md',
               weight: 'bold',
               color: '#f0eeff',
@@ -272,15 +280,7 @@ async function notifyCompleted(ticket) {
             },
             {
               type: 'text',
-              text: '☆  ☆  ☆  ☆  ☆',
-              size: 'xxl',
-              color: '#f5c518',
-              align: 'center',
-              margin: 'sm'
-            },
-            {
-              type: 'text',
-              text: 'กดที่นี่เพื่อให้คะแนนดาว 1-5',
+              text: 'กดที่ดาวด้านล่างได้เลย — ยืนยันในหน้าถัดไป',
               size: 'xs',
               color: '#8880a8',
               align: 'center',
@@ -293,40 +293,81 @@ async function notifyCompleted(ticket) {
         footer: {
           type: 'box',
           layout: 'vertical',
+          spacing: 'sm',
           contents: [
+            // แถวแรก: ดาว 1, 2, 3
             {
-              type: 'button',
-              action: {
-                type: 'uri',
-                label: '⭐ ประเมินบริการ',
-                uri: liffUrl
-              },
-              style: 'primary',
-              color: '#7c5ce8',
-              height: 'sm'
+              type: 'box',
+              layout: 'horizontal',
+              spacing: 'sm',
+              contents: [
+                {
+                  type: 'button',
+                  action: { type: 'uri', label: '\u2605', uri: makeLiffUrl(1) },
+                  style: 'secondary',
+                  height: 'sm',
+                  flex: 1
+                },
+                {
+                  type: 'button',
+                  action: { type: 'uri', label: '\u2605\u2605', uri: makeLiffUrl(2) },
+                  style: 'secondary',
+                  height: 'sm',
+                  flex: 1
+                },
+                {
+                  type: 'button',
+                  action: { type: 'uri', label: '\u2605\u2605\u2605', uri: makeLiffUrl(3) },
+                  style: 'secondary',
+                  height: 'sm',
+                  flex: 1
+                }
+              ]
+            },
+            // แถวสอง: ดาว 4, 5 (primary สีทอง)
+            {
+              type: 'box',
+              layout: 'horizontal',
+              spacing: 'sm',
+              contents: [
+                {
+                  type: 'button',
+                  action: { type: 'uri', label: '\u2605\u2605\u2605\u2605', uri: makeLiffUrl(4) },
+                  style: 'primary',
+                  color: '#d4a017',
+                  height: 'sm',
+                  flex: 1
+                },
+                {
+                  type: 'button',
+                  action: { type: 'uri', label: '\u2605\u2605\u2605\u2605\u2605', uri: makeLiffUrl(5) },
+                  style: 'primary',
+                  color: '#f5c518',
+                  height: 'sm',
+                  flex: 1
+                }
+              ]
             }
           ],
           backgroundColor: '#0f0c1a',
           paddingAll: '16px',
           paddingTop: '4px'
-        },
+        }
       }
     });
   } else {
-    // Fallback: text message ถ้าไม่มี LIFF ID
-    const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+    // Fallback: text message ถ้าไม่มี LIFF ID และ BASE_URL
     citizenMessages.push({
       type: 'text',
-      text: '🎉 เรื่องร้องเรียนของคุณได้รับการแก้ไขแล้ว!\n' +
+      text: '\uD83C\uDF89 เรื่องร้องเรียนของคุณได้รับการแก้ไขแล้ว!\n' +
         '━━━━━━━━━━━━━━━━\n' +
-        '📋 Ticket: ' + ticket.ticketId + '\n' +
-        '📍 สถานที่: ' + ticket.location + '\n' +
-        '👷 ช่าง: ' + techName + '\n' +
-        '🕐 เสร็จสิ้นเมื่อ: ' + now + '\n' +
+        '\uD83D\uDCCB Ticket: ' + ticket.ticketId + '\n' +
+        '\uD83D\uDCCD สถานที่: ' + ticket.location + '\n' +
+        '\uD83D\uDC77 ช่าง: ' + techName + '\n' +
+        '\uD83D\uDD50 เสร็จสิ้นเมื่อ: ' + now + '\n' +
         '━━━━━━━━━━━━━━━━\n' +
-        '🙏 ขอบคุณที่แจ้งเรื่องมายังระบบ ResolveNow\n' +
-        'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!' +
-        (trackLink ? '\n\n🔍 ดูสรุปผลการดำเนินการได้ที่:\n' + trackLink : '')
+        '\uD83D\uDE4F ขอบคุณที่แจ้งเรื่องมายังระบบ ResolveNow\n' +
+        'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!'
     });
   }
 
@@ -348,21 +389,20 @@ async function notifyCompleted(ticket) {
 
   if (imageMessages.length > 0) {
     const label = imageMessages.length === 2
-      ? '📷 รูปก่อน-หลังดำเนินการ:'
-      : (ticket.beforeImage ? '📷 รูปก่อนดำเนินการ:' : '📷 รูปหลังดำเนินการ:');
-    // ใส่ข้อความอธิบายรูปไว้บนสุดของกลุ่มรูป
+      ? '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ:'
+      : (ticket.beforeImage ? '\uD83D\uDCF7 รูปก่อนดำเนินการ:' : '\uD83D\uDCF7 รูปหลังดำเนินการ:');
     imageMessages.unshift({ type: 'text', text: label });
   }
 
-  // ── ส่งข้อความทั้งหมดในคำสั่งเดียว (รักษาลำดับ: รูปก่อน → ประเมินบริการทีหลัง) ──
+  // ── ส่งข้อความทั้งหมด ──
   const tasks = [];
-  
+
   // สำหรับ Admin (ข้อความสรุป + รูป)
   if (ADMIN_ID) {
     const adminPayload = [{ type: 'text', text: adminMsg }, ...imageMessages];
     tasks.push(pushTo(ADMIN_ID, adminPayload));
   }
-  
+
   // สำหรับ Citizen (รูป + การ์ดประเมินบริการ)
   if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID) {
     const citizenPayload = [...imageMessages, ...citizenMessages];
@@ -373,25 +413,25 @@ async function notifyCompleted(ticket) {
 }
 
 function notifyRejected(ticket, reason) {
-  const adminMsg = '❌ ปฏิเสธการรับงาน\n' +
+  const adminMsg = '\u274C ปฏิเสธการรับงาน\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    '📋 Ticket: ' + ticket.ticketId + '\n' +
-    '📍 สถานที่: ' + ticket.location + '\n' +
-    '👤 ผู้แจ้ง: ' + ticket.citizenName + '\n' +
-    (reason ? '📝 เหตุผล: ' + reason + '\n' : '') +
+    '\uD83D\uDCCB Ticket: ' + ticket.ticketId + '\n' +
+    '\uD83D\uDCCD สถานที่: ' + ticket.location + '\n' +
+    '\uD83D\uDC64 ผู้แจ้ง: ' + ticket.citizenName + '\n' +
+    (reason ? '\uD83D\uDCDD เหตุผล: ' + reason + '\n' : '') +
     '━━━━━━━━━━━━━━━━\n' +
-    '📌 กรุณาตรวจสอบและดำเนินการต่อไป';
+    '\uD83D\uDCCC กรุณาตรวจสอบและดำเนินการต่อไป';
 
   const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
-  const citizenMsg = '❌ ขออภัย เรื่องร้องเรียนของคุณถูกปฏิเสธ\n' +
+  const citizenMsg = '\u274C ขออภัย เรื่องร้องเรียนของคุณถูกปฏิเสธ\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    '📋 Ticket: ' + ticket.ticketId + '\n' +
-    '📍 สถานที่: ' + ticket.location + '\n' +
-    (reason ? '📝 เหตุผล: ' + reason + '\n' : '') +
+    '\uD83D\uDCCB Ticket: ' + ticket.ticketId + '\n' +
+    '\uD83D\uDCCD สถานที่: ' + ticket.location + '\n' +
+    (reason ? '\uD83D\uDCDD เหตุผล: ' + reason + '\n' : '') +
     '━━━━━━━━━━━━━━━━\n' +
-    '📞 หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่ @ResolveNow.com' +
-    (trackLink ? '\n\n🔍 ดูรายละเอียดเรื่องร้องเรียนได้ที่:\n' + trackLink : '');
+    '\uD83D\uDCDE หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่ @ResolveNow.com' +
+    (trackLink ? '\n\n\uD83D\uDD0D ดูรายละเอียดเรื่องร้องเรียนได้ที่:\n' + trackLink : '');
 
   return pushAll(
     ticket.citizenLineId,
@@ -420,13 +460,13 @@ async function notifyFollowers(ticket, newStatus) {
   const statusLabel = statusTH[newStatus] || newStatus;
   const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
-  const msg = '🔔 Ticket ที่คุณติดตามมีการอัปเดต!\n' +
+  const msg = '\uD83D\uDD14 Ticket ที่คุณติดตามมีการอัปเดต!\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    '📋 Ticket: ' + ticket.ticketId + '\n' +
-    '📍 สถานที่: ' + ticket.location + '\n' +
-    '📊 สถานะใหม่: ' + statusLabel + '\n' +
+    '\uD83D\uDCCB Ticket: ' + ticket.ticketId + '\n' +
+    '\uD83D\uDCCD สถานที่: ' + ticket.location + '\n' +
+    '\uD83D\uDCCA สถานะใหม่: ' + statusLabel + '\n' +
     '━━━━━━━━━━━━━━━━\n' +
-    (trackLink ? '🔍 ติดตามสถานะได้ที่:\n' + trackLink : '📲 เข้าระบบ ResolveNow เพื่อดูรายละเอียดเพิ่มเติม');
+    (trackLink ? '\uD83D\uDD0D ติดตามสถานะได้ที่:\n' + trackLink : '\uD83D\uDCF2 เข้าระบบ ResolveNow เพื่อดูรายละเอียดเพิ่มเติม');
 
   const tasks = [];
   for (const f of ticket.followers) {

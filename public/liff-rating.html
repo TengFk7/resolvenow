@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -420,12 +420,10 @@
 (() => {
   'use strict';
 
-  // ── Parse URL params ──────────────────────────────────────
-  const params   = new URLSearchParams(window.location.search);
-  const ticketId = params.get('ticketId') || '';
-  const LIFF_ID  = document.currentScript?.dataset?.liffId || window.__LIFF_ID__ || '';
+  const params    = new URLSearchParams(window.location.search);
+  const ticketId  = params.get('ticketId') || '';
+  const preRating = parseInt(params.get('rating') || '0');
 
-  // Elements
   const loaderInit    = document.getElementById('loaderInit');
   const ratingForm    = document.getElementById('ratingForm');
   const successScreen = document.getElementById('successScreen');
@@ -443,11 +441,10 @@
 
   const LABELS = ['', 'แย่มาก 😞', 'พอใช้ 😐', 'ดีพอควร 🙂', 'ดีมาก 😊', 'ดีเยี่ยม! 🤩'];
 
-  let selected    = 0;
-  let lineUserId  = '';
-  let submitting  = false;
+  let selected   = 0;
+  let lineUserId = '';
+  let submitting = false;
 
-  // ── Show/hide helpers ────────────────────────────────────
   function showOnly(el) {
     [loaderInit, ratingForm, successScreen, alreadyRated, errorState].forEach(e => {
       e.style.display = 'none';
@@ -455,17 +452,11 @@
     el.style.display = el === ratingForm ? 'block' : 'flex';
   }
 
-  // ── Star interactions ─────────────────────────────────
   function updateStars(hoverVal, clickVal) {
     const val = clickVal || hoverVal || 0;
     stars.forEach((s, i) => {
-      if (i < val) {
-        s.textContent = '★';
-        s.classList.add('filled');
-      } else {
-        s.textContent = '☆';
-        s.classList.remove('filled');
-      }
+      if (i < val) { s.textContent = '★'; s.classList.add('filled'); }
+      else { s.textContent = '☆'; s.classList.remove('filled'); }
       s.classList.toggle('hovered', i < hoverVal);
     });
   }
@@ -474,169 +465,103 @@
     const s = e.target.closest('.star');
     if (s) updateStars(+s.dataset.val, selected);
   });
-  starsWrap.addEventListener('mouseleave', () => {
-    updateStars(0, selected);
-  });
+  starsWrap.addEventListener('mouseleave', () => updateStars(0, selected));
+
+  function selectStar(val) {
+    selected = val;
+    updateStars(val, val);
+    const s = stars[val - 1];
+    if (s) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); setTimeout(() => s.classList.remove('pop'), 400); }
+    ratingLabel.textContent = LABELS[val] || '';
+    reasonWrap.style.display = val <= 2 ? 'block' : 'none';
+    if (val > 2) reasonText.value = '';
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = 'ส่งการประเมิน (' + val + ' ดาว)';
+  }
 
   starsWrap.addEventListener('click', e => {
     const s = e.target.closest('.star');
-    if (!s) return;
-    const val = +s.dataset.val;
-    selected = val;
-    updateStars(val, val);
-
-    // Pop animation on clicked star
-    s.classList.remove('pop');
-    void s.offsetWidth; // reflow
-    s.classList.add('pop');
-    setTimeout(() => s.classList.remove('pop'), 400);
-
-    // Update label
-    ratingLabel.textContent = LABELS[val] || '';
-
-    // Show reason textarea for low scores
-    if (val <= 2) {
-      reasonWrap.style.display = 'block';
-    } else {
-      reasonWrap.style.display = 'none';
-      reasonText.value = '';
-    }
-
-    // Enable button
-    btnSubmit.disabled = false;
-    btnSubmit.textContent = 'ส่งการประเมิน (' + val + ' ดาว)';
+    if (s) selectStar(+s.dataset.val);
   });
-
-  // Touch support for stars
   starsWrap.addEventListener('touchstart', e => {
     const s = e.target.closest('.star');
     if (s) { updateStars(+s.dataset.val, selected); e.preventDefault(); }
   }, { passive: false });
   starsWrap.addEventListener('touchend', e => {
     const s = e.target.closest('.star');
-    if (!s) return;
-    const val = +s.dataset.val;
-    selected = val;
-    updateStars(val, val);
-    s.classList.remove('pop');
-    void s.offsetWidth;
-    s.classList.add('pop');
-    setTimeout(() => s.classList.remove('pop'), 400);
-    ratingLabel.textContent = LABELS[val] || '';
-    reasonWrap.style.display = val <= 2 ? 'block' : 'none';
-    if (val > 2) reasonText.value = '';
-    btnSubmit.disabled = false;
-    btnSubmit.textContent = 'ส่งการประเมิน (' + val + ' ดาว)';
-    e.preventDefault();
+    if (s) { selectStar(+s.dataset.val); e.preventDefault(); }
   }, { passive: false });
 
-  // ── Submit ──────────────────────────────────────────────
-  btnSubmit.addEventListener('click', async () => {
+  async function doSubmit() {
     if (submitting || !selected) return;
     if (!ticketId) { showError('ไม่พบรหัส Ticket'); return; }
-
     submitting = true;
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<span class="spinner"></span>กำลังส่ง...';
     errorMsg.style.display = 'none';
-
     try {
-      const body = {
-        rating: selected,
-        reason: reasonText.value.trim() || null,
-        lineUserId: lineUserId
-      };
-
       const res = await fetch('/api/tickets/' + encodeURIComponent(ticketId) + '/rating/liff', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ rating: selected, reason: reasonText.value.trim() || null, lineUserId })
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        if (res.status === 409) {
-          showOnly(alreadyRated);
-          alreadyRated.style.display = 'flex';
-          return;
-        }
+        if (res.status === 409) { showOnly(alreadyRated); alreadyRated.style.display = 'flex'; return; }
         throw new Error(data.error || 'เกิดข้อผิดพลาด');
       }
-
-      // Success!
       showOnly(successScreen);
       successScreen.style.display = 'flex';
-
-      // Close LIFF after 2.5s
-      setTimeout(() => {
-        if (window.liff && liff.isInClient()) {
-          liff.closeWindow();
-        }
-      }, 2500);
-
+      setTimeout(() => { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 2500);
     } catch (err) {
       showError(err.message || 'ไม่สามารถส่งการประเมินได้ กรุณาลองใหม่');
       submitting = false;
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'ส่งการประเมิน (' + selected + ' ดาว)';
     }
-  });
+  }
+
+  btnSubmit.addEventListener('click', doSubmit);
 
   function showError(msg) {
     errorMsg.textContent = '⚠️ ' + msg;
     errorMsg.style.display = 'block';
   }
 
-  // ── Init LIFF ────────────────────────────────────────────
   async function init() {
-    if (!ticketId) {
-      showOnly(errorState);
-      errorState.style.display = 'flex';
-      return;
-    }
-
+    if (!ticketId) { showOnly(errorState); errorState.style.display = 'flex'; return; }
     ticketBadge.textContent = '📋 ' + ticketId;
-
-    // Get LIFF ID from meta tag (injected by server or set as global)
-    const liffId = document.querySelector('meta[name="liff-id"]')?.content
-                || window.__LIFF_ID__
-                || '';
-
+    const liffId = document.querySelector('meta[name="liff-id"]')?.content || window.__LIFF_ID__ || '';
     try {
       if (liffId && window.liff) {
         await liff.init({ liffId });
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href });
-          return;
-        }
+        if (!liff.isLoggedIn()) { liff.login({ redirectUri: window.location.href }); return; }
         const profile = await liff.getProfile();
         lineUserId = profile.userId || '';
       } else {
-        // Fallback: get lineUserId from URL (passed by notification)
         lineUserId = params.get('lineUserId') || '';
       }
     } catch (e) {
-      console.warn('[LIFF] init failed, using URL param fallback:', e);
+      console.warn('[LIFF] init failed, fallback to URL param:', e);
       lineUserId = params.get('lineUserId') || '';
     }
-
-    // Check if already rated
     try {
-      const res = await fetch('/api/tickets/public/' + encodeURIComponent(ticketId) + '/rating-status');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.rated) {
-          showOnly(alreadyRated);
-          alreadyRated.style.display = 'flex';
-          return;
-        }
-      }
-    } catch (e) {
-      // If check fails, show the form anyway
-    }
+      const r = await fetch('/api/tickets/public/' + encodeURIComponent(ticketId) + '/rating-status');
+      if (r.ok) { const d = await r.json(); if (d.rated) { showOnly(alreadyRated); alreadyRated.style.display = 'flex'; return; } }
+    } catch (e) {}
 
-    showOnly(ratingForm);
+    if (preRating >= 1 && preRating <= 5) {
+      showOnly(ratingForm);
+      selectStar(preRating);
+      if (preRating <= 2) {
+        subtext.innerHTML = 'คุณเลือก <strong style="color:var(--gold)">' + preRating + ' ดาว</strong> — บอกเราว่ามีอะไรปรับปรุงได้บ้าง?';
+      } else {
+        subtext.innerHTML = 'คุณเลือก <strong style="color:var(--gold)">' + preRating + ' ดาว</strong> — กำลังบันทึก กรุณารอสักครู่...';
+        setTimeout(doSubmit, 900);
+      }
+    } else {
+      showOnly(ratingForm);
+    }
   }
 
   init();
