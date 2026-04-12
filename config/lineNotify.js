@@ -330,43 +330,46 @@ async function notifyCompleted(ticket) {
     });
   }
 
-  // ส่งข้อความสรุปทั้ง admin และ citizen
-  const tasks = [];
-  if (ADMIN_ID) tasks.push(pushTo(ADMIN_ID, [{ type: 'text', text: adminMsg }]));
-  if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID)
-    tasks.push(pushTo(ticket.citizenLineId, citizenMessages));
-  await Promise.all(tasks);
-
-  // ส่งรูปก่อน-หลัง รวมใน push เดียว (LINE รองรับสูงสุด 5 messages/push)
-  const targets = [];
-  if (ADMIN_ID) targets.push(ADMIN_ID);
-  if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID)
-    targets.push(ticket.citizenLineId);
-
-  for (const uid of targets) {
-    const imageMessages = [];
-
-    if (ticket.beforeImage) {
-      const beforeUrl = ticket.beforeImage.startsWith('http')
-        ? ticket.beforeImage
-        : BASE_URL + ticket.beforeImage;
-      imageMessages.push({ type: 'image', originalContentUrl: beforeUrl, previewImageUrl: beforeUrl });
-    }
-
-    if (ticket.afterImage) {
-      const afterUrl = ticket.afterImage.startsWith('http')
-        ? ticket.afterImage
-        : BASE_URL + ticket.afterImage;
-      imageMessages.push({ type: 'image', originalContentUrl: afterUrl, previewImageUrl: afterUrl });
-    }
-
-    if (imageMessages.length > 0) {
-      const label = imageMessages.length === 2
-        ? '📷 รูปก่อน-หลังดำเนินการ:'
-        : (ticket.beforeImage ? '📷 รูปก่อนดำเนินการ:' : '📷 รูปหลังดำเนินการ:');
-      await pushTo(uid, [{ type: 'text', text: label }, ...imageMessages]);
-    }
+  // ── เตรียมรูปภาพก่อน-หลัง ────────────────────────────────────────
+  const imageMessages = [];
+  if (ticket.beforeImage) {
+    const beforeUrl = ticket.beforeImage.startsWith('http')
+      ? ticket.beforeImage
+      : BASE_URL + ticket.beforeImage;
+    imageMessages.push({ type: 'image', originalContentUrl: beforeUrl, previewImageUrl: beforeUrl });
   }
+
+  if (ticket.afterImage) {
+    const afterUrl = ticket.afterImage.startsWith('http')
+      ? ticket.afterImage
+      : BASE_URL + ticket.afterImage;
+    imageMessages.push({ type: 'image', originalContentUrl: afterUrl, previewImageUrl: afterUrl });
+  }
+
+  if (imageMessages.length > 0) {
+    const label = imageMessages.length === 2
+      ? '📷 รูปก่อน-หลังดำเนินการ:'
+      : (ticket.beforeImage ? '📷 รูปก่อนดำเนินการ:' : '📷 รูปหลังดำเนินการ:');
+    // ใส่ข้อความอธิบายรูปไว้บนสุดของกลุ่มรูป
+    imageMessages.unshift({ type: 'text', text: label });
+  }
+
+  // ── ส่งข้อความทั้งหมดในคำสั่งเดียว (รักษาลำดับ: รูปก่อน → ประเมินบริการทีหลัง) ──
+  const tasks = [];
+  
+  // สำหรับ Admin (ข้อความสรุป + รูป)
+  if (ADMIN_ID) {
+    const adminPayload = [{ type: 'text', text: adminMsg }, ...imageMessages];
+    tasks.push(pushTo(ADMIN_ID, adminPayload));
+  }
+  
+  // สำหรับ Citizen (รูป + การ์ดประเมินบริการ)
+  if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID) {
+    const citizenPayload = [...imageMessages, ...citizenMessages];
+    tasks.push(pushTo(ticket.citizenLineId, citizenPayload));
+  }
+
+  await Promise.all(tasks);
 }
 
 function notifyRejected(ticket, reason) {
