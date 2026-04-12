@@ -80,6 +80,8 @@ function _tcCardHtml(t) {
     cardCls += ' cg-card--urgent cg-card--urgent-pending'; // ด่วนมาก + ยังไม่รับ = รุนแรงมาก
   } else if (isPending) {
     cardCls += ' cg-card--pending'; // ยังไม่รับ (ปกติ/ด่วน) = เตือนเบาๆ
+  } else if (t.status === 'assigned') {
+    cardCls += ' cg-card--assigned'; // รับแล้วแต่ยังไม่เริ่มทำ = ขอบส้มหายใจ
   } else if (bucket === 'urgent') {
     cardCls += ' cg-card--urgent'; // รับแล้วแต่ด่วนมาก = แค่ขอบแดง
   }
@@ -225,7 +227,7 @@ function tcToggle(ticketId) {
       + '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
     if (t.status === 'pending')
       h += '<div class="sbody"><p>กดรับงานเพื่อเริ่มลงพื้นที่</p>'
-        + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)">🔧 รับเรื่องและลงพื้นที่</button></div>';
+        + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)"><span class="btn-txt">🔧 รับเรื่องและลงพื้นที่</span></button></div>';
     h += '</div>';
 
     /* STEP 2 */
@@ -279,6 +281,17 @@ function tcToggle(ticketId) {
 
   ge('tdModalBody').innerHTML = h;
   ge('tdModalFooter').innerHTML = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+
+  // ── ใส่/ถอด class urgent บน modal card ──
+  var modalCard = ge('mTicketDetail').querySelector('.td-modal-card');
+  if (modalCard) {
+    if (bucket === 'urgent' && !isDone) {
+      modalCard.classList.add('td-modal--urgent');
+    } else {
+      modalCard.classList.remove('td-modal--urgent');
+    }
+  }
+
   ge('mTicketDetail').classList.add('on');
 
   // Auto-scroll modal body to the active step so the action button is visible

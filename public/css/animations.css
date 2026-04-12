@@ -333,8 +333,9 @@
 
 /* ══════════════════════════════════════════════════════════
   14. TICKET CARD ALERT ANIMATIONS
-      • .cg-card--pending        → งานยังไม่รับ (เตือนเบาๆ)
+      • .cg-card--pending        → ยังไม่รับ (เตือนเบาๆ)
       • .cg-card--urgent-pending → ด่วนมาก + ยังไม่รับ (รุนแรง!)
+      • .cg-card--assigned       → รับแล้ว แต่ยังไม่เริ่มทำ (เร่งทำด้วย!)
 ══════════════════════════════════════════════════════════ */
 
 /* ── Pending: ขอบกระพริบนวล ── */
@@ -359,6 +360,61 @@
 /* badge บน pending card จะสั่นแจ้งเตือนเป็นระยะ */
 .cg-card--pending .cg-badge {
   animation: pendingBadgeWiggle 3.5s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: center;
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* ── ASSIGNED: รับแล้วแต่ยังไม่เริ่มทำ — เร่งมือด้วย! ── */
+/* ─────────────────────────────────────────────────────── */
+
+/* ขอบส้มอำพันเต้นช้าๆ */
+@keyframes assignedBorderBreath {
+  0%, 100% { border-color: #fed7aa; box-shadow: 0 0 0 0  rgba(249,115,22,0); }
+  50%       { border-color: #f97316; box-shadow: 0 0 0 5px rgba(249,115,22,.18); }
+}
+
+/* แถบ shimmer สีส้มวิ่งผ่านทีละรอบ */
+@keyframes assignedShimmer {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(120%); }
+}
+
+/* dot indicator กะพริบ — "กำลังรอดำเนินการ" */
+@keyframes assignedDotPop {
+  0%, 70%, 100% { transform: scale(1);   opacity: 1; }
+  35%           { transform: scale(1.5); opacity: .7; }
+}
+
+.cg-card--assigned {
+  animation: assignedBorderBreath 2.2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* shimmer ส้มวิ่งทุก 3.5 วินาที */
+.cg-card--assigned::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(249,115,22,.08) 40%,
+    rgba(249,115,22,.18) 50%,
+    rgba(249,115,22,.08) 60%,
+    transparent 100%
+  );
+  animation: assignedShimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* badge สีส้มกะพริบเบาๆ ให้รู้ว่ากำลังรอ */
+.cg-card--assigned .cg-badge {
+  animation: assignedDotPop 2.2s ease-in-out infinite !important;
   display: inline-block;
   transform-origin: center;
 }
@@ -442,12 +498,105 @@
   display: inline-block;
 }
 
-/* hover ยกเลิก shake ชั่วคราว (UX ดีขึ้น) */
-.cg-card--urgent-pending:hover {
-  animation-play-state: paused;
+
+/* ══════════════════════════════════════════════════════════
+  15. URGENT MODAL — INTERIOR ELEMENT STYLES
+      เปลี่ยนสีปุ่ม + วงกลมหมายเลข เมื่อ modal มี .td-modal--urgent
+══════════════════════════════════════════════════════════ */
+
+/* ── Step number circle: pulse แดง ── */
+@keyframes urgentNumPulse {
+  0%, 100% {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 0 0 0 rgba(239,68,68,0), 0 3px 10px rgba(239,68,68,.4);
+  }
+  50% {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    box-shadow: 0 0 0 6px rgba(239,68,68,.20), 0 3px 14px rgba(239,68,68,.55);
+  }
 }
-.cg-card--urgent-pending:hover::before {
-  animation-play-state: paused;
+
+/* Active step circle → แดง pulse */
+.td-modal--urgent .snum.active {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+  animation: urgentNumPulse 1.6s ease-in-out infinite !important;
+}
+
+/* sstat badge "กำลังทำ" → แดง */
+.td-modal--urgent .sstat.active {
+  background: rgba(239,68,68,.15) !important;
+  color: #b91c1c !important;
+}
+
+/* ── รับงานปุ่ม: สั่นถี่ๆ ต่อเนื่อง ── */
+@keyframes urgentBtnShake {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  10%     { transform: translateX(-5px) rotate(-.6deg); }
+  20%     { transform: translateX( 5px) rotate( .6deg); }
+  30%     { transform: translateX(-5px) rotate(-.4deg); }
+  40%     { transform: translateX( 5px) rotate( .4deg); }
+  50%     { transform: translateX(-4px); }
+  60%     { transform: translateX( 4px); }
+  70%     { transform: translateX(-3px); }
+  80%     { transform: translateX( 3px); }
+  90%     { transform: translateX(-1px); }
+}
+
+@keyframes urgentBtnGlow {
+  0%,100% { box-shadow: 0 4px 14px rgba(239,68,68,.35); }
+  50%     { box-shadow: 0 6px 24px rgba(239,68,68,.65), 0 0 0 4px rgba(239,68,68,.18); }
+}
+
+.td-modal--urgent .btnaccept {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  animation:
+    urgentBtnShake 0.7s cubic-bezier(.36,.07,.19,.97) infinite,
+    urgentBtnGlow  1.6s ease-in-out                   infinite !important;
+}
+
+.td-modal--urgent .btnaccept:hover {
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+}
+
+/* ── Counter-animate ข้อความให้อยู่นิ่งขณะปุ่มสั่น ── */
+@keyframes urgentBtnTextStill {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  10%     { transform: translateX( 5px) rotate( .6deg); }
+  20%     { transform: translateX(-5px) rotate(-.6deg); }
+  30%     { transform: translateX( 5px) rotate( .4deg); }
+  40%     { transform: translateX(-5px) rotate(-.4deg); }
+  50%     { transform: translateX( 4px); }
+  60%     { transform: translateX(-4px); }
+  70%     { transform: translateX( 3px); }
+  80%     { transform: translateX(-3px); }
+  90%     { transform: translateX( 1px); }
+}
+
+.td-modal--urgent .btnaccept .btn-txt {
+  display: inline-block;
+  animation: urgentBtnTextStill 0.7s cubic-bezier(.36,.07,.19,.97) infinite !important;
+  pointer-events: none;
+}
+
+/* ── ยืนยันเริ่มซ่อม: แดงอ่อน ── */
+.td-modal--urgent .btnconfirm {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  box-shadow: 0 3px 12px rgba(239,68,68,.35) !important;
+  animation: urgentBtnGlow 1.6s ease-in-out infinite !important;
+}
+
+/* ── ปิดงาน (btnclose): แดงสด ── */
+.td-modal--urgent .btnclose:not([disabled]) {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  box-shadow: 0 4px 14px rgba(239,68,68,.35) !important;
+  animation: urgentBtnGlow 1.6s ease-in-out infinite !important;
+}
+
+/* ── step border แดงเมื่อ active ── */
+.td-modal--urgent .step {
+  border-color: rgba(239,68,68,.15) !important;
 }
 
 /* ══════════════════════════════════════════════════════════
