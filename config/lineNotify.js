@@ -129,6 +129,91 @@ function flexMsg(altText, bubble) {
   return { type: 'flex', altText, contents: bubble };
 }
 
+// ── Before/After Image Flex Card ────────────────────────────
+// แสดงรูปก่อน-หลังใน Flex Card อันเดียว (side-by-side ถ้ามี 2 รูป)
+function makeImageCard(ticket, beforeUrl, afterUrl) {
+  const hasBoth = !!(beforeUrl && afterUrl);
+
+  let imageRow;
+  if (hasBoth) {
+    // 2 รูป: แยก 2 ช่องเคียงกัน
+    imageRow = {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'sm',
+      margin: 'md',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
+          contents: [
+            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', cornerRadius: '8px' },
+            { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: '#8880a8', align: 'center', margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
+          contents: [
+            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', cornerRadius: '8px' },
+            { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
+          ]
+        }
+      ]
+    };
+  } else {
+    // 1 รูป: full-width
+    const singleUrl = beforeUrl || afterUrl;
+    const label = beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ';
+    const labelColor = beforeUrl ? '#8880a8' : '#34d399';
+    imageRow = {
+      type: 'box',
+      layout: 'vertical',
+      margin: 'md',
+      contents: [
+        { type: 'image', url: singleUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', cornerRadius: '10px' },
+        { type: 'text', text: label, size: 'xs', color: labelColor, align: 'center', margin: 'xs' }
+      ]
+    };
+  }
+
+  return {
+    type: 'flex',
+    altText: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ — ' + ticket.ticketId,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          { type: 'box', layout: 'horizontal', contents: [
+            { type: 'text', text: '\uD83C\uDFD9\uFE0F ResolveNow', size: 'sm', color: '#a78bfa', weight: 'bold' }
+          ]},
+          { type: 'text', text: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ', size: 'lg', weight: 'bold', color: '#ffffff', margin: 'sm' }
+        ],
+        backgroundColor: '#0a2a18',
+        paddingAll: '16px'
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          { type: 'box', layout: 'horizontal', contents: [
+            { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: '#8880a8', flex: 2 },
+            { type: 'text', text: ticket.ticketId, size: 'sm', color: '#f0eeff', weight: 'bold', flex: 3, align: 'end' }
+          ]},
+          imageRow
+        ],
+        backgroundColor: '#0f0c1a',
+        paddingAll: '16px'
+      }
+    }
+  };
+}
+
 // ── notifyNewTicket ──────────────────────────────────────────
 function notifyNewTicket(ticket) {
   const urgencyLabel =
@@ -382,28 +467,25 @@ async function notifyCompleted(ticket) {
     });
   }
 
-  // ── รูปภาพก่อน-หลัง ─────────────────────────────────────
-  const imageMessages = [];
-  if (ticket.beforeImage) {
-    const url = ticket.beforeImage.startsWith('http') ? ticket.beforeImage : BASE_URL + ticket.beforeImage;
-    imageMessages.push({ type: 'image', originalContentUrl: url, previewImageUrl: url });
-  }
-  if (ticket.afterImage) {
-    const url = ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage;
-    imageMessages.push({ type: 'image', originalContentUrl: url, previewImageUrl: url });
-  }
-  if (imageMessages.length > 0) {
-    const label = imageMessages.length === 2 ? '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ:' :
-      (ticket.beforeImage ? '\uD83D\uDCF7 รูปก่อนดำเนินการ:' : '\uD83D\uDCF7 รูปหลังดำเนินการ:');
-    imageMessages.unshift({ type: 'text', text: label });
-  }
+  // ── รูปภาพก่อน-หลัง → Flex Card ─────────────────────────
+  const beforeUrl = ticket.beforeImage
+    ? (ticket.beforeImage.startsWith('http') ? ticket.beforeImage : BASE_URL + ticket.beforeImage)
+    : null;
+  const afterUrl = ticket.afterImage
+    ? (ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage)
+    : null;
+
+  // สร้าง Flex Card รูปก่อน-หลัง (ถ้ามีรูป)
+  const imageCard = (beforeUrl || afterUrl)
+    ? [makeImageCard(ticket, beforeUrl, afterUrl)]
+    : [];
 
   const tasks = [];
   if (ADMIN_ID) {
-    tasks.push(pushTo(ADMIN_ID, [flexMsg('\u2705 เสร็จสิ้น — ' + ticket.ticketId, adminBubble), ...imageMessages]));
+    tasks.push(pushTo(ADMIN_ID, [flexMsg('\u2705 เสร็จสิ้น — ' + ticket.ticketId, adminBubble), ...imageCard]));
   }
   if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID) {
-    tasks.push(pushTo(ticket.citizenLineId, [...imageMessages, ...citizenMessages]));
+    tasks.push(pushTo(ticket.citizenLineId, [...imageCard, ...citizenMessages]));
   }
   await Promise.all(tasks);
 }
