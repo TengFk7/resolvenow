@@ -137,6 +137,7 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
   let imageRow;
   if (hasBoth) {
     // 2 รูป: แยก 2 ช่องเคียงกัน
+    // NOTE: cornerRadius is NOT valid on image component — only on box
     imageRow = {
       type: 'box',
       layout: 'horizontal',
@@ -148,7 +149,7 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
           layout: 'vertical',
           flex: 1,
           contents: [
-            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', cornerRadius: '8px' },
+            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
             { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: '#8880a8', align: 'center', margin: 'xs' }
           ]
         },
@@ -157,7 +158,7 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
           layout: 'vertical',
           flex: 1,
           contents: [
-            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', cornerRadius: '8px' },
+            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
             { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
           ]
         }
@@ -173,7 +174,7 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
       layout: 'vertical',
       margin: 'md',
       contents: [
-        { type: 'image', url: singleUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', cornerRadius: '10px' },
+        { type: 'image', url: singleUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' },
         { type: 'text', text: label, size: 'xs', color: labelColor, align: 'center', margin: 'xs' }
       ]
     };
@@ -475,6 +476,14 @@ async function notifyCompleted(ticket) {
     ? (ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage)
     : null;
 
+  console.log('[LINE] notifyCompleted images:', {
+    ticketId: ticket.ticketId,
+    rawBefore: ticket.beforeImage || '(none)',
+    rawAfter:  ticket.afterImage  || '(none)',
+    beforeUrl: beforeUrl || '(none)',
+    afterUrl:  afterUrl  || '(none)'
+  });
+
   // สร้าง Flex Card รูปก่อน-หลัง (ถ้ามีรูป)
   const imageCard = (beforeUrl || afterUrl)
     ? [makeImageCard(ticket, beforeUrl, afterUrl)]
@@ -487,6 +496,7 @@ async function notifyCompleted(ticket) {
   if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID) {
     tasks.push(pushTo(ticket.citizenLineId, [...imageCard, ...citizenMessages]));
   }
+
   await Promise.all(tasks);
 }
 
