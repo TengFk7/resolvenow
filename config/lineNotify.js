@@ -303,8 +303,7 @@ async function notifyCompleted(ticket) {
               },
               style: 'primary',
               color: '#7c5ce8',
-              height: 'sm',
-              cornerRadius: '12px'
+              height: 'sm'
             }
           ],
           backgroundColor: '#0f0c1a',
