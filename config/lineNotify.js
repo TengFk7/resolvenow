@@ -476,14 +476,6 @@ async function notifyCompleted(ticket) {
     ? (ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage)
     : null;
 
-  console.log('[LINE] notifyCompleted images:', {
-    ticketId: ticket.ticketId,
-    rawBefore: ticket.beforeImage || '(none)',
-    rawAfter:  ticket.afterImage  || '(none)',
-    beforeUrl: beforeUrl || '(none)',
-    afterUrl:  afterUrl  || '(none)'
-  });
-
   // สร้าง Flex Card รูปก่อน-หลัง (ถ้ามีรูป)
   const imageCard = (beforeUrl || afterUrl)
     ? [makeImageCard(ticket, beforeUrl, afterUrl)]
