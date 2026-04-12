@@ -7522,6 +7522,90 @@ a {
   background: var(--border);
 }
 
+/* ══════════════════════════════════════════
+   TICKET DETAIL MODAL
+══════════════════════════════════════════ */
+.td-modal-card {
+  max-width: 480px;
+  width: calc(100% - 32px);
+  max-height: 92vh;        /* increased from 88vh */
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(10,22,40,.22), 0 4px 16px rgba(10,22,40,.10);
+  animation: tdSlideUp .3s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes tdSlideUp {
+  from { opacity: 0; transform: translateY(40px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.td-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px 13px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  flex-shrink: 0;
+  gap: 10px;
+}
+.td-modal-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.td-modal-close {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+.td-modal-close:hover {
+  background: #e2e8f0;
+  color: var(--navy);
+}
+
+/* Scrollable body */
+.td-modal-body {
+  overflow-y: auto;
+  padding: 16px 18px 16px;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  /* block layout — let children use their own margin/padding */
+}
+.td-modal-body > * + * {
+  margin-top: 12px;
+}
+/* Step elements already have margin-bottom: 10px — add a bit more top gap */
+.td-modal-body .step {
+  margin-top: 6px;
+}
+
+/* Sticky chat / action footer inside the modal */
+.td-modal-footer {
+  flex-shrink: 0;
+  padding: 10px 18px 14px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+
 /* ── Card ── */
 .cg-card {
   display: flex;

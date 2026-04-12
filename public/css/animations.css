@@ -332,6 +332,125 @@
 }
 
 /* ══════════════════════════════════════════════════════════
+  14. TICKET CARD ALERT ANIMATIONS
+      • .cg-card--pending        → งานยังไม่รับ (เตือนเบาๆ)
+      • .cg-card--urgent-pending → ด่วนมาก + ยังไม่รับ (รุนแรง!)
+══════════════════════════════════════════════════════════ */
+
+/* ── Pending: ขอบกระพริบนวล ── */
+@keyframes pendingBorderPulse {
+  0%, 100% { border-color: #93c5fd; box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+  50%       { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.15); }
+}
+
+/* ── Pending: ไอคอนสั่นเบาๆ แจ้งว่ารอทำสิ่งนี้ ── */
+@keyframes pendingBadgeWiggle {
+  0%, 85%, 100% { transform: rotate(0deg); }
+  88%           { transform: rotate(-8deg); }
+  92%           { transform: rotate(8deg); }
+  96%           { transform: rotate(-4deg); }
+}
+
+.cg-card--pending {
+  animation: pendingBorderPulse 2.4s ease-in-out infinite;
+  position: relative;
+}
+
+/* badge บน pending card จะสั่นแจ้งเตือนเป็นระยะ */
+.cg-card--pending .cg-badge {
+  animation: pendingBadgeWiggle 3.5s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: center;
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* ── URGENT PENDING: ต้องเห็นนี้ก่อน! ── */
+/* ─────────────────────────────────────────────────────── */
+
+/* ขอบกระพือแดงรุนแรง */
+@keyframes urgentBorderBlast {
+  0%,100% { border-color: #ef4444; box-shadow: 0 0 0 0   rgba(239,68,68,0),    0 0 0 0   rgba(239,68,68,0); }
+  25%      { border-color: #dc2626; box-shadow: 0 0 0 5px rgba(239,68,68,.30),  0 0 12px 3px rgba(239,68,68,.20); }
+  50%      { border-color: #ff2222; box-shadow: 0 0 0 9px rgba(239,68,68,.15),  0 0 22px 6px rgba(239,68,68,.12); }
+  75%      { border-color: #dc2626; box-shadow: 0 0 0 4px rgba(239,68,68,.25),  0 0 14px 4px rgba(239,68,68,.16); }
+}
+
+/* การ์ดสั่นดึงความสนใจ */
+@keyframes urgentShake {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  10%     { transform: translateX(-3px) rotate(-.4deg); }
+  20%     { transform: translateX( 3px) rotate( .4deg); }
+  30%     { transform: translateX(-2px) rotate(-.2deg); }
+  40%     { transform: translateX( 2px) rotate( .2deg); }
+  50%     { transform: translateX(-1px); }
+  60%     { transform: translateX( 1px); }
+}
+
+/* แถบไฟวิ่งบนหัวการ์ด (สแกนไลน์) */
+@keyframes urgentScanline {
+  0%   { transform: translateX(-100%); opacity: .9; }
+  100% { transform: translateX(110%);  opacity: .9; }
+}
+
+/* แฟลชพื้นหลังการ์ด */
+@keyframes urgentBgFlash {
+  0%,100% { background: #fff; }
+  30%     { background: #fff5f5; }
+  60%     { background: #fff; }
+}
+
+.cg-card--urgent-pending {
+  animation:
+    urgentBorderBlast 1.4s ease-in-out infinite,
+    urgentShake       4.5s ease-in-out 1.8s infinite,
+    urgentBgFlash     1.4s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;           /* clip the scanline */
+  z-index: 1;
+  border-width: 2px;
+}
+
+/* scanline วิ่งผ่านการ์ด */
+.cg-card--urgent-pending::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(239,68,68,.12) 40%,
+    rgba(239,68,68,.28) 50%,
+    rgba(239,68,68,.12) 60%,
+    transparent 100%
+  );
+  animation: urgentScanline 1.8s cubic-bezier(.4,0,.6,1) infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* badge ⚡ ด่วนมาก กระพริบJOB_CRITICAL */
+@keyframes urgentBadgeFlash {
+  0%,45%,55%,100% { opacity: 1;   transform: scale(1); }
+  50%             { opacity: .55; transform: scale(.9); }
+}
+
+.cg-card--urgent-pending .cg-badge {
+  animation: urgentBadgeFlash .85s ease-in-out infinite !important;
+  transform-origin: center;
+  display: inline-block;
+}
+
+/* hover ยกเลิก shake ชั่วคราว (UX ดีขึ้น) */
+.cg-card--urgent-pending:hover {
+  animation-play-state: paused;
+}
+.cg-card--urgent-pending:hover::before {
+  animation-play-state: paused;
+}
+
+/* ══════════════════════════════════════════════════════════
   UTILITY: Reduced motion
 ══════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

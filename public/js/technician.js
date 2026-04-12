@@ -64,13 +64,26 @@ function tcApplyFilter() {
 function _tcCardHtml(t) {
   var bucket = _tcPrioBucket(t);
   var isDone = t.status === 'completed' || t.status === 'rejected';
+  var isPending = t.status === 'pending';
   var prioBadgeCls = bucket === 'urgent' ? 'urgent' : (bucket === 'medium' ? 'medium' : 'normal');
   var prioBadgeTxt = bucket === 'urgent' ? '⚡ ด่วนมาก' : (bucket === 'medium' ? '⏰ ด่วน' : '🔵 ปกติ');
   if (isDone) { prioBadgeCls = t.status; prioBadgeTxt = t.status === 'completed' ? '✅ เสร็จ' : '❌ ปฏิเสธ'; }
   var thumbHtml = t.citizenImage
     ? '<img src="' + t.citizenImage + '" class="cg-thumb" />'
     : '<div class="cg-thumb cg-thumb-placeholder tc-placeholder-' + prioBadgeCls + '">' + (DEPT_ICON[t.category] || '🔧') + '</div>';
-  var cardCls = 'cg-card' + (isDone ? (t.status === 'completed' ? ' cg-card--done' : ' cg-card--rejected') : (bucket === 'urgent' ? ' cg-card--urgent' : ''));
+
+  /* ── Determine card class based on status + priority ── */
+  var cardCls = 'cg-card';
+  if (isDone) {
+    cardCls += t.status === 'completed' ? ' cg-card--done' : ' cg-card--rejected';
+  } else if (isPending && bucket === 'urgent') {
+    cardCls += ' cg-card--urgent cg-card--urgent-pending'; // ด่วนมาก + ยังไม่รับ = รุนแรงมาก
+  } else if (isPending) {
+    cardCls += ' cg-card--pending'; // ยังไม่รับ (ปกติ/ด่วน) = เตือนเบาๆ
+  } else if (bucket === 'urgent') {
+    cardCls += ' cg-card--urgent'; // รับแล้วแต่ด่วนมาก = แค่ขอบแดง
+  }
+
   var h = '<div class="' + cardCls + '" id="tccard-' + t.ticketId + '" onclick="tcToggle(\'' + t.ticketId + '\')">';
   h += '<div class="cg-left">' + thumbHtml + '</div>';
   h += '<div class="cg-right">';
@@ -81,9 +94,9 @@ function _tcCardHtml(t) {
   h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
   h += '<div class="cg-date">' + t.createdAt + '</div>';
   h += '</div></div>';
-  h += '<div class="cg-detail" id="tcdetail-' + t.ticketId + '" style="display:none"></div>';
   return h;
 }
+
 
 /* ── Draw the tech grid ── */
 function _tcRenderGrid(filter, animate) {
@@ -160,31 +173,38 @@ function _tcRenderGrid(filter, animate) {
   }
 }
 
-/* ── Toggle expand/collapse tech ticket detail ── */
+/* ── Open ticket detail modal (tech) ── */
 function tcToggle(ticketId) {
-  if (_tcOpen === ticketId) { _tcClose(ticketId); _tcOpen = null; return; }
-  if (_tcOpen) _tcClose(_tcOpen);
+  // Deselect previous
+  if (_tcOpen && _tcOpen !== ticketId) {
+    var prev = ge('tccard-' + _tcOpen);
+    if (prev) prev.classList.remove('cg-card--active');
+  }
   _tcOpen = ticketId;
 
   var t = (window._tcTickets || {})[ticketId];
   if (!t) return;
-  var panel = ge('tcdetail-' + ticketId);
-  if (!panel) return;
 
   var isDone = t.status === 'completed' || t.status === 'rejected';
+  var bucket = _tcPrioBucket(t);
+  var prioBadgeTxt = bucket === 'urgent' ? '⚡ ด่วนมาก' : (bucket === 'medium' ? '⏰ ด่วน' : '🔵 ปกติ');
+  if (isDone) prioBadgeTxt = t.status === 'completed' ? '✅ เสร็จสิ้น' : '❌ ปฏิเสธ';
+
   var s1 = t.status === 'pending' ? 'active' : 'done';
   var s2 = t.status === 'pending' ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
   var s3 = t.status === 'in_progress' ? 'active' : (t.status === 'completed' ? 'done' : 'idle');
 
-  var h = '<div class="cg-detail-inner tc-detail-inner">';
+  // ── Modal title
+  ge('tdModalTitle').innerHTML = (DEPT_ICON[t.category] || '🔧') + ' #' + escapeHTML(t.ticketId)
+    + ' <span class="badge ' + (isDone ? t.status : (bucket === 'urgent' ? 'urgent' : 'normal')) + '" style="font-size:11px;margin-left:6px">' + prioBadgeTxt + '</span>';
 
-  /* citizen info rows */
+  // ── Build body — same content as before, just without the wrapping div
+  var h = '';
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">📍 สถานที่</span><span class="cg-dv">' + escapeHTML(t.location) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">👤 ผู้แจ้ง</span><span class="cg-dv">' + escapeHTML(t.citizenName) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">🕐 วันที่</span><span class="cg-dv">' + escapeHTML(t.createdAt) + '</span></div>';
 
-  /* citizen image */
   if (t.citizenImage) {
     h += '<div><div class="citizen-img-label">รูปจากผู้แจ้ง</div><img class="citizen-img" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/></div>';
   }
@@ -205,7 +225,7 @@ function tcToggle(ticketId) {
       + '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
     if (t.status === 'pending')
       h += '<div class="sbody"><p>กดรับงานเพื่อเริ่มลงพื้นที่</p>'
-        + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="event.stopPropagation();acceptJob(this)">🔧 รับเรื่องและลงพื้นที่</button></div>';
+        + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)">🔧 รับเรื่องและลงพื้นที่</button></div>';
     h += '</div>';
 
     /* STEP 2 */
@@ -216,21 +236,21 @@ function tcToggle(ticketId) {
     if (s2 === 'active') {
       h += '<div class="sbody"><p>ถ่ายรูปสภาพก่อนซ่อม</p>';
       if (t.beforeImage)
-        h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="event.stopPropagation();triggerUpload(this)">'
+        h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
           + '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover"/>'
           + '<div class="ilbl">✅ อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
       else
-        h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="event.stopPropagation();triggerUpload(this)">'
+        h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
           + '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
       h += '<div style="margin-bottom:12px">'
         + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บันทึกเพิ่มเติม</label>'
         + '<textarea class="tech-note" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
       h += '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px">'
         + '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div>'
-        + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="event.stopPropagation();openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
+        + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
       h += '<div style="display:flex;gap:8px">'
-        + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="event.stopPropagation();rejectJob(this)">❌ ปฏิเสธ</button>'
-        + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="event.stopPropagation();startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
+        + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="rejectJob(this)">❌ ปฏิเสธ</button>'
+        + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
         + '</div></div>';
     }
     h += '</div>';
@@ -243,39 +263,36 @@ function tcToggle(ticketId) {
     if (s3 === 'active') {
       h += '<div class="sbody"><p>ถ่ายรูปหลังซ่อม เพื่อปิดงาน</p><div class="irow">';
       if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="event.stopPropagation();triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
-      if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="event.stopPropagation();triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl">✅ คลิกเปลี่ยน</div></div>';
-      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="event.stopPropagation();triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
+      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
+      if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl">✅ คลิกเปลี่ยน</div></div>';
+      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
       h += '</div>';
       h += '<div style="margin-bottom:12px">'
         + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บรรยายงานที่ทำ</label>'
         + '<textarea class="tech-note" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
-      h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="event.stopPropagation();completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
+      h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
       if (!t.afterImage) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
       h += '</div>';
     }
     h += '</div>';
   }
 
-  /* Chat button */
-  h += '<button class="btn-chat cg-chat-btn" onclick="event.stopPropagation();openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+  ge('tdModalBody').innerHTML = h;
+  ge('tdModalFooter').innerHTML = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+  ge('mTicketDetail').classList.add('on');
 
-  h += '</div>'; // /cg-detail-inner
+  // Auto-scroll modal body to the active step so the action button is visible
+  setTimeout(function() {
+    var body = ge('tdModalBody');
+    var activeStep = body ? body.querySelector('.sbody') : null;
+    if (activeStep) {
+      activeStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, 320);
 
-  panel.innerHTML = h;
-  panel.style.display = 'block';
   var card = ge('tccard-' + ticketId);
   if (card) card.classList.add('cg-card--active');
-  setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
 }
-
-function _tcClose(ticketId) {
-  var panel = ge('tcdetail-' + ticketId);
-  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
-  var card = ge('tccard-' + ticketId);
-  if (card) card.classList.remove('cg-card--active');
-}
-
 
 /* ── Job Actions ─────────────────────────────────────── */
 function acceptJob(btn) { apiStatus(btn.getAttribute('data-id'), 'assigned'); showToast('✅ รับงานแล้ว'); }

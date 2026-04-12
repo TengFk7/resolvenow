@@ -207,6 +207,28 @@ document.addEventListener('click', function(e) {
   }
 });
 
+/* ── Ticket Detail Modal close ── */
+function closeTD() {
+  ge('mTicketDetail').classList.remove('on');
+  // Remove active highlight from whichever card was open
+  if (typeof _cgOpen !== 'undefined' && _cgOpen) {
+    var c1 = ge('cgcard-' + _cgOpen); if (c1) c1.classList.remove('cg-card--active');
+    _cgOpen = null;
+  }
+  if (typeof _tcOpen !== 'undefined' && _tcOpen) {
+    var c2 = ge('tccard-' + _tcOpen); if (c2) c2.classList.remove('cg-card--active');
+    _tcOpen = null;
+  }
+}
+
+// ESC closes ticket detail modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var td = ge('mTicketDetail');
+    if (td && td.classList.contains('on')) closeTD();
+  }
+});
+
 /* ── Ripple Effect ───────────────────────────────────── */
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-ripple');

@@ -719,6 +719,18 @@
     </div><!-- /nwrap -->
   </div><!-- /normalApp -->
 
+  <!-- ── MODAL: Ticket Detail (citizen + tech) ─────────── -->
+  <div class="mo" id="mTicketDetail" onclick="closeTD()">
+    <div class="td-modal-card" onclick="event.stopPropagation()">
+      <div class="td-modal-header">
+        <div class="td-modal-title" id="tdModalTitle">📋 รายละเอียด</div>
+        <button class="td-modal-close" onclick="closeTD()">✕</button>
+      </div>
+      <div class="td-modal-body" id="tdModalBody"></div>
+      <div class="td-modal-footer" id="tdModalFooter"></div>
+    </div>
+  </div>
+
   <!-- ── MODAL: Change Password ───────────────────────────── -->
   <div class="mo" id="mChPw">
     <div class="mb">

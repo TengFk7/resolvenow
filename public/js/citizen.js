@@ -613,41 +613,38 @@ function _cgCardHtml(t) {
   h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
   h += '<div class="cg-date">' + t.createdAt + '</div>';
   h += '</div></div>';
-  h += '<div class="cg-detail" id="cgdetail-' + t.ticketId + '" style="display:none"></div>';
   return h;
 }
 
-/* ── Toggle expand/collapse a ticket detail ── */
+/* ── Open ticket detail modal (citizen) ── */
 var _cgOpen = null;
 function cgToggle(ticketId) {
-  // If clicking the same card — close it
-  if (_cgOpen === ticketId) {
-    _cgClose(ticketId);
-    _cgOpen = null;
-    return;
+  // Deselect previous active card
+  if (_cgOpen && _cgOpen !== ticketId) {
+    var prev = ge('cgcard-' + _cgOpen);
+    if (prev) prev.classList.remove('cg-card--active');
   }
-  // Close previous
-  if (_cgOpen) _cgClose(_cgOpen);
   _cgOpen = ticketId;
-  _cgOpen = ticketId;
+
   var t = (window._cgTickets || {})[ticketId];
   if (!t) return;
-  var panel = ge('cgdetail-' + ticketId);
-  if (!panel) return;
 
   var done = t.status === 'completed';
-  var h = '<div class="cg-detail-inner">';
 
-  // Citizen image (clickable full view)
+  // ── Modal title
+  ge('tdModalTitle').innerHTML = (DEPT_ICON[t.category] || '📋') + ' ' + escapeHTML(t.ticketId)
+    + ' <span class="badge ' + t.status + '" style="font-size:11px;margin-left:6px">' + stTH(t.status) + '</span>';
+
+  // ── Build body HTML
+  var h = '';
+
   if (t.citizenImage) {
     h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" />';
   }
 
-  // Description + location
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">📅 วันที่</span><span class="cg-dv">' + t.createdAt + '</span></div>';
 
-  // Tech work images
   if (done && (t.beforeImage || t.afterImage)) {
     h += '<div class="cg-techwork"><div class="cg-techwork-title">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div class="cg-techwork-imgs">';
     if (t.beforeImage) h += '<div class="cg-techwork-img"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" /><span>ก่อน</span></div>';
@@ -658,41 +655,30 @@ function cgToggle(ticketId) {
     h += '<img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปปัญหา\')" class="cg-inprog-img"/></div>';
   }
 
-  // Chat button
-  if (t.status !== 'rejected') {
-    h += '<button class="btn-chat cg-chat-btn" onclick="event.stopPropagation();openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับช่าง</button>';
-  }
+  ge('tdModalBody').innerHTML = h;
 
-  // Rating
+  // ── Footer: chat + rating buttons
+  var footer = '';
+  if (t.status !== 'rejected') {
+    footer += '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับช่าง</button>';
+  }
   if (done) {
     if (t.rating) {
       var starsHtml = '';
       for (var s = 0; s < t.rating; s++) starsHtml += '⭐';
       for (var s2 = t.rating; s2 < 5; s2++) starsHtml += '<span style="color:#d1d5db">☆</span>';
-      h += '<div class="cg-rating-done"><span class="cg-rating-label">คะแนน:</span><span class="cg-stars">' + starsHtml + '</span>';
-      if (t.ratingReason) h += '<span class="cg-rating-reason">— ' + escapeHTML(t.ratingReason) + '</span>';
-      h += '</div>';
+      footer += '<div class="cg-rating-done" style="margin-top:8px"><span class="cg-rating-label">คะแนน:</span><span class="cg-stars">' + starsHtml + '</span>';
+      if (t.ratingReason) footer += '<span class="cg-rating-reason">— ' + escapeHTML(t.ratingReason) + '</span>';
+      footer += '</div>';
     } else {
-      h += '<button onclick="event.stopPropagation();openRatingModal(\'' + t.ticketId + '\',\'' + escapeHTML(t.citizenName) + '\')" class="cg-rating-btn">⭐ ประเมินความพึงพอใจ</button>';
+      footer += '<button onclick="openRatingModal(\'' + t.ticketId + '\',\'' + escapeHTML(t.citizenName) + '\')" class="cg-rating-btn" style="margin-top:8px">⭐ ประเมินความพึงพอใจ</button>';
     }
   }
+  ge('tdModalFooter').innerHTML = footer;
+  ge('mTicketDetail').classList.add('on');
 
-  h += '</div>'; // /cg-detail-inner
-
-  panel.innerHTML = h;
-  panel.style.display = 'block';
-  // Highlight active card
   var card = ge('cgcard-' + ticketId);
   if (card) card.classList.add('cg-card--active');
-  // Smooth scroll to panel
-  setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
-}
-
-function _cgClose(ticketId) {
-  var panel = ge('cgdetail-' + ticketId);
-  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
-  var card = ge('cgcard-' + ticketId);
-  if (card) card.classList.remove('cg-card--active');
 }
 
 /* ── Submit Success Overlay Animation ───────────────── */

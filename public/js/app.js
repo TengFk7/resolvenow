@@ -102,8 +102,15 @@ async function loadTickets() {
     animateNum(ge('stP'), data.filter(function(t){ return t.status==='pending'; }).length);
     animateNum(ge('stI'), data.filter(function(t){ return t.status==='in_progress'; }).length);
     animateNum(ge('stD'), data.filter(function(t){ return t.status==='completed'; }).length);
-    if (CU.role === 'technician') renderTech(data);
-    else renderCitizen(data);
+    if (CU.role === 'technician') {
+      renderTech(data);
+      // FIX: ถ้า modal เปิดอยู่ → refresh ด้วย data ใหม่เพื่อให้ขั้นตอนก้าวหน้า
+      if (typeof _tcOpen !== 'undefined' && _tcOpen && ge('mTicketDetail') && ge('mTicketDetail').classList.contains('on')) {
+        tcToggle(_tcOpen);
+      }
+    } else {
+      renderCitizen(data);
+    }
   } catch(e){ console.error(e); }
 }
 
