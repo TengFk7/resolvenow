@@ -132,6 +132,18 @@ app.set('io', io);
   app.use('/api/track',         require('./routes/track'));
   app.use('/auth/line',         require('./routes/lineAuth'));
 
+  // ─── LIFF Rating Page ──────────────────────────────────────────
+  app.get('/liff-rating', (req, res) => {
+    const liffId = process.env.LINE_LIFF_ID || '';
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const fs2 = require('fs');
+    const htmlPath = path.join(__dirname, 'public', 'liff-rating.html');
+    let html = fs2.readFileSync(htmlPath, 'utf8');
+    // Inject LIFF ID as a global variable before closing </head>
+    html = html.replace('</head>', `<script>window.__LIFF_ID__ = "${liffId}";</script>\n</head>`);
+    res.send(html);
+  });
+
   // ─── Public Track Page ─────────────────────────────────────────
   app.get('/track', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'track.html'))

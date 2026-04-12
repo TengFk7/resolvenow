@@ -540,6 +540,58 @@ router.put('/:id/rating', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
+// ─── GET /api/tickets/public/:id/rating-status ───────────────────
+// Public — no auth. ใช้จาก LIFF เพื่อตรวจว่า ticket ถูก rate แล้วหรือยัง
+router.get('/public/:id/rating-status', async (req, res) => {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('rating status');
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+    res.json({
+      ticketId: req.params.id,
+      status: ticket.status,
+      rated: ticket.rating != null
+    });
+  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── PUT /api/tickets/:id/rating/liff ────────────────────────────
+// LIFF rating — ไม่ใช้ session, ตรวจสอบความเป็นเจ้าของด้วย citizenLineId
+router.put('/:id/rating/liff', async (req, res) => {
+  try {
+    const { rating, reason, lineUserId } = req.body;
+
+    if (!lineUserId) return res.status(400).json({ error: 'ไม่พบข้อมูล LINE User' });
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // ตรวจสอบสิทธิ์: citizenLineId ต้องตรงกัน
+    if (!ticket.citizenLineId || ticket.citizenLineId !== lineUserId)
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์ประเมิน Ticket นี้' });
+
+    // Ticket ต้องเสร็จสิ้นแล้ว
+    if (ticket.status !== 'completed')
+      return res.status(400).json({ error: 'Ticket ยังไม่เสร็จสิ้น' });
+
+    // ป้องกัน rating ซ้ำ
+    if (ticket.rating != null)
+      return res.status(409).json({ error: 'ประเมินแล้ว', alreadyRated: true });
+
+    const stars = parseInt(rating);
+    if (!stars || stars < 1 || stars > 5)
+      return res.status(400).json({ error: 'คะแนนต้องอยู่ระหว่าง 1-5' });
+
+    ticket.rating = stars;
+    ticket.ratingReason = (stars < 3 && reason) ? xss(reason.trim()) : null;
+    ticket.ratedAt = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+    await ticket.save();
+
+    emitUpdate(req);
+    console.log('[LIFF Rating] Ticket:', ticket.ticketId, '→', stars, 'ดาว');
+    res.json({ message: 'บันทึกคะแนนสำเร็จ', rating: stars });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
 // ─── GET /api/tickets/public-map ─────────────────────────────────
 // Public endpoint — no auth required, returns sanitized data for heatmap
 router.get('/public-map', async (req, res) => {

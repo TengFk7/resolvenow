@@ -171,25 +171,177 @@ async function notifyCompleted(ticket) {
     'หากพบปัญหาใหม่สามารถแจ้งเรื่องเข้ามาได้ตลอดเวลา\n' +
     '📲 ระบบ ResolveNow พร้อมรับเรื่องร้องเรียนทุกเมื่อ';
 
-  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+  const LIFF_ID = process.env.LINE_LIFF_ID || '';
+  const liffUrl = LIFF_ID
+    ? `https://liff.line.me/${LIFF_ID}?ticketId=${ticket.ticketId}&lineUserId=${ticket.citizenLineId || ''}`
+    : (BASE_URL ? `${BASE_URL}/liff-rating?ticketId=${ticket.ticketId}&lineUserId=${ticket.citizenLineId || ''}` : null);
 
-  const citizenMsg = '🎉 เรื่องร้องเรียนของคุณได้รับการแก้ไขแล้ว!\n' +
-    '━━━━━━━━━━━━━━━━\n' +
-    '📋 Ticket: ' + ticket.ticketId + '\n' +
-    '📍 สถานที่: ' + ticket.location + '\n' +
-    '👷 ช่าง: ' + techName + '\n' +
-    '🕐 เสร็จสิ้นเมื่อ: ' + now + '\n' +
-    '━━━━━━━━━━━━━━━━\n' +
-    '🙏 ขอบคุณที่แจ้งเรื่องมายังระบบ ResolveNow\n' +
-    'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!' +
-    (trackLink ? '\n\n🔍 ดูสรุปผลการดำเนินการได้ที่:\n' + trackLink : '');
+  // ── Flex Message สำหรับ citizen ─────────────────────────────────
+  const citizenMessages = [];
+
+  if (liffUrl) {
+    // Flex Message พร้อมปุ่มประเมิน
+    citizenMessages.push({
+      type: 'flex',
+      altText: `🎉 เรื่องร้องเรียน ${ticket.ticketId} ได้รับการแก้ไขแล้ว! กรุณาประเมินบริการ`,
+      contents: {
+        type: 'bubble',
+        size: 'mega',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                {
+                  type: 'text',
+                  text: '🏙️ ResolveNow',
+                  size: 'sm',
+                  color: '#a78bfa',
+                  weight: 'bold'
+                }
+              ]
+            },
+            {
+              type: 'text',
+              text: '🎉 งานเสร็จสิ้นแล้ว!',
+              size: 'xl',
+              weight: 'bold',
+              color: '#ffffff',
+              margin: 'sm'
+            }
+          ],
+          backgroundColor: '#1a1230',
+          paddingAll: '20px'
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '📋 Ticket', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: ticket.ticketId, size: 'sm', color: '#f0eeff', weight: 'bold', flex: 3, align: 'end' }
+              ],
+              margin: 'md'
+            },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '📍 สถานที่', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: ticket.location || '-', size: 'sm', color: '#f0eeff', flex: 3, align: 'end', wrap: true }
+              ],
+              margin: 'sm'
+            },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '👷 ช่าง', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: techName, size: 'sm', color: '#f0eeff', flex: 3, align: 'end' }
+              ],
+              margin: 'sm'
+            },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '🕐 เสร็จเมื่อ', size: 'sm', color: '#8880a8', flex: 2 },
+                { type: 'text', text: now, size: 'sm', color: '#f0eeff', flex: 3, align: 'end', wrap: true }
+              ],
+              margin: 'sm'
+            },
+            {
+              type: 'separator',
+              margin: 'lg',
+              color: '#2d2050'
+            },
+            {
+              type: 'text',
+              text: 'คุณพอใจกับบริการของเราไหม?',
+              size: 'md',
+              weight: 'bold',
+              color: '#f0eeff',
+              margin: 'lg',
+              align: 'center'
+            },
+            {
+              type: 'text',
+              text: '☆  ☆  ☆  ☆  ☆',
+              size: 'xxl',
+              color: '#f5c518',
+              align: 'center',
+              margin: 'sm'
+            },
+            {
+              type: 'text',
+              text: 'กดที่นี่เพื่อให้คะแนนดาว 1-5',
+              size: 'xs',
+              color: '#8880a8',
+              align: 'center',
+              margin: 'xs'
+            }
+          ],
+          backgroundColor: '#0f0c1a',
+          paddingAll: '20px'
+        },
+        footer: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'button',
+              action: {
+                type: 'uri',
+                label: '⭐ ประเมินบริการ',
+                uri: liffUrl
+              },
+              style: 'primary',
+              color: '#7c5ce8',
+              height: 'sm',
+              borderRadius: '12px'
+            }
+          ],
+          backgroundColor: '#0f0c1a',
+          paddingAll: '16px',
+          paddingTop: '4px'
+        },
+        styles: {
+          header: { separator: false },
+          body: { separator: false },
+          footer: { separator: false }
+        }
+      }
+    });
+  } else {
+    // Fallback: text message ถ้าไม่มี LIFF ID
+    const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
+    citizenMessages.push({
+      type: 'text',
+      text: '🎉 เรื่องร้องเรียนของคุณได้รับการแก้ไขแล้ว!\n' +
+        '━━━━━━━━━━━━━━━━\n' +
+        '📋 Ticket: ' + ticket.ticketId + '\n' +
+        '📍 สถานที่: ' + ticket.location + '\n' +
+        '👷 ช่าง: ' + techName + '\n' +
+        '🕐 เสร็จสิ้นเมื่อ: ' + now + '\n' +
+        '━━━━━━━━━━━━━━━━\n' +
+        '🙏 ขอบคุณที่แจ้งเรื่องมายังระบบ ResolveNow\n' +
+        'หากพบปัญหาอื่น สามารถแจ้งเรื่องได้เสมอ!' +
+        (trackLink ? '\n\n🔍 ดูสรุปผลการดำเนินการได้ที่:\n' + trackLink : '')
+    });
+  }
 
   // ส่งข้อความสรุปทั้ง admin และ citizen
-  await pushAll(
-    ticket.citizenLineId,
-    [{ type: 'text', text: adminMsg }],
-    [{ type: 'text', text: citizenMsg }]
-  );
+  const tasks = [];
+  if (ADMIN_ID) tasks.push(pushTo(ADMIN_ID, [{ type: 'text', text: adminMsg }]));
+  if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID)
+    tasks.push(pushTo(ticket.citizenLineId, citizenMessages));
+  await Promise.all(tasks);
 
   // ส่งรูปก่อน-หลัง รวมใน push เดียว (LINE รองรับสูงสุด 5 messages/push)
   const targets = [];
