@@ -448,7 +448,13 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     }
 
     try {
-      const ft = formatTicket(ticket, caller._id);
+      // Re-fetch ticket from DB for completed — ensures beforeImage/afterImage are included
+      let notifyTicket = ticket;
+      if (status === 'completed') {
+        const fresh = await Ticket.findOne({ ticketId: ticket.ticketId });
+        if (fresh) notifyTicket = fresh;
+      }
+      const ft = formatTicket(notifyTicket, caller._id);
       if (status === 'assigned') await notifyAssigned(ft);
       if (status === 'in_progress') await notifyInProgress(ft);
       if (status === 'completed') await notifyCompleted(ft);
@@ -458,6 +464,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
         notifyFollowers(ticket, status).catch(e => console.error('[LINE] notifyFollowers error:', e));
       }
     } catch (e) { console.error('[LINE] status notify error:', e); }
+
 
     emitUpdate(req);
     res.json(formatTicket(ticket, caller._id));
