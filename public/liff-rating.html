@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -418,145 +418,203 @@
 
 <script>
 (() => {
-  'use strict';
+  "use strict";
 
-  const params    = new URLSearchParams(window.location.search);
-  const ticketId  = params.get('ticketId') || '';
-  const preRating = parseInt(params.get('rating') || '0');
+  // --- Param helpers ---
+  function getRawParams() { return new URLSearchParams(window.location.search); }
 
-  const loaderInit    = document.getElementById('loaderInit');
-  const ratingForm    = document.getElementById('ratingForm');
-  const successScreen = document.getElementById('successScreen');
-  const alreadyRated  = document.getElementById('alreadyRated');
-  const errorState    = document.getElementById('errorState');
-  const starsWrap     = document.getElementById('starsWrap');
-  const stars         = Array.from(document.querySelectorAll('.star'));
-  const ratingLabel   = document.getElementById('ratingLabel');
-  const reasonWrap    = document.getElementById('reasonWrap');
-  const reasonText    = document.getElementById('reasonText');
-  const errorMsg      = document.getElementById('errorMsg');
-  const btnSubmit     = document.getElementById('btnSubmit');
-  const ticketBadge   = document.getElementById('ticketBadge');
-  const subtext       = document.getElementById('subtext');
+  function getEffectiveParams() {
+    var raw = getRawParams();
+    var st = raw.get("liff.state");
+    if (st) {
+      try {
+        var dec = decodeURIComponent(st);
+        var qs = dec.startsWith("?") ? dec.slice(1) : dec;
+        return new URLSearchParams(qs);
+      } catch(e) {}
+    }
+    return raw;
+  }
 
-  const LABELS = ['', 'แย่มาก 😞', 'พอใช้ 😐', 'ดีพอควร 🙂', 'ดีมาก 😊', 'ดีเยี่ยม! 🤩'];
+  // --- State ---
+  var params    = getEffectiveParams();
+  var ticketId  = params.get("ticketId") || "";
+  var preRating = parseInt(params.get("rating") || "0");
 
-  let selected   = 0;
-  let lineUserId = '';
-  let submitting = false;
+  var loaderInit    = document.getElementById("loaderInit");
+  var ratingForm    = document.getElementById("ratingForm");
+  var successScreen = document.getElementById("successScreen");
+  var alreadyRated  = document.getElementById("alreadyRated");
+  var errorState    = document.getElementById("errorState");
+  var starsWrap     = document.getElementById("starsWrap");
+  var stars         = Array.from(document.querySelectorAll(".star"));
+  var ratingLabel   = document.getElementById("ratingLabel");
+  var reasonWrap    = document.getElementById("reasonWrap");
+  var reasonText    = document.getElementById("reasonText");
+  var errorMsg      = document.getElementById("errorMsg");
+  var btnSubmit     = document.getElementById("btnSubmit");
+  var ticketBadge   = document.getElementById("ticketBadge");
+  var subtext       = document.getElementById("subtext");
+
+  var LABELS = ["", "แย่มาก 😞", "พอใช้ 😐", "ดีพอควร 🙂", "ดีมาก 😊", "ดีเยี่ยม! 🤩"];
+
+  var selected   = 0;
+  var lineUserId = "";
+  var submitting = false;
 
   function showOnly(el) {
-    [loaderInit, ratingForm, successScreen, alreadyRated, errorState].forEach(e => {
-      e.style.display = 'none';
+    [loaderInit, ratingForm, successScreen, alreadyRated, errorState].forEach(function(e) {
+      e.style.display = "none";
     });
-    el.style.display = el === ratingForm ? 'block' : 'flex';
+    el.style.display = (el === ratingForm) ? "block" : "flex";
   }
 
   function updateStars(hoverVal, clickVal) {
-    const val = clickVal || hoverVal || 0;
-    stars.forEach((s, i) => {
-      if (i < val) { s.textContent = '★'; s.classList.add('filled'); }
-      else { s.textContent = '☆'; s.classList.remove('filled'); }
-      s.classList.toggle('hovered', i < hoverVal);
+    var val = clickVal || hoverVal || 0;
+    stars.forEach(function(s, i) {
+      if (i < val) { s.textContent = "★"; s.classList.add("filled"); }
+      else          { s.textContent = "☆"; s.classList.remove("filled"); }
+      s.classList.toggle("hovered", i < hoverVal);
     });
   }
-
-  starsWrap.addEventListener('mousemove', e => {
-    const s = e.target.closest('.star');
-    if (s) updateStars(+s.dataset.val, selected);
-  });
-  starsWrap.addEventListener('mouseleave', () => updateStars(0, selected));
 
   function selectStar(val) {
     selected = val;
     updateStars(val, val);
-    const s = stars[val - 1];
-    if (s) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); setTimeout(() => s.classList.remove('pop'), 400); }
-    ratingLabel.textContent = LABELS[val] || '';
-    reasonWrap.style.display = val <= 2 ? 'block' : 'none';
-    if (val > 2) reasonText.value = '';
+    var s = stars[val - 1];
+    if (s) {
+      s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop");
+      setTimeout(function() { s.classList.remove("pop"); }, 400);
+    }
+    ratingLabel.textContent = LABELS[val] || "";
+    reasonWrap.style.display = val <= 2 ? "block" : "none";
+    if (val > 2) reasonText.value = "";
     btnSubmit.disabled = false;
-    btnSubmit.textContent = 'ส่งการประเมิน (' + val + ' ดาว)';
+    btnSubmit.textContent = "ส่งการประเมิน (" + val + " ดาว)";
   }
 
-  starsWrap.addEventListener('click', e => {
-    const s = e.target.closest('.star');
+  starsWrap.addEventListener("mousemove", function(e) {
+    var s = e.target.closest(".star");
+    if (s) updateStars(+s.dataset.val, selected);
+  });
+  starsWrap.addEventListener("mouseleave", function() { updateStars(0, selected); });
+  starsWrap.addEventListener("click", function(e) {
+    var s = e.target.closest(".star");
     if (s) selectStar(+s.dataset.val);
   });
-  starsWrap.addEventListener('touchstart', e => {
-    const s = e.target.closest('.star');
+  starsWrap.addEventListener("touchstart", function(e) {
+    var s = e.target.closest(".star");
     if (s) { updateStars(+s.dataset.val, selected); e.preventDefault(); }
   }, { passive: false });
-  starsWrap.addEventListener('touchend', e => {
-    const s = e.target.closest('.star');
+  starsWrap.addEventListener("touchend", function(e) {
+    var s = e.target.closest(".star");
     if (s) { selectStar(+s.dataset.val); e.preventDefault(); }
   }, { passive: false });
 
   async function doSubmit() {
     if (submitting || !selected) return;
-    if (!ticketId) { showError('ไม่พบรหัส Ticket'); return; }
+    if (!ticketId) { showError("ไม่พบรหัส Ticket"); return; }
     submitting = true;
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '<span class="spinner"></span>กำลังส่ง...';
-    errorMsg.style.display = 'none';
+    btnSubmit.innerHTML = "<span class=\"spinner\"></span>กำลังส่ง...";
+    errorMsg.style.display = "none";
     try {
-      const res = await fetch('/api/tickets/' + encodeURIComponent(ticketId) + '/rating/liff', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: selected, reason: reasonText.value.trim() || null, lineUserId })
+      var res = await fetch("/api/tickets/" + encodeURIComponent(ticketId) + "/rating/liff", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: selected, reason: reasonText.value.trim() || null, lineUserId: lineUserId })
       });
-      const data = await res.json();
+      var data = await res.json();
       if (!res.ok) {
-        if (res.status === 409) { showOnly(alreadyRated); alreadyRated.style.display = 'flex'; return; }
-        throw new Error(data.error || 'เกิดข้อผิดพลาด');
+        if (res.status === 409) { showOnly(alreadyRated); alreadyRated.style.display = "flex"; return; }
+        throw new Error(data.error || "เกิดข้อผิดพลาด");
       }
-      showOnly(successScreen);
-      successScreen.style.display = 'flex';
-      setTimeout(() => { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 2500);
-    } catch (err) {
-      showError(err.message || 'ไม่สามารถส่งการประเมินได้ กรุณาลองใหม่');
+      showOnly(successScreen); successScreen.style.display = "flex";
+      setTimeout(function() { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 2500);
+    } catch(err) {
+      showError(err.message || "ไม่สามารถส่งการประเมินได้ กรุณาลองใหม่");
       submitting = false;
       btnSubmit.disabled = false;
-      btnSubmit.textContent = 'ส่งการประเมิน (' + selected + ' ดาว)';
+      btnSubmit.textContent = "ส่งการประเมิน (" + selected + " ดาว)";
     }
   }
 
-  btnSubmit.addEventListener('click', doSubmit);
+  btnSubmit.addEventListener("click", doSubmit);
 
-  function showError(msg) {
-    errorMsg.textContent = '⚠️ ' + msg;
-    errorMsg.style.display = 'block';
-  }
+  function showError(msg) { errorMsg.textContent = "⚠️ " + msg; errorMsg.style.display = "block"; }
 
   async function init() {
-    if (!ticketId) { showOnly(errorState); errorState.style.display = 'flex'; return; }
-    ticketBadge.textContent = '📋 ' + ticketId;
-    const liffId = document.querySelector('meta[name="liff-id"]')?.content || window.__LIFF_ID__ || '';
-    try {
-      if (liffId && window.liff) {
-        await liff.init({ liffId });
-        if (!liff.isLoggedIn()) { liff.login({ redirectUri: window.location.href }); return; }
-        const profile = await liff.getProfile();
-        lineUserId = profile.userId || '';
-      } else {
-        lineUserId = params.get('lineUserId') || '';
-      }
-    } catch (e) {
-      console.warn('[LIFF] init failed, fallback to URL param:', e);
-      lineUserId = params.get('lineUserId') || '';
-    }
-    try {
-      const r = await fetch('/api/tickets/public/' + encodeURIComponent(ticketId) + '/rating-status');
-      if (r.ok) { const d = await r.json(); if (d.rated) { showOnly(alreadyRated); alreadyRated.style.display = 'flex'; return; } }
-    } catch (e) {}
+    // --- Read params early (before liff.init may redirect) ---
+    var liffId = (document.querySelector("meta[name=\"liff-id\"]") || {}).content || window.__LIFF_ID__ || "";
 
+    // Restore from sessionStorage (after LIFF login redirect loses params)
+    var ssTicketId  = sessionStorage.getItem("liff_ticketId")  || "";
+    var ssLineId    = sessionStorage.getItem("liff_lineUserId") || "";
+    var ssRating    = parseInt(sessionStorage.getItem("liff_rating") || "0");
+
+    if (liffId && window.liff) {
+      try {
+        await liff.init({ liffId });
+        // After liff.init(), SDK may have updated window.location with real params
+        var postParams = new URLSearchParams(window.location.search);
+        var newTicketId = postParams.get("ticketId") || "";
+        if (newTicketId) {
+          ticketId  = newTicketId;
+          lineUserId = postParams.get("lineUserId") || "";
+          preRating  = parseInt(postParams.get("rating") || "0");
+          // Cache in sessionStorage for post-login redirects
+          sessionStorage.setItem("liff_ticketId",  ticketId);
+          sessionStorage.setItem("liff_lineUserId", lineUserId);
+          sessionStorage.setItem("liff_rating",     preRating.toString());
+        } else if (ssTicketId) {
+          ticketId   = ssTicketId;
+          lineUserId = ssLineId;
+          preRating  = ssRating;
+        }
+        if (!liff.isLoggedIn()) {
+          // Save before redirect
+          sessionStorage.setItem("liff_ticketId",  ticketId);
+          sessionStorage.setItem("liff_lineUserId", lineUserId || params.get("lineUserId") || "");
+          sessionStorage.setItem("liff_rating",     preRating.toString());
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+        var profile = await liff.getProfile();
+        lineUserId = profile.userId || lineUserId;
+      } catch(e) {
+        console.warn("[LIFF] init failed:", e);
+        if (!ticketId && ssTicketId) { ticketId = ssTicketId; lineUserId = ssLineId; preRating = ssRating; }
+        else { lineUserId = params.get("lineUserId") || ssLineId || ""; }
+      }
+    } else {
+      lineUserId = params.get("lineUserId") || ssLineId || "";
+      if (!ticketId && ssTicketId) { ticketId = ssTicketId; preRating = ssRating; }
+    }
+
+    // Still no ticketId after all fallbacks?
+    if (!ticketId) {
+      showOnly(errorState); errorState.style.display = "flex"; return;
+    }
+
+    ticketBadge.textContent = "📋 " + ticketId;
+    sessionStorage.removeItem("liff_ticketId");
+    sessionStorage.removeItem("liff_lineUserId");
+    sessionStorage.removeItem("liff_rating");
+
+    // Check if already rated
+    try {
+      var r = await fetch("/api/tickets/public/" + encodeURIComponent(ticketId) + "/rating-status");
+      if (r.ok) { var d = await r.json(); if (d.rated) { showOnly(alreadyRated); alreadyRated.style.display = "flex"; return; } }
+    } catch(e) {}
+
+    // Pre-select rating from URL param ?rating=N (user tapped a star in LINE card)
     if (preRating >= 1 && preRating <= 5) {
       showOnly(ratingForm);
       selectStar(preRating);
       if (preRating <= 2) {
-        subtext.innerHTML = 'คุณเลือก <strong style="color:var(--gold)">' + preRating + ' ดาว</strong> — บอกเราว่ามีอะไรปรับปรุงได้บ้าง?';
+        subtext.innerHTML = "คุณเลือก <strong style=\"color:var(--gold)\">" + preRating + " ดาว</strong> — บอกเราว่ามีอะไรปรับปรุงได้บ้าง?";
       } else {
-        subtext.innerHTML = 'คุณเลือก <strong style="color:var(--gold)">' + preRating + ' ดาว</strong> — กำลังบันทึก กรุณารอสักครู่...';
+        subtext.innerHTML = "คุณเลือก <strong style=\"color:var(--gold)\">" + preRating + " ดาว</strong> — กำลังบันทึก กรุณารอสักครู่...";
         setTimeout(doSubmit, 900);
       }
     } else {
@@ -568,9 +626,9 @@
 })();
 </script>
 
-<!-- Inject LIFF ID from server via meta tag -->
+<!-- The server injects window.__LIFF_ID__ via the /liff-rating route -->
 <script>
-  // The server injects window.__LIFF_ID__ via the /liff-rating route
+  // window.__LIFF_ID__ is injected server-side
 </script>
 </body>
 </html>
