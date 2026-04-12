@@ -304,18 +304,13 @@ async function notifyCompleted(ticket) {
               style: 'primary',
               color: '#7c5ce8',
               height: 'sm',
-              borderRadius: '12px'
+              cornerRadius: '12px'
             }
           ],
           backgroundColor: '#0f0c1a',
           paddingAll: '16px',
           paddingTop: '4px'
         },
-        styles: {
-          header: { separator: false },
-          body: { separator: false },
-          footer: { separator: false }
-        }
       }
     });
   } else {
