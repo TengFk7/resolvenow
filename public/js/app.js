@@ -168,10 +168,9 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
 
   document.body.appendChild(overlay);
 
-  // Fade in
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() { overlay.style.opacity = '1'; });
-  });
+  // แสดงทันที — ไม่ต้องรอ rAF (ป้องกัน flash ของ app ก่อน splash ขึ้น)
+  overlay.style.opacity = '1';
+  overlay.style.transition = 'none';
 
   // Fade out + remove after 3.2s
   setTimeout(function() {
@@ -189,11 +188,20 @@ function enterApp() {
   ge('authPage').style.display = 'none';
   clearAppIntervals(); // BUG-001: clear any previous intervals before creating new ones
 
+  // ── แสดง Welcome Splash ก่อนสุด (ปิดหน้าจอทันที ก่อนโหลดข้อมูล) ──
+  if (CU.role === 'admin') {
+    showWelcomeSplash('admin', CU.firstName, null);
+  } else if (CU.role === 'technician') {
+    showWelcomeSplash('technician', CU.firstName, null);
+  } else if (CU.role === 'citizen') {
+    var _dn = CU.lineDisplayName || CU.firstName || 'คุณ';
+    showWelcomeSplash('citizen', _dn, null, CU.avatar || null);
+  }
+
   // Load categories from DB to populate DEPT/DEPT_ICON dynamically
   loadCategories();
 
   if (CU.role === 'admin') {
-    // ── ตั้งค่า admin app ก่อน แต่ซ่อนไว้ระหว่าง splash ──
     ge('adminApp').style.display = 'flex';
     ge('normalApp').style.display = 'none';
     var adminInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
@@ -205,14 +213,10 @@ function enterApp() {
       if (!_socketConnected) loadAdmin();
     }, 30000);
 
-    // Welcome splash สำหรับ Admin
-    showWelcomeSplash('admin', CU.firstName, null);
-
   } else {
     ge('normalApp').style.display = 'flex';
     ge('adminApp').style.display = 'none';
 
-    // BUG-002: Avatar uses 'avatar' field (not 'linePicture') from /api/auth/me
     var hAv = ge('hAv');
     if (CU.avatar) {
       hAv.outerHTML = '<img class="linepic" id="hAv" src="'+CU.avatar+'" alt="avatar" />';
@@ -232,12 +236,6 @@ function enterApp() {
       _helpInterval = setInterval(function() {
         if (!_socketConnected) loadHelpRequests();
       }, 30000);
-      // Welcome splash สำหรับ Technician
-      showWelcomeSplash('technician', CU.firstName, null);
-    } else if (CU.role === 'citizen') {
-      // Welcome splash สำหรับ Citizen — แสดงรูปโปรไฟล์ LINE
-      var displayName = CU.lineDisplayName || CU.firstName || 'คุณ';
-      showWelcomeSplash('citizen', displayName, null, CU.avatar || null);
     }
   }
 }
