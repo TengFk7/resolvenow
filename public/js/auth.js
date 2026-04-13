@@ -230,30 +230,60 @@ async function doLogout() {
     var isCitizen = (role === 'citizen');
     var isAdmin   = (role === 'admin');
 
-    var bg = isCitizen
-      ? 'linear-gradient(145deg,#051a14 0%,#0d3328 50%,#062419 100%)'
-      : isAdmin
-        ? 'linear-gradient(145deg,#0a0e2e 0%,#1a1060 50%,#0d1b4b 100%)'
-        : 'linear-gradient(145deg,#0a1628 0%,#0f2a50 45%,#0d1e3a 100%)';
+    // ── Unified deep-navy background (ธีมเดียวกับ track.html) ──
+    var bg = 'linear-gradient(160deg,#07111f 0%,#0c1e3a 50%,#101627 100%)';
 
     var accentColor = isCitizen ? '#34d399' : isAdmin ? '#f5c842' : '#60a5fa';
+    var accent2     = isCitizen ? '#06b6d4' : isAdmin ? '#fbbf24' : '#818cf8';
+
+    // ── Orb system (3 floating orbs — track.html style) ──
+    var lgOrbData = [
+      { color: isCitizen
+          ? 'radial-gradient(circle at 40% 40%,rgba(52,211,153,.5) 0%,rgba(16,185,129,.22) 40%,transparent 70%)'
+          : isAdmin
+            ? 'radial-gradient(circle at 40% 40%,rgba(251,191,36,.55) 0%,rgba(245,158,11,.25) 40%,transparent 70%)'
+            : 'radial-gradient(circle at 40% 40%,rgba(96,165,250,.5) 0%,rgba(37,99,235,.22) 40%,transparent 70%)',
+        size:'500px', top:'-12%', left:'-10%', d:'20s', dl:'0s',
+        tx1:'55px', ty1:'-35px', tx2:'100px', ty2:'25px', tx3:'35px', ty3:'-55px' },
+      { color: isCitizen
+          ? 'radial-gradient(circle at 40% 40%,rgba(6,182,212,.38) 0%,rgba(14,165,233,.18) 40%,transparent 70%)'
+          : 'radial-gradient(circle at 40% 40%,rgba(96,165,250,.35) 0%,rgba(37,99,235,.15) 40%,transparent 70%)',
+        size:'420px', top:'40%', left:'55%', d:'26s', dl:'-8s',
+        tx1:'-65px', ty1:'45px', tx2:'-110px', ty2:'-28px', tx3:'-45px', ty3:'65px' },
+      { color:'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
+        size:'340px', top:'65%', left:'8%', d:'18s', dl:'-4s',
+        tx1:'45px', ty1:'-55px', tx2:'80px', ty2:'18px', tx3:'28px', ty3:'-75px' }
+    ];
+    var lgOrbHtml = '';
+    lgOrbData.forEach(function(o) {
+      lgOrbHtml += '<div style="position:absolute;border-radius:50%;pointer-events:none;'
+        + 'width:' + o.size + ';height:' + o.size + ';'
+        + 'top:' + o.top + ';left:' + o.left + ';'
+        + 'background:' + o.color + ';'
+        + 'filter:blur(60px);opacity:0;'
+        + 'animation:lgOrbDrift ' + o.d + ' ' + o.dl + ' ease-in-out infinite;'
+        + '--tx1:' + o.tx1 + ';--ty1:' + o.ty1 + ';'
+        + '--tx2:' + o.tx2 + ';--ty2:' + o.ty2 + ';'
+        + '--tx3:' + o.tx3 + ';--ty3:' + o.ty3 + ';"></div>';
+    });
 
     // sparkles
     var sparkHtml = '';
     for (var i = 0; i < 18; i++) {
-      var sz = (Math.random() * 5 + 2).toFixed(1);
+      var sz = (Math.random() * 4 + 2).toFixed(1);
       var tp = (Math.random() * 100).toFixed(1);
       var lf = (Math.random() * 100).toFixed(1);
       var dl = (Math.random() * 2).toFixed(2);
       var dr = (Math.random() * 1.5 + 1.5).toFixed(2);
-      sparkHtml += '<div style="position:absolute;top:' + tp + '%;left:' + lf + '%;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + accentColor + ';opacity:0;animation:lgSparkle ' + dr + 's ease-in-out ' + dl + 's infinite;pointer-events:none"></div>';
+      var spCol = (i % 3 === 0) ? accentColor : (i % 3 === 1) ? accent2 : 'rgba(255,255,255,.6)';
+      sparkHtml += '<div style="position:absolute;top:' + tp + '%;left:' + lf + '%;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + spCol + ';opacity:0;animation:lgSparkle ' + dr + 's ease-in-out ' + dl + 's infinite;pointer-events:none"></div>';
     }
 
     var iconHtml = isCitizen
-      ? '<div style="font-size:68px;filter:drop-shadow(0 0 20px rgba(52,211,153,.55));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">🙏</div>'
+      ? '<div style="font-size:68px;filter:drop-shadow(0 0 22px rgba(52,211,153,.6));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">🙏</div>'
       : isAdmin
-        ? '<div style="font-size:68px;filter:drop-shadow(0 0 22px rgba(245,200,66,.55));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">👑</div>'
-        : '<div style="font-size:68px;filter:drop-shadow(0 0 20px rgba(96,165,250,.5));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">🔧</div>';
+        ? '<div style="font-size:68px;filter:drop-shadow(0 0 24px rgba(245,200,66,.65));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">👑</div>'
+        : '<div style="font-size:68px;filter:drop-shadow(0 0 20px rgba(96,165,250,.55));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">🔧</div>';
 
     var mainText = isCitizen
       ? '<div style="font-size:22px;font-weight:800;color:#fff;margin-top:16px;font-family:Prompt,sans-serif;animation:lgUp .5s ease .35s both">ขอบคุณที่มาใช้บริการ</div><div style="font-size:22px;font-weight:800;color:' + accentColor + ';font-family:Prompt,sans-serif;animation:lgUp .5s ease .48s both">ResolveNow ของเรา</div>'
@@ -263,7 +293,7 @@ async function doLogout() {
       ? '<div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:12px;animation:lgUp .5s ease .6s both">หวังว่าจะได้พบกันอีก 🌟</div>'
       : '<div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:12px;animation:lgUp .5s ease .6s both">ออกจากระบบเรียบร้อยแล้ว</div>';
 
-    var barHtml = '<div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,' + accentColor + ',transparent);margin:20px auto 0;animation:lgBar .7s cubic-bezier(.22,1,.36,1) .7s both;box-shadow:0 0 12px ' + accentColor + '88"></div>';
+    var barHtml = '<div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,' + accentColor + ',' + accent2 + ',transparent);margin:20px auto 0;animation:lgBar .7s cubic-bezier(.22,1,.36,1) .7s both;box-shadow:0 0 12px ' + accentColor + '88"></div>';
 
     var splash = document.createElement('div');
     splash.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:' + bg + ';overflow:hidden';
@@ -272,7 +302,9 @@ async function doLogout() {
       + '@keyframes lgPop{0%{opacity:0;transform:scale(.3)}60%{transform:scale(1.12)}80%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}'
       + '@keyframes lgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}'
       + '@keyframes lgBar{from{width:0}to{width:110px}}'
+      + '@keyframes lgOrbDrift{0%{opacity:0;transform:translate(0,0) scale(1)}8%{opacity:1}25%{opacity:.85;transform:translate(var(--tx1),var(--ty1)) scale(1.06)}50%{opacity:.7;transform:translate(var(--tx2),var(--ty2)) scale(.96)}75%{opacity:.85;transform:translate(var(--tx3),var(--ty3)) scale(1.04)}92%{opacity:1}100%{opacity:0;transform:translate(0,0) scale(1)}}'
       + '</style>'
+      + lgOrbHtml
       + sparkHtml
       + '<div style="text-align:center;padding:0 32px;position:relative;z-index:2">'
       + iconHtml + mainText + subText + barHtml
