@@ -147,9 +147,7 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
     var barColor2 = isAdmin ? '#f5c842' : '#3b82f6';
     var barHtml2 = '<div style="width:0;height:3px;border-radius:99px;background:' + barColor2 + ';margin:18px auto 0;animation:splashBarGrow .65s cubic-bezier(.22,1,.36,1) .75s both;box-shadow:0 0 12px ' + barColor2 + '88"></div>';
 
-    badgeHtml = isAdmin
-      ? '<div style="margin-top:24px;padding:6px 20px;border-radius:999px;border:1.5px solid rgba(245,200,66,.4);color:rgba(245,200,66,.9);font-size:11px;font-weight:700;letter-spacing:2px;animation:splashFadeUp .5s ease .9s both"> &nbsp;ADMIN</div>'
-      : '<div style="margin-top:24px;padding:6px 20px;border-radius:999px;border:1.5px solid rgba(96,165,250,.4);color:rgba(96,165,250,.9);font-size:11px;font-weight:700;letter-spacing:2px;animation:splashFadeUp .5s ease .9s both"> &nbsp;TECH</div>';
+    badgeHtml = '';
 
     overlay.innerHTML = [
       '<style>',
@@ -184,7 +182,7 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
       if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
       if (typeof onDone === 'function') onDone();
     }, 500);
-  }, 3200);
+  }, 3800);
 }
 
 /* ── Enter Application ───────────────────────────────── */
