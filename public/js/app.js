@@ -250,10 +250,6 @@ async function loadTickets() {
     var res = await fetch('/api/tickets');
     if (!res.ok) return;
     var data = await res.json();
-    animateNum(ge('stT'), data.length);
-    animateNum(ge('stP'), data.filter(function (t) { return t.status === 'pending'; }).length);
-    animateNum(ge('stI'), data.filter(function (t) { return t.status === 'in_progress'; }).length);
-    animateNum(ge('stD'), data.filter(function (t) { return t.status === 'completed'; }).length);
     if (CU.role === 'technician') {
       renderTech(data);
       // FIX: ถ้า modal เปิดอยู่ → refresh ด้วย data ใหม่เพื่อให้ขั้นตอนก้าวหน้า

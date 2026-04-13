@@ -594,7 +594,8 @@ async function confirmDeleteTicket() {
 }
 
 /* ── Delete ALL Tickets ─────────────────────────────────── */
-var DELETE_ALL_PASSWORD = 'admin1234';
+// PASSWORD-FIX: ลบ hardcode ออก — server-side เป็นคนตรวจ password แทน
+var _pendingDeleteAllPw = '';
 
 function openDeleteAllModal() {
   ge('deleteAllPwInput').value = '';
@@ -607,21 +608,17 @@ function closeDeleteAllPw() {
   ge('mDeleteAllPw').classList.remove('on');
   ge('deleteAllPwInput').value = '';
   hideE('deleteAllPwErr');
+  _pendingDeleteAllPw = '';
 }
 
 function submitDeleteAllPw() {
   var pw = ge('deleteAllPwInput').value;
-  if (pw !== DELETE_ALL_PASSWORD) {
-    showE('deleteAllPwErr', '❌ รหัสผ่านไม่ถูกต้อง');
-    // Trigger shake animation
-    var inp = ge('deleteAllPwInput');
-    inp.classList.remove('pw-shake');
-    void inp.offsetWidth; // force reflow to restart animation
-    inp.classList.add('pw-shake');
-    setTimeout(function () { inp.classList.remove('pw-shake'); }, 450);
-    inp.focus();
+  if (!pw) {
+    showE('deleteAllPwErr', 'กรุณากรอกรหัสผ่าน');
     return;
   }
+  // เก็บชั่วคราวเพื่อส่งไปกับ DELETE request — server เป็นคนตรวจ
+  _pendingDeleteAllPw = pw;
   closeDeleteAllPw();
   ge('mDeleteAllConfirm').classList.add('on');
 }
@@ -635,12 +632,33 @@ async function confirmDeleteAll() {
   btn.disabled = true;
   btn.textContent = 'กำลังลบ...';
   try {
-    var res = await fetch('/api/tickets', { method: 'DELETE' });
+    var res = await fetch('/api/tickets', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: _pendingDeleteAllPw })
+    });
     var data = await res.json();
-    if (!res.ok) { showToast(data.error || 'ลบไม่สำเร็จ', 'error'); }
-    else { showToast('ลบ Ticket ทั้งหมด ' + (data.deleted || '') + ' รายการ เรียบร้อยแล้ว 🗑️', 'success'); }
+    if (!res.ok) {
+      // server-side password check — แสดง error และเปิด modal ให้กรอกใหม่
+      closeDeleteAllConfirm();
+      setTimeout(function() {
+        ge('deleteAllPwInput').value = '';
+        hideE('deleteAllPwErr');
+        showE('deleteAllPwErr', data.error || 'รหัสผ่านไม่ถูกต้อง');
+        var inp = ge('deleteAllPwInput');
+        inp.classList.remove('pw-shake');
+        void inp.offsetWidth;
+        inp.classList.add('pw-shake');
+        setTimeout(function() { inp.classList.remove('pw-shake'); }, 450);
+        ge('mDeleteAllPw').classList.add('on');
+        inp.focus();
+      }, 100);
+    } else {
+      showToast('ลบ Ticket ทั้งหมด ' + (data.deleted || '') + ' รายการ เรียบร้อยแล้ว 🗑️', 'success');
+    }
   } catch (e) { showToast('เกิดข้อผิดพลาด', 'error'); }
   closeDeleteAllConfirm();
+  _pendingDeleteAllPw = '';
   btn.disabled = false;
   btn.textContent = '🗑️ ลบทั้งหมด';
   loadAdmin();

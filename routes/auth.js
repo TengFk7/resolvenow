@@ -6,39 +6,7 @@ const Ticket  = require('../models/Ticket');
 const Comment = require('../models/Comment');
 const { otpStore } = require('../data/store');
 const { sendOtpEmail } = require('../config/mailer');
-const { cloudinary } = require('../config/cloudinary');
-
-// ─── Cloudinary Helpers ─────────────────────────────────────────
-// แปลง Cloudinary URL → public_id (เช่น "resolvenow/abc123")
-function extractPublicId(url) {
-  if (!url || typeof url !== 'string') return null;
-  try {
-    // ตัวอย่าง URL: https://res.cloudinary.com/<cloud>/image/upload/v1234567890/resolvenow/abc123.jpg
-    const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?$/);
-    return match ? match[1] : null;
-  } catch { return null; }
-}
-
-// รับ array ของ Ticket documents → เก็บ public_ids ทั้งหมดแล้ว destroy พร้อมกัน
-async function purgeTicketImages(tickets) {
-  const publicIds = [];
-  for (const t of tickets) {
-    for (const field of ['citizenImage', 'beforeImage', 'afterImage']) {
-      const pid = extractPublicId(t[field]);
-      if (pid) publicIds.push(pid);
-    }
-  }
-  if (publicIds.length === 0) return;
-  // destroy ทีละอัน (แบบ parallel เพื่อความเร็ว)
-  await Promise.allSettled(
-    publicIds.map(pid =>
-      cloudinary.uploader.destroy(pid).catch(err =>
-        console.warn('[Cloudinary] ลบรูปไม่สำเร็จ:', pid, err?.message)
-      )
-    )
-  );
-  console.log(`[Cloudinary] ลบรูป ${publicIds.length} ไฟล์ออกจาก Cloud สำเร็จ`);
-}
+const { cloudinary, purgeTicketImages } = require('../config/cloudinary');
 
 // ─── Helpers ────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -66,9 +34,11 @@ router.post('/send-otp', async (req, res) => {
 
     const otp   = generateOtp();
     const token = generateToken();
+    // SECURITY-FIX: Hash password before storing in RAM so a memory dump can't expose plaintext
+    const hashedPw = await bcrypt.hash(password, 10);
     otpStore.set(token, {
       otp, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0,
-      userData: { firstName, lastName, email, password }
+      userData: { firstName, lastName, email, password: hashedPw, alreadyHashed: true }
     });
 
     await sendOtpEmail(email, otp, firstName);
@@ -117,11 +87,13 @@ router.post('/register', async (req, res) => {
     // FIX-3.1: ใช้ User.create() แทน new User().save()
     // ถ้า double-submit ผ่านพร้อมกัน → MongoDB E11000 unique index จะ throw
     // → catch แล้วคืน 400 แทน 500
+    const { alreadyHashed } = entry.userData;
     let user;
     try {
       user = await User.create({
         firstName, lastName, email,
-        password: await bcrypt.hash(password, 10),
+        // SECURITY-FIX: password is pre-hashed when alreadyHashed flag is set
+        password: alreadyHashed ? password : await bcrypt.hash(password, 10),
         role: 'citizen',
       });
     } catch (createErr) {
@@ -360,9 +332,11 @@ router.post('/register-line', async (req, res) => {
     // สร้าง OTP และเก็บข้อมูลไว้
     const otp   = generateOtp();
     const token = generateToken();
+    // SECURITY-FIX: Hash password before storing in RAM
+    const hashedPwLine = await bcrypt.hash(password, 10);
     otpStore.set(token, {
       otp, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0,
-      userData: { firstName: firstName.trim(), lastName: (lastName || '').trim() || '-', email: emailLower, password },
+      userData: { firstName: firstName.trim(), lastName: (lastName || '').trim() || '-', email: emailLower, password: hashedPwLine, alreadyHashed: true },
       isLineRegister: true  // flag ว่าเป็น LINE registration
     });
 
@@ -392,14 +366,15 @@ router.post('/verify-line-otp', async (req, res) => {
     if (entry.otp !== otp) { entry.attempts++; return res.status(400).json({ error: 'รหัส OTP ไม่ถูกต้อง (เหลือ ' + (5 - entry.attempts) + ' ครั้ง)' }); }
 
     // OTP ถูกต้อง — สร้างบัญชี
-    const { firstName, lastName, email, password } = entry.userData;
+    const { firstName, lastName, email, password, alreadyHashed } = entry.userData;
     otpStore.delete(token);
 
     // ตรวจซ้ำอีกครั้ง (ป้องกัน race condition)
     const existCheck = await User.findOne({ email });
     if (existCheck) return res.status(400).json({ error: 'Email นี้มีในระบบแล้ว' });
 
-    const hashed = await bcrypt.hash(password, 10);
+    // SECURITY-FIX: password is pre-hashed when alreadyHashed flag is set
+    const hashed = alreadyHashed ? password : await bcrypt.hash(password, 10);
     console.log('[Register-LINE] OTP ถูกต้อง, สร้างบัญชี:', email);
 
     const user = new User({
@@ -464,6 +439,21 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
       { 'followers.userId': userId },
       { $pull: { followers: { userId } } }
     );
+    // DESYNC-FIX: recalculate upvoteCount and priorityScore on all affected tickets
+    await Ticket.updateMany({}, [
+      { $set: {
+        upvoteCount: { $size: '$upvotes' },
+        priorityScore: {
+          $min: [
+            100,
+            { $add: [
+              { $cond: [{ $eq: ['$urgency', 'urgent'] }, 90, { $cond: [{ $eq: ['$urgency', 'medium'] }, 60, 30] }] },
+              { $cond: [{ $gte: [{ $size: '$upvotes' }, 10] }, 70, { $cond: [{ $gte: [{ $size: '$upvotes' }, 5] }, 15, 0] }] }
+            ]}
+          ]
+        }
+      }}
+    ]);
     await User.deleteOne({ _id: userId });
     console.log('[Admin] ลบ user + cascade:', user.email);
     res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} สำเร็จ` });
@@ -539,6 +529,22 @@ router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
         { 'followers.userId': { $in: userIds } },
         { $pull: { followers: { userId: { $in: userIds } } } }
       );
+      // DESYNC-FIX: recalculate upvoteCount and priorityScore on all affected tickets
+      await Ticket.updateMany({}, [
+        { $set: {
+          upvoteCount: { $size: '$upvotes' },
+          priorityScore: {
+            $min: [
+              100,
+              { $add: [
+                { $cond: [{ $eq: ['$urgency', 'urgent'] }, 90, { $cond: [{ $eq: ['$urgency', 'medium'] }, 60, 30] }] },
+                { $cond: [{ $gte: [{ $size: '$upvotes' }, 10] }, 70, { $cond: [{ $gte: [{ $size: '$upvotes' }, 5] }, 15, 0] }] }
+              ]}
+            ]
+          }
+        }}
+      ]);
+
     }
     console.log(`[Admin] ลบ user + cascade: ${result.deletedCount} คน`);
     res.json({ message: `ลบบัญชีที่เชื่อม/สร้างผ่าน LINE จำนวน ${result.deletedCount} บัญชีสำเร็จ` });

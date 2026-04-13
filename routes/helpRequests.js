@@ -1,4 +1,5 @@
 const express     = require('express');
+const xss         = require('xss');
 const router      = express.Router();
 const User        = require('../models/User');
 const Ticket      = require('../models/Ticket');
@@ -21,7 +22,10 @@ router.get('/', requireAuth, async (req, res) => {
 // POST /api/help-requests
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { ticketId, message, targetDept } = req.body;
+    const { ticketId, message: rawMessage, targetDept: rawTargetDept } = req.body;
+    // XSS-FIX: sanitize user-supplied text before storing
+    const message    = rawMessage    ? xss(rawMessage.trim())    : '';
+    const targetDept = rawTargetDept ? xss(rawTargetDept.trim()) : null;
     const user = await User.findById(req.session.userId);
     if (!user || user.role !== 'technician')
       return res.status(403).json({ error: 'เฉพาะช่างเท่านั้น' });
@@ -62,16 +66,22 @@ router.put('/:id/accept', requireAuth, async (req, res) => {
     if (!user || user.role !== 'technician')
       return res.status(403).json({ error: 'เฉพาะช่างเท่านั้น' });
 
-    const help = await HelpRequest.findOne({ helpId: req.params.id });
-    if (!help) return res.status(404).json({ error: 'ไม่พบคำขอ' });
-    if (help.status !== 'open') return res.status(400).json({ error: 'คำขอนี้มีคนรับแล้ว' });
-    if (help.requesterId?.toString() === user._id.toString())
-      return res.status(400).json({ error: 'ไม่สามารถรับงานตัวเองได้' });
+    // RACE-CONDITION-FIX: ใช้ atomic findOneAndUpdate แทน findOne + check + save
+    // หากช่าง 2 คน accept พร้อมกัน คนที่สองจะได้ null กลับมา (condition: status='open' ไม่ match)
+    const help = await HelpRequest.findOneAndUpdate(
+      { helpId: req.params.id, status: 'open', requesterId: { $ne: user._id } },
+      { $set: { status: 'accepted', acceptedById: user._id, acceptedByName: user.firstName + ' ' + user.lastName } },
+      { new: true }
+    );
 
-    help.status = 'accepted';
-    help.acceptedById   = user._id;
-    help.acceptedByName = user.firstName + ' ' + user.lastName;
-    await help.save();
+    if (!help) {
+      // ตรวจว่า help request มีอยู่เลยไหม หรือมีคนรับไปแล้ว หรือเป็นของตัวเอง
+      const existing = await HelpRequest.findOne({ helpId: req.params.id });
+      if (!existing) return res.status(404).json({ error: 'ไม่พบคำขอ' });
+      if (existing.requesterId?.toString() === user._id.toString())
+        return res.status(400).json({ error: 'ไม่สามารถรับงานตัวเองได้' });
+      return res.status(400).json({ error: 'คำขอนี้มีคนรับแล้ว' });
+    }
 
     // อัปเดต ticket ด้วย
     const ticket = await Ticket.findOne({ ticketId: help.ticketId });
@@ -82,7 +92,7 @@ router.put('/:id/accept', requireAuth, async (req, res) => {
       await ticket.save();
     }
     res.json(help);
-  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 // PUT /api/help-requests/:id/cancel

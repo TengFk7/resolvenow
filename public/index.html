@@ -60,8 +60,8 @@
         <!-- Login Form -->
         <div id="fLogin" class="auth-flip-panel auth-flip-front">
           <form onsubmit="event.preventDefault(); doLogin();">
-            <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com" /></div>
-            <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน" /></div>
+            <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com" maxlength="40" autocorrect="off" autocapitalize="none" spellcheck="false" /></div>
+            <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน" maxlength="40" autocorrect="off" autocomplete="current-password" spellcheck="false" /></div>
             <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
             <button type="submit" class="btnp btn-ripple">เข้าสู่ระบบ</button>
           </form>
@@ -443,26 +443,7 @@
 
 
 
-    <div style="padding:16px 16px 0;max-width:760px;margin:0 auto;width:100%">
-      <div class="nstats">
-        <div class="nsc">
-          <div class="sl">ทั้งหมด</div>
-          <div class="sv bv" id="stT">0</div>
-        </div>
-        <div class="nsc">
-          <div class="sl">รอ</div>
-          <div class="sv yv" id="stP">0</div>
-        </div>
-        <div class="nsc">
-          <div class="sl">กำลังซ่อม</div>
-          <div class="sv bv" id="stI">0</div>
-        </div>
-        <div class="nsc">
-          <div class="sl">เสร็จ</div>
-          <div class="sv gv" id="stD">0</div>
-        </div>
-      </div>
-    </div>
+
 
     <div class="nwrap">
       <!-- Citizen Section — 5-Step Wizard -->

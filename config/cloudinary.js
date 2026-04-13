@@ -66,5 +66,37 @@ function isCloudinaryConfigured() {
     process.env.CLOUDINARY_API_SECRET);
 }
 
-module.exports = { upload, cloudinary, isCloudinaryConfigured };
+// ─── Shared Image Cleanup Helpers ───────────────────────────────
+// แปลง Cloudinary URL → public_id (เช่น "resolvenow/abc123")
+function extractPublicId(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    // ตัวอย่าง URL: https://res.cloudinary.com/<cloud>/image/upload/v1234567890/resolvenow/abc123.jpg
+    const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?$/);
+    return match ? match[1] : null;
+  } catch { return null; }
+}
+
+// รับ array ของ Ticket documents → เก็บ public_ids ทั้งหมดแล้ว destroy พร้อมกัน
+async function purgeTicketImages(tickets) {
+  const publicIds = [];
+  for (const t of tickets) {
+    for (const field of ['citizenImage', 'beforeImage', 'afterImage']) {
+      const pid = extractPublicId(t[field]);
+      if (pid) publicIds.push(pid);
+    }
+  }
+  if (publicIds.length === 0) return;
+  // destroy ทีละอัน (แบบ parallel เพื่อความเร็ว)
+  await Promise.allSettled(
+    publicIds.map(pid =>
+      cloudinary.uploader.destroy(pid).catch(err =>
+        console.warn('[Cloudinary] ลบรูปไม่สำเร็จ:', pid, err?.message)
+      )
+    )
+  );
+  console.log(`[Cloudinary] ลบรูป ${publicIds.length} ไฟล์ออกจาก Cloud สำเร็จ`);
+}
+
+module.exports = { upload, cloudinary, isCloudinaryConfigured, extractPublicId, purgeTicketImages };
 

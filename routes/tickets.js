@@ -11,7 +11,7 @@ const Counter = require('../models/Counter');
 const Comment = require('../models/Comment');
 const { STATUSES } = require('../data/store');
 const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected, notifyFollowers } = require('../config/lineNotify');
-const { upload: cloudinaryUpload, isCloudinaryConfigured } = require('../config/cloudinary');
+const { upload: cloudinaryUpload, isCloudinaryConfigured, cloudinary, purgeTicketImages } = require('../config/cloudinary');
 
 // ─── SLA Deadline Helper ─────────────────────────────────────────
 const SLA_RULES = {
@@ -367,6 +367,12 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     res.status(201).json(formatTicket(ticket, user._id));
   } catch (e) {
     console.error(e);
+    // ROLLBACK-FIX: ถ้า DB save ล้มเหลว ให้ลบรูปที่ upload ขึ้น Cloudinary ไปแล้วออก
+    if (req.file && req.file.filename && isCloudinaryConfigured()) {
+      cloudinary.uploader.destroy(req.file.filename).catch(err =>
+        console.warn('[Cloudinary] rollback destroy failed:', err?.message)
+      );
+    }
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
   }
 });
@@ -673,8 +679,14 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (!caller || caller.role !== 'admin')
       return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้น' });
 
-    const ticket = await Ticket.findOneAndDelete({ ticketId: req.params.id });
+    // CLOUDINARY-FIX: ดึงรูปก่อนลบแล้วค่อย purge
+    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('citizenImage beforeImage afterImage ticketId');
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    if (isCloudinaryConfigured()) {
+      await purgeTicketImages([ticket]);
+    }
+    await Ticket.deleteOne({ _id: ticket._id });
 
     res.json({ message: 'ลบ Ticket เรียบร้อยแล้ว', ticketId: req.params.id });
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
@@ -686,6 +698,18 @@ router.delete('/', requireAuth, async (req, res) => {
     const caller = await User.findById(req.session.userId);
     if (!caller || caller.role !== 'admin')
       return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้น' });
+
+    // PASSWORD-FIX: server-side password check (ไม่ hardcode ที่ frontend แล้ว)
+    const { password } = req.body;
+    const expected = process.env.ADMIN_DELETE_PASSWORD || 'admin1234';
+    if (!password || password !== expected)
+      return res.status(403).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
+
+    // CLOUDINARY-FIX: ดึงรูปทั้งหมดก่อนลบ แล้วค่อย purge
+    if (isCloudinaryConfigured()) {
+      const allTickets = await Ticket.find({}).select('citizenImage beforeImage afterImage');
+      await purgeTicketImages(allTickets);
+    }
 
     const result = await Ticket.deleteMany({});
     res.json({ message: 'ลบ Ticket ทั้งหมดเรียบร้อยแล้ว', deleted: result.deletedCount });
