@@ -40,8 +40,12 @@ function clearAppIntervals() {
 
 /* ── Welcome Splash (Admin, Tech & Citizen) ──────────── */
 function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
-  var isAdmin    = (role === 'admin');
-  var isCitizen  = (role === 'citizen');
+  // ลบ loading overlay ของ LINE login ถ้ามี
+  var lineWait = document.getElementById('lineWaitOverlay');
+  if (lineWait && lineWait.parentNode) lineWait.parentNode.removeChild(lineWait);
+
+  var isAdmin   = (role === 'admin');
+  var isCitizen = (role === 'citizen');
 
   // ── Gradient per role ──
   var bg = isAdmin
@@ -368,11 +372,23 @@ async function loadTickets() {
     console.log('[App] ✅ LINE login success → ตรวจ session...');
     window.history.replaceState({}, '', '/');
 
-    // Force-kill page-load splash ทันที (ป้องกัน animation ซ้อนกับ welcome splash)
+    // Force-kill page-load splash
     var splashElLogin = document.getElementById('splash');
     if (splashElLogin && splashElLogin.parentNode) splashElLogin.parentNode.removeChild(splashElLogin);
 
-    // ซ่อน authPage ทันที (ป้องกัน flash ขณะ fetch)
+    // ── แสดง overlay สีเขียวคลุมหน้าจอทันที ── (ก่อน fetch เสร็จ)
+    var lineWaitOverlay = document.createElement('div');
+    lineWaitOverlay.id = 'lineWaitOverlay';
+    lineWaitOverlay.style.cssText = 'position:fixed;inset:0;z-index:99998;background:linear-gradient(145deg,#051a14 0%,#0d3328 40%,#0a1e30 100%);display:flex;align-items:center;justify-content:center;overflow:hidden';
+    lineWaitOverlay.innerHTML = '<div style="text-align:center;font-family:Prompt,sans-serif">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" viewBox="0 0 24 24" fill="#06c755" style="filter:drop-shadow(0 0 14px rgba(6,199,85,.5))">'
+      + '<path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>'
+      + '</svg>'
+      + '<div style="color:rgba(255,255,255,.55);font-size:13px;margin-top:16px">กำลังเข้าสู่ระบบ...</div>'
+      + '</div>';
+    document.body.appendChild(lineWaitOverlay);
+
+    // ซ่อน authPage ทันที (รอง overlay คลุมอยู่แล้ว)
     var _apLogin = ge('authPage');
     if (_apLogin) _apLogin.style.display = 'none';
 
@@ -386,15 +402,17 @@ async function loadTickets() {
         console.log('[App] LINE login session ดี → enterApp() role:', d.role);
         CU = d;
         sessionStorage.setItem('rn_logged_in', '1');
-        enterApp();
+        enterApp(); // showWelcomeSplash จะลบ lineWaitOverlay และถือหน้าต่อ
       })
       .catch(function() {
         console.log('[App] LINE login แต่ไม่มี session → หน้า login');
-        if (_apLogin) _apLogin.style.display = 'flex'; // คืน authPage กลับมา
+        if (lineWaitOverlay.parentNode) lineWaitOverlay.parentNode.removeChild(lineWaitOverlay);
+        if (_apLogin) _apLogin.style.display = 'flex';
         showE('authErr', 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่');
       });
     return;
   }
+
 
 
   // ── ตรวจ session: resume เฉพาะเมื่อ user เคย login ใน tab นี้ (refresh) ──
