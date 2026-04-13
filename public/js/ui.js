@@ -478,13 +478,26 @@ if (typeof io !== 'undefined') {
   socket.on('connect', function() {
     _socketConnected = true;
     console.log('[Socket] Connected — switching to event-driven mode');
+    // FIX-#3: เริ่ม heartbeat ทันที เมื่อ connect สำเร็จ
+    if (typeof startHeartbeat === 'function') startHeartbeat(socket);
   });
   socket.on('disconnect', function() {
     _socketConnected = false;
     console.log('[Socket] Disconnected — 30s polling fallback active');
+    // FIX-#3: หยุด heartbeat เมื่อ disconnect (รู้ว่าหลุดแล้ว — ไม่ต้องตรวจซ้ำ)
+    if (typeof stopHeartbeat === 'function') stopHeartbeat();
   });
   socket.on('connect_error', function() {
     _socketConnected = false;
+    if (typeof stopHeartbeat === 'function') stopHeartbeat();
+  });
+
+  // FIX-#3: รับ pong กลับมา → cancel stale timeout
+  socket.on('pong_heartbeat', function() {
+    if (typeof _pongTimer !== 'undefined' && _pongTimer) {
+      clearTimeout(_pongTimer);
+      _pongTimer = null;
+    }
   });
 
   socket.on('ticket_updated', function() {
@@ -503,6 +516,7 @@ if (typeof io !== 'undefined') {
     }
   });
 }
+
 
 /* ══════════════════════════════════════════════════════════
    UPVOTE SYSTEM

@@ -23,6 +23,31 @@ var _helpInterval = null;
 // ถ้า socket ขาด → ยังคง poll 30s ต่อจนกว่า socket กลับมา
 var _socketConnected = false;
 
+/* ── FIX-#3 Heartbeat: ตรวจ stale socket connection ─────── */
+// ส่ง ping ทุก 15 วิ ถ้าไม่ได้ pong ภายใน 5 วิ → ถือว่า stale → poll ทันที
+var _heartbeatTimer = null;
+var _pongTimer = null;
+
+function startHeartbeat(socket) {
+  stopHeartbeat();
+  _heartbeatTimer = setInterval(function() {
+    if (!_socketConnected || !socket) return;
+    socket.emit('ping_heartbeat');
+    _pongTimer = setTimeout(function() {
+      console.warn('[Socket] Heartbeat timeout → treating as disconnected');
+      _socketConnected = false;
+      if (CU && CU.role === 'admin') { if (typeof loadAdmin === 'function') loadAdmin(); }
+      else if (CU) { if (typeof loadTickets === 'function') loadTickets(); }
+    }, 5000);
+  }, 15000);
+}
+
+function stopHeartbeat() {
+  if (_heartbeatTimer) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
+  if (_pongTimer) { clearTimeout(_pongTimer); _pongTimer = null; }
+}
+
+
 /* ── Show Auth Page ──────────────────────────────────── */
 function showAuth() {
   ge('authPage').style.display = 'flex';
@@ -276,10 +301,9 @@ async function loadTickets() {
     var data = await res.json();
     if (CU.role === 'technician') {
       renderTech(data);
-      // FIX: ถ้า modal เปิดอยู่ → refresh ด้วย data ใหม่เพื่อให้ขั้นตอนก้าวหน้า
-      if (typeof _tcOpen !== 'undefined' && _tcOpen && ge('mTicketDetail') && ge('mTicketDetail').classList.contains('on')) {
-        tcToggle(_tcOpen);
-      }
+      // FIX-#5 Modal Event Loss Guard is handled inside renderTech():
+      // ถ้า modal เปิดอยู่ → renderTech() จะอัปเดตแค่ memory และไม่ re-render grid
+      // ทำให้ event listeners ของปุ่มใน modal ยังคงอยู่ครบ
     } else {
       renderCitizen(data);
     }

@@ -417,6 +417,17 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       });
     }
 
+    // FIX-#6 IDOR: ตรวจว่าช่างเป็นเจ้าของงานนี้จริงๆ
+    // ยกเว้น: pending → assigned (รับงานใหม่) ช่าง B ไม่สามารถแตะ ticket ที่ ช่าง A ถืออยู่แล้ว
+    if (caller.role === 'technician') {
+      const isSelfAssign = ticket.status === 'pending' && status === 'assigned';
+      const isOwner = ticket.assignedTo &&
+        ticket.assignedTo.toString() === caller._id.toString();
+      if (!isSelfAssign && !isOwner) {
+        return res.status(403).json({ error: 'คุณไม่ใช่ช่างที่รับผิดชอบงานนี้' });
+      }
+    }
+
     let isInitialAssign = ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician' && !ticket.assignedTo);
 
     if (isInitialAssign) {
@@ -502,27 +513,63 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
 });
 
 // ─── POST /api/tickets/:id/upload/before ─────────────────────────
+// FIX-#7 Broken Access Control + FIX-#1 Workflow:
+// ❶ ต้องเป็น technician  ❷ ต้องเป็นช่างเจ้าของงาน  ❸ ticket ต้องอยู่สถานะ assigned
 router.post('/:id/upload/before', requireAuth, upload.single('image'), async (req, res) => {
   try {
+    const caller = await User.findById(req.session.userId);
+
+    // ❶ เฉพาะช่างเท่านั้น
+    if (!caller || caller.role !== 'technician')
+      return res.status(403).json({ error: 'เฉพาะช่างเท่านั้นที่อัปโหลดรูปได้' });
+
+    if (!req.file) return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
-    if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // ❷ ต้องเป็นช่างเจ้าของงานนี้
+    if (!ticket.assignedTo || ticket.assignedTo.toString() !== caller._id.toString())
+      return res.status(403).json({ error: 'คุณไม่ใช่ช่างที่รับผิดชอบงานนี้' });
+
+    // ❸ Workflow: ticket ต้องอยู่สถานะ assigned ถึงจะอัปรูปก่อนทำงานได้
+    if (ticket.status !== 'assigned')
+      return res.status(400).json({ error: 'ต้องอยู่ในสถานะ "รับงานแล้ว" จึงจะอัปโหลดรูปก่อนทำงานได้' });
+
     ticket.beforeImage = getFileUrl(req);
     await ticket.save();
     emitUpdate(req);
     res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.beforeImage });
-  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 // ─── POST /api/tickets/:id/upload/after ──────────────────────────
+// FIX-#7 Broken Access Control + FIX-#1 Workflow:
+// ❶ ต้องเป็น technician  ❷ ต้องเป็นช่างเจ้าของงาน  ❸ ticket ต้องอยู่สถานะ in_progress
 router.post('/:id/upload/after', requireAuth, upload.single('image'), async (req, res) => {
   try {
+    const caller = await User.findById(req.session.userId);
+
+    // ❶ เฉพาะช่างเท่านั้น
+    if (!caller || caller.role !== 'technician')
+      return res.status(403).json({ error: 'เฉพาะช่างเท่านั้นที่อัปโหลดรูปได้' });
+
+    if (!req.file) return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
-    if (!ticket || !req.file) return res.status(400).json({ error: 'ไม่พบข้อมูล' });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // ❷ ต้องเป็นช่างเจ้าของงานนี้
+    if (!ticket.assignedTo || ticket.assignedTo.toString() !== caller._id.toString())
+      return res.status(403).json({ error: 'คุณไม่ใช่ช่างที่รับผิดชอบงานนี้' });
+
+    // ❸ Workflow: ticket ต้องอยู่สถานะ in_progress ถึงจะอัปรูปหลังทำงานได้
+    if (ticket.status !== 'in_progress')
+      return res.status(400).json({ error: 'ต้องอยู่ในสถานะ "กำลังดำเนินการ" จึงจะอัปโหลดรูปหลังทำงานได้' });
+
     ticket.afterImage = getFileUrl(req);
     await ticket.save();
     emitUpdate(req);
     res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
-  } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 // ─── PUT /api/tickets/:id/rating ─────────────────────────────────
@@ -616,9 +663,13 @@ router.get('/public-map', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(200);
     // PII-FIX: description ถูกตัดออก — ผู้ร้องเรียนมักใส่ชื่อ/เบอร์/ข้อมูลส่วนตัวในบรรทัดแรก
+    // PRIVACY-FIX-#2: ตัด lat/lng เหลือ 2 decimal places (~1.1 กม.) เพื่อป้องกันการระบุตำแหน่งบ้านเรือน
+    // 2 decimal = ±550 เมตร เพียงพอสำหรับ heatmap แต่ไม่สามารถนำทางถึงบ้านที่แน่นอนได้
     res.json(tickets.map(t => ({
       ticketId: t.ticketId, category: t.category,
-      lat: t.lat, lng: t.lng, status: t.status,
+      lat: Math.round(t.lat * 100) / 100,
+      lng: Math.round(t.lng * 100) / 100,
+      status: t.status,
       location: t.location, upvoteCount: t.upvoteCount || 0,
       createdAt: t.createdAt
     })));

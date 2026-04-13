@@ -46,6 +46,13 @@ function renderTech(data) {
   window._tcTickets = {};
   data.forEach(function(t){ window._tcTickets[t.ticketId] = t; });
 
+  // FIX-#5 Modal Event Loss Guard:
+  // ถ้า modal รายละเอียดงานเปิดอยู่ → อัปเดตข้อมูลใน memory เท่านั้น
+  // ไม่ re-render grid เพราะจะเขียน innerHTML ใหม่และล้าง onclick handlers ของปุ่มใน modal
+  // เมื่อ user ปิด modal แล้ว → poll ครั้งถัดไปจะ render grid ใหม่เองโดยอัตโนมัติ
+  var _modalIsOpen = ge('mTicketDetail') && ge('mTicketDetail').classList.contains('on');
+  if (_modalIsOpen) return;
+
   /* ── apply current filter ── */
   var sel = ge('tcPriorityFilter');
   var filter = sel ? (sel.getAttribute('data-value') || 'all') : 'all';
@@ -308,8 +315,8 @@ function tcToggle(ticketId) {
 }
 
 /* ── Job Actions ─────────────────────────────────────── */
-function acceptJob(btn) { apiStatus(btn.getAttribute('data-id'), 'assigned'); showToast('✅ รับงานแล้ว'); }
-function startWork(btn) { apiStatus(btn.getAttribute('data-id'), 'in_progress'); showToast('🔧 เริ่มดำเนินการ'); }
+function acceptJob(btn) { apiStatusAndRefreshModal(btn.getAttribute('data-id'), 'assigned', '✅ รับงานแล้ว'); }
+function startWork(btn) { apiStatusAndRefreshModal(btn.getAttribute('data-id'), 'in_progress', '🔧 เริ่มดำเนินการ'); }
 
 // BUG-003: Tech reject now requires a reason via modal
 var _techRejectId = null;
@@ -349,6 +356,10 @@ function completeJob(btn) {
 
   function tryFinish() {
     if (_apiDone && _animDone) {
+      // FIX: ปิด modal ก่อน loadTickets() เพื่อไม่ให้ guard ใน renderTech() บล็อก re-render
+      var modal = ge('mTicketDetail');
+      if (modal) modal.classList.remove('on');
+      _tcOpen = null;
       loadTickets();
     }
   }
@@ -368,6 +379,7 @@ function completeJob(btn) {
     tryFinish();
   });
 }
+
 
 
 function _showTechComplete(onDone) {
@@ -500,6 +512,43 @@ function _showTechComplete(onDone) {
   }, 3200);
 }
 
+/* ─ แก้ปัญหา modal ค้าง: อัปเดต modal ทันทีหลังเปลี่ยนสถานะ ─
+   เรียกใช้จาก acceptJob / startWork ซึ่ง modal เปิดอยู่เสมอ    */
+async function apiStatusAndRefreshModal(id, status, toastMsg) {
+  try {
+    var res = await fetch('/api/tickets/' + id + '/status', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: status })
+    });
+    var updated = await res.json();
+    if (!res.ok) {
+      showToast(updated.error || 'เกิดข้อผิดพลาด', true);
+      return;
+    }
+    if (toastMsg) showToast(toastMsg);
+
+    // อัปเดต memory store ทันที แล้ว re-open modal ด้วยข้อมูลใหม่
+    if (window._tcTickets && window._tcTickets[id]) {
+      Object.assign(window._tcTickets[id], updated);
+      // อัปเดต master list ด้วย
+      for (var i = 0; i < _tcAllTickets.length; i++) {
+        if (_tcAllTickets[i].ticketId === id) {
+          Object.assign(_tcAllTickets[i], updated);
+          break;
+        }
+      }
+    }
+    // force เปิด modal ใหม่เพื่อแสดง step ถัดไป
+    tcToggle(id);
+    // โหลดข้อมูลทั้งหมดในพื้นหลัง (guard ใน renderTech จะ skip re-render ขณะ modal เปิด)
+    loadTickets();
+  } catch (e) {
+    console.error('[apiStatusAndRefreshModal]', e);
+    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', true);
+  }
+}
+
 async function apiStatus(id, status) {
   await fetch('/api/tickets/' + id + '/status', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -510,26 +559,59 @@ async function apiStatus(id, status) {
 
 /* ── Image Upload ────────────────────────────────────── */
 function triggerUpload(el) {
-  upId = el.getAttribute('data-id');
-  upType = el.getAttribute('data-type');
+  // FIX: ใช้ closest() เพื่อรองรับกรณี user คลิก child element (emoji/text) แทน islot div
+  var target = el.closest ? el.closest('[data-id][data-type]') : el;
+  if (!target) target = el;
+
+  upId   = target.getAttribute('data-id');
+  upType = target.getAttribute('data-type');
+
+  if (!upId || !upType) {
+    console.error('[triggerUpload] ไม่พบ data-id/data-type:', el);
+    showToast('เกิดข้อผิดพลาด: ไม่พบ ID ของงาน', true);
+    return;
+  }
+
   var inp = ge('techFile');
+  if (!inp) { showToast('ไม่พบ file input', true); return; }
   inp.value = '';
+
+  // snapshot upId/upType ป้องกัน closure เปลี่ยนระหว่าง async
+  var _upId = upId;
+  var _upType = upType;
+
   inp.onchange = function (e) {
     var f = e.target.files[0];
     if (!f) return;
     var fd = new FormData();
     fd.append('image', f);
-    fetch('/api/tickets/' + upId + '/upload/' + upType, { method: 'POST', body: fd })
-      .then(function (r) { return r.json(); })
+    fetch('/api/tickets/' + _upId + '/upload/' + _upType, { method: 'POST', body: fd })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'upload failed ' + r.status); });
+        return r.json();
+      })
       .then(function (d) {
-        if (d.error) return showToast(d.error, true);
         showToast('✅ อัปโหลดสำเร็จ');
+        // อัปเดต memory store ทันที แล้ว re-render modal โดยไม่ต้องรอ poll
+        if (window._tcTickets && window._tcTickets[_upId]) {
+          if (_upType === 'before') window._tcTickets[_upId].beforeImage = d.url;
+          if (_upType === 'after')  window._tcTickets[_upId].afterImage  = d.url;
+          for (var i = 0; i < _tcAllTickets.length; i++) {
+            if (_tcAllTickets[i].ticketId === _upId) {
+              if (_upType === 'before') _tcAllTickets[i].beforeImage = d.url;
+              if (_upType === 'after')  _tcAllTickets[i].afterImage  = d.url;
+              break;
+            }
+          }
+          tcToggle(_upId);
+        }
         loadTickets();
       })
-      .catch(function () { showToast('อัปโหลดไม่สำเร็จ', true); });
+      .catch(function (err) { showToast(err.message || 'อัปโหลดไม่สำเร็จ', true); });
   };
   inp.click();
 }
+
 
 /* ── Help Requests ───────────────────────────────────── */
 async function loadHelpRequests() {

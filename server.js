@@ -45,6 +45,13 @@ const io = new Server(server, { cors: { origin: '*' } });
 // Make io globally accessible to routers
 app.set('io', io);
 
+// FIX-#3 Heartbeat: ตอบ ping_heartbeat ด้วย pong_heartbeat ยืนยัน connection ยังมีชีวิต
+io.on('connection', (socket) => {
+  socket.on('ping_heartbeat', () => {
+    socket.emit('pong_heartbeat');
+  });
+});
+
 // ─── Connect MongoDB → Seed → Start ─────────────────────────────
 (async () => {
   await connectDB();

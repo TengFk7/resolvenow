@@ -176,8 +176,9 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
           type: 'box',
           layout: 'vertical',
           flex: 1,
+          cornerRadius: '6px',
           contents: [
-            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
+            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
             { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }
           ]
         },
@@ -185,8 +186,9 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
           type: 'box',
           layout: 'vertical',
           flex: 1,
+          cornerRadius: '6px',
           contents: [
-            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
+            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
             { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
           ]
         }
@@ -194,14 +196,15 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
     };
   } else {
     const singleUrl = beforeUrl || afterUrl;
-    const label = beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ';
+    const label = beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนดนการ';
     const labelColor = beforeUrl ? T.label : '#34d399';
     imageRow = {
       type: 'box',
       layout: 'vertical',
       margin: 'md',
+      cornerRadius: '6px',
       contents: [
-        { type: 'image', url: singleUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' },
+        { type: 'image', url: singleUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' },
         { type: 'text', text: label, size: 'xs', color: labelColor, align: 'center', margin: 'xs' }
       ]
     };
@@ -375,22 +378,24 @@ async function notifyCompleted(ticket) {
       type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md',
       contents: [
         {
-          type: 'box', layout: 'vertical', flex: 1, contents: [
-            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
+          type: 'box', layout: 'vertical', flex: 1, cornerRadius: '6px',
+          contents: [
+            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
             { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }
           ]
         },
         {
-          type: 'box', layout: 'vertical', flex: 1, contents: [
-            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
+          type: 'box', layout: 'vertical', flex: 1, cornerRadius: '6px',
+          contents: [
+            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
             { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
           ]
         }
       ]
     }] : [{
-      type: 'box', layout: 'vertical', margin: 'md',
+      type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px',
       contents: [
-        { type: 'image', url: beforeUrl || afterUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' },
+        { type: 'image', url: beforeUrl || afterUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' },
         {
           type: 'text',
           text: beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ',
@@ -399,6 +404,7 @@ async function notifyCompleted(ticket) {
       ]
     }])
   ] : [];
+
 
   const citizenMessages = [];
 

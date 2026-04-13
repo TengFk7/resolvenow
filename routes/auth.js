@@ -16,6 +16,39 @@ function requireAuth(req, res, next) {
 function generateOtp()   { return String(Math.floor(100000 + Math.random() * 900000)); }
 function generateToken() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
 
+// ─── FIX-#8: OTP Rate Limiter (in-memory) ────────────────────────────────
+// Map<ip|email, { count, resetAt }> — เหมาะ single-instance (Render.com)
+const otpRateLimit = new Map();
+const OTP_WINDOW_MS  = 15 * 60 * 1000; // 15 นาที
+
+const OTP_MAX        = 5;               // สูงสุด 5 ครั้งต่อ 15 นาที
+
+// ล้าง expired entries ทุก 10 นาที เพื่อป้องกัน memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of otpRateLimit.entries()) {
+    if (now > v.resetAt) otpRateLimit.delete(k);
+  }
+}, 10 * 60 * 1000);
+
+function checkOtpRateLimit(req, email) {
+  const ip  = req.ip || (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const key = ip + '|' + email.toLowerCase();
+  const now = Date.now();
+  let entry = otpRateLimit.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    otpRateLimit.set(key, { count: 1, resetAt: now + OTP_WINDOW_MS });
+    return null; // ผ่าน
+  }
+  entry.count++;
+  if (entry.count > OTP_MAX) {
+    const waitMin = Math.ceil((entry.resetAt - now) / 60000);
+    return `ขอ OTP บ่อยเกินไป กรุณารอ ${waitMin} นาทีแล้วลองใหม่`;
+  }
+  return null; // ผ่าน
+}
+
 // ─── POST /api/auth/send-otp ────────────────────────────────────
 router.post('/send-otp', async (req, res) => {
   try {
@@ -29,8 +62,13 @@ router.post('/send-otp', async (req, res) => {
     if (password.length < 6)
       return res.status(400).json({ error: 'Password ต้องมีอย่างน้อย 6 ตัว' });
 
+    // FIX-#8: Rate Limit ตรวจก่อน query DB เพื่อป้องกัน Email Bombing
+    const rlErr = checkOtpRateLimit(req, email);
+    if (rlErr) return res.status(429).json({ error: rlErr });
+
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return res.status(400).json({ error: 'Email นี้ถูกใช้แล้ว' });
+
 
     const otp   = generateOtp();
     const token = generateToken();
@@ -253,24 +291,42 @@ router.post('/link-line-skip', async (req, res) => {
       return res.status(400).json({ error: 'ไม่มีข้อมูล LINE ที่รอเชื่อม กรุณา Login ด้วย LINE ใหม่' });
 
     const { lineUserId, lineDisplayName, lineAvatar } = req.session.lineLinkPending;
+    const nameParts = (lineDisplayName || '').split(' ');
 
-    // ตรวจว่า lineUserId นี้ยังไม่มีใน DB (กรณี race condition)
-    let user = await User.findOne({ lineUserId });
-    if (!user) {
-      const nameParts = lineDisplayName.split(' ');
-      user = await new User({
-        firstName:      nameParts[0] || lineDisplayName,
-        lastName:       nameParts.slice(1).join(' ') || '-',
-        email:          'line_' + lineUserId + '@line.me',
-        password:       await bcrypt.hash('LINE_NO_PW_' + lineUserId + '_' + Date.now(), 10),
-        role:           'citizen',
-        lineUserId,
-        lineDisplayName,
-        avatar:          lineAvatar || null,
-      }).save();
-      console.log('[LINE Skip] สร้าง LINE-only citizen:', user.firstName, lineUserId);
+    // FIX-#4 Race Condition: ใช้ findOneAndUpdate + upsert แทน findOne+save
+    // MongoDB รับประกัน atomic — แม้ 2 requests ยิงมาพร้อมกัน จะมีแค่ 1 document ถูก insert
+    let user;
+    try {
+      const hashedPw = await bcrypt.hash('LINE_NO_PW_' + lineUserId + '_' + Date.now(), 10);
+      user = await User.findOneAndUpdate(
+        { lineUserId },   // filter: ตรวจจาก lineUserId
+        {
+          $setOnInsert: {   // ตั้งค่าเฉพาะตอน insert ใหม่ (ไม่ overwrite ถ้ามีอยู่แล้ว)
+            firstName:      nameParts[0] || lineDisplayName,
+            lastName:       nameParts.slice(1).join(' ') || '-',
+            email:          'line_' + lineUserId + '@line.me',
+            password:       hashedPw,
+            role:           'citizen',
+            lineUserId,
+            lineDisplayName,
+            avatar:         lineAvatar || null,
+          }
+        },
+        { upsert: true, returnDocument: 'after', new: true }
+      );
+    } catch (upsertErr) {
+      // E11000: เกิด race condition — request อื่น insert ไปก่อนแล้ว
+      if (upsertErr.code === 11000) {
+        user = await User.findOne({ lineUserId });
+        if (!user) throw upsertErr; // unexpected — re-throw
+      } else {
+        throw upsertErr;
+      }
     }
 
+    if (!user) return res.status(500).json({ error: 'สร้างบัญชีไม่สำเร็จ' });
+
+    console.log('[LINE Skip] สร้าง/เข้าสู่ระบบ LINE-only citizen:', user.firstName, lineUserId);
     delete req.session.lineLinkPending;
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
@@ -288,6 +344,7 @@ router.post('/link-line-skip', async (req, res) => {
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
   }
 });
+
 
 // ─── POST /api/auth/register-line ────────────────────────────
 // Step 1: ส่ง OTP ไปยัง email ก่อนสร้างบัญชี
