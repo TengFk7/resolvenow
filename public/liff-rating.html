@@ -652,7 +652,7 @@
       });
       var data = await res.json();
       if (!res.ok) {
-        if (res.status === 409) { showOnly(alreadyRated); alreadyRated.style.display = "flex"; return; }
+        if (res.status === 409) { showOnly(alreadyRated); alreadyRated.style.display = "flex"; setTimeout(function() { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 2500); return; }
         throw new Error(data.error || "เกิดข้อผิดพลาด");
       }
       showOnly(successScreen); successScreen.style.display = "flex";
@@ -730,7 +730,7 @@
     // Check if already rated
     try {
       var r = await fetch("/api/tickets/public/" + encodeURIComponent(ticketId) + "/rating-status");
-      if (r.ok) { var d = await r.json(); if (d.rated) { showOnly(alreadyRated); alreadyRated.style.display = "flex"; return; } }
+      if (r.ok) { var d = await r.json(); if (d.rated) { showOnly(alreadyRated); alreadyRated.style.display = "flex"; setTimeout(function() { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 2500); return; } }
     } catch(e) {}
 
     // Pre-select rating from URL param ?rating=N (user tapped a star in LINE card)
