@@ -40,10 +40,6 @@ function clearAppIntervals() {
 
 /* ── Welcome Splash (Admin, Tech & Citizen) ──────────── */
 function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
-  // ลบ loading overlay ของ LINE login ถ้ามี
-  var lineWait = document.getElementById('lineWaitOverlay');
-  if (lineWait && lineWait.parentNode) lineWait.parentNode.removeChild(lineWait);
-
   var isAdmin = (role === 'admin');
   var isCitizen = (role === 'citizen');
 
@@ -54,7 +50,7 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
   var accentColor = isAdmin ? '#f5c842' : isCitizen ? '#34d399' : '#60a5fa';
   var accent2     = isAdmin ? '#fbbf24' : isCitizen ? '#06b6d4' : '#818cf8';
 
-  // ── Build overlay ──
+  // ── Build overlay ──(opacity:1 ทันที — ไม่มี transition เพื่อป้องกัน flash 1 frame)──
   var overlay = document.createElement('div');
   overlay.id = 'welcomeSplash';
   overlay.style.cssText = [
@@ -62,7 +58,7 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
     'display:flex', 'flex-direction:column',
     'align-items:center', 'justify-content:center', 'gap:0',
     'background:' + bg,
-    'opacity:0', 'transition:opacity .35s ease', 'overflow:hidden'
+    'opacity:1', 'overflow:hidden'
   ].join(';');
 
   // ── Orb system (track.html style) ──────────────────────────
@@ -200,9 +196,9 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
 
   document.body.appendChild(overlay);
 
-  // แสดงทันที — ไม่ต้องรอ rAF (ป้องกัน flash ของ app ก่อน splash ขึ้น)
-  overlay.style.opacity = '1';
-  overlay.style.transition = 'none';
+  // ── ลบ lineWaitOverlay เพียงหลังจาก overlay ใหม่ถูก append แล้ว (seamless switch, ไม่มีช่องว่าง) ──
+  var lineWait = document.getElementById('lineWaitOverlay');
+  if (lineWait && lineWait.parentNode) lineWait.parentNode.removeChild(lineWait);
 
   // Fade out + remove after 3.8s
   setTimeout(function () {

@@ -341,10 +341,34 @@ async function confirmTechReject() {
 function completeJob(btn) {
   if (btn.disabled || btn.hasAttribute('disabled')) return;
   var id = btn.getAttribute('data-id');
-  _showTechComplete(function () {
-    apiStatus(id, 'completed');
+
+  // ── ยิง API และ animation พร้อมกัน (parallel) ──────────
+  // tryFinish() จะเรียก loadTickets() เมื่อทั้งสองเสร็จ
+  var _apiDone = false;
+  var _animDone = false;
+
+  function tryFinish() {
+    if (_apiDone && _animDone) {
+      loadTickets();
+    }
+  }
+
+  // 1) บันทึกสถานะทันที (ระหว่าง animation กำลังเล่น)
+  fetch('/api/tickets/' + id + '/status', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'completed' })
+  })
+    .then(function() { _apiDone = true; tryFinish(); })
+    .catch(function() { _apiDone = true; tryFinish(); }); // reload แม้ error
+
+  // 2) เล่น animation — เมื่อ animation จบจึงเซ็ต animDone
+  _showTechComplete(function() {
+    _animDone = true;
+    tryFinish();
   });
 }
+
 
 function _showTechComplete(onDone) {
   var ov = document.createElement('div');
