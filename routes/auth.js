@@ -6,6 +6,39 @@ const Ticket  = require('../models/Ticket');
 const Comment = require('../models/Comment');
 const { otpStore } = require('../data/store');
 const { sendOtpEmail } = require('../config/mailer');
+const { cloudinary } = require('../config/cloudinary');
+
+// ─── Cloudinary Helpers ─────────────────────────────────────────
+// แปลง Cloudinary URL → public_id (เช่น "resolvenow/abc123")
+function extractPublicId(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    // ตัวอย่าง URL: https://res.cloudinary.com/<cloud>/image/upload/v1234567890/resolvenow/abc123.jpg
+    const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?$/);
+    return match ? match[1] : null;
+  } catch { return null; }
+}
+
+// รับ array ของ Ticket documents → เก็บ public_ids ทั้งหมดแล้ว destroy พร้อมกัน
+async function purgeTicketImages(tickets) {
+  const publicIds = [];
+  for (const t of tickets) {
+    for (const field of ['citizenImage', 'beforeImage', 'afterImage']) {
+      const pid = extractPublicId(t[field]);
+      if (pid) publicIds.push(pid);
+    }
+  }
+  if (publicIds.length === 0) return;
+  // destroy ทีละอัน (แบบ parallel เพื่อความเร็ว)
+  await Promise.allSettled(
+    publicIds.map(pid =>
+      cloudinary.uploader.destroy(pid).catch(err =>
+        console.warn('[Cloudinary] ลบรูปไม่สำเร็จ:', pid, err?.message)
+      )
+    )
+  );
+  console.log(`[Cloudinary] ลบรูป ${publicIds.length} ไฟล์ออกจาก Cloud สำเร็จ`);
+}
 
 // ─── Helpers ────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -414,6 +447,12 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'บัญชีนี้ไม่ได้สร้างหรือผูกผ่าน LINE' });
 
     const userId = user._id;
+
+    // CLOUDINARY CLEANUP: ดึง tickets พร้อมรูปก่อนลบ แล้วค่อย purge รูปบน Cloud
+    const userTickets = await Ticket.find({ citizenId: userId })
+      .select('citizenImage beforeImage afterImage');
+    await purgeTicketImages(userTickets);
+
     // CASCADE-FIX: clean up all data belonging to this user before deleting
     await Ticket.deleteMany({ citizenId: userId });         // tickets they created
     await Comment.deleteMany({ userId });                   // comments they wrote
@@ -473,6 +512,13 @@ router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
       ]
     }).select('_id');
     const userIds = usersToDelete.map(u => u._id);
+
+    // CLOUDINARY CLEANUP: ดึงรูปทั้งหมดจาก tickets ของ users เหล่านี้ก่อนลบ
+    if (userIds.length > 0) {
+      const allTickets = await Ticket.find({ citizenId: { $in: userIds } })
+        .select('citizenImage beforeImage afterImage');
+      await purgeTicketImages(allTickets);
+    }
 
     const result = await User.deleteMany({
       $or: [

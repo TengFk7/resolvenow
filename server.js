@@ -157,10 +157,8 @@ app.set('io', io);
   // ─── Start ───────────────────────────────────────────────────
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
-    console.log('='.repeat(55));
+    console.log('='.repeat(40));
     console.log(`  ResolveNow: http://localhost:${PORT}`);
-    console.log('  Admin: admin@resolvenow.th / admin1234');
-    console.log('  Tech1-7: tech1~tech7@resolvenow.th / tech1234');
-    console.log('='.repeat(55));
+    console.log('='.repeat(40));
   });
 })();

@@ -61,14 +61,11 @@ function startSlaJob() {
   setInterval(() => {
     runSlaCheck().catch(e => console.error('[SLA Job] periodic run error:', e));
   }, 5 * 60 * 1000);
-  console.log('[SLA Job] Started — checking SLA breach every 5 minutes');
-
   // Chat cleanup: รันทันทีหลัง boot แล้วทุก 1 ชั่วโมง
   runChatCleanup().catch(e => console.error('[Chat Cleanup] initial run error:', e));
   setInterval(() => {
     runChatCleanup().catch(e => console.error('[Chat Cleanup] periodic run error:', e));
   }, 60 * 60 * 1000);
-  console.log('[Chat Cleanup] Started — purging expired chats every 1 hour');
 }
 
 module.exports = { startSlaJob };
