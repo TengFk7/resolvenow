@@ -195,31 +195,28 @@ async function doLogin() {
 /* ── Logout ──────────────────────────────────────────────── */
 async function doLogout() {
   await fetch('/api/auth/logout', { method: 'POST' });
-  sessionStorage.removeItem('rn_logged_in'); // ล้าง flag → เปิดใหม่จะไปหน้า login
+  sessionStorage.removeItem('rn_logged_in');
+
+  // เก็บ role ก่อน clear CU
+  var role = CU ? CU.role : 'citizen';
+  var firstName = CU ? (CU.firstName || '') : '';
   CU = null;
   _stopOtpTimer();
-
-  // BUG-001: clear all polling intervals so they don't accumulate on re-login
   if (typeof clearAppIntervals === 'function') clearAppIntervals();
-
-  // Close any open slide drawer globally
   if (typeof closeDrawer === 'function') closeDrawer();
 
-  // Determine visible app
+  // ── 3D Exit animation บน active app ──
   var adminEl = ge('adminApp');
   var normalEl = ge('normalApp');
   var activeEl = (adminEl && adminEl.style.display !== 'none' && adminEl.offsetParent !== null) ? adminEl : normalEl;
-
-  // 3D exit animation on active container
   if (activeEl) {
-    activeEl.style.transition = 'transform .55s cubic-bezier(.22,1,.36,1), opacity .45s ease';
+    activeEl.style.transition = 'transform .45s cubic-bezier(.22,1,.36,1), opacity .38s ease';
     activeEl.style.transformOrigin = 'center center';
     activeEl.style.transform = 'scale(.88) rotateX(6deg) translateY(-30px)';
     activeEl.style.opacity = '0';
   }
 
   setTimeout(function () {
-    // Reset transform so next login is clean
     if (activeEl) {
       activeEl.style.transition = '';
       activeEl.style.transform = '';
@@ -227,40 +224,97 @@ async function doLogout() {
     }
     if (adminEl) adminEl.style.display = 'none';
     if (normalEl) normalEl.style.display = 'none';
-
-    // Restore body scroll for auth page
     document.body.style.overflow = '';
 
-    // Show auth page with 3D enter animation
-    var ap = ge('authPage');
-    if (ap) {
-      ap.style.display = 'flex';
-      ap.style.transform = 'scale(1.06) rotateX(-4deg)';
-      ap.style.opacity = '0';
-      ap.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), opacity .5s ease';
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          ap.style.transform = '';
-          ap.style.opacity = '1';
-          setTimeout(function () { ap.style.transition = ''; }, 650);
-        });
-      });
+    // ── Logout Splash ──────────────────────────────────────
+    var isCitizen = (role === 'citizen');
+    var isAdmin   = (role === 'admin');
+
+    var bg = isCitizen
+      ? 'linear-gradient(145deg,#051a14 0%,#0d3328 50%,#062419 100%)'
+      : isAdmin
+        ? 'linear-gradient(145deg,#0a0e2e 0%,#1a1060 50%,#0d1b4b 100%)'
+        : 'linear-gradient(145deg,#0a1628 0%,#0f2a50 45%,#0d1e3a 100%)';
+
+    var accentColor = isCitizen ? '#34d399' : isAdmin ? '#f5c842' : '#60a5fa';
+
+    // sparkles
+    var sparkHtml = '';
+    for (var i = 0; i < 18; i++) {
+      var sz = (Math.random() * 5 + 2).toFixed(1);
+      var tp = (Math.random() * 100).toFixed(1);
+      var lf = (Math.random() * 100).toFixed(1);
+      var dl = (Math.random() * 2).toFixed(2);
+      var dr = (Math.random() * 1.5 + 1.5).toFixed(2);
+      sparkHtml += '<div style="position:absolute;top:' + tp + '%;left:' + lf + '%;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + accentColor + ';opacity:0;animation:lgSparkle ' + dr + 's ease-in-out ' + dl + 's infinite;pointer-events:none"></div>';
     }
-    // Reset flip state so switchTab always runs cleanly
-    _currentTab = 'login';
-    _switching = false;
 
-    // Clear dynamic DOM arrays to prevent state leakage between accounts
-    if (ge('citizenCards')) ge('citizenCards').innerHTML = '';
-    if (ge('techCards')) ge('techCards').innerHTML = '';
-    if (ge('queueBody')) ge('queueBody').innerHTML = '<tr><td colspan="4" class="empty">กำลังโหลด...</td></tr>';
-    if (ge('allBody')) ge('allBody').innerHTML = '<tr><td colspan="11" class="empty">กำลังโหลด...</td></tr>';
+    var iconHtml = isCitizen
+      ? '<div style="font-size:68px;filter:drop-shadow(0 0 20px rgba(52,211,153,.55));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">🙏</div>'
+      : isAdmin
+        ? '<div style="font-size:68px;filter:drop-shadow(0 0 22px rgba(245,200,66,.55));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">👑</div>'
+        : '<div style="font-size:68px;filter:drop-shadow(0 0 20px rgba(96,165,250,.5));animation:lgPop .6s cubic-bezier(.34,1.56,.64,1) .05s both">🔧</div>';
 
-    // Hide all panels, show only fLogin as baseline
-    ge('fLogin').style.display = 'block';
-    switchTab('login');
-  }, 500);
+    var mainText = isCitizen
+      ? '<div style="font-size:22px;font-weight:800;color:#fff;margin-top:16px;font-family:Prompt,sans-serif;animation:lgUp .5s ease .35s both">ขอบคุณที่มาใช้บริการ</div><div style="font-size:22px;font-weight:800;color:' + accentColor + ';font-family:Prompt,sans-serif;animation:lgUp .5s ease .48s both">ResolveNow ของเรา</div>'
+      : '<div style="font-size:26px;font-weight:800;color:#fff;margin-top:16px;font-family:Prompt,sans-serif;animation:lgUp .5s ease .35s both">ขอบคุณ</div><div style="font-size:14px;color:rgba(255,255,255,.5);margin-top:6px;animation:lgUp .5s ease .48s both">' + escapeHTML(firstName) + '</div>';
+
+    var subText = isCitizen
+      ? '<div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:12px;animation:lgUp .5s ease .6s both">หวังว่าจะได้พบกันอีก 🌟</div>'
+      : '<div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:12px;animation:lgUp .5s ease .6s both">ออกจากระบบเรียบร้อยแล้ว</div>';
+
+    var barHtml = '<div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,' + accentColor + ',transparent);margin:20px auto 0;animation:lgBar .7s cubic-bezier(.22,1,.36,1) .7s both;box-shadow:0 0 12px ' + accentColor + '88"></div>';
+
+    var splash = document.createElement('div');
+    splash.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:' + bg + ';overflow:hidden';
+    splash.innerHTML = '<style>'
+      + '@keyframes lgSparkle{0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:.8;transform:scale(1) translateY(-12px)}}'
+      + '@keyframes lgPop{0%{opacity:0;transform:scale(.3)}60%{transform:scale(1.12)}80%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}'
+      + '@keyframes lgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}'
+      + '@keyframes lgBar{from{width:0}to{width:110px}}'
+      + '</style>'
+      + sparkHtml
+      + '<div style="text-align:center;padding:0 32px;position:relative;z-index:2">'
+      + iconHtml + mainText + subText + barHtml
+      + '</div>';
+
+    document.body.appendChild(splash);
+
+    // Fade out splash แล้วไปหน้า login
+    setTimeout(function () {
+      splash.style.transition = 'opacity .5s ease';
+      splash.style.opacity = '0';
+      setTimeout(function () {
+        if (splash.parentNode) splash.parentNode.removeChild(splash);
+
+        // ── แสดงหน้า login ──
+        var ap = ge('authPage');
+        if (ap) {
+          ap.style.display = 'flex';
+          ap.style.transform = 'scale(1.06) rotateX(-4deg)';
+          ap.style.opacity = '0';
+          ap.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), opacity .5s ease';
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              ap.style.transform = '';
+              ap.style.opacity = '1';
+              setTimeout(function () { ap.style.transition = ''; }, 650);
+            });
+          });
+        }
+        _currentTab = 'login';
+        _switching = false;
+        if (ge('citizenCards')) ge('citizenCards').innerHTML = '';
+        if (ge('techCards')) ge('techCards').innerHTML = '';
+        if (ge('queueBody')) ge('queueBody').innerHTML = '<tr><td colspan="4" class="empty">กำลังโหลด...</td></tr>';
+        if (ge('allBody')) ge('allBody').innerHTML = '<tr><td colspan="11" class="empty">กำลังโหลด...</td></tr>';
+        ge('fLogin').style.display = 'block';
+        switchTab('login');
+      }, 500);
+    }, 2200);
+  }, 450);
 }
+
 
 
 /* ── Change Password ─────────────────────────────────────── */
