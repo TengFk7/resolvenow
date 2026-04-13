@@ -688,50 +688,113 @@ function _showSubmitSuccess(ticketId, onDone) {
   ov.style.cssText = [
     'position:fixed;inset:0;z-index:9000',
     'display:flex;flex-direction:column;align-items:center;justify-content:center',
-    'background:linear-gradient(145deg,rgba(5,150,105,.97) 0%,rgba(16,185,129,.95) 50%,rgba(4,120,87,.98) 100%)',
-    'padding:40px 24px;text-align:center'
+    'background:linear-gradient(160deg,#07111f 0%,#0c1e3a 50%,#101627 100%)',
+    'padding:40px 24px;text-align:center;overflow:hidden'
   ].join(';');
 
+  // ── Orb system (3 orbs — track.html / login style) ──
+  var ssOrbData = [
+    { color:'radial-gradient(circle at 40% 40%,rgba(52,211,153,.5) 0%,rgba(16,185,129,.22) 40%,transparent 70%)',
+      size:'500px', top:'-12%', left:'-10%', dur:'20s', delay:'0s',
+      tx1:'55px', ty1:'-35px', tx2:'100px', ty2:'25px', tx3:'35px', ty3:'-55px' },
+    { color:'radial-gradient(circle at 40% 40%,rgba(96,165,250,.35) 0%,rgba(37,99,235,.15) 40%,transparent 70%)',
+      size:'420px', top:'40%', left:'55%', dur:'26s', delay:'-8s',
+      tx1:'-65px', ty1:'45px', tx2:'-110px', ty2:'-28px', tx3:'-45px', ty3:'65px' },
+    { color:'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
+      size:'340px', top:'65%', left:'8%', dur:'18s', delay:'-4s',
+      tx1:'45px', ty1:'-55px', tx2:'80px', ty2:'18px', tx3:'28px', ty3:'-75px' }
+  ];
+  var ssOrbHtml = '';
+  ssOrbData.forEach(function(o) {
+    ssOrbHtml += '<div style="position:absolute;border-radius:50%;pointer-events:none;'
+      + 'width:' + o.size + ';height:' + o.size + ';'
+      + 'top:' + o.top + ';left:' + o.left + ';'
+      + 'background:' + o.color + ';'
+      + 'filter:blur(60px);opacity:0;'
+      + 'animation:ssOrbDrift ' + o.dur + ' ' + o.delay + ' ease-in-out infinite;'
+      + '--tx1:' + o.tx1 + ';--ty1:' + o.ty1 + ';'
+      + '--tx2:' + o.tx2 + ';--ty2:' + o.ty2 + ';'
+      + '--tx3:' + o.tx3 + ';--ty3:' + o.ty3 + ';"></div>';
+  });
+
+  // ── Sparkle micro-dots (tri-color) ──
+  var ssSparkHtml = '';
+  var spCols = ['#34d399', '#06b6d4', 'rgba(255,255,255,.65)'];
+  for (var i = 0; i < 20; i++) {
+    var sz = (Math.random() * 4 + 2).toFixed(1);
+    var tp = (Math.random() * 100).toFixed(1);
+    var lf = (Math.random() * 100).toFixed(1);
+    var dl = (Math.random() * 2.5).toFixed(2);
+    var dr = (Math.random() * 2 + 1.8).toFixed(2);
+    ssSparkHtml += '<div style="position:absolute;top:' + tp + '%;left:' + lf + '%;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + spCols[i % 3] + ';opacity:0;animation:ssSpark ' + dr + 's ease-in-out ' + dl + 's infinite;pointer-events:none"></div>';
+  }
+
   ov.innerHTML = [
-    // Ring wrap with ripple rings
-    '<div class="ss-ring-wrap">',
-    '  <div class="ss-ripple"></div>',
-    '  <div class="ss-ripple"></div>',
-    '  <div class="ss-ripple"></div>',
-    '  <div class="ss-ring">',
-    '    <div class="ss-check">',
-    '      <svg viewBox="0 0 52 52" fill="none">',
-    '        <circle cx="26" cy="26" r="23" stroke="rgba(255,255,255,.25)" stroke-width="2"/>',
+    '<style>',
+    '@keyframes ssOrbDrift{0%{opacity:0;transform:translate(0,0) scale(1)}8%{opacity:1}25%{opacity:.85;transform:translate(var(--tx1),var(--ty1)) scale(1.06)}50%{opacity:.7;transform:translate(var(--tx2),var(--ty2)) scale(.96)}75%{opacity:.85;transform:translate(var(--tx3),var(--ty3)) scale(1.04)}92%{opacity:1}100%{opacity:0;transform:translate(0,0) scale(1)}}',
+    '@keyframes ssSpark{0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:.85;transform:scale(1) translateY(-14px)}}',
+    '@keyframes ssRingPop{0%{opacity:0;transform:scale(.25)}60%{transform:scale(1.1)}80%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}',
+    '@keyframes ssPathDraw{from{stroke-dashoffset:50}to{stroke-dashoffset:0}}',
+    '@keyframes ssTitleUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}',
+    '@keyframes ssRipple{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.2);opacity:0}}',
+    '@keyframes ssBarGrow{from{width:0}to{width:130px}}',
+    '@keyframes ssDotsBounce{0%,80%,100%{transform:scale(0);opacity:0}40%{transform:scale(1);opacity:1}}',
+    '</style>',
+    ssOrbHtml,
+    ssSparkHtml,
+    // ── Content (z-index:2 ลอยเหนือ orbs) ──
+    '<div style="position:relative;z-index:2;text-align:center">',
+    // Ripple rings + checkmark ring
+    '  <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:24px">',
+    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(52,211,153,.5);animation:ssRipple 1.8s ease-out .1s infinite"></div>',
+    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(52,211,153,.35);animation:ssRipple 1.8s ease-out .6s infinite"></div>',
+    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(52,211,153,.2);animation:ssRipple 1.8s ease-out 1.1s infinite"></div>',
+    '    <div style="width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,rgba(52,211,153,.18),rgba(6,182,212,.1));border:2.5px solid rgba(52,211,153,.6);display:flex;align-items:center;justify-content:center;animation:ssRingPop .65s cubic-bezier(.34,1.56,.64,1) .05s both;filter:drop-shadow(0 0 18px rgba(52,211,153,.5))">',
+    '      <svg viewBox="0 0 52 52" fill="none" width="46" height="46">',
+    '        <circle cx="26" cy="26" r="23" stroke="rgba(52,211,153,.2)" stroke-width="1.5"/>',
     '        <polyline class="ss-path" points="13,27 22,36 39,17"',
-    '          stroke="white" stroke-width="3.5"',
-    '          stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    '          stroke="#34d399" stroke-width="3.5"',
+    '          stroke-linecap="round" stroke-linejoin="round" fill="none"',
+    '          style="stroke-dasharray:50;stroke-dashoffset:50;animation:ssPathDraw .55s cubic-bezier(.22,1,.36,1) .55s forwards"/>',
     '      </svg>',
     '    </div>',
     '  </div>',
-    '</div>',
-    '<div class="ss-title">ส่งสำเร็จ! 🎉</div>',
-    '<div class="ss-id">' + ticketId + '</div>',
-    '<div class="ss-sub">เรื่องร้องเรียนของคุณถูกบันทึกแล้ว<br>ระบบกำลังเตรียมรับเรื่องใหม่...</div>',
-    '<div class="ss-dots"><span></span><span></span><span></span></div>'
+    // Title
+    '  <div style="font-size:26px;font-weight:800;color:#fff;font-family:Prompt,sans-serif;animation:ssTitleUp .5s ease .35s both">ส่งสำเร็จแล้ว! 🎉</div>',
+    // Ticket ID badge
+    '  <div style="display:inline-block;margin-top:10px;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);border-radius:10px;padding:6px 18px;font-size:15px;font-weight:700;color:#34d399;letter-spacing:1px;font-family:Inter,Prompt,sans-serif;animation:ssTitleUp .5s ease .5s both">' + ticketId + '</div>',
+    // Subtitle
+    '  <div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:14px;line-height:1.8;animation:ssTitleUp .5s ease .65s both">เรื่องร้องเรียนของคุณถูกบันทึกแล้ว<br>ระบบกำลังเตรียมรับเรื่องใหม่...</div>',
+    // Progress bar
+    '  <div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,#34d399,#06b6d4,rgba(255,255,255,.2));margin:20px auto 0;animation:ssBarGrow .7s cubic-bezier(.22,1,.36,1) .8s both;box-shadow:0 0 14px rgba(52,211,153,.5)"></div>',
+    // Dots
+    '  <div style="display:flex;justify-content:center;gap:6px;margin-top:16px">',
+    '    <span style="width:8px;height:8px;border-radius:50%;background:#34d399;display:inline-block;animation:ssDotsBounce 1.4s ease-in-out .9s infinite"></span>',
+    '    <span style="width:8px;height:8px;border-radius:50%;background:#06b6d4;display:inline-block;animation:ssDotsBounce 1.4s ease-in-out 1.0s infinite"></span>',
+    '    <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);display:inline-block;animation:ssDotsBounce 1.4s ease-in-out 1.1s infinite"></span>',
+    '  </div>',
+    '</div>'
   ].join('');
 
   document.body.appendChild(ov);
 
-  // Enter with class (GPU-smooth scale+fade)
+  // Fade in immediately
+  ov.style.opacity = '0';
+  ov.style.transition = 'opacity .3s ease';
   requestAnimationFrame(function() {
     requestAnimationFrame(function() {
-      ov.classList.add('ss-enter');
+      ov.style.opacity = '1';
     });
   });
 
-  // After 2.8s — exit smoothly then call onDone
+  // After 2.8s — fade out then call onDone
   setTimeout(function() {
-    ov.classList.remove('ss-enter');
-    ov.classList.add('ss-exit');
+    ov.style.transition = 'opacity .45s ease';
+    ov.style.opacity = '0';
     setTimeout(function() {
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (typeof onDone === 'function') onDone();
-    }, 400);
+    }, 450);
   }, 2800);
 }
 

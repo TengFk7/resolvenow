@@ -347,65 +347,132 @@ function completeJob(btn) {
 }
 
 function _showTechComplete(onDone) {
-  var colors = ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#f59e0b', '#a78bfa', '#60a5fa', '#f472b6'];
-  var pHtml = '';
-  for (var i = 0; i < 8; i++) {
-    var ang = (i / 8) * Math.PI * 2;
-    var dist = 85 + (i % 3) * 28;
-    var px = Math.round(Math.cos(ang) * dist);
-    var py = Math.round(Math.sin(ang) * dist - 40);
-    pHtml += '<div class="tc-p" style="background:' + colors[i]
-      + ';--px:' + px + 'px;--py:' + py + 'px'
-      + ';animation-delay:' + (1.05 + i * 0.06) + 's"></div>';
+  var ov = document.createElement('div');
+  ov.id = 'techCompleteOverlay';
+  ov.style.cssText = [
+    'position:fixed;inset:0;z-index:9000',
+    'display:flex;flex-direction:column;align-items:center;justify-content:center',
+    'background:linear-gradient(160deg,#07111f 0%,#0c1e3a 50%,#101627 100%)',
+    'padding:40px 24px;text-align:center;overflow:hidden;opacity:0;transition:opacity .3s ease'
+  ].join(';');
+
+  // ── Orb system — ธีมช่าง: gold primary, blue secondary, teal accent ──
+  var tcOrbData = [
+    { color:'radial-gradient(circle at 40% 40%,rgba(251,191,36,.55) 0%,rgba(245,158,11,.25) 40%,transparent 70%)',
+      size:'520px', top:'-12%', left:'-10%', dur:'20s', delay:'0s',
+      tx1:'60px', ty1:'-40px', tx2:'110px', ty2:'28px', tx3:'38px', ty3:'-58px' },
+    { color:'radial-gradient(circle at 40% 40%,rgba(96,165,250,.38) 0%,rgba(37,99,235,.18) 40%,transparent 70%)',
+      size:'440px', top:'40%', left:'55%', dur:'26s', delay:'-8s',
+      tx1:'-68px', ty1:'48px', tx2:'-115px', ty2:'-30px', tx3:'-48px', ty3:'68px' },
+    { color:'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
+      size:'340px', top:'65%', left:'8%', dur:'18s', delay:'-4s',
+      tx1:'46px', ty1:'-56px', tx2:'82px', ty2:'19px', tx3:'29px', ty3:'-76px' }
+  ];
+  var tcOrbHtml = '';
+  tcOrbData.forEach(function(o) {
+    tcOrbHtml += '<div style="position:absolute;border-radius:50%;pointer-events:none;'
+      + 'width:' + o.size + ';height:' + o.size + ';'
+      + 'top:' + o.top + ';left:' + o.left + ';'
+      + 'background:' + o.color + ';'
+      + 'filter:blur(60px);opacity:0;'
+      + 'animation:tcOrbDrift ' + o.dur + ' ' + o.delay + ' ease-in-out infinite;'
+      + '--tx1:' + o.tx1 + ';--ty1:' + o.ty1 + ';'
+      + '--tx2:' + o.tx2 + ';--ty2:' + o.ty2 + ';'
+      + '--tx3:' + o.tx3 + ';--ty3:' + o.ty3 + ';"></div>';
+  });
+
+  // ── Sparkle micro-dots (gold + blue + white) ──
+  var tcSparkHtml = '';
+  var tcSpCols = ['#fbbf24', '#60a5fa', 'rgba(255,255,255,.65)'];
+  for (var i = 0; i < 20; i++) {
+    var sz = (Math.random() * 4 + 2).toFixed(1);
+    var tp = (Math.random() * 100).toFixed(1);
+    var lf = (Math.random() * 100).toFixed(1);
+    var dl = (Math.random() * 2.5).toFixed(2);
+    var dr = (Math.random() * 2 + 1.8).toFixed(2);
+    tcSparkHtml += '<div style="position:absolute;top:' + tp + '%;left:' + lf + '%;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + tcSpCols[i % 3] + ';opacity:0;animation:tcSpark ' + dr + 's ease-in-out ' + dl + 's infinite;pointer-events:none"></div>';
   }
 
-  var ov = document.createElement('div');
-  ov.className = 'tc-bg';
-  ov.innerHTML =
-    '<div class="tc-card" id="_tcCard">'
-    + '<div class="tc-particles">' + pHtml + '</div>'
-    + '<div class="tc-ring-wrap">'
-    + '<div class="tc-ring"></div>'
-    + '<div class="tc-ring"></div>'
-    + '<div class="tc-ring"></div>'
-    + '<div class="tc-badge">'
-    + '<svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">'
-    + '<polyline class="tc-check-path" points="13,27 22,37 39,16"'
-    + ' stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-    + '</svg>'
-    + '</div>'
-    + '</div>'
-    + '<div class="tc-title">ปิดงานสำเร็จ! 🎉</div>'
-    + '<div class="tc-sub">งานซ่อมแซมเสร็จเรียบร้อยแล้ว<br>ระบบจะแจ้งผู้ร้องเรียนทาง LINE อัตโนมัติ</div>'
-    + '<div class="tc-chip">✅&nbsp;&nbsp;MISSION COMPLETE</div>'
-    + '<div class="tc-dots"><span></span><span></span><span></span></div>'
-    + '</div>';
+  ov.innerHTML = [
+    '<style>',
+    '@keyframes tcOrbDrift{0%{opacity:0;transform:translate(0,0) scale(1)}8%{opacity:1}25%{opacity:.85;transform:translate(var(--tx1),var(--ty1)) scale(1.06)}50%{opacity:.7;transform:translate(var(--tx2),var(--ty2)) scale(.96)}75%{opacity:.85;transform:translate(var(--tx3),var(--ty3)) scale(1.04)}92%{opacity:1}100%{opacity:0;transform:translate(0,0) scale(1)}}',
+    '@keyframes tcSpark{0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:.85;transform:scale(1) translateY(-14px)}}',
+    '@keyframes tcRingPop{0%{opacity:0;transform:scale(.25)}60%{transform:scale(1.1)}80%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}',
+    '@keyframes tcPathDraw{from{stroke-dashoffset:54}to{stroke-dashoffset:0}}',
+    '@keyframes tcTitleUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}',
+    '@keyframes tcRipple{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.2);opacity:0}}',
+    '@keyframes tcBarGrow{from{width:0}to{width:130px}}',
+    '@keyframes tcDotsBounce{0%,80%,100%{transform:scale(0);opacity:0}40%{transform:scale(1);opacity:1}}',
+    '@keyframes tcChipIn{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}',
+    '</style>',
+    tcOrbHtml,
+    tcSparkHtml,
+    // ── Content ──
+    '<div style="position:relative;z-index:2;text-align:center">',
+    // Ripple rings + checkmark ring (gold theme)
+    '  <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:24px">',
+    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(251,191,36,.5);animation:tcRipple 1.8s ease-out .1s infinite"></div>',
+    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(251,191,36,.35);animation:tcRipple 1.8s ease-out .6s infinite"></div>',
+    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(251,191,36,.2);animation:tcRipple 1.8s ease-out 1.1s infinite"></div>',
+    '    <div style="width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(96,165,250,.1));border:2.5px solid rgba(251,191,36,.65);display:flex;align-items:center;justify-content:center;animation:tcRingPop .65s cubic-bezier(.34,1.56,.64,1) .05s both;filter:drop-shadow(0 0 20px rgba(251,191,36,.55))">',
+    '      <svg viewBox="0 0 52 52" fill="none" width="46" height="46">',
+    '        <circle cx="26" cy="26" r="23" stroke="rgba(251,191,36,.2)" stroke-width="1.5"/>',
+    '        <polyline points="13,27 22,37 39,16"',
+    '          stroke="#fbbf24" stroke-width="4"',
+    '          stroke-linecap="round" stroke-linejoin="round" fill="none"',
+    '          style="stroke-dasharray:54;stroke-dashoffset:54;animation:tcPathDraw .55s cubic-bezier(.22,1,.36,1) .55s forwards"/>',
+    '      </svg>',
+    '    </div>',
+    '  </div>',
+    // Title
+    '  <div style="font-size:26px;font-weight:800;color:#fff;font-family:Prompt,sans-serif;animation:tcTitleUp .5s ease .35s both">ปิดงานสำเร็จ! 🎉</div>',
+    // Subtitle
+    '  <div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:12px;line-height:1.8;animation:tcTitleUp .5s ease .5s both">งานซ่อมแซมเสร็จเรียบร้อยแล้ว<br>ระบบจะแจ้งผู้ร้องเรียนทาง LINE อัตโนมัติ</div>',
+    // Mission chip badge
+    '  <div style="display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);border-radius:99px;padding:7px 20px;font-size:13px;font-weight:700;color:#fbbf24;letter-spacing:.8px;animation:tcChipIn .5s ease .65s both">',
+    '    <span>✅</span><span>MISSION COMPLETE</span>',
+    '  </div>',
+    // Progress bar (gold → blue)
+    '  <div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,#fbbf24,#60a5fa,rgba(255,255,255,.2));margin:20px auto 0;animation:tcBarGrow .7s cubic-bezier(.22,1,.36,1) .8s both;box-shadow:0 0 14px rgba(251,191,36,.5)"></div>',
+    // Dots
+    '  <div style="display:flex;justify-content:center;gap:6px;margin-top:16px">',
+    '    <span style="width:8px;height:8px;border-radius:50%;background:#fbbf24;display:inline-block;animation:tcDotsBounce 1.4s ease-in-out .9s infinite"></span>',
+    '    <span style="width:8px;height:8px;border-radius:50%;background:#60a5fa;display:inline-block;animation:tcDotsBounce 1.4s ease-in-out 1.0s infinite"></span>',
+    '    <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);display:inline-block;animation:tcDotsBounce 1.4s ease-in-out 1.1s infinite"></span>',
+    '  </div>',
+    '</div>'
+  ].join('');
 
   document.body.appendChild(ov);
 
+  // Fade in
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      ov.style.opacity = '1';
+    });
+  });
+
   /* exit after 3.2s */
   setTimeout(function () {
-    /* Step 1: Overlay + card exit animation */
-    var card = document.getElementById('_tcCard');
-    if (card) card.classList.add('tc-out');
-    ov.classList.add('tc-out');
+    ov.style.transition = 'opacity .45s ease';
+    ov.style.opacity = '0';
 
-    /* Step 2: Fade techCards out simultaneously */
+    /* Fade techCards out simultaneously */
     var tc = ge('techCards');
     if (tc) {
       tc.style.transition = 'opacity 0.32s ease';
       tc.style.opacity = '0';
     }
 
-    /* Step 3: Flag next render to skip card bounce animation */
+    /* Flag next render to skip card bounce animation */
     _suppressCardAnim = true;
     _lastTechJSON = null;
 
-    /* Step 4: After overlay gone, fire update → renderTech will fade cards back in */
+    /* After overlay gone, fire update → renderTech will fade cards back in */
     setTimeout(function () {
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (typeof onDone === 'function') onDone();
-    }, 540);
+    }, 470);
   }, 3200);
 }
 
