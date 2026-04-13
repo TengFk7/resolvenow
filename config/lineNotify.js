@@ -8,6 +8,31 @@ const TOKEN = process.env.LINE_CHANNEL_TOKEN;
 const ADMIN_ID = process.env.LINE_ADMIN_USER_ID;
 const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
 
+// ── Design Tokens (ตรงกับธีม Navy/Blue/Gold ของระบบ) ─────────
+const T = {
+  headerBg:   '#07111f',          // navy deep
+  headerBg2:  '#0c1e3a',          // navy mid
+  bodyBg:     '#0a1628',          // navy base
+  footerBg:   '#0a1628',
+  brand:      '#fbbf24',          // gold2  — ชื่อ ResolveNow
+  title:      '#ffffff',
+  label:      '#6b8aad',          // steel-blue muted
+  value:      '#e2eeff',          // near-white blue-tint
+  sep:        '#1e3a6e',          // navy border
+  // accent headers per event
+  hNew:       'linear-gradient(135deg,#07111f,#0c2a52)',  // blue-navy
+  hProg:      '#0c1e3a',          // navy
+  hDone:      '#071e14',          // dark-green-navy
+  hReject:    '#1e0808',          // dark-red-navy
+  hFollow:    '#0c1628',
+  hImage:     '#071e14',
+  // button colors
+  btnBlue:    '#2563eb',
+  btnGold:    '#f59e0b',
+  btnGold5:   '#fbbf24',
+  btnRed:     '#dc2626',
+};
+
 // ── push ไปหา userId เดียว ──────────────────────────────────
 async function pushTo(userId, messages) {
   if (!TOKEN || !userId) return;
@@ -46,17 +71,32 @@ async function pushAll(citizenLineId, adminMessages, citizenMessages) {
   await Promise.all(tasks);
 }
 
+// ── Brand header row ─────────────────────────────────────────
+// แสดงแถว "⚡ ResolveNow" สีทองบนสุดของทุก card
+function brandRow() {
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    contents: [{
+      type: 'text',
+      text: '\uD83C\uDFDB\uFE0F ResolveNow',
+      size: 'sm',
+      color: T.brand,
+      weight: 'bold'
+    }]
+  };
+}
+
 // ── Flex Bubble Builder ──────────────────────────────────────
-// headerBg: hex color, headerLabel: small brand label text
-// headerTitle: big title text, headerColor: title color
+// headerBg: hex color, headerTitle: big title text
 // rows: [{icon, label, value}], footerBtns: [{label, url, style, color}]
-function makeBubble({ headerBg, headerLabel, headerTitle, headerTitleColor, rows, footerBtns }) {
+function makeBubble({ headerBg, headerTitle, headerTitleColor, rows, footerBtns }) {
   const bodyContents = rows.map((r, i) => ({
     type: 'box',
     layout: 'horizontal',
     contents: [
-      { type: 'text', text: r.icon + ' ' + r.label, size: 'sm', color: '#8880a8', flex: 3 },
-      { type: 'text', text: r.value, size: 'sm', color: '#f0eeff', weight: 'bold', flex: 4, align: 'end', wrap: true }
+      { type: 'text', text: r.icon + ' ' + r.label, size: 'sm', color: T.label, flex: 3 },
+      { type: 'text', text: r.value, size: 'sm', color: T.value, weight: 'bold', flex: 4, align: 'end', wrap: true }
     ],
     margin: i === 0 ? 'md' : 'sm'
   }));
@@ -68,28 +108,18 @@ function makeBubble({ headerBg, headerLabel, headerTitle, headerTitleColor, rows
       type: 'box',
       layout: 'vertical',
       contents: [
-        {
-          type: 'box',
-          layout: 'horizontal',
-          contents: [{
-            type: 'text',
-            text: '\uD83C\uDFD9\uFE0F ResolveNow',
-            size: 'sm',
-            color: '#a78bfa',
-            weight: 'bold'
-          }]
-        },
+        brandRow(),
         {
           type: 'text',
           text: headerTitle,
           size: 'xl',
           weight: 'bold',
-          color: headerTitleColor || '#ffffff',
+          color: headerTitleColor || T.title,
           margin: 'sm',
           wrap: true
         }
       ],
-      backgroundColor: headerBg || '#1a1230',
+      backgroundColor: headerBg || T.headerBg2,
       paddingAll: '20px'
     },
     body: {
@@ -97,9 +127,9 @@ function makeBubble({ headerBg, headerLabel, headerTitle, headerTitleColor, rows
       layout: 'vertical',
       contents: [
         ...bodyContents,
-        { type: 'separator', margin: 'lg', color: '#2d2050' }
+        { type: 'separator', margin: 'lg', color: T.sep }
       ],
-      backgroundColor: '#0f0c1a',
+      backgroundColor: T.bodyBg,
       paddingAll: '20px'
     }
   };
@@ -113,10 +143,10 @@ function makeBubble({ headerBg, headerLabel, headerTitle, headerTitleColor, rows
         type: 'button',
         action: { type: 'uri', label: btn.label, uri: btn.url },
         style: btn.style || 'primary',
-        color: btn.color || '#7c5ce8',
+        color: btn.color || T.btnBlue,
         height: 'sm'
       })),
-      backgroundColor: '#0f0c1a',
+      backgroundColor: T.footerBg,
       paddingAll: '16px',
       paddingTop: '12px'
     };
@@ -129,15 +159,13 @@ function flexMsg(altText, bubble) {
   return { type: 'flex', altText, contents: bubble };
 }
 
-// ── Before/After Image Flex Card ────────────────────────────
-// แสดงรูปก่อน-หลังใน Flex Card อันเดียว (side-by-side ถ้ามี 2 รูป)
+// ── Before/After Image Flex Card (Admin) ───────────────────
+// แสดงรูปก่อน-หลัง สำหรับ Admin (ยังคงส่งแยก)
 function makeImageCard(ticket, beforeUrl, afterUrl) {
   const hasBoth = !!(beforeUrl && afterUrl);
 
   let imageRow;
   if (hasBoth) {
-    // 2 รูป: แยก 2 ช่องเคียงกัน
-    // NOTE: cornerRadius is NOT valid on image component — only on box
     imageRow = {
       type: 'box',
       layout: 'horizontal',
@@ -150,7 +178,7 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
           flex: 1,
           contents: [
             { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
-            { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: '#8880a8', align: 'center', margin: 'xs' }
+            { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }
           ]
         },
         {
@@ -165,10 +193,9 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
       ]
     };
   } else {
-    // 1 รูป: full-width
     const singleUrl = beforeUrl || afterUrl;
     const label = beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ';
-    const labelColor = beforeUrl ? '#8880a8' : '#34d399';
+    const labelColor = beforeUrl ? T.label : '#34d399';
     imageRow = {
       type: 'box',
       layout: 'vertical',
@@ -190,14 +217,10 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
         type: 'box',
         layout: 'vertical',
         contents: [
-          {
-            type: 'box', layout: 'horizontal', contents: [
-              { type: 'text', text: '\uD83C\uDFD9\uFE0F ResolveNow', size: 'sm', color: '#a78bfa', weight: 'bold' }
-            ]
-          },
-          { type: 'text', text: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ', size: 'lg', weight: 'bold', color: '#ffffff', margin: 'sm' }
+          brandRow(),
+          { type: 'text', text: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ', size: 'lg', weight: 'bold', color: T.title, margin: 'sm' }
         ],
-        backgroundColor: '#0a2a18',
+        backgroundColor: T.hImage,
         paddingAll: '16px'
       },
       body: {
@@ -206,13 +229,13 @@ function makeImageCard(ticket, beforeUrl, afterUrl) {
         contents: [
           {
             type: 'box', layout: 'horizontal', contents: [
-              { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: '#8880a8', flex: 2 },
-              { type: 'text', text: ticket.ticketId, size: 'sm', color: '#f0eeff', weight: 'bold', flex: 3, align: 'end' }
+              { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
+              { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
             ]
           },
           imageRow
         ],
-        backgroundColor: '#0f0c1a',
+        backgroundColor: T.bodyBg,
         paddingAll: '16px'
       }
     }
@@ -227,9 +250,8 @@ function notifyNewTicket(ticket) {
 
   const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
-  // Admin Flex
   const adminBubble = makeBubble({
-    headerBg: '#0d2240',
+    headerBg: T.headerBg2,
     headerTitle: '\uD83C\uDD95 มีเรื่องร้องเรียนใหม่!',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
@@ -238,19 +260,18 @@ function notifyNewTicket(ticket) {
       { icon: '\u23F1\uFE0F', label: 'ความเร่งด่วน', value: urgencyLabel },
       { icon: '\uD83D\uDC64', label: 'ผู้แจ้ง', value: ticket.citizenName || '-' }
     ],
-    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 เข้าระบบมอบหมายงาน', url: BASE_URL, style: 'primary', color: '#2563eb' }] : []
+    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 เข้าระบบมอบหมายงาน', url: BASE_URL, style: 'primary', color: T.btnBlue }] : []
   });
 
-  // Citizen Flex
   const citizenBubble = makeBubble({
-    headerBg: '#0d2240',
+    headerBg: T.headerBg2,
     headerTitle: '\u2705 รับเรื่องเรียบร้อยแล้ว!',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket ID', value: ticket.ticketId },
       { icon: '\uD83D\uDCCD', label: 'สถานที่', value: ticket.location || '-' },
       { icon: '\u23F1\uFE0F', label: 'ความเร่งด่วน', value: urgencyLabel }
     ],
-    footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ติดตามสถานะ', url: trackLink, style: 'primary', color: '#2563eb' }] : []
+    footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ติดตามสถานะ', url: trackLink, style: 'primary', color: T.btnBlue }] : []
   });
 
   return pushAll(
@@ -266,10 +287,9 @@ async function notifyAssigned() { }
 // ── notifyInProgress ─────────────────────────────────────────
 function notifyInProgress(ticket) {
   const techName = ticket.assignedName || 'ยังไม่ได้ระบุ';
-  const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
   const adminBubble = makeBubble({
-    headerBg: '#1a1050',
+    headerBg: T.hProg,
     headerTitle: '\u2699\uFE0F เริ่มดำเนินการแล้ว',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
@@ -277,11 +297,11 @@ function notifyInProgress(ticket) {
       { icon: '\uD83D\uDC77', label: 'ช่างผู้ดำเนินการ', value: techName },
       { icon: '\uD83D\uDD28', label: 'สถานะ', value: 'กำลังดำเนินการแก้ไข' }
     ],
-    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ดูในระบบ', url: BASE_URL, style: 'primary', color: '#7c3aed' }] : []
+    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ดูในระบบ', url: BASE_URL, style: 'primary', color: T.btnBlue }] : []
   });
 
   const citizenBubble = makeBubble({
-    headerBg: '#1a1050',
+    headerBg: T.hProg,
     headerTitle: '\u2699\uFE0F ช่างเริ่มดำเนินการแล้ว!',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
@@ -308,8 +328,17 @@ async function notifyCompleted(ticket) {
     hour: '2-digit', minute: '2-digit'
   });
 
+  // ── รูปภาพก่อน-หลัง ──────────────────────────────────────
+  const beforeUrl = ticket.beforeImage
+    ? (ticket.beforeImage.startsWith('http') ? ticket.beforeImage : BASE_URL + ticket.beforeImage)
+    : null;
+  const afterUrl = ticket.afterImage
+    ? (ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage)
+    : null;
+
+  // Admin bubble + imageCard แยก
   const adminBubble = makeBubble({
-    headerBg: '#0a2a18',
+    headerBg: T.hDone,
     headerTitle: '\u2705 ดำเนินการเสร็จสิ้นแล้ว!',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
@@ -318,8 +347,12 @@ async function notifyCompleted(ticket) {
       { icon: '\uD83D\uDC64', label: 'ผู้แจ้ง', value: ticket.citizenName || '-' },
       { icon: '\uD83D\uDD50', label: 'เสร็จเมื่อ', value: now }
     ],
-    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ดูในระบบ', url: BASE_URL, style: 'primary', color: '#16a34a' }] : []
+    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ดูในระบบ', url: BASE_URL, style: 'primary', color: T.btnBlue }] : []
   });
+
+  const imageCard = (beforeUrl || afterUrl)
+    ? [makeImageCard(ticket, beforeUrl, afterUrl)]
+    : [];
 
   // ── LIFF URLs สำหรับปุ่มดาว ──────────────────────────────
   const LIFF_ID = process.env.LINE_LIFF_ID || '';
@@ -335,6 +368,38 @@ async function notifyCompleted(ticket) {
       (rating ? '&rating=' + rating : '');
   }
 
+  // ── imageBodyRows — แทรกรูปในบอดี้การ์ด citizen ──────────
+  const imageBodyRows = (beforeUrl || afterUrl) ? [
+    { type: 'separator', margin: 'lg', color: T.sep },
+    ...(beforeUrl && afterUrl ? [{
+      type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md',
+      contents: [
+        {
+          type: 'box', layout: 'vertical', flex: 1, contents: [
+            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
+            { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box', layout: 'vertical', flex: 1, contents: [
+            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
+            { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
+          ]
+        }
+      ]
+    }] : [{
+      type: 'box', layout: 'vertical', margin: 'md',
+      contents: [
+        { type: 'image', url: beforeUrl || afterUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' },
+        {
+          type: 'text',
+          text: beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ',
+          size: 'xs', color: beforeUrl ? T.label : '#34d399', align: 'center', margin: 'xs'
+        }
+      ]
+    }])
+  ] : [];
+
   const citizenMessages = [];
 
   if (LIFF_ID || BASE_URL) {
@@ -348,79 +413,40 @@ async function notifyCompleted(ticket) {
           type: 'box',
           layout: 'vertical',
           contents: [
-            {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [{ type: 'text', text: '\uD83C\uDFD9\uFE0F ResolveNow', size: 'sm', color: '#a78bfa', weight: 'bold' }]
-            },
-            { type: 'text', text: '\uD83C\uDF89 งานเสร็จสิ้นแล้ว!', size: 'xl', weight: 'bold', color: '#ffffff', margin: 'sm' }
+            brandRow(),
+            { type: 'text', text: '\uD83C\uDF89 งานเสร็จสิ้นแล้ว!', size: 'xl', weight: 'bold', color: T.title, margin: 'sm' }
           ],
-          backgroundColor: '#0a2a18',
+          backgroundColor: T.hDone,
           paddingAll: '20px'
         },
         body: {
           type: 'box',
           layout: 'vertical',
           contents: [
-            {
-              type: 'box', layout: 'horizontal', margin: 'md', contents: [
-                { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: '#8880a8', flex: 2 },
-                { type: 'text', text: ticket.ticketId, size: 'sm', color: '#f0eeff', weight: 'bold', flex: 3, align: 'end' }
-              ]
-            },
-            {
-              type: 'box', layout: 'horizontal', margin: 'sm', contents: [
-                { type: 'text', text: '\uD83D\uDCCD สถานที่', size: 'sm', color: '#8880a8', flex: 2 },
-                { type: 'text', text: ticket.location || '-', size: 'sm', color: '#f0eeff', flex: 3, align: 'end', wrap: true }
-              ]
-            },
-            {
-              type: 'box', layout: 'horizontal', margin: 'sm', contents: [
-                { type: 'text', text: '\uD83D\uDC77 ช่าง', size: 'sm', color: '#8880a8', flex: 2 },
-                { type: 'text', text: techName, size: 'sm', color: '#f0eeff', flex: 3, align: 'end' }
-              ]
-            },
-            {
-              type: 'box', layout: 'horizontal', margin: 'sm', contents: [
-                { type: 'text', text: '\uD83D\uDD50 เสร็จเมื่อ', size: 'sm', color: '#8880a8', flex: 2 },
-                { type: 'text', text: now, size: 'sm', color: '#f0eeff', flex: 3, align: 'end', wrap: true }
-              ]
-            },
-            // ── รูปก่อน-หลัง (แสดงในการ์ดเดียวถ้ามีรูป) ──────────
-            ...(beforeUrl || afterUrl ? [
-              { type: 'separator', margin: 'lg', color: '#2d2050' },
-              ...(beforeUrl && afterUrl ? [{
-                type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md',
-                contents: [
-                  {
-                    type: 'box', layout: 'vertical', flex: 1, contents: [
-                      { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
-                      { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: '#8880a8', align: 'center', margin: 'xs' }
-                    ]
-                  },
-                  {
-                    type: 'box', layout: 'vertical', flex: 1, contents: [
-                      { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover' },
-                      { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
-                    ]
-                  }
-                ]
-              }] : [{
-                type: 'box', layout: 'vertical', margin: 'md',
-                contents: [
-                  { type: 'image', url: beforeUrl || afterUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' },
-                  {
-                    type: 'text', text: beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ',
-                    size: 'xs', color: beforeUrl ? '#8880a8' : '#34d399', align: 'center', margin: 'xs'
-                  }
-                ]
-              }])
-            ] : []),
-            { type: 'separator', margin: 'lg', color: '#2d2050' },
-            { type: 'text', text: '\u2B50 กดดาวเพื่อให้คะแนนการบริการ', size: 'md', weight: 'bold', color: '#f0eeff', margin: 'lg', align: 'center' },
-            { type: 'text', text: 'กดที่ดาวที่ด้านล่างได้เลย — ยืนยันในหน้าถัดไป', size: 'xs', color: '#8880a8', align: 'center', margin: 'xs' }
+            { type: 'box', layout: 'horizontal', margin: 'md', contents: [
+              { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
+              { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
+            ]},
+            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+              { type: 'text', text: '\uD83D\uDCCD สถานที่', size: 'sm', color: T.label, flex: 2 },
+              { type: 'text', text: ticket.location || '-', size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
+            ]},
+            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+              { type: 'text', text: '\uD83D\uDC77 ช่าง', size: 'sm', color: T.label, flex: 2 },
+              { type: 'text', text: techName, size: 'sm', color: T.value, flex: 3, align: 'end' }
+            ]},
+            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+              { type: 'text', text: '\uD83D\uDD50 เสร็จเมื่อ', size: 'sm', color: T.label, flex: 2 },
+              { type: 'text', text: now, size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
+            ]},
+            // ── รูปก่อน-หลัง (ถ้ามี) ──────────────────────────
+            ...imageBodyRows,
+            // ── ส่วนให้คะแนน ───────────────────────────────────
+            { type: 'separator', margin: 'lg', color: T.sep },
+            { type: 'text', text: '\u2B50 กดดาวเพื่อให้คะแนนการบริการ', size: 'md', weight: 'bold', color: T.value, margin: 'lg', align: 'center' },
+            { type: 'text', text: 'กดที่ดาวที่ด้านล่างได้เลย — ยืนยันในหน้าถัดไป', size: 'xs', color: T.label, align: 'center', margin: 'xs' }
           ],
-          backgroundColor: '#0f0c1a',
+          backgroundColor: T.bodyBg,
           paddingAll: '20px'
         },
         footer: {
@@ -448,13 +474,13 @@ async function notifyCompleted(ticket) {
                 type: 'button',
                 action: { type: 'uri', label: '\u2605'.repeat(n), uri: makeLiffUrl(n) },
                 style: 'primary',
-                color: n === 5 ? '#f5c518' : '#d4a017',
+                color: n === 5 ? T.btnGold5 : T.btnGold,
                 height: 'sm',
                 flex: 1
               }))
             }
           ],
-          backgroundColor: '#0f0c1a',
+          backgroundColor: T.footerBg,
           paddingAll: '16px',
           paddingTop: '4px'
         }
@@ -465,7 +491,7 @@ async function notifyCompleted(ticket) {
       type: 'flex',
       altText: '\uD83C\uDF89 เรื่องร้องเรียน ' + ticket.ticketId + ' ได้รับการแก้ไขแล้ว!',
       contents: makeBubble({
-        headerBg: '#0a2a18',
+        headerBg: T.hDone,
         headerTitle: '\uD83C\uDF89 งานเสร็จสิ้นแล้ว!',
         rows: [
           { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
@@ -478,24 +504,11 @@ async function notifyCompleted(ticket) {
     });
   }
 
-  // ── รูปภาพก่อน-หลัง (ใช้ในการ์ด citizen และ admin) ──────
-  const beforeUrl = ticket.beforeImage
-    ? (ticket.beforeImage.startsWith('http') ? ticket.beforeImage : BASE_URL + ticket.beforeImage)
-    : null;
-  const afterUrl = ticket.afterImage
-    ? (ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage)
-    : null;
-
-  // Admin ยังคงส่ง imageCard แยก
-  const imageCard = (beforeUrl || afterUrl)
-    ? [makeImageCard(ticket, beforeUrl, afterUrl)]
-    : [];
-
   const tasks = [];
   if (ADMIN_ID) {
     tasks.push(pushTo(ADMIN_ID, [flexMsg('\u2705 เสร็จสิ้น — ' + ticket.ticketId, adminBubble), ...imageCard]));
   }
-  // Citizen: ส่งเดียว — รูปอยู่ในการ์ดงานเสร็จ+ดาวแล้ว
+  // Citizen: การ์ดเดียว — รูปและดาวอยู่รวมกันแล้ว
   if (ticket.citizenLineId && ticket.citizenLineId !== ADMIN_ID) {
     tasks.push(pushTo(ticket.citizenLineId, citizenMessages));
   }
@@ -508,7 +521,7 @@ function notifyRejected(ticket, reason) {
   const trackLink = BASE_URL ? BASE_URL + '/track.html?id=' + ticket.ticketId : '';
 
   const adminBubble = makeBubble({
-    headerBg: '#3a0a0a',
+    headerBg: T.hReject,
     headerTitle: '\u274C ปฏิเสธการรับงาน',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
@@ -516,18 +529,18 @@ function notifyRejected(ticket, reason) {
       { icon: '\uD83D\uDC64', label: 'ผู้แจ้ง', value: ticket.citizenName || '-' },
       ...(reason ? [{ icon: '\uD83D\uDCDD', label: 'เหตุผล', value: reason }] : [])
     ],
-    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ตรวจสอบในระบบ', url: BASE_URL, style: 'primary', color: '#dc2626' }] : []
+    footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ตรวจสอบในระบบ', url: BASE_URL, style: 'primary', color: T.btnRed }] : []
   });
 
   const citizenBubble = makeBubble({
-    headerBg: '#3a0a0a',
+    headerBg: T.hReject,
     headerTitle: '\u274C ขออภัย เรื่องถูกปฏิเสธ',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
       { icon: '\uD83D\uDCCD', label: 'สถานที่', value: ticket.location || '-' },
       ...(reason ? [{ icon: '\uD83D\uDCDD', label: 'เหตุผล', value: reason }] : [])
     ],
-    footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ดูรายละเอียด', url: trackLink, style: 'primary', color: '#dc2626' }] : []
+    footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ดูรายละเอียด', url: trackLink, style: 'primary', color: T.btnRed }] : []
   });
 
   return pushAll(
@@ -551,14 +564,14 @@ async function notifyFollowers(ticket, newStatus) {
   const statusLabel = statusTH[newStatus] || newStatus;
 
   const bubble = makeBubble({
-    headerBg: '#1a1230',
+    headerBg: T.hFollow,
     headerTitle: '\uD83D\uDD14 Ticket ที่คุณติดตามมีการอัปเดต',
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket', value: ticket.ticketId },
       { icon: '\uD83D\uDCCD', label: 'สถานที่', value: ticket.location || '-' },
       { icon: '\uD83D\uDCCA', label: 'สถานะใหม่', value: statusLabel }
     ],
-    footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ติดตามสถานะ', url: trackLink, style: 'primary', color: '#7c5ce8' }] : []
+    footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ติดตามสถานะ', url: trackLink, style: 'primary', color: T.btnBlue }] : []
   });
 
   const tasks = [];
@@ -578,4 +591,3 @@ module.exports = {
   notifyRejected,
   notifyFollowers
 };
-
