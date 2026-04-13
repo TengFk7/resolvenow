@@ -370,6 +370,14 @@ async function loadTickets() {
     console.log('[App] ✅ LINE login success → ตรวจ session...');
     window.history.replaceState({}, '', '/');
 
+    // Force-kill page-load splash ทันที (ป้องกัน animation ซ้อนกับ welcome splash)
+    var splashElLogin = document.getElementById('splash');
+    if (splashElLogin && splashElLogin.parentNode) splashElLogin.parentNode.removeChild(splashElLogin);
+
+    // ซ่อน authPage ทันที (ป้องกัน flash ขณะ fetch)
+    var _apLogin = ge('authPage');
+    if (_apLogin) _apLogin.style.display = 'none';
+
     fetch('/api/auth/me')
       .then(function(r) {
         if (r.ok) return r.json();
@@ -384,6 +392,7 @@ async function loadTickets() {
       })
       .catch(function() {
         console.log('[App] LINE login แต่ไม่มี session → หน้า login');
+        if (_apLogin) _apLogin.style.display = 'flex'; // คืน authPage กลับมา
         showE('authErr', 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่');
       });
     return;
