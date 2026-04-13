@@ -38,6 +38,152 @@ function clearAppIntervals() {
   if (_helpInterval)    { clearInterval(_helpInterval);    _helpInterval = null; }
 }
 
+/* ── Welcome Splash (Admin, Tech & Citizen) ──────────── */
+function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
+  var isAdmin    = (role === 'admin');
+  var isCitizen  = (role === 'citizen');
+
+  // ── Gradient per role ──
+  var bg = isAdmin
+    ? 'linear-gradient(145deg,#0a0e2e 0%,#1a1060 40%,#0d1b4b 100%)'
+    : isCitizen
+      ? 'linear-gradient(145deg,#051a14 0%,#0d3328 40%,#062419 60%,#0a1e30 100%)'
+      : 'linear-gradient(145deg,#0a1628 0%,#0f2a50 45%,#0d1e3a 100%)';
+
+  // ── Build overlay ──
+  var overlay = document.createElement('div');
+  overlay.id = 'welcomeSplash';
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:99999',
+    'display:flex','flex-direction:column',
+    'align-items:center','justify-content:center','gap:0',
+    'background:'+bg,
+    'opacity:0','transition:opacity .35s ease','overflow:hidden'
+  ].join(';');
+
+  // ── Sparkle colour per role ──
+  var sparkleColor = isAdmin ? '#f5c842' : isCitizen ? '#34d399' : '#60a5fa';
+  var sparkleCount = isAdmin ? 22 : isCitizen ? 30 : 14;
+  var sparkleHtml  = '';
+  for (var i = 0; i < sparkleCount; i++) {
+    var sz  = (Math.random() * 5 + 2).toFixed(1);
+    var tp  = (Math.random() * 100).toFixed(1);
+    var lf  = (Math.random() * 100).toFixed(1);
+    var dl  = (Math.random() * 2.8).toFixed(2);
+    var dr  = (Math.random() * 2 + 1.5).toFixed(2);
+    sparkleHtml += '<div style="position:absolute;top:'+tp+'%;left:'+lf+'%;width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+sparkleColor+';opacity:0;animation:splashSparkle '+dr+'s ease-in-out '+dl+'s infinite;pointer-events:none"></div>';
+  }
+
+  // ── Content: Citizen gets avatar photo ──
+  var iconHtml, titleHtml, subtitleHtml, badgeHtml;
+
+  if (isCitizen) {
+    // Avatar ring (photo or fallback initials)
+    var avatarInner = avatarUrl
+      ? '<img src="'+escapeHTML(avatarUrl)+'" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block" onerror="this.style.display=\'none\'"/>'
+      : '<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#34d399,#059669);display:flex;align-items:center;justify-content:center;font-size:36px;color:#fff;font-weight:800">'+escapeHTML((firstName||'?')[0].toUpperCase())+'</div>';
+
+    iconHtml =
+      '<div style="position:relative;width:96px;height:96px;margin:0 auto;animation:splashIconPop .65s cubic-bezier(.34,1.56,.64,1) .05s both">'
+      // outer glow ring
+      +'<div style="position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(#34d399,#f5c842,#06b6d4,#34d399);animation:splashRingRotate 3s linear infinite;opacity:.85"></div>'
+      // white gap
+      +'<div style="position:absolute;inset:-2px;border-radius:50%;background:#051a14"></div>'
+      // avatar
+      +'<div style="position:absolute;inset:0;border-radius:50%;overflow:hidden">'+avatarInner+'</div>'
+      +'</div>';
+
+    var displayName = escapeHTML(firstName);
+    titleHtml =
+      '<div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:rgba(52,211,153,.7);font-weight:600;margin-bottom:10px;animation:splashFadeUp .5s ease .35s both">WELCOME BACK</div>'
+      +'<div style="font-size:15px;font-weight:500;color:rgba(255,255,255,.6);animation:splashFadeUp .5s ease .48s both">ยินดีต้อนรับ คุณ</div>'
+      +'<div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:.3px;margin-top:4px;animation:splashFadeUp .5s ease .58s both;font-family:Prompt,sans-serif">'+displayName+'</div>';
+
+    subtitleHtml = '<div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:10px;animation:splashFadeUp .5s ease .7s both">ResolveNow — พร้อมรับเรื่องร้องเรียนของคุณแล้ว</div>';
+
+    var barColor = '#34d399';
+    var barHtml  = '<div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,#34d399,#f5c842,#06b6d4);margin:18px auto 0;animation:splashBarGrow .7s cubic-bezier(.22,1,.36,1) .85s both;box-shadow:0 0 14px rgba(52,211,153,.6)"></div>';
+
+    badgeHtml = '';
+
+    overlay.innerHTML = [
+      '<style>',
+      '@keyframes splashSparkle{0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:.85;transform:scale(1) translateY(-14px)}}',
+      '@keyframes splashIconPop{0%{opacity:0;transform:scale(.25)}60%{transform:scale(1.12)}80%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}',
+      '@keyframes splashFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes splashBarGrow{from{width:0}to{width:130px}}',
+      '@keyframes splashRingRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}',
+      '</style>',
+      sparkleHtml,
+      '<div style="text-align:center;padding:0 36px;position:relative;z-index:2">',
+      iconHtml,
+      '<div style="margin-top:20px">' + titleHtml + '</div>',
+      subtitleHtml,
+      barHtml,
+      badgeHtml,
+      '</div>'
+    ].join('');
+
+  } else {
+    // ── Admin / Tech (existing logic) ──
+    iconHtml = isAdmin
+      ? '<div style="font-size:72px;filter:drop-shadow(0 0 24px rgba(245,200,66,.6));animation:splashIconPop .6s cubic-bezier(.34,1.56,.64,1) .1s both">👑</div>'
+      : '<div style="font-size:68px;filter:drop-shadow(0 0 20px rgba(96,165,250,.5));animation:splashIconPop .6s cubic-bezier(.34,1.56,.64,1) .1s both">🔧</div>';
+
+    titleHtml = isAdmin
+      ? '<div style="font-size:13px;letter-spacing:4px;text-transform:uppercase;color:rgba(245,200,66,.7);font-weight:600;margin-bottom:12px;animation:splashFadeUp .5s ease .3s both">SYSTEM ADMINISTRATOR</div>'
+        + '<div style="font-size:30px;font-weight:800;color:#fff;letter-spacing:.5px;animation:splashFadeUp .5s ease .45s both;font-family:Prompt,sans-serif">ยินดีต้อนรับ Admin</div>'
+      : '<div style="font-size:12px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(96,165,250,.75);font-weight:600;margin-bottom:12px;animation:splashFadeUp .5s ease .3s both">TECHNICIAN</div>'
+        + '<div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:.5px;animation:splashFadeUp .5s ease .45s both;font-family:Prompt,sans-serif">ยินดีต้อนรับ, ' + escapeHTML(firstName) + '</div>';
+
+    subtitleHtml = isAdmin
+      ? '<div style="font-size:14px;color:rgba(255,255,255,.55);margin-top:10px;animation:splashFadeUp .5s ease .6s both">ระบบพร้อมให้บริการ — เข้าสู่ Dashboard</div>'
+      : '<div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:10px;animation:splashFadeUp .5s ease .6s both">พร้อมรับงานแล้ว — โหลดข้อมูลงาน...</div>';
+
+    var barColor2 = isAdmin ? '#f5c842' : '#3b82f6';
+    var barHtml2  = '<div style="width:0;height:3px;border-radius:99px;background:'+barColor2+';margin:18px auto 0;animation:splashBarGrow .65s cubic-bezier(.22,1,.36,1) .75s both;box-shadow:0 0 12px '+barColor2+'88"></div>';
+
+    badgeHtml = isAdmin
+      ? '<div style="margin-top:24px;padding:6px 20px;border-radius:999px;border:1.5px solid rgba(245,200,66,.4);color:rgba(245,200,66,.9);font-size:11px;font-weight:700;letter-spacing:2px;animation:splashFadeUp .5s ease .9s both">🛡️ &nbsp;ADMIN ACCESS</div>'
+      : '<div style="margin-top:24px;padding:6px 20px;border-radius:999px;border:1.5px solid rgba(96,165,250,.4);color:rgba(96,165,250,.9);font-size:11px;font-weight:700;letter-spacing:2px;animation:splashFadeUp .5s ease .9s both">⚡ &nbsp;TECH PORTAL</div>';
+
+    overlay.innerHTML = [
+      '<style>',
+      '@keyframes splashSparkle{0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:.85;transform:scale(1) translateY(-12px)}}',
+      '@keyframes splashIconPop{0%{opacity:0;transform:scale(.3) rotate(-20deg)}60%{transform:scale(1.15) rotate(4deg)}80%{transform:scale(.96) rotate(-2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}',
+      '@keyframes splashFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}',
+      '@keyframes splashBarGrow{from{width:0}to{width:120px}}',
+      '@keyframes adminGlow{0%,100%{text-shadow:0 0 20px rgba(245,200,66,.3)}50%{text-shadow:0 0 40px rgba(245,200,66,.7),0 0 80px rgba(245,200,66,.2)}}',
+      '</style>',
+      sparkleHtml,
+      '<div style="text-align:center;padding:0 32px;position:relative;z-index:2">',
+      iconHtml,
+      '<div style="margin-top:16px">' + titleHtml + '</div>',
+      subtitleHtml,
+      barHtml2,
+      badgeHtml,
+      '</div>'
+    ].join('');
+  }
+
+  document.body.appendChild(overlay);
+
+  // Fade in
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() { overlay.style.opacity = '1'; });
+  });
+
+  // Fade out + remove after 3.2s
+  setTimeout(function() {
+    overlay.style.transition = 'opacity .5s ease';
+    overlay.style.opacity = '0';
+    setTimeout(function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if (typeof onDone === 'function') onDone();
+    }, 500);
+  }, 3200);
+}
+
 /* ── Enter Application ───────────────────────────────── */
 function enterApp() {
   ge('authPage').style.display = 'none';
@@ -47,7 +193,7 @@ function enterApp() {
   loadCategories();
 
   if (CU.role === 'admin') {
-
+    // ── ตั้งค่า admin app ก่อน แต่ซ่อนไว้ระหว่าง splash ──
     ge('adminApp').style.display = 'flex';
     ge('normalApp').style.display = 'none';
     var adminInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
@@ -55,12 +201,13 @@ function enterApp() {
     ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
     showPage('dashboard');
     loadAdmin();
-    // FIX-ADMIN-POLL: ใช้ socket-aware 30s fallback แทน 6s spam
-    // Socket.io จะ trigger loadAdmin() ทันทีเมื่อมี ticket_updated event
-    // interval นี้จะทำงานเฉพาะเมื่อ socket ขาดการเชื่อมต่อเท่านั้น
     _adminInterval = setInterval(function() {
       if (!_socketConnected) loadAdmin();
     }, 30000);
+
+    // Welcome splash สำหรับ Admin
+    showWelcomeSplash('admin', CU.firstName, null);
+
   } else {
     ge('normalApp').style.display = 'flex';
     ge('adminApp').style.display = 'none';
@@ -77,10 +224,7 @@ function enterApp() {
     ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
     ge('secTech').style.display   = CU.role === 'technician' ? 'block' : 'none';
     loadTickets();
-    // FIX-4.2: ใช้ 30s heartbeat แทน 8s — Socket.io จะ trigger loadTickets() แทนเมื่อมี event
     _ticketsInterval = setInterval(function() {
-      // ถ้า socket connected อยู่ → ข้ามไป (Socket จัดการแล้ว)
-      // ถ้า socket ขาด → poll เป็น safety net
       if (!_socketConnected) loadTickets();
     }, 30000);
     if (CU.role === 'technician') {
@@ -88,6 +232,12 @@ function enterApp() {
       _helpInterval = setInterval(function() {
         if (!_socketConnected) loadHelpRequests();
       }, 30000);
+      // Welcome splash สำหรับ Technician
+      showWelcomeSplash('technician', CU.firstName, null);
+    } else if (CU.role === 'citizen') {
+      // Welcome splash สำหรับ Citizen — แสดงรูปโปรไฟล์ LINE
+      var displayName = CU.lineDisplayName || CU.firstName || 'คุณ';
+      showWelcomeSplash('citizen', displayName, null, CU.avatar || null);
     }
   }
 }
