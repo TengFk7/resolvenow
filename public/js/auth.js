@@ -343,16 +343,35 @@ async function doLogout() {
         if (ap) {
           // ซ่อน mobNav (ไม่ควรแสดงบนหน้า login)
           var mn = ge('mobNav'); if (mn) mn.style.display = 'none';
+
+          // ── ROOT CAUSE FIX: .ac มี CSS opacity:0 โดย default ──
+          // ต้อง add .card-enter และ reset inline styles ก่อน show authPage
+          var acEl = document.querySelector('.ac');
+          if (acEl) {
+            acEl.style.transform = '';  // ล้าง inline transform ที่อาจค้างอยู่
+            acEl.style.opacity = '';    // ล้าง inline opacity
+            acEl.classList.remove('card-enter');
+          }
+          // Reset hero-enter ด้วย (เพื่อให้ animation re-trigger ได้ถ้าต้องการ)
+          var heroEl = document.querySelector('.auth-hero-content');
+          if (heroEl) {
+            heroEl.classList.remove('hero-enter');
+          }
+
           ap.style.display = 'flex';
-          ap.style.transform = 'scale(1.06) rotateX(-4deg)';
           ap.style.opacity = '0';
-          ap.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), opacity .5s ease';
+          ap.style.transition = 'opacity .45s ease';
           var fL = ge('fLogin'); if (fL) fL.style.display = 'block';
+
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
-              ap.style.transform = '';
               ap.style.opacity = '1';
-              setTimeout(function () { ap.style.transition = ''; }, 650);
+              // เพิ่ม .card-enter เพื่อให้ auth card มองเห็น (CSS opacity:0 → 1)
+              if (acEl) {
+                void acEl.offsetWidth; // force reflow
+                acEl.classList.add('card-enter');
+              }
+              setTimeout(function () { ap.style.transition = ''; }, 500);
             });
           });
         }
