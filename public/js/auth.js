@@ -203,6 +203,7 @@ async function doLogout() {
   CU = null;
   _stopOtpTimer();
   if (typeof clearAppIntervals === 'function') clearAppIntervals();
+  if (typeof stopHeartbeat === 'function') stopHeartbeat();
   if (typeof closeDrawer === 'function') closeDrawer();
 
   // ── 3D Exit animation บน active app ──
@@ -319,13 +320,34 @@ async function doLogout() {
       setTimeout(function () {
         if (splash.parentNode) splash.parentNode.removeChild(splash);
 
+        // ── BUG-FIX: ลบ overlay ที่อาจค้างอยู่ (welcomeSplash / lineWaitOverlay) ──
+        // กรณี citizen logout ก่อนที่ welcomeSplash (4.3s) จะหมดเวลา
+        ['welcomeSplash', 'lineWaitOverlay'].forEach(function (oid) {
+          var oel = document.getElementById(oid);
+          if (oel && oel.parentNode) oel.parentNode.removeChild(oel);
+        });
+
+        // ── BUG-FIX: Reset สถานะ auth panels ทั้งหมด ──
+        // ต้องซ่อนทุก panel ก่อน แล้ว show แค่ fLogin
+        // (switchTab('login') จะ return ทันทีถ้า _currentTab === 'login' แล้ว)
+        var tabsEl = document.querySelector('.tabs');
+        if (tabsEl) tabsEl.style.display = '';
+        ['fLogin', 'fLineLink', 'fLineLinkOtp', 'fHeatmap'].forEach(function (pid) {
+          var pel = ge(pid); if (pel) pel.style.display = 'none';
+        });
+        _currentTab = 'login';
+        _switching = false;
+
         // ── แสดงหน้า login ──
         var ap = ge('authPage');
         if (ap) {
+          // ซ่อน mobNav (ไม่ควรแสดงบนหน้า login)
+          var mn = ge('mobNav'); if (mn) mn.style.display = 'none';
           ap.style.display = 'flex';
           ap.style.transform = 'scale(1.06) rotateX(-4deg)';
           ap.style.opacity = '0';
           ap.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), opacity .5s ease';
+          var fL = ge('fLogin'); if (fL) fL.style.display = 'block';
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
               ap.style.transform = '';
@@ -334,14 +356,11 @@ async function doLogout() {
             });
           });
         }
-        _currentTab = 'login';
-        _switching = false;
+
         if (ge('citizenCards')) ge('citizenCards').innerHTML = '';
         if (ge('techCards')) ge('techCards').innerHTML = '';
         if (ge('queueBody')) ge('queueBody').innerHTML = '<tr><td colspan="4" class="empty">กำลังโหลด...</td></tr>';
         if (ge('allBody')) ge('allBody').innerHTML = '<tr><td colspan="11" class="empty">กำลังโหลด...</td></tr>';
-        ge('fLogin').style.display = 'block';
-        switchTab('login');
       }, 500);
     }, 2200);
   }, 450);
