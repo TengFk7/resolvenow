@@ -18,21 +18,25 @@
   var heroContent = document.querySelector('.auth-hero-content');
   if (!splash) return;
 
-
-
+  // ── GUARD: LINE OAuth return → ยกเลิก animation ทั้งหมดทันที ──
+  var _sp = new URLSearchParams(location.search);
+  if (_sp.get('line_link') || _sp.get('line_login') || _sp.get('line_error')) {
+    if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+    return;
+  }
 
   // Step 1 (1.7s): Start hero content scale-down FIRST — hidden under splash
-  setTimeout(function() {
+  setTimeout(function () {
     if (heroContent) heroContent.classList.add('hero-enter');
   }, 1700);
 
   // Step 2 (1.85s): Fade splash out, slide card in from right
-  setTimeout(function() {
+  setTimeout(function () {
     splash.classList.add('fade-out');
     if (card) {
-      requestAnimationFrame(function() { card.classList.add('card-enter'); });
+      requestAnimationFrame(function () { card.classList.add('card-enter'); });
     }
-    setTimeout(function() {
+    setTimeout(function () {
       if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
     }, 950);
   }, 1850);
@@ -51,9 +55,9 @@
       document.removeEventListener('mouseenter', check);
     }
   }, true);
-  setTimeout(function() { entered = true; }, 2800);
+  setTimeout(function () { entered = true; }, 2800);
 
-  hero.addEventListener('mousemove', function(e) {
+  hero.addEventListener('mousemove', function (e) {
     if (!entered) return;
     var rect = hero.getBoundingClientRect();
     var cx = rect.left + rect.width / 2;
@@ -61,28 +65,28 @@
     var dx = (e.clientX - cx) / rect.width;   // -0.5 to 0.5
     var dy = (e.clientY - cy) / rect.height;
     var rotX = -dy * 10;   // tilt up/down max 10deg
-    var rotY =  dx * 10;   // tilt left/right max 10deg
+    var rotY = dx * 10;   // tilt left/right max 10deg
     content.classList.add('tilting');
     content.style.transform = 'scale(1) translateX(0) rotateX(' + rotX + 'deg) rotateY(' + rotY + 'deg)';
   });
 
-  hero.addEventListener('mouseleave', function() {
+  hero.addEventListener('mouseleave', function () {
     if (!entered) return;
     content.classList.remove('tilting');
     content.style.transform = 'scale(1) translateX(0) rotateX(0deg) rotateY(0deg)';
     // Re-add smooth transition for reset
     content.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1)';
-    setTimeout(function() { content.style.transition = ''; }, 700);
+    setTimeout(function () { content.style.transition = ''; }, 700);
   });
 })();
 
 var DEPT = {
-  Road:'ถนน/ทางเท้า', Water:'ท่อแตก/น้ำ', Electricity:'ไฟฟ้า',
-  Garbage:'ขยะ', Animal:'สัตว์', Tree:'กิ่งไม้', Hazard:'ภัยพิบัติ'
+  Road: 'ถนน/ทางเท้า', Water: 'ท่อแตก/น้ำ', Electricity: 'ไฟฟ้า',
+  Garbage: 'ขยะ', Animal: 'สัตว์', Tree: 'กิ่งไม้', Hazard: 'ภัยพิบัติ'
 };
 var DEPT_ICON = {
-  Road:'🛣️', Water:'💧', Electricity:'💡',
-  Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨'
+  Road: '🛣️', Water: '💧', Electricity: '💡',
+  Garbage: '🗑️', Animal: '🐍', Tree: '🌿', Hazard: '🚨'
 };
 var _categoriesCache = null;
 
@@ -95,7 +99,7 @@ async function loadCategories() {
     // Update DEPT and DEPT_ICON dynamically
     DEPT = {};
     DEPT_ICON = {};
-    cats.forEach(function(c) {
+    cats.forEach(function (c) {
       DEPT[c.name] = c.label;
       DEPT_ICON[c.name] = c.icon;
     });
@@ -112,7 +116,7 @@ function _updateDynamicSelects(cats) {
   if (srchCat) {
     var val = srchCat.value;
     srchCat.innerHTML = '<option value="all">ทุกประเภท</option>';
-    cats.forEach(function(c) {
+    cats.forEach(function (c) {
       srchCat.innerHTML += '<option value="' + escapeHTML(c.name) + '">' + c.icon + ' ' + escapeHTML(c.label) + '</option>';
     });
     srchCat.value = val;
@@ -122,7 +126,7 @@ function _updateDynamicSelects(cats) {
   if (helpDept) {
     var hval = helpDept.value;
     helpDept.innerHTML = '<option value="">— ทุกแผนก —</option>';
-    cats.forEach(function(c) {
+    cats.forEach(function (c) {
       helpDept.innerHTML += '<option value="' + escapeHTML(c.name) + '">' + c.icon + ' ' + escapeHTML(c.label) + '</option>';
     });
     helpDept.value = hval;
@@ -162,7 +166,7 @@ function cgDropToggle(id) {
   var btn = el.querySelector('.cg-select-trigger');
   if (btn) {
     btn.style.transform = 'scale(.95)';
-    setTimeout(function(){ btn.style.transform = ''; }, 120);
+    setTimeout(function () { btn.style.transform = ''; }, 120);
   }
 }
 
@@ -174,21 +178,21 @@ function cgDropPick(id, value, label, callback) {
   if (labelEl) {
     labelEl.style.transform = 'translateY(-4px)';
     labelEl.style.opacity = '0';
-    setTimeout(function(){
+    setTimeout(function () {
       labelEl.textContent = label;
       labelEl.style.transition = 'transform .18s ease, opacity .18s ease';
       labelEl.style.transform = 'translateY(0)';
-      labelEl.style.opacity   = '1';
-      setTimeout(function(){ labelEl.style.transition = ''; }, 200);
+      labelEl.style.opacity = '1';
+      setTimeout(function () { labelEl.style.transition = ''; }, 200);
     }, 100);
   }
   // Update selected opt highlight
-  el.querySelectorAll('.cg-select-opt').forEach(function(o) {
+  el.querySelectorAll('.cg-select-opt').forEach(function (o) {
     o.classList.toggle('selected', o.getAttribute('data-value') === value);
   });
   el.setAttribute('data-value', value);
   // Close with slight delay for visual feedback
-  setTimeout(function(){
+  setTimeout(function () {
     el.classList.remove('open');
     _cgDropOpen = null;
   }, 80);
@@ -197,7 +201,7 @@ function cgDropPick(id, value, label, callback) {
 }
 
 // Auto-close on outside click
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
   if (_cgDropOpen) {
     var el = ge(_cgDropOpen);
     if (el && !el.contains(e.target)) {
@@ -222,7 +226,7 @@ function closeTD() {
 }
 
 // ESC closes ticket detail modal
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     var td = ge('mTicketDetail');
     if (td && td.classList.contains('on')) closeTD();
@@ -230,16 +234,16 @@ document.addEventListener('keydown', function(e) {
 });
 
 /* ── Ripple Effect ───────────────────────────────────── */
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
   var btn = e.target.closest('.btn-ripple');
   if (!btn) return;
   var r = document.createElement('span');
   var rect = btn.getBoundingClientRect();
   var size = Math.max(rect.width, rect.height);
   r.className = 'ripple-circle';
-  r.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px';
+  r.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (e.clientX - rect.left - size / 2) + 'px;top:' + (e.clientY - rect.top - size / 2) + 'px';
   btn.appendChild(r);
-  setTimeout(function(){ r.remove(); }, 700);
+  setTimeout(function () { r.remove(); }, 700);
 });
 
 /* ── Live Clock ──────────────────────────────────────── */
@@ -248,21 +252,21 @@ function startClock() {
   if (!el) return;
   function tick() {
     var now = new Date();
-    var h = String(now.getHours()).padStart(2,'0');
-    var m = String(now.getMinutes()).padStart(2,'0');
-    var s = String(now.getSeconds()).padStart(2,'0');
-    el.textContent = h+':'+m+':'+s;
+    var h = String(now.getHours()).padStart(2, '0');
+    var m = String(now.getMinutes()).padStart(2, '0');
+    var s = String(now.getSeconds()).padStart(2, '0');
+    el.textContent = h + ':' + m + ':' + s;
   }
   tick();
   setInterval(tick, 1000);
 }
 
 /* ── Page Transition (admin pages) ──────────────────── */
-var _pages = ['pageDashboard','pageQueue','pageTechs','pageCategories'];
-var _navIds = { dashboard:'nav-dashboard', queue:'nav-queue', techs:'nav-techs', categories:'nav-categories' };
+var _pages = ['pageDashboard', 'pageQueue', 'pageTechs', 'pageCategories'];
+var _navIds = { dashboard: 'nav-dashboard', queue: 'nav-queue', techs: 'nav-techs', categories: 'nav-categories' };
 
 function showPage(name) {
-  _pages.forEach(function(pid) {
+  _pages.forEach(function (pid) {
     var el = ge(pid);
     if (!el) return;
     if (pid === 'page' + name.charAt(0).toUpperCase() + name.slice(1)) {
@@ -275,20 +279,20 @@ function showPage(name) {
     }
   });
   // Update sidebar active state
-  Object.keys(_navIds).forEach(function(k) {
+  Object.keys(_navIds).forEach(function (k) {
     var nav = ge(_navIds[k]);
     if (!nav) return;
     nav.classList.toggle('on', k === name);
   });
   // Update admin mobile bottom nav active state
   var mobMap = { dashboard: 'amob-dashboard', queue: 'amob-queue', techs: 'amob-techs', categories: 'amob-categories' };
-  Object.keys(mobMap).forEach(function(k) {
+  Object.keys(mobMap).forEach(function (k) {
     var btn = ge(mobMap[k]);
     if (!btn) return;
     btn.classList.toggle('on', k === name);
   });
   // Update page title
-  var titles = { dashboard:'Smart Dispatcher Dashboard', queue:'Ticket ทั้งหมด', techs:'สถานะทีมช่าง', categories:'จัดการหมวดหมู่เรื่องร้องเรียน' };
+  var titles = { dashboard: 'Smart Dispatcher Dashboard', queue: 'Ticket ทั้งหมด', techs: 'สถานะทีมช่าง', categories: 'จัดการหมวดหมู่เรื่องร้องเรียน' };
   var pt = ge('pageTitle');
   if (pt && titles[name]) pt.textContent = titles[name];
   currentPage = name;
@@ -303,9 +307,9 @@ function animateNum(el, target) {
   var diff = target - start;
   if (diff === 0) return;
   var steps = 20, step = 0;
-  var iv = setInterval(function() {
+  var iv = setInterval(function () {
     step++;
-    el.textContent = Math.round(start + diff * (step/steps));
+    el.textContent = Math.round(start + diff * (step / steps));
     if (step >= steps) { el.textContent = target; clearInterval(iv); }
   }, 18);
 }
@@ -316,14 +320,14 @@ function showToast(msg, type) {
   // type: 'success' | 'error' | 'warning' | default
   // FIX-2.1a: escape msg ก่อนใส่ innerHTML (ป้องกัน XSS จาก error messages)
   var t = ge('toast');
-  var icons = { success:'✅', error:'❌', warning:'⚠️' };
+  var icons = { success: '✅', error: '❌', warning: '⚠️' };
   var icon = icons[type] || 'ℹ️';
-  t.innerHTML = '<span style="font-size:16px">'+icon+'</span><span>'+escapeHTML(String(msg))+'</span>';
-  t.className = 'toast show' + (type ? ' '+type : '');
+  t.innerHTML = '<span style="font-size:16px">' + icon + '</span><span>' + escapeHTML(String(msg)) + '</span>';
+  t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function() {
+  _toastTimer = setTimeout(function () {
     t.classList.add('hide');
-    setTimeout(function(){ t.className='toast'; }, 350);
+    setTimeout(function () { t.className = 'toast'; }, 350);
   }, 3200);
 }
 
@@ -344,8 +348,8 @@ function hideE(id) {
 /* ── Status Label (Thai) ─────────────────────────────── */
 function stTH(s) {
   var m = {
-    pending:'รอดำเนินการ', assigned:'รับงานแล้ว',
-    in_progress:'กำลังดำเนินการ', completed:'เสร็จสิ้น', rejected:'ปฏิเสธ'
+    pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว',
+    in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ'
   };
   return m[s] || s;
 }
@@ -353,15 +357,15 @@ function stTH(s) {
 /* ── Status Badge HTML ───────────────────────────────── */
 function statusBadge(s) {
   var lbl = stTH(s);
-  var dots = { pending:'🟡', assigned:'🔵', in_progress:'🟣', completed:'🟢', rejected:'🔴' };
-  return '<span class="sbadge '+s+'">'+(dots[s]||'⚪')+' '+lbl+'</span>';
+  var dots = { pending: '🟡', assigned: '🔵', in_progress: '🟣', completed: '🟢', rejected: '🔴' };
+  return '<span class="sbadge ' + s + '">' + (dots[s] || '⚪') + ' ' + lbl + '</span>';
 }
 
 /* ── Priority Badge HTML ─────────────────────────────── */
 function pLabel(score) {
-  if (score >= 70) return '<span class="pbadge urgent">🔴 '+score+'</span>';
-  if (score >= 40) return '<span class="pbadge medium">🟡 '+score+'</span>';
-  return '<span class="pbadge normal">🟢 '+score+'</span>';
+  if (score >= 70) return '<span class="pbadge urgent">🔴 ' + score + '</span>';
+  if (score >= 40) return '<span class="pbadge medium">🟡 ' + score + '</span>';
+  return '<span class="pbadge normal">🟢 ' + score + '</span>';
 }
 
 /* ── Image Preview Modal ─────────────────────────────── */
@@ -375,14 +379,14 @@ function closeMImg() { ge('mImg').classList.remove('on'); }
 /* ── Change Password Modal ───────────────────────────── */
 function openChPw() {
   hideE('chErr');
-  ['curP','newP','conP'].forEach(function(i){ ge(i).value=''; });
+  ['curP', 'newP', 'conP'].forEach(function (i) { ge(i).value = ''; });
   ge('mChPw').classList.add('on');
 }
 function closeChPw() { ge('mChPw').classList.remove('on'); }
 
 /* ── Mobile Bottom Nav Active State ──────────────────── */
 function mobNavSetActive(id) {
-  document.querySelectorAll('.mob-nav-btn').forEach(function(b){ b.classList.remove('on'); });
+  document.querySelectorAll('.mob-nav-btn').forEach(function (b) { b.classList.remove('on'); });
   var el = ge(id);
   if (el) el.classList.add('on');
 }
@@ -390,7 +394,7 @@ function mobNavSetActive(id) {
 /* ── Caption shorthand ───────────────────────────────── */
 function imgThumb(url, label) {
   if (!url) return '<span style="color:var(--muted);font-size:12px">—</span>';
-  return '<img class="img-thumb" src="'+url+'" onclick="viewImg(\''+url+'\',\''+label+'\')" alt="'+label+'" />';
+  return '<img class="img-thumb" src="' + url + '" onclick="viewImg(\'' + url + '\',\'' + label + '\')" alt="' + label + '" />';
 }
 
 /* ══════════════════════════════════════════
@@ -407,7 +411,7 @@ function openDrawer() {
       avEl.innerHTML = '<img src="' + CU.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:18px"/>';
     } else {
       var init = (CU.firstName ? CU.firstName[0] : '?') +
-                 (CU.lastName && CU.lastName !== '-' && CU.lastName[0] ? CU.lastName[0] : '');
+        (CU.lastName && CU.lastName !== '-' && CU.lastName[0] ? CU.lastName[0] : '');
       avEl.innerHTML = '';
       avEl.textContent = init.toUpperCase();
     }
@@ -446,7 +450,7 @@ function openDrawer() {
   document.body.style.overflow = 'hidden';
 
   // ── Animate hamburger buttons → X ──
-  document.querySelectorAll('.hbg-btn').forEach(function(b) { b.classList.add('active'); });
+  document.querySelectorAll('.hbg-btn').forEach(function (b) { b.classList.add('active'); });
 }
 
 function closeDrawer() {
@@ -458,12 +462,12 @@ function closeDrawer() {
   document.body.style.overflow = '';
 
   // ── Restore hamburger buttons ──
-  document.querySelectorAll('.hbg-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.hbg-btn').forEach(function (b) { b.classList.remove('active'); });
 }
 
 
 // ESC key closes drawer
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeDrawer();
   if (e.key === 'Escape') closeTicketChat();
 });
@@ -475,32 +479,32 @@ if (typeof io !== 'undefined') {
   var socket = io();
 
   // Track connection state สำหรับ adaptive polling ใน app.js
-  socket.on('connect', function() {
+  socket.on('connect', function () {
     _socketConnected = true;
     console.log('[Socket] Connected — switching to event-driven mode');
     // FIX-#3: เริ่ม heartbeat ทันที เมื่อ connect สำเร็จ
     if (typeof startHeartbeat === 'function') startHeartbeat(socket);
   });
-  socket.on('disconnect', function() {
+  socket.on('disconnect', function () {
     _socketConnected = false;
     console.log('[Socket] Disconnected — 30s polling fallback active');
     // FIX-#3: หยุด heartbeat เมื่อ disconnect (รู้ว่าหลุดแล้ว — ไม่ต้องตรวจซ้ำ)
     if (typeof stopHeartbeat === 'function') stopHeartbeat();
   });
-  socket.on('connect_error', function() {
+  socket.on('connect_error', function () {
     _socketConnected = false;
     if (typeof stopHeartbeat === 'function') stopHeartbeat();
   });
 
   // FIX-#3: รับ pong กลับมา → cancel stale timeout
-  socket.on('pong_heartbeat', function() {
+  socket.on('pong_heartbeat', function () {
     if (typeof _pongTimer !== 'undefined' && _pongTimer) {
       clearTimeout(_pongTimer);
       _pongTimer = null;
     }
   });
 
-  socket.on('ticket_updated', function() {
+  socket.on('ticket_updated', function () {
     if (typeof loadTickets === 'function' && window.CU) {
       loadTickets();
     }
@@ -510,7 +514,7 @@ if (typeof io !== 'undefined') {
     }
   });
   // Live chat: auto-append new comments
-  socket.on('comment_added', function(data) {
+  socket.on('comment_added', function (data) {
     if (_chatTicketId && data.ticketId === _chatTicketId) {
       _appendComment(data.comment, true);
     }
@@ -535,11 +539,11 @@ async function toggleUpvote(btn) {
     if (countEl) {
       countEl.textContent = data.upvoteCount;
       countEl.style.transform = 'scale(1.4)';
-      setTimeout(function() { countEl.style.transform = ''; }, 250);
+      setTimeout(function () { countEl.style.transform = ''; }, 250);
     }
     if (data.hasUpvoted) {
       btn.classList.add('voted');
-      if (iconEl) { iconEl.style.transform = 'scale(1.5) rotate(-10deg)'; setTimeout(function(){ iconEl.style.transform = ''; }, 300); }
+      if (iconEl) { iconEl.style.transform = 'scale(1.5) rotate(-10deg)'; setTimeout(function () { iconEl.style.transform = ''; }, 300); }
       showToast('👍 โหวตแล้ว!');
     } else {
       btn.classList.remove('voted');
@@ -564,7 +568,7 @@ async function toggleFollow(btn) {
     if (countEl) {
       countEl.textContent = data.followerCount;
       countEl.style.transform = 'scale(1.3)';
-      setTimeout(function(){ countEl.style.transform = ''; }, 250);
+      setTimeout(function () { countEl.style.transform = ''; }, 250);
     }
     if (data.isFollowing) {
       btn.classList.add('following');
@@ -594,7 +598,7 @@ function openTicketChat(ticketId) {
   ge('chatInput').value = '';
   ge('mTicketChat').classList.add('on');
   loadComments(ticketId);
-  setTimeout(function() { ge('chatInput').focus(); }, 300);
+  setTimeout(function () { ge('chatInput').focus(); }, 300);
 }
 
 function closeTicketChat() {
@@ -614,7 +618,7 @@ async function loadComments(ticketId) {
       return;
     }
     el.innerHTML = '';
-    comments.forEach(function(c) { _appendComment(c, false); });
+    comments.forEach(function (c) { _appendComment(c, false); });
     // Scroll to bottom
     el.scrollTop = el.scrollHeight;
   } catch (e) { console.error(e); }
@@ -670,7 +674,7 @@ async function sendComment() {
       body: JSON.stringify({ message: msg })
     });
     var data = null;
-    try { data = await res.json(); } catch(e) {}
+    try { data = await res.json(); } catch (e) { }
     if (!res.ok) {
       showToast((data && data.error) || 'ส่งไม่สำเร็จ', 'error');
     } else if (data && data._id && !_chatCommentIds[data._id]) {
@@ -701,7 +705,7 @@ async function loadHeatmap() {
         attribution: '© OpenStreetMap, © CARTO'
       }).addTo(_publicMap);
     }
-    setTimeout(function() { _publicMap.invalidateSize(); }, 200);
+    setTimeout(function () { _publicMap.invalidateSize(); }, 200);
 
     // Fetch data
     var res = await fetch('/api/tickets/public-map');
@@ -709,13 +713,13 @@ async function loadHeatmap() {
     var tickets = await res.json();
 
     // Clear old markers
-    _publicMarkers.forEach(function(m) { _publicMap.removeLayer(m); });
+    _publicMarkers.forEach(function (m) { _publicMap.removeLayer(m); });
     _publicMarkers = [];
 
-    var ICONS_MAP = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
-    var statCount = { pending:0, in_progress:0, completed:0 };
+    var ICONS_MAP = { Road: '🛣️', Water: '💧', Electricity: '💡', Garbage: '🗑️', Animal: '🐍', Tree: '🌿', Hazard: '🚨' };
+    var statCount = { pending: 0, in_progress: 0, completed: 0 };
 
-    tickets.forEach(function(t, i) {
+    tickets.forEach(function (t, i) {
       if (!t.lat || !t.lng) return;
 
       var colorClass = 'hm-marker-red';
@@ -730,7 +734,7 @@ async function loadHeatmap() {
       });
       var marker = L.marker([t.lat, t.lng], { icon: icon }).addTo(_publicMap);
       var iText = ICONS_MAP[t.category] || '📍';
-      var stTH = { pending:'⏳ รอ', assigned:'🔧 รับงาน', in_progress:'🔨 กำลังซ่อม', completed:'✅ เสร็จ', rejected:'❌ ปฏิเสธ' };
+      var stTH = { pending: '⏳ รอ', assigned: '🔧 รับงาน', in_progress: '🔨 กำลังซ่อม', completed: '✅ เสร็จ', rejected: '❌ ปฏิเสธ' };
       // FIX-2.1b: escape ticketId และ status ก่อนใส่ใน HTML
       marker.bindPopup(
         '<div style="font-size:13px;min-width:150px">' +
