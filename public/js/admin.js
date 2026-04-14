@@ -136,17 +136,30 @@ function renderTechStatus(techs) {
 /* ── Smart Queue (Pending tickets) ───────────────────── */
 function renderQueue(tks, techs) {
   var el = ge('queueBody');
-  if (!tks.length) { el.innerHTML = '<tr><td colspan="9" class="empty">🎉 ไม่มีงานรอการอนุมัติ</td></tr>'; return; }
-  var h = '';
+  var mobEl = ge('queueMobList');
+  if (!tks.length) {
+    el.innerHTML = '<tr><td colspan="9" class="empty">🎉 ไม่มีงานรอการอนุมัติ</td></tr>';
+    if (mobEl) mobEl.innerHTML = '<div class="empty" style="text-align:center;padding:24px;color:var(--muted)">🎉 ไม่มีงานรอการอนุมัติ</div>';
+    return;
+  }
+  var h = '';    // desktop table html
+  var mh = '';   // mobile card html
   for (var i = 0; i < tks.length; i++) {
     var t = tks[i];
     var opts = '<option value="">— เลือกช่าง —</option>';
+    var mobOpts = '<option value="">— เลือกช่าง —</option>';
     for (var j = 0; j < techs.length; j++) {
       var tc = techs[j];
       var match = tc.specialty === t.category;
-      opts += '<option value="'+tc.id+'"'+(tc.statusLabel==='FULL' ? ' disabled' : '')+'>'+(match ? '⭐ ' : '')+(DEPT_ICON[tc.specialty]||'')+' '+tc.name+' — '+tc.statusLabel+'</option>';
+      var optText = (match ? '⭐ ' : '') + (DEPT_ICON[tc.specialty]||'') + ' ' + tc.name + ' — ' + tc.statusLabel;
+      var optAttrs = 'value="'+tc.id+'"' + (tc.statusLabel==='FULL' ? ' disabled' : '');
+      opts += '<option '+optAttrs+'>'+optText+'</option>';
+      mobOpts += '<option '+optAttrs+'>'+optText+'</option>';
     }
     var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
+    var gpsUrl = (t.lat && t.lng) ? 'https://www.google.com/maps?q='+t.lat+','+t.lng : '';
+
+    // ── Desktop table row ──
     h += '<tr>';
     h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+escapeHTML(t.ticketId)+'</td>';
     h += '<td style="font-size:12px">'+escapeHTML(t.citizenName)+'</td>';
@@ -162,20 +175,61 @@ function renderQueue(tks, techs) {
     h += '<button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✕ Reject</button>';
     h += '</div></td>';
     h += '</tr>';
+
+    // ── Mobile card ──
+    var priorityHtml = pLabel(t.priorityScore);
+    var slaHtml = (typeof slaLabel === 'function') ? slaLabel(t) : '';
+    mh += '<div class="queue-mob-card">';
+    // Header row: ID + priority + SLA badges
+    mh += '<div class="queue-mob-card-header">';
+    mh += '<div>';
+    mh += '<div class="queue-mob-card-id">#'+escapeHTML(t.ticketId)+'</div>';
+    mh += '<div class="queue-mob-card-citizen">👤 '+escapeHTML(t.citizenName)+'</div>';
+    mh += '</div>';
+    mh += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+priorityHtml+slaHtml+'</div>';
+    mh += '</div>';
+    // Category + location + description
+    mh += '<div class="queue-mob-card-body">';
+    mh += '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">'+(DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+'</div>';
+    mh += '<div class="queue-mob-card-location">📍 '+escapeHTML(t.location||'')+(gpsUrl ? ' <a href="'+gpsUrl+'" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '')+'</div>';
+    mh += '<div class="queue-mob-card-desc">'+escapeHTML(t.description||'')+'</div>';
+    mh += '</div>';
+    // Image + meta
+    if (t.citizenImage) {
+      mh += '<div class="queue-mob-card-meta">';
+      mh += '<img src="'+escapeHTML(t.citizenImage)+'" class="queue-mob-card-img" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" title="รูปผู้แจ้ง"/>';
+      mh += '<span style="font-size:11px;color:var(--muted)">รูปประกอบ</span>';
+      mh += '</div>';
+    }
+    if (t.upvoteCount > 0) {
+      mh += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">👍 '+parseInt(t.upvoteCount||0)+' upvote</div>';
+    }
+    // Assign dropdown
+    mh += '<div class="queue-mob-assign-label">🤖 AI RECOMMEND — เลือกช่าง</div>';
+    mh += '<select id="tsel_mob_'+t.ticketId+'" class="queue-mob-select" onchange="document.getElementById(\'tsel_'+t.ticketId+'\') && (document.getElementById(\'tsel_'+t.ticketId+'\').value=this.value)">'+mobOpts+'</select>';
+    // Action buttons
+    mh += '<div class="queue-mob-actions">';
+    mh += '<button class="queue-mob-btn-approve btn-ripple" data-id="'+t.ticketId+'" onclick="approveMob(this)">✓ Approve</button>';
+    mh += '<button class="queue-mob-btn-reject btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)">✕ Reject</button>';
+    mh += '</div>';
+    mh += '</div>';
   }
   el.innerHTML = h;
+  if (mobEl) mobEl.innerHTML = mh;
   for (var k = 0; k < tks.length; k++) autoSelect(tks[k], techs);
 }
 
 /* ── Auto-Select Best Tech ───────────────────────────── */
 function autoSelect(ticket, techs) {
   var sel = ge('tsel_' + ticket.ticketId);
-  if (!sel) return;
+  var mobSel = ge('tsel_mob_' + ticket.ticketId);
   var spec = techs.filter(function (t) { return t.specialty === ticket.category && t.statusLabel !== 'FULL'; });
   var pool = spec.length ? spec : techs.filter(function (t) { return t.statusLabel !== 'FULL'; });
   if (!pool.length) return;
   pool.sort(function (a, b) { return a.activeJobs - b.activeJobs; });
-  sel.value = pool[0].id;
+  var bestId = pool[0].id;
+  if (sel) sel.value = bestId;
+  if (mobSel) mobSel.value = bestId;
 }
 
 /* ── Approve / Reject ────────────────────────────────── */
@@ -184,6 +238,20 @@ async function approveTicket(btn) {
   var sel = ge('tsel_' + id);
   if (!sel || !sel.value) return showToast('กรุณาเลือกช่างก่อน', 'warning');
   var res = await fetch('/api/tickets/' + id + '/assign', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ technicianId: sel.value }) });
+  if (!res.ok) { var d = await res.json(); return showToast(d.error, 'error'); }
+  showToast('Approve แล้ว! 🎉', 'success');
+  loadAdmin();
+}
+
+/* ── Approve from Mobile Card ────────────────────────── */
+async function approveMob(btn) {
+  var id = btn.getAttribute('data-id');
+  // Read from mobile dropdown first, fallback to desktop
+  var mobSel = ge('tsel_mob_' + id);
+  var deskSel = ge('tsel_' + id);
+  var techId = (mobSel && mobSel.value) ? mobSel.value : (deskSel ? deskSel.value : '');
+  if (!techId) return showToast('กรุณาเลือกช่างก่อน', 'warning');
+  var res = await fetch('/api/tickets/' + id + '/assign', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ technicianId: techId }) });
   if (!res.ok) { var d = await res.json(); return showToast(d.error, 'error'); }
   showToast('Approve แล้ว! 🎉', 'success');
   loadAdmin();

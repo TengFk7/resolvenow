@@ -7957,4 +7957,200 @@ a {
 .tc-detail-inner {
   border-color: #f97316 !important;
 }
+
+/* ════════════════════════════════════════════════════════
+   ADMIN DASHBOARD — MOBILE RESPONSIVE
+   Smart Queue → Card Layout on Mobile
+════════════════════════════════════════════════════════ */
+
+/* ── Queue ticket cards (mobile-only) ──────────────────── */
+.queue-mob-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(10,22,40,.06);
+  transition: var(--transition);
+}
+.queue-mob-card:hover {
+  border-color: rgba(37,99,235,.25);
+  box-shadow: 0 4px 18px rgba(37,99,235,.08);
+}
+.queue-mob-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.queue-mob-card-id {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.queue-mob-card-citizen {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.queue-mob-card-body {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.queue-mob-card-location {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+.queue-mob-card-desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+.queue-mob-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.queue-mob-card-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.queue-mob-card-img:hover {
+  border-color: var(--blue2);
+  box-shadow: 0 2px 8px rgba(37,99,235,.15);
+}
+.queue-mob-assign-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--blue2);
+  letter-spacing: .3px;
+  margin-bottom: 5px;
+}
+.queue-mob-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  font-family: 'Prompt', sans-serif;
+  outline: none;
+  background: #f8fafc;
+  color: var(--navy);
+  margin-bottom: 8px;
+  transition: var(--transition);
+}
+.queue-mob-select:focus {
+  border-color: var(--blue2);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+}
+.queue-mob-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.queue-mob-btn-approve {
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue2), #1d4ed8);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: 'Prompt', sans-serif;
+}
+.queue-mob-btn-approve:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37,99,235,.35);
+}
+.queue-mob-btn-reject {
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: 'Prompt', sans-serif;
+}
+.queue-mob-btn-reject:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239,68,68,.35);
+}
+
+@media (max-width: 768px) {
+  /* Smart Queue: hide desktop table, show mobile cards */
+  #pageDashboard .queue-desktop-table {
+    display: none !important;
+  }
+  #pageDashboard .queue-mob-list {
+    display: block !important;
+  }
+  /* right-col: stack vertically, compact */
+  .right-col {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px;
+  }
+  /* Pie chart: compact */
+  .pie-wrap {
+    padding: 14px;
+  }
+  /* stat grid: 4 columns on mobile for compactness */
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .scard {
+    padding: 12px 10px !important;
+  }
+  .slabel {
+    font-size: 10px !important;
+    margin-bottom: 6px !important;
+  }
+  .sval {
+    font-size: 22px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* stat grid: 2 columns but wider */
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+  .scard {
+    padding: 10px 8px !important;
+  }
+  .slabel {
+    font-size: 9px !important;
+  }
+  .sval {
+    font-size: 20px !important;
+  }
+  .queue-mob-card {
+    padding: 12px;
+  }
+  .queue-mob-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+}
+
 

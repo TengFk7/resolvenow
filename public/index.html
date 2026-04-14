@@ -281,7 +281,7 @@
                     </div>
                   </div>
                 </div>
-                <div id="queueTableContainer" style="overflow-x:auto">
+                <div id="queueTableContainer" style="overflow-x:auto" class="queue-desktop-table">
                   <table class="queue-table">
                     <thead>
                       <tr>
@@ -302,6 +302,10 @@
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                <!-- Mobile card list (hidden on desktop, shown on mobile via CSS) -->
+                <div id="queueMobList" class="queue-mob-list" style="display:none;padding:12px">
+                  <div class="empty" style="text-align:center;padding:24px;color:var(--muted)">กำลังโหลด...</div>
                 </div>
                 <div id="queueMapContainer"
                   style="display:none;width:100%;height:350px;border-radius:8px;border:1px solid #e2e8f0;z-index:1;">
