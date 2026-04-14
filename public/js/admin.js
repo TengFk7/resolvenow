@@ -136,7 +136,7 @@ function renderTechStatus(techs) {
 /* ── Smart Queue (Pending tickets) ───────────────────── */
 function renderQueue(tks, techs) {
   var el = ge('queueBody');
-  if (!tks.length) { el.innerHTML = '<tr><td colspan="4" class="empty">🎉 ไม่มีงานรอการอนุมัติ</td></tr>'; return; }
+  if (!tks.length) { el.innerHTML = '<tr><td colspan="9" class="empty">🎉 ไม่มีงานรอการอนุมัติ</td></tr>'; return; }
   var h = '';
   for (var i = 0; i < tks.length; i++) {
     var t = tks[i];
@@ -146,18 +146,20 @@ function renderQueue(tks, techs) {
       var match = tc.specialty === t.category;
       opts += '<option value="'+tc.id+'"'+(tc.statusLabel==='FULL' ? ' disabled' : '')+'>'+(match ? '⭐ ' : '')+(DEPT_ICON[tc.specialty]||'')+' '+tc.name+' — '+tc.statusLabel+'</option>';
     }
-    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '';
-    // FIX-2.1c: escape citizen data ก่อน render
+    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
     h += '<tr>';
-    h += '<td><div style="font-weight:700;color:var(--navy);font-family:Inter,sans-serif">#'+escapeHTML(t.ticketId)+'</div><div style="font-size:11px;color:var(--muted)">'+escapeHTML(t.citizenName)+'</div></td>';
+    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+escapeHTML(t.ticketId)+'</td>';
+    h += '<td style="font-size:12px">'+escapeHTML(t.citizenName)+'</td>';
+    h += '<td>'+(DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+'</td>';
+    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 '+escapeHTML(t.location||'')+gpsLink+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escapeHTML(t.description||'')+'</div></td>';
     h += '<td>'+pLabel(t.priorityScore)+(t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 '+parseInt(t.upvoteCount||0)+'</div>' : '')+'</td>';
-    h += '<td><div style="font-weight:600;font-size:13px">'+( DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+gpsLink+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">📍 '+escapeHTML(t.location||'')+'</div><div style="font-size:12px;color:var(--text);margin-top:2px">'+escapeHTML(t.description||'')+'</div>'+(t.citizenImage ? '<img src="'+escapeHTML(t.citizenImage)+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb" style="margin-top:6px"/>' : '')+'</td>';
     h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
-    h += '<td><div style="font-size:11px;font-weight:700;color:var(--blue2);margin-bottom:6px">🤖 AI RECOMMEND</div>';
-    h += '<select id="tsel_'+t.ticketId+'" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-family:Prompt,sans-serif;outline:none;background:#fff">'+opts+'</select>';
-    h += '<div style="display:flex;gap:6px;margin-top:8px">';
-    h += '<button class="abt abt-blue btn-ripple" data-id="'+t.ticketId+'" onclick="approveTicket(this)">✓ Approve</button>';
-    h += '<button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)">✕ Reject</button>';
+    h += '<td>'+(t.citizenImage ? '<img src="'+escapeHTML(t.citizenImage)+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb"/>' : '<span style="color:var(--muted);font-size:12px">—</span>')+'</td>';
+    h += '<td style="min-width:160px"><div style="font-size:10px;font-weight:700;color:var(--blue2);margin-bottom:5px">🤖 AI RECOMMEND</div>';
+    h += '<select id="tsel_'+t.ticketId+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:11px;font-family:Prompt,sans-serif;outline:none;background:#fff">'+opts+'</select></td>';
+    h += '<td><div style="display:flex;gap:5px;flex-direction:column;align-items:center">';
+    h += '<button class="abt abt-blue btn-ripple" data-id="'+t.ticketId+'" onclick="approveTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✓ Approve</button>';
+    h += '<button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✕ Reject</button>';
     h += '</div></td>';
     h += '</tr>';
   }
@@ -1316,4 +1318,4 @@ function _getPdfStyles() {
     '@page{size:A4;margin:12mm 10mm}' +
     '}';
 }
-
+
