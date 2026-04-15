@@ -151,6 +151,98 @@ io.on('connection', (socket) => {
     res.send(html);
   });
 
+  // ─── Data Dictionary (Admin Protected) ────────────────────────
+  const bcryptDadic = require('bcryptjs');
+  const UserModel   = require('./models/User');
+
+  const DADIC_PAGE = (errorMsg = '') => `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Data Dictionary — ResolveNow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Sarabun',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#0a0e27 0%,#16213e 50%,#0f3460 100%);padding:20px;}
+    body::before{content:'';position:fixed;inset:0;
+      background:radial-gradient(ellipse at 30% 20%,rgba(99,179,237,0.08) 0%,transparent 50%),
+                 radial-gradient(ellipse at 70% 80%,rgba(26,86,219,0.12) 0%,transparent 50%);pointer-events:none;}
+    .card{background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);
+      border-radius:24px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.5);position:relative;}
+    .icon{width:64px;height:64px;background:linear-gradient(135deg,#1a56db,#3b82f6);border-radius:18px;
+      display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;
+      box-shadow:0 8px 24px rgba(59,130,246,0.4);}
+    h1{font-size:22pt;font-weight:800;color:#fff;text-align:center;margin-bottom:6px;letter-spacing:-0.5px;}
+    .sub{text-align:center;color:rgba(255,255,255,0.55);font-size:10pt;margin-bottom:32px;}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 12px;font-size:8.5pt;
+      color:#90cdf4;margin:0 auto 28px;display:flex;width:fit-content;}
+    label{display:block;font-size:9.5pt;font-weight:600;color:rgba(255,255,255,0.7);margin-bottom:7px;letter-spacing:0.3px;}
+    input{width:100%;padding:13px 16px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.12);
+      border-radius:12px;color:#fff;font-family:'Sarabun',sans-serif;font-size:10.5pt;outline:none;
+      transition:border-color 0.2s,background 0.2s;margin-bottom:16px;}
+    input::placeholder{color:rgba(255,255,255,0.3);}
+    input:focus{border-color:#3b82f6;background:rgba(59,130,246,0.1);}
+    button{width:100%;padding:14px;background:linear-gradient(135deg,#1a56db,#3b82f6);border:none;
+      border-radius:12px;color:#fff;font-family:'Sarabun',sans-serif;font-size:11.5pt;font-weight:700;
+      cursor:pointer;margin-top:8px;box-shadow:0 6px 20px rgba(59,130,246,0.4);
+      transition:transform 0.15s,box-shadow 0.15s;}
+    button:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(59,130,246,0.6);}
+    button:active{transform:translateY(0);}
+    .error{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);border-radius:10px;
+      padding:11px 16px;color:#fca5a5;font-size:9.5pt;margin-bottom:20px;text-align:center;}
+    .lock{text-align:center;margin-top:24px;color:rgba(255,255,255,0.3);font-size:8.5pt;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📋</div>
+    <h1>Data Dictionary</h1>
+    <div class="badge">🔒 เฉพาะผู้ดูแลระบบ (Admin)</div>
+    <div class="sub">กรุณาเข้าสู่ระบบด้วยบัญชี Admin เพื่อดูเอกสาร</div>
+    ${errorMsg ? `<div class="error">⚠️ ${errorMsg}</div>` : ''}
+    <form method="POST" action="/Datadic" autocomplete="on">
+      <label for="dd_email">อีเมล (Email)</label>
+      <input id="dd_email" type="email" name="email" required placeholder="admin@resolvenow.th" autofocus/>
+      <label for="dd_pw">รหัสผ่าน (Password)</label>
+      <input id="dd_pw" type="password" name="password" required placeholder="••••••••"/>
+      <button type="submit">เข้าสู่ระบบ →</button>
+    </form>
+    <div class="lock">🛡️ ResolveNow · Secure Admin Access</div>
+  </div>
+</body>
+</html>`;
+
+  app.get('/Datadic', (req, res) => {
+    if (req.session && req.session.dadicAuth) {
+      return res.sendFile(path.join(__dirname, 'data_dictionary.html'));
+    }
+    res.send(DADIC_PAGE());
+  });
+
+  app.post('/Datadic', async (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.send(DADIC_PAGE('กรุณากรอกอีเมลและรหัสผ่าน'));
+    }
+    try {
+      const user = await UserModel.findOne({
+        email: email.toLowerCase().trim(),
+        role: 'admin'
+      });
+      if (!user) return res.send(DADIC_PAGE('ไม่พบบัญชี Admin หรืออีเมลไม่ถูกต้อง'));
+      const ok = await bcryptDadic.compare(password, user.password);
+      if (!ok) return res.send(DADIC_PAGE('รหัสผ่านไม่ถูกต้อง'));
+      req.session.dadicAuth = true;
+      return res.redirect('/Datadic');
+    } catch (err) {
+      console.error('[Datadic] login error:', err.message);
+      return res.send(DADIC_PAGE('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'));
+    }
+  });
+
   // ─── Public Track Page ─────────────────────────────────────────
   app.get('/track', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'track.html'))
