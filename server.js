@@ -11,7 +11,7 @@ if (typeof _net.setDefaultAutoSelectFamily === 'function') {
 
 // Monkey-patch dns.lookup → บังคับ family: 4 (IPv4) เสมอ
 const _originalLookup = _dns.lookup;
-_dns.lookup = function(hostname, options, callback) {
+_dns.lookup = function (hostname, options, callback) {
   if (typeof options === 'function') {
     callback = options;
     options = { family: 4 };
@@ -24,16 +24,16 @@ _dns.lookup = function(hostname, options, callback) {
 };
 
 require('dotenv').config();
-const express    = require('express');
-const session    = require('express-session');
+const express = require('express');
+const session = require('express-session');
 const { MongoStore } = require('connect-mongo');  // v6: named export
-const path       = require('path');
-const helmet     = require('helmet');
+const path = require('path');
+const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
-const rateLimit  = require('express-rate-limit');
-const http       = require('http');            // socket.io requirement
+const rateLimit = require('express-rate-limit');
+const http = require('http');            // socket.io requirement
 const { Server } = require('socket.io');       // socket.io requirement
-const connectDB  = require('./config/db');
+const connectDB = require('./config/db');
 const { seedDB } = require('./config/seed');
 const { startSlaJob } = require('./config/slaJob');
 
@@ -71,13 +71,13 @@ io.on('connection', (socket) => {
   // ใช้ mongoose connection ที่มีอยู่แล้ว (ไม่ต้อง connect ใหม่)
   const mongoose = require('mongoose');
   const sessionStore = MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      dbName: 'resolvenow',
-      ttl: 7 * 24 * 60 * 60,
-      touchAfter: 24 * 3600, // lazy session update — only update once per 24h to reduce writes
-    });
+    mongoUrl: process.env.MONGODB_URI,
+    dbName: 'resolvenow',
+    ttl: 7 * 24 * 60 * 60,
+    touchAfter: 24 * 3600, // lazy session update — only update once per 24h to reduce writes
+  });
   // Suppress "Unable to find the session to touch" errors (stale cookies)
-  sessionStore.on('error', function(err) {
+  sessionStore.on('error', function (err) {
     console.warn('[Session Store] non-critical error:', err.message);
   });
 
@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
     resave: false,
     saveUninitialized: true,   // ต้อง true: ให้ session ที่มีแค่ lineLinkPending (ยังไม่ login) ถูก save ลง MongoDB
     store: sessionStore,
-    cookie: { 
+    cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
       sameSite: 'lax',    // lax: ส่ง cookie กับ GET redirect (LINE callback) ได้
@@ -120,24 +120,24 @@ io.on('connection', (socket) => {
     message: { error: 'Too many requests, please try again later.' }
   });
   // GET reads → pollingLimiter (หลวม)
-  app.use('/api/tickets',       pollingLimiter);
-  app.use('/api/technicians',   pollingLimiter);
+  app.use('/api/tickets', pollingLimiter);
+  app.use('/api/technicians', pollingLimiter);
   app.use('/api/help-requests', pollingLimiter);
   // Write ops → apiLimiter (เข้มงวด)
-  app.use('/api/tickets',       apiLimiter);
-  app.use('/api/technicians',   apiLimiter);
+  app.use('/api/tickets', apiLimiter);
+  app.use('/api/technicians', apiLimiter);
   app.use('/api/help-requests', apiLimiter);
-  app.use('/api/ai',            apiLimiter);
+  app.use('/api/ai', apiLimiter);
 
   // ─── Routes ──────────────────────────────────────────────────
-  app.use('/api/auth',          require('./routes/auth'));
-  app.use('/api/tickets',       require('./routes/tickets'));
-  app.use('/api/technicians',   require('./routes/technicians'));
+  app.use('/api/auth', require('./routes/auth'));
+  app.use('/api/tickets', require('./routes/tickets'));
+  app.use('/api/technicians', require('./routes/technicians'));
   app.use('/api/help-requests', require('./routes/helpRequests'));
-  app.use('/api/ai',            require('./routes/ai'));
-  app.use('/api/categories',    require('./routes/categories'));
-  app.use('/api/track',         require('./routes/track'));
-  app.use('/auth/line',         require('./routes/lineAuth'));
+  app.use('/api/ai', require('./routes/ai'));
+  app.use('/api/categories', require('./routes/categories'));
+  app.use('/api/track', require('./routes/track'));
+  app.use('/auth/line', require('./routes/lineAuth'));
 
   // ─── LIFF Rating Page ──────────────────────────────────────────
   app.get('/liff-rating', (req, res) => {
@@ -153,7 +153,7 @@ io.on('connection', (socket) => {
 
   // ─── Data Dictionary (Admin Protected) ────────────────────────
   const bcryptDadic = require('bcryptjs');
-  const UserModel   = require('./models/User');
+  const UserModel = require('./models/User');
 
   const DADIC_PAGE = (errorMsg = '') => `<!DOCTYPE html>
 <html lang="th">
@@ -205,12 +205,12 @@ io.on('connection', (socket) => {
     ${errorMsg ? `<div class="error">⚠️ ${errorMsg}</div>` : ''}
     <form method="POST" action="/Datadic" autocomplete="on">
       <label for="dd_email">อีเมล (Email)</label>
-      <input id="dd_email" type="email" name="email" required placeholder="admin@resolvenow.th" autofocus/>
+      <input id="dd_email" type="email" name="email" required placeholder="Emali ผู้ดูแลระบบ" autofocus/>
       <label for="dd_pw">รหัสผ่าน (Password)</label>
       <input id="dd_pw" type="password" name="password" required placeholder="••••••••"/>
       <button type="submit">เข้าสู่ระบบ →</button>
     </form>
-    <div class="lock">🛡️ ResolveNow · Secure Admin Access</div>
+    
   </div>
 </body>
 </html>`;
