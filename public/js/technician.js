@@ -101,7 +101,7 @@ function _tcCardHtml(t) {
   h += '<span class="badge ' + prioBadgeCls + ' cg-badge">' + prioBadgeTxt + '</span>';
   h += '</div>';
   h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
-  h += '<div class="cg-date">' + t.createdAt + '</div>';
+  h += '<div class="cg-date">' + fmtDate(t.createdAt) + '</div>';
   h += '</div></div>';
   return h;
 }
@@ -212,7 +212,7 @@ function tcToggle(ticketId) {
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">📍 สถานที่</span><span class="cg-dv">' + escapeHTML(t.location) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">👤 ผู้แจ้ง</span><span class="cg-dv">' + escapeHTML(t.citizenName) + '</span></div>';
-  h += '<div class="cg-detail-row"><span class="cg-dl">🕐 วันที่</span><span class="cg-dv">' + escapeHTML(t.createdAt) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">🕐 วันที่</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
 
   if (t.citizenImage) {
     h += '<div><div class="citizen-img-label">รูปจากผู้แจ้ง</div><img class="citizen-img" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/></div>';

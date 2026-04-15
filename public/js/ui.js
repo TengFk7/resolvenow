@@ -11,6 +11,20 @@
 
 /* ── Utilities ───────────────────────────────────────── */
 // FIX-2.1: escapeHTML นิยามครั้งเดียวที่นี่ (ลบ duplicate ที่บรรทัด 144 ออกแล้ว)
+
+/* ── Date Formatter ──────────────────────────────────── */
+// แปลง ISO string → dd/MM/yyyy HH:mm (เวลาท้องถิ่น)
+function fmtDate(d) {
+  if (!d) return '—';
+  var dt = new Date(d);
+  if (isNaN(dt)) return d;
+  var day   = String(dt.getDate()).padStart(2, '0');
+  var month = String(dt.getMonth() + 1).padStart(2, '0');
+  var year  = dt.getFullYear();
+  var hh    = String(dt.getHours()).padStart(2, '0');
+  var mm    = String(dt.getMinutes()).padStart(2, '0');
+  return day + '/' + month + '/' + year + ' ' + hh + ':' + mm;
+}
 /* ── Splash Screen ───────────────────────────────────── */
 (function initSplash() {
   var splash = document.getElementById('splash');

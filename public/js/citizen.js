@@ -611,7 +611,7 @@ function _cgCardHtml(t) {
   h += '<span class="badge ' + t.status + ' cg-badge">' + stTH(t.status) + '</span>';
   h += '</div>';
   h += '<div class="cg-desc">' + escapeHTML(t.description) + '</div>';
-  h += '<div class="cg-date">' + t.createdAt + '</div>';
+  h += '<div class="cg-date">' + fmtDate(t.createdAt) + '</div>';
   h += '</div></div>';
   return h;
 }
@@ -643,7 +643,7 @@ function cgToggle(ticketId) {
   }
 
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
-  h += '<div class="cg-detail-row"><span class="cg-dl">📅 วันที่</span><span class="cg-dv">' + t.createdAt + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">📅 วันที่</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
 
   if (done && (t.beforeImage || t.afterImage)) {
     h += '<div class="cg-techwork"><div class="cg-techwork-title">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div class="cg-techwork-imgs">';

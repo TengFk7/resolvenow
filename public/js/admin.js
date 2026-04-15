@@ -498,7 +498,7 @@ function renderAllQueue(tks, filter) {
     ['pending','assigned','in_progress','completed','rejected'].forEach(function(s){
       h += '<option value="'+s+'"'+(t.status===s ? ' selected' : '')+'>'+stTH(s)+'</option>';
     });
-    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+t.createdAt+'</td>';
+    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+fmtDate(t.createdAt)+'</td>';
     h += '<td><div style="display:flex;gap:6px;flex-direction:column;align-items:center;padding:2px 6px"><button class="btn-chat" onclick="openTicketChat(\''+t.ticketId+'\')">💬</button><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
     h += '</tr>';
   }
