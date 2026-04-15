@@ -10,27 +10,27 @@ const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
 
 // ── Design Tokens (ตรงกับธีม Navy/Blue/Gold ของระบบ) ─────────
 const T = {
-  headerBg:   '#07111f',          // navy deep
-  headerBg2:  '#0c1e3a',          // navy mid
-  bodyBg:     '#0a1628',          // navy base
-  footerBg:   '#0a1628',
-  brand:      '#fbbf24',          // gold2  — ชื่อ ResolveNow
-  title:      '#ffffff',
-  label:      '#6b8aad',          // steel-blue muted
-  value:      '#e2eeff',          // near-white blue-tint
-  sep:        '#1e3a6e',          // navy border
+  headerBg: '#07111f',          // navy deep
+  headerBg2: '#0c1e3a',          // navy mid
+  bodyBg: '#0a1628',          // navy base
+  footerBg: '#0a1628',
+  brand: '#fbbf24',          // gold2  — ชื่อ ResolveNow
+  title: '#ffffff',
+  label: '#6b8aad',          // steel-blue muted
+  value: '#e2eeff',          // near-white blue-tint
+  sep: '#1e3a6e',          // navy border
   // accent headers per event
-  hNew:       'linear-gradient(135deg,#07111f,#0c2a52)',  // blue-navy
-  hProg:      '#0c1e3a',          // navy
-  hDone:      '#071e14',          // dark-green-navy
-  hReject:    '#1e0808',          // dark-red-navy
-  hFollow:    '#0c1628',
-  hImage:     '#071e14',
+  hNew: 'linear-gradient(135deg,#07111f,#0c2a52)',  // blue-navy
+  hProg: '#0c1e3a',          // navy
+  hDone: '#071e14',          // dark-green-navy
+  hReject: '#1e0808',          // dark-red-navy
+  hFollow: '#0c1628',
+  hImage: '#071e14',
   // button colors
-  btnBlue:    '#2563eb',
-  btnGold:    '#f59e0b',
-  btnGold5:   '#fbbf24',
-  btnRed:     '#dc2626',
+  btnBlue: '#2563eb',
+  btnGold: '#f59e0b',
+  btnGold5: '#fbbf24',
+  btnRed: '#dc2626',
 };
 
 // ── push ไปหา userId เดียว ──────────────────────────────────
@@ -160,7 +160,7 @@ function flexMsg(altText, bubble) {
 }
 
 // ── Before/After Image Flex Card (Admin) ───────────────────
-// แสดงรูปก่อน-หลัง สำหรับ Admin (ยังคงส่งแยก)
+// แสดงรูปก่อน-หลัง สำหรับ Admin
 function makeImageCard(ticket, beforeUrl, afterUrl) {
   const hasBoth = !!(beforeUrl && afterUrl);
 
@@ -429,22 +429,30 @@ async function notifyCompleted(ticket) {
           type: 'box',
           layout: 'vertical',
           contents: [
-            { type: 'box', layout: 'horizontal', margin: 'md', contents: [
-              { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
-              { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
-            ]},
-            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
-              { type: 'text', text: '\uD83D\uDCCD สถานที่', size: 'sm', color: T.label, flex: 2 },
-              { type: 'text', text: ticket.location || '-', size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
-            ]},
-            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
-              { type: 'text', text: '\uD83D\uDC77 ช่าง', size: 'sm', color: T.label, flex: 2 },
-              { type: 'text', text: techName, size: 'sm', color: T.value, flex: 3, align: 'end' }
-            ]},
-            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
-              { type: 'text', text: '\uD83D\uDD50 เสร็จเมื่อ', size: 'sm', color: T.label, flex: 2 },
-              { type: 'text', text: now, size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
-            ]},
+            {
+              type: 'box', layout: 'horizontal', margin: 'md', contents: [
+                { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
+                { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
+              ]
+            },
+            {
+              type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+                { type: 'text', text: '\uD83D\uDCCD สถานที่', size: 'sm', color: T.label, flex: 2 },
+                { type: 'text', text: ticket.location || '-', size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
+              ]
+            },
+            {
+              type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+                { type: 'text', text: '\uD83D\uDC77 ช่าง', size: 'sm', color: T.label, flex: 2 },
+                { type: 'text', text: techName, size: 'sm', color: T.value, flex: 3, align: 'end' }
+              ]
+            },
+            {
+              type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+                { type: 'text', text: '\uD83D\uDD50 เสร็จเมื่อ', size: 'sm', color: T.label, flex: 2 },
+                { type: 'text', text: now, size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
+              ]
+            },
             // ── รูปก่อน-หลัง (ถ้ามี) ──────────────────────────
             ...imageBodyRows,
             // ── ส่วนให้คะแนน ───────────────────────────────────

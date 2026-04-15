@@ -313,14 +313,33 @@
               </div>
             </div>
             <div class="right-col">
-              <div class="panel">
-                <div class="panel-head">
-                  <h3>📊 ภาพรวมงาน</h3>
+              <div class="panel ov-panel">
+                <div class="ov-panel-head">
+                  <div class="ov-panel-title">📊 ภาพรวมงาน</div>
                 </div>
                 <div class="pie-wrap">
-                  <div style="display:flex;justify-content:center"><canvas id="pieChart" width="140"
-                      height="140"></canvas></div>
-                  <div class="pie-legend" id="pieLegend"></div>
+                  <div class="ov-donut-wrap">
+                    <svg id="pieChart" viewBox="0 0 160 160" width="160" height="160">
+                      <circle class="ov-donut-bg" cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9" stroke-width="22"/>
+                      <circle id="ov-seg-done" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gDone)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+                      <circle id="ov-seg-inpg" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gInpg)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+                      <circle id="ov-seg-pend" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gPend)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+                      <defs>
+                        <linearGradient id="gDone" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#4ade80"/>
+                        </linearGradient>
+                        <linearGradient id="gInpg" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a78bfa"/>
+                        </linearGradient>
+                        <linearGradient id="gPend" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#fbbf24"/>
+                        </linearGradient>
+                      </defs>
+                      <text id="ov-center-num" x="80" y="76" text-anchor="middle" dominant-baseline="middle" font-size="26" font-weight="800" font-family="Inter,sans-serif" fill="#0f172a">0</text>
+                      <text x="80" y="96" text-anchor="middle" dominant-baseline="middle" font-size="9" font-weight="600" font-family="Prompt,sans-serif" fill="#94a3b8" letter-spacing="1">TOTAL</text>
+                    </svg>
+                  </div>
+                  <div class="ov-legend" id="pieLegend"></div>
                 </div>
               </div>
               <div class="panel">

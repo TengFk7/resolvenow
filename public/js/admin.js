@@ -81,32 +81,59 @@ function filterAndGoQueue(filter) {
   showPage('queue');
 }
 
-/* ── Pie Chart ───────────────────────────────────────── */
+/* ── Donut Chart (SVG) ───────────────────────────────── */
 function drawPie(p, i, d) {
-  var canvas = ge('pieChart');
-  var ctx = canvas.getContext('2d');
   var total = p + i + d || 1;
-  var data = [
-    { val: p, color: '#f59e0b', label: 'รอ (' + p + ')' },
-    { val: i, color: '#8b5cf6', label: 'กำลังซ่อม (' + i + ')' },
-    { val: d, color: '#22c55e', label: 'เสร็จ (' + d + ')' }
+
+  // Update center number
+  var centerEl = ge('ov-center-num');
+  if (centerEl) animateNum(centerEl, p + i + d, true);
+
+  // circumference of r=58 circle ≈ 364.4
+  var C = 2 * Math.PI * 58;
+
+  // Segment order: done (green) → inpg (purple) → pend (amber)
+  // We draw from the bottom up so pend appears at top-left of circle
+  var segs = [
+    { id: 'ov-seg-done', val: d },
+    { id: 'ov-seg-inpg', val: i },
+    { id: 'ov-seg-pend', val: p }
   ];
-  ctx.clearRect(0, 0, 140, 140);
-  var start = -Math.PI / 2, cx = 70, cy = 70, r = 60;
-  for (var k = 0; k < data.length; k++) {
-    var sl = (data[k].val / total) * Math.PI * 2;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, start + sl);
-    ctx.closePath(); ctx.fillStyle = data[k].color; ctx.fill();
-    start += sl;
+
+  var offset = 0; // starts at 12-o-clock (rotate(-90) on SVG)
+  for (var k = 0; k < segs.length; k++) {
+    var el = ge(segs[k].id);
+    if (!el) continue;
+    var frac = segs[k].val / total;
+    var dash = frac * C;
+    var gap  = C - dash;
+    // leave 2px gap between segments for separation
+    var finalDash = Math.max(0, dash - 2);
+    el.style.strokeDasharray  = finalDash + ' ' + (C - finalDash);
+    el.style.strokeDashoffset = -offset;
+    offset += dash;
   }
-  ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff'; ctx.fill();
-  // center dot
-  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-  ctx.fillStyle = '#e2e8f0'; ctx.fill();
-  var lg = ge('pieLegend'); lg.innerHTML = '';
-  for (var j = 0; j < data.length; j++)
-    lg.innerHTML += '<div class="pie-item"><div class="pie-dot" style="background:' + data[j].color + '"></div><span>' + data[j].label + '</span></div>';
+
+  // Legend
+  var data = [
+    { val: p, pct: Math.round(p / total * 100), color: 'linear-gradient(135deg,#f59e0b,#fbbf24)', label: 'รอดำเนินการ', icon: '⏳' },
+    { val: i, pct: Math.round(i / total * 100), color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', label: 'กำลังซ่อม',   icon: '🔧' },
+    { val: d, pct: Math.round(d / total * 100), color: 'linear-gradient(135deg,#22c55e,#4ade80)', label: 'เสร็จสิ้น',   icon: '✅' }
+  ];
+  var lg = ge('pieLegend');
+  if (!lg) return;
+  lg.innerHTML = data.map(function(item) {
+    return '<div class="ov-legend-item">' +
+      '<div class="ov-legend-icon" style="background:' + item.color + '">' + item.icon + '</div>' +
+      '<div class="ov-legend-body">' +
+        '<div class="ov-legend-row">' +
+          '<span class="ov-legend-label">' + item.label + '</span>' +
+          '<span class="ov-legend-count">' + item.val + '</span>' +
+        '</div>' +
+        '<div class="ov-legend-bar-track"><div class="ov-legend-bar" style="width:' + item.pct + '%;background:' + item.color + '"></div></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 /* ── Tech Status Panel ───────────────────────────────── */
@@ -116,22 +143,44 @@ function renderTechStatus(techs) {
   var h = '';
   for (var i = 0; i < techs.length; i++) {
     var t = techs[i];
-    var csClass = t.statusLabel==='READY' ? 'cs-ready' : t.statusLabel==='BUSY' ? 'cs-busy' : 'cs-full';
-    // FIX-2.1c: escape name ก่อนแสดงผล
+    var isReady = t.statusLabel === 'READY';
+    var isBusy  = t.statusLabel === 'BUSY';
+    var isFull  = t.statusLabel === 'FULL';
+    var csClass = isReady ? 'cs-ready' : isBusy ? 'cs-busy' : 'cs-full';
+    var avRing  = isReady ? 'av-ring-ready' : isBusy ? 'av-ring-busy' : 'av-ring-full';
+    var barCls  = isReady ? 'tb-ready' : isBusy ? 'tb-busy' : 'tb-full';
+    var cap     = parseInt(t.capacity || 0);
     var safeName = escapeHTML(t.name || '?');
-    var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('');
-    h += '<div class="tech-item">';
-    h += '<div class="tech-av">' + escapeHTML(initials) + '</div>';
-    h += '<div class="tech-info">';
-    h += '<div class="tech-name">' + (DEPT_ICON[t.specialty]||'') + ' ' + safeName + '</div>';
-    h += '<div class="tech-dept">' + escapeHTML(DEPT[t.specialty]||t.specialty||'') + '</div>';
-    h += '<div class="tech-bar-wrap"><div class="tech-bar" style="width:'+parseInt(t.capacity||0)+'%"></div></div>';
+    var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+    var statusIcon = isReady ? '🟢' : isBusy ? '🟡' : '🔴';
+    var jobText = t.activeJobs > 0
+      ? '<span class="ts-jobs">' + t.activeJobs + ' งาน</span>'
+      : '<span class="ts-jobs ts-jobs-none">ว่าง</span>';
+
+    h += '<div class="ts-card ' + (isReady ? 'ts-card-ready' : isBusy ? 'ts-card-busy' : 'ts-card-full') + '">';
+    // Left: avatar with status ring
+    h += '<div class="ts-av-wrap">';
+    h += '<div class="ts-av ' + avRing + '">' + initials + '</div>';
+    h += '<div class="ts-av-dot ' + csClass + '"></div>';
     h += '</div>';
-    h += '<span class="cstatus ' + csClass + '">' + escapeHTML(t.statusLabel||'') + '</span>';
+    // Middle: name + dept + bar
+    h += '<div class="ts-info">';
+    h += '<div class="ts-name">' + (DEPT_ICON[t.specialty]||'') + ' ' + safeName + '</div>';
+    h += '<div class="ts-dept">' + escapeHTML(DEPT[t.specialty]||t.specialty||'') + '</div>';
+    h += '<div class="ts-bar-wrap">';
+    h += '<div class="ts-bar ' + barCls + '" style="width:' + cap + '%"></div>';
+    h += '</div>';
+    h += '</div>';
+    // Right: status badge + job count
+    h += '<div class="ts-right">';
+    h += '<span class="cstatus ' + csClass + '">' + statusIcon + ' ' + escapeHTML(t.statusLabel||'') + '</span>';
+    h += jobText;
+    h += '</div>';
     h += '</div>';
   }
   el.innerHTML = h;
 }
+
 
 /* ── Smart Queue (Pending tickets) ───────────────────── */
 function renderQueue(tks, techs) {
