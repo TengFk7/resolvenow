@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Dictionary — ระบบ ResolvNow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 10.5pt;
+      color: #1a1a2e;
+      background: #f4f6fb;
+      line-height: 1.5;
+    }
+
+    /* ── Page wrapper ─────────────────────────────────────────── */
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ── Cover / Title Block ──────────────────────────────────── */
+    .cover {
+      background: linear-gradient(135deg, #0a0e27 0%, #16213e 45%, #0f3460 100%);
+      color: #fff;
+      padding: 52px 48px 44px;
+      border-radius: 0 0 28px 28px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 70% 30%, rgba(99, 179, 237, 0.15) 0%, transparent 60%);
+    }
+
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 4px 16px;
+      font-size: 9pt;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      color: #90cdf4;
+    }
+
+    .cover h1 {
+      font-size: 30pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+
+    .cover h1 span {
+      color: #63b3ed;
+    }
+
+    .cover .sub {
+      font-size: 13pt;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 32px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .cover-meta-item {
+      font-size: 9.5pt;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .cover-meta-item strong {
+      color: #90cdf4;
+      display: block;
+      font-size: 9pt;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* ── Section heading ──────────────────────────────────────── */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 44px 0 18px;
+    }
+
+    .section-title .num {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #1a56db, #3b82f6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 13pt;
+      font-weight: 700;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .section-title h2 {
+      font-size: 15pt;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .section-title h2 span {
+      font-size: 10pt;
+      font-weight: 400;
+      color: #64748b;
+      margin-left: 8px;
+    }
+
+    .collection-badge {
+      margin-left: auto;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 3px 12px;
+      font-size: 9pt;
+      font-weight: 600;
+      color: #1d4ed8;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ── Collection description card ─────────────────────────── */
+    .col-desc {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 0 10px 10px 0;
+      padding: 12px 18px;
+      font-size: 9.5pt;
+      color: #1e3a5f;
+      margin-bottom: 16px;
+    }
+
+    /* ── Table ────────────────────────────────────────────────── */
+    .dd-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.09);
+      font-size: 9.5pt;
+      margin-bottom: 8px;
+    }
+
+    .dd-table thead tr {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 100%);
+      color: #fff;
+    }
+
+    .dd-table thead th {
+      padding: 11px 13px;
+      font-weight: 700;
+      font-size: 9pt;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      white-space: nowrap;
+    }
+
+    .dd-table tbody tr:nth-child(odd) {
+      background: #ffffff;
+    }
+
+    .dd-table tbody tr:nth-child(even) {
+      background: #f8faff;
+    }
+
+    .dd-table tbody tr:hover {
+      background: #eff6ff;
+    }
+
+    .dd-table tbody td {
+      padding: 9px 13px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    /* Field name column */
+    .dd-table td.fname {
+      font-family: 'Courier New', monospace;
+      font-size: 9pt;
+      font-weight: 600;
+      color: #1d4ed8;
+      background: #f0f4ff;
+      white-space: nowrap;
+    }
+
+    /* Type column */
+    .dd-table td.ftype {
+      font-family: 'Courier New', monospace;
+      font-size: 9pt;
+      color: #6d28d9;
+      white-space: nowrap;
+    }
+
+    /* Length column */
+    .dd-table td.flen {
+      text-align: center;
+      color: #475569;
+      font-size: 9pt;
+      white-space: nowrap;
+    }
+
+    /* Key column */
+    .dd-table td.fkey {
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-pk {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+
+    .badge-fk {
+      background: #ede9fe;
+      color: #5b21b6;
+      border: 1px solid #c4b5fd;
+    }
+
+    .badge-idx {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+
+    .badge-uk {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+
+    /* Required / Nullable */
+    .req-yes {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .req-no {
+      color: #6b7280;
+    }
+
+    /* Enum list */
+    .enum-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .enum-list li {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 8pt;
+      font-family: 'Courier New', monospace;
+      margin: 1px 2px 1px 0;
+      color: #334155;
+    }
+
+    .enum-list li.def {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1e40af;
+      font-weight: 600;
+    }
+
+    /* Sub-schema rows */
+    .dd-table tr.sub-header td {
+      background: #f1f5f9;
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #64748b;
+      padding: 6px 13px 6px 28px;
+      font-style: italic;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .dd-table tr.sub td.fname {
+      padding-left: 28px;
+      font-size: 8.5pt;
+      background: #f8faff;
+      color: #4f46e5;
+    }
+
+    .dd-table tr.sub td {
+      font-size: 9pt;
+      background: #f8faff;
+    }
+
+    /* ── Divider ──────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+      margin: 48px 0 0;
+    }
+
+    /* ── Summary / Index ──────────────────────────────────────── */
+    .index-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px 28px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+      margin-bottom: 40px;
+    }
+
+    .index-card h3 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .index-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .index-item {
+      background: #f8faff;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #3b82f6;
+      border-radius: 0 10px 10px 0;
+      padding: 10px 14px;
+    }
+
+    .index-item .idx-col {
+      font-family: 'Courier New', monospace;
+      font-size: 9pt;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    .index-item .idx-desc {
+      font-size: 8.5pt;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    .index-item .idx-count {
+      font-size: 8pt;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    .footer {
+      background: linear-gradient(135deg, #0a0e27, #16213e);
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      padding: 20px;
+      border-radius: 16px;
+      font-size: 8.5pt;
+      margin-top: 50px;
+    }
+
+    .footer strong {
+      color: #63b3ed;
+    }
+
+    /* ── Print styles ─────────────────────────────────────────── */
+    @media print {
+      body {
+        background: #fff;
+        font-size: 9pt;
+      }
+
+      .page {
+        max-width: 100%;
+        padding: 0 8px;
+      }
+
+      .cover {
+        background: #0f3460 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        border-radius: 0 0 16px 16px;
+        margin-bottom: 24px;
+        padding: 32px 28px 28px;
+      }
+
+      .cover h1 {
+        font-size: 22pt;
+      }
+
+      .dd-table {
+        box-shadow: none;
+        page-break-inside: auto;
+      }
+
+      .dd-table thead {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .dd-table thead tr {
+        background: #1e3a5f !important;
+      }
+
+      .dd-table tbody tr:nth-child(even) {
+        background: #f8faff !important;
+      }
+
+      .dd-table td.fname {
+        background: #f0f4ff !important;
+      }
+
+      .section-title {
+        page-break-before: auto;
+      }
+
+      .col-desc {
+        page-break-inside: avoid;
+      }
+
+      .index-card {
+        page-break-inside: avoid;
+      }
+
+      tr {
+        page-break-inside: avoid;
+      }
+
+      .footer {
+        background: #0f3460 !important;
+      }
+    }
+
+    /* ── Print button (screen only) ───────────────────────────── */
+    .print-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: linear-gradient(135deg, #1a56db, #3b82f6);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 28px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(59, 130, 246, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(59, 130, 246, 0.65);
+    }
+
+    @media print {
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <button class="print-btn" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
+
+  <div class="page">
+
+    <!-- ══ COVER ════════════════════════════════════════════════════ -->
+    <div class="cover">
+      <div class="cover-badge">📋 Data Dictionary</div>
+      <h1>Resolv<span>Now</span></h1>
+      <div class="sub">ระบบรับแจ้งเรื่องร้องเรียน - คู่มืออธิบายโครงสร้างฐานข้อมูล</div>
+      <div class="cover-meta">
+        <div class="cover-meta-item"><strong>Database</strong>MongoDB Atlas (Mongoose 9)</div>
+        <div class="cover-meta-item"><strong>Collections</strong>6 collections</div>
+        <div class="cover-meta-item"><strong>เวอร์ชัน</strong>v1.0 (2026)</div>
+        <div class="cover-meta-item"><strong>Stack</strong>Node.js + Express 4</div>
+        <div class="cover-meta-item"><strong>Deploy</strong>Render.com</div>
+      </div>
+    </div>
+
+    <!-- ══ TABLE OF CONTENTS ════════════════════════════════════════ -->
+    <div class="index-card">
+      <h3>📁 สารบัญ Collection (Table of Contents)</h3>
+      <div class="index-grid">
+        <div class="index-item">
+          <div class="idx-col">users</div>
+          <div class="idx-desc">ผู้ใช้งานระบบทุกบทบาท</div>
+          <div class="idx-count">11 fields</div>
+        </div>
+        <div class="index-item">
+          <div class="idx-col">tickets</div>
+          <div class="idx-desc">เรื่องร้องเรียนของประชาชน</div>
+          <div class="idx-count">27 fields + 2 sub-docs</div>
+        </div>
+        <div class="index-item">
+          <div class="idx-col">helprequests</div>
+          <div class="idx-desc">คำขอความช่วยเหลือระหว่างช่าง</div>
+          <div class="idx-count">16 fields</div>
+        </div>
+        <div class="index-item">
+          <div class="idx-col">categories</div>
+          <div class="idx-desc">หมวดหมู่การร้องเรียน</div>
+          <div class="idx-count">6 fields</div>
+        </div>
+        <div class="index-item">
+          <div class="idx-col">comments</div>
+          <div class="idx-desc">ข้อความแชทในตั๋วร้องเรียน</div>
+          <div class="idx-count">6 fields</div>
+        </div>
+        <div class="index-item">
+          <div class="idx-col">counters</div>
+          <div class="idx-desc">ตัวนับ ID อัตโนมัติ</div>
+          <div class="idx-count">2 fields</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       1. COLLECTION: users
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">1</div>
+      <h2>Collection: users <span>ผู้ใช้งานระบบ</span></h2>
+      <div class="collection-badge">users</div>
+    </div>
+    <div class="col-desc">
+      เก็บข้อมูลผู้ใช้งานทั้งหมด 3 บทบาท: <strong>citizen</strong> (ประชาชนผู้ร้องเรียน), <strong>technician</strong>
+      (ช่างผู้รับผิดชอบ), <strong>admin</strong> (ผู้ดูแลระบบ)
+      รองรับการสมัครสมาชิกแบบอีเมล/OTP และผ่าน LINE Login OAuth2
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ (Field Name)</th>
+          <th>ประเภทข้อมูล (Type)</th>
+          <th>ขนาด (Length)</th>
+          <th>คีย์ (Key)</th>
+          <th>คำอธิบาย (Description)</th>
+          <th>ข้อจำกัด (Constraint)</th>
+          <th>บังคับ (Required)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">firstName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อจริงของผู้ใช้ (trim whitespace อัตโนมัติ)</td>
+          <td>ห้ามว่าง, ตัดช่องว่างหน้า-หลัง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">lastName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>นามสกุลของผู้ใช้ (trim whitespace อัตโนมัติ)</td>
+          <td>ห้ามว่าง, ตัดช่องว่างหน้า-หลัง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">email</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-uk">UQ</span></td>
+          <td>อีเมลสำหรับเข้าสู่ระบบ บันทึกเป็นตัวพิมพ์เล็กทั้งหมด</td>
+          <td>ไม่ซ้ำในระบบ, lowercase, trim, ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">password</td>
+          <td class="ftype">String</td>
+          <td class="flen">60</td>
+          <td class="fkey">—</td>
+          <td>รหัสผ่านที่ผ่านการเข้ารหัสด้วย bcryptjs (hash ยาว 60 ตัวอักษร)</td>
+          <td>ห้ามว่าง, ต้องผ่าน bcrypt hash เสมอ</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">role</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>บทบาทของผู้ใช้ ใช้กำหนดสิทธิ์การเข้าถึงในระบบ</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">citizen</li>
+              <li>technician</li>
+              <li>admin</li>
+            </ul>
+            (default = citizen)
+          </td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">specialty</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>หมวดหมู่ที่ช่างรับผิดชอบ อัปเดตอัตโนมัติเมื่อ Admin ผูกช่างกับหมวดหมู่</td>
+          <td>ตัวอย่าง: Road, Water, Electricity, Garbage, Animal, Tree, Hazard หรือชื่อ custom. null = ยังไม่ถูกผูก
+          </td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">lineUserId</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>LINE User ID ที่ได้จาก LINE Login OAuth2 ใช้ส่ง push notification</td>
+          <td>null = ยังไม่ได้เชื่อม LINE</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">lineDisplayName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อที่แสดงบน LINE Profile สำหรับแสดงในระบบแทนชื่อจริง</td>
+          <td>null = ยังไม่ได้เชื่อม LINE</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">avatar</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>URL รูปโปรไฟล์ของผู้ใช้ (ได้จาก LINE Profile picture)</td>
+          <td>null = ไม่มีรูป, ควรเป็น URL ที่ถูกต้อง</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">createdViaLine</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระบุว่าบัญชีนี้สร้างผ่านขั้นตอน register-line (LINE-only account)</td>
+          <td>true = สร้างผ่าน LINE; false = สมัครด้วยอีเมล (default)</td>
+          <td class="req-no">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่สร้างบัญชี (สร้างอัตโนมัติโดย Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">updatedAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่แก้ไขข้อมูลล่าสุด (อัปเดตอัตโนมัติโดย Mongoose)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       2. COLLECTION: tickets
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">2</div>
+      <h2>Collection: tickets <span>เรื่องร้องเรียน</span></h2>
+      <div class="collection-badge">tickets</div>
+    </div>
+    <div class="col-desc">
+      เก็บข้อมูลเรื่องร้องเรียนทุกรายการที่ประชาชนส่งเข้ามา รวมถึงสถานะการดำเนินการ รูปภาพก่อน/หลัง ระบบ SLA, Upvote,
+      Follow และ Chat expiry
+      รหัสตั๋วจัดรูปแบบ <code>TKT-00001</code> (5 หลัก, เพิ่มอัตโนมัติ)
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ (Field Name)</th>
+          <th>ประเภทข้อมูล (Type)</th>
+          <th>ขนาด (Length)</th>
+          <th>คีย์ (Key)</th>
+          <th>คำอธิบาย (Description)</th>
+          <th>ข้อจำกัด (Constraint)</th>
+          <th>บังคับ (Required)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">ticketId</td>
+          <td class="ftype">String</td>
+          <td class="flen">10</td>
+          <td class="fkey"><span class="badge badge-uk">UQ</span></td>
+          <td>รหัสตั๋วที่มนุษย์อ่านได้ สร้างจาก Counter (auto-increment)</td>
+          <td>รูปแบบ: TKT-00001 ~ TKT-99999, ไม่ซ้ำ</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิงไปยัง users._id ของประชาชนที่ส่งเรื่อง</td>
+          <td>ref: User, ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อ-นามสกุลประชาชน บันทึกไว้เพื่อแสดงผลโดยไม่ต้อง JOIN</td>
+          <td>ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenLineId</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>LINE User ID ของประชาชน สำหรับส่ง push notification และ LIFF rating</td>
+          <td>null = ประชาชนยังไม่ผูก LINE</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">category</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>หมวดหมู่ปัญหา ตรงกับ Category.name ในฐานข้อมูล (soft reference)</td>
+          <td>ตัวอย่าง: Road, Water, Electricity, Garbage, Animal, Tree, Hazard</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">description</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>รายละเอียดเรื่องร้องเรียน ผ่าน XSS sanitize ก่อนบันทึก</td>
+          <td>ห้ามว่าง, ผ่าน xss library</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">location</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ที่อยู่หรือคำอธิบายสถานที่ อาจได้จาก reverse geocoding ของ GPS</td>
+          <td>ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">lat</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ละติจูด (Latitude) ของสถานที่เกิดเหตุ ได้จาก GPS บนอุปกรณ์</td>
+          <td>ช่วง -90 ถึง 90, null = ไม่มี GPS</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">lng</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ลองจิจูด (Longitude) ของสถานที่เกิดเหตุ ได้จาก GPS บนอุปกรณ์</td>
+          <td>ช่วง -180 ถึง 180, null = ไม่มี GPS</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">urgency</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระดับความเร่งด่วนที่ประชาชนกำหนดเมื่อส่งเรื่อง ส่งผลต่อ priorityScore</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">normal</li>
+              <li>medium</li>
+              <li>urgent</li>
+            </ul>
+          </td>
+          <td class="req-yes">default: normal</td>
+        </tr>
+        <tr>
+          <td class="fname">priorityScore</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>คะแนนความสำคัญ คำนวณจาก urgency + คำสำคัญในคำอธิบาย + upvotes สำหรับ AI ranking</td>
+          <td>ช่วง 30–100; urgent=90, medium=60, normal=30; +10/keyword; upvotes≥10 → 100</td>
+          <td class="req-yes">default: 30</td>
+        </tr>
+        <tr>
+          <td class="fname">status</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>สถานะปัจจุบันของเรื่องร้องเรียน ควบคุมด้วย TRANSITIONS matrix</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">pending</li>
+              <li>assigned</li>
+              <li>in_progress</li>
+              <li>completed</li>
+              <li>rejected</li>
+            </ul>
+          </td>
+          <td class="req-yes">default: pending</td>
+        </tr>
+        <tr>
+          <td class="fname">assignedTo</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิง users._id ของช่างที่รับผิดชอบ กำหนดโดย Admin</td>
+          <td>ref: User, null = ยังไม่ถูกมอบหมาย</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">assignedName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อช่าง บันทึกไว้เพื่อแสดงผลโดยไม่ต้อง JOIN</td>
+          <td>null = ยังไม่ถูกมอบหมาย</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">rejectReason</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เหตุผลที่ปฏิเสธเรื่องร้องเรียน บันทึกเมื่อ status = rejected เท่านั้น</td>
+          <td>null = ไม่ถูกปฏิเสธ, ผ่าน xss sanitize</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenImage</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>URL รูปภาพที่ประชาชนแนบตอนส่งเรื่องร้องเรียน (Cloudinary/local)</td>
+          <td>null = ไม่มีรูป, ต้องเป็น URL ที่ถูกต้อง (jpg/png/gif/webp)</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">beforeImage</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>URL รูปภาพก่อนซ่อม อัปโหลดโดยช่างเมื่อ status = assigned</td>
+          <td>null = ยังไม่อัปโหลด, URL Cloudinary หรือ /uploads/filename</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">afterImage</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>URL รูปภาพหลังซ่อมเสร็จ อัปโหลดโดยช่างเมื่อ status = in_progress</td>
+          <td>null = ยังไม่อัปโหลด, URL Cloudinary หรือ /uploads/filename</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">rating</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>คะแนนประเมินความพึงพอใจจากประชาชน (1–5 ดาว) หลังงานเสร็จ</td>
+          <td>min: 1, max: 5; null = ยังไม่ได้ให้คะแนน</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">ratingReason</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ความคิดเห็นประกอบการให้คะแนน บันทึกพร้อมกับ rating</td>
+          <td>null = ไม่มีความคิดเห็น</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">ratedAt</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่ประชาชนให้คะแนน บันทึกเป็น String (ISO timestamp)</td>
+          <td>null = ยังไม่ได้ให้คะแนน</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <!-- SLA -->
+        <tr>
+          <td class="fname">slaAssignDeadline</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เส้นตาย SLA สำหรับการมอบหมายช่าง คำนวณตอนสร้าง ticket</td>
+          <td>urgent: +2h, medium: +8h, normal: +24h จากเวลาสร้าง</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">slaCompleteDeadline</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เส้นตาย SLA สำหรับการดำเนินการเสร็จสิ้น คำนวณตอนสร้าง ticket</td>
+          <td>urgent: +8h, medium: +48h, normal: +72h จากเวลาสร้าง</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">slaBreached</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>สถานะการละเมิด SLA อัปเดตอัตโนมัติโดย slaJob ทุก 5 นาที</td>
+          <td>true = เลยเส้นตาย SLA แล้ว; false (default) = ยังไม่เลย</td>
+          <td class="req-yes">default: false</td>
+        </tr>
+        <!-- Upvote -->
+        <tr class="sub-header">
+          <td colspan="7">📌 Sub-document Array: upvotes[] — รายการผู้กด Upvote</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">upvotes[].userId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>รหัสผู้ใช้ที่กด Upvote (ref: User) ป้องกันโหวตซ้ำด้วย $addToSet</td>
+          <td>ห้ามโหวตของตัวเอง, atomic $addToSet/$pull</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">upvotes[].createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่กด Upvote</td>
+          <td>default: Date.now()</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">upvoteCount</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>จำนวน Upvote รวม อัปเดต denormalized สำหรับการเรียงลำดับที่รวดเร็ว</td>
+          <td>≥ 0; upvotes≥10 → priorityScore = 100</td>
+          <td class="req-yes">default: 0</td>
+        </tr>
+        <!-- Follow -->
+        <tr class="sub-header">
+          <td colspan="7">📌 Sub-document Array: followers[] — รายการผู้ติดตาม</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">followers[].userId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>รหัสผู้ใช้ที่ติดตาม ticket นี้</td>
+          <td>ref: User</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">followers[].lineUserId</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>LINE User ID สำหรับส่ง push notification เมื่อ status เปลี่ยน</td>
+          <td>null = ผู้ติดตามไม่มี LINE</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">followerCount</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>จำนวนผู้ติดตามรวม (denormalized)</td>
+          <td>≥ 0</td>
+          <td class="req-yes">default: 0</td>
+        </tr>
+        <!-- Chat -->
+        <tr>
+          <td class="fname">chatExpiresAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่ระบบแชทจะหมดอายุ ตั้งค่าอัตโนมัติ +24h เมื่อ status → completed</td>
+          <td>null = ไม่มีวันหมดอายุ (ticket ยังไม่ completed)</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่ส่งเรื่องร้องเรียน (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">updatedAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่อัปเดตเรื่องร้องเรียนล่าสุด (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       3. COLLECTION: helprequests
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">3</div>
+      <h2>Collection: helprequests <span>คำขอความช่วยเหลือระหว่างช่าง</span></h2>
+      <div class="collection-badge">helprequests</div>
+    </div>
+    <div class="col-desc">
+      เก็บคำขอความช่วยเหลือที่ช่าง (technician) ส่งเมื่อต้องการให้ช่างแผนกอื่นมารับ ticket ที่ตนไม่ถนัด
+      รหัสจัดรูปแบบ <code>HELP-00001</code> (5 หลัก, auto-increment)
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ (Field Name)</th>
+          <th>ประเภทข้อมูล (Type)</th>
+          <th>ขนาด (Length)</th>
+          <th>คีย์ (Key)</th>
+          <th>คำอธิบาย (Description)</th>
+          <th>ข้อจำกัด (Constraint)</th>
+          <th>บังคับ (Required)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">helpId</td>
+          <td class="ftype">String</td>
+          <td class="flen">11</td>
+          <td class="fkey"><span class="badge badge-uk">UQ</span></td>
+          <td>รหัสคำขอความช่วยเหลือที่มนุษย์อ่านได้ สร้างจาก Counter (auto-increment)</td>
+          <td>รูปแบบ: HELP-00001 ~ HELP-99999, ไม่ซ้ำ</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิง users._id ประชาชนเจ้าของ ticket ที่เกี่ยวข้อง</td>
+          <td>ref: User, ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อประชาชนเจ้าของ ticket เก็บไว้แสดงผล</td>
+          <td>ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">message</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ข้อความที่ช่างอธิบายว่าต้องการความช่วยเหลืออะไร</td>
+          <td>default: '' (อนุญาตให้ว่างได้)</td>
+          <td class="req-no">Optional</td>
+        </tr>
+        <tr>
+          <td class="fname">ticketId</td>
+          <td class="ftype">String</td>
+          <td class="flen">10</td>
+          <td class="fkey">—</td>
+          <td>รหัส ticket ที่เกี่ยวข้อง (soft reference, รูปแบบ TKT-xxxxx)</td>
+          <td>null = ไม่ระบุ ticket</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">ticketCategory</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>หมวดหมู่ของ ticket ที่ขอความช่วยเหลือ บันทึกเพื่อแสดงผลโดยไม่ JOIN</td>
+          <td>null = ไม่ระบุ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">ticketLocation</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>สถานที่ของ ticket ที่ขอความช่วยเหลือ บันทึกเพื่อแสดงผลโดยไม่ JOIN</td>
+          <td>null = ไม่ระบุ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">ticketDesc</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>คำอธิบายสั้นๆ ของ ticket บันทึกเพื่อแสดงผลโดยไม่ JOIN</td>
+          <td>null = ไม่ระบุ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">requesterId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิง users._id ช่างที่ส่งคำขอความช่วยเหลือ</td>
+          <td>ref: User, null = ไม่ระบุ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">requesterName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อช่างผู้ส่งคำขอ บันทึกไว้แสดงผล</td>
+          <td>null = ไม่ระบุ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">requesterDept</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>แผนก (specialty) ของช่างที่ส่งคำขอ</td>
+          <td>null = ไม่ระบุ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">targetDept</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>แผนก (specialty) ที่ต้องการให้มาช่วย</td>
+          <td>null = ไม่ระบุแผนก</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">acceptedById</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิง users._id ของช่างที่รับงาน เมื่อ PUT /:id/accept</td>
+          <td>ref: User, null = ยังไม่มีผู้รับ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">acceptedByName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อช่างที่รับงาน บันทึกไว้แสดงผล</td>
+          <td>null = ยังไม่มีผู้รับ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">status</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>สถานะคำขอความช่วยเหลือ</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">open</li>
+              <li>accepted</li>
+              <li>cancelled</li>
+              <li>resolved</li>
+            </ul>
+          </td>
+          <td class="req-yes">default: open</td>
+        </tr>
+        <tr>
+          <td class="fname">reply</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ข้อความตอบกลับจากช่างที่รับงาน</td>
+          <td>null = ยังไม่มีการตอบกลับ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่ส่งคำขอ (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">updatedAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่อัปเดตล่าสุด (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       4. COLLECTION: categories
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">4</div>
+      <h2>Collection: categories <span>หมวดหมู่ร้องเรียน</span></h2>
+      <div class="collection-badge">categories</div>
+    </div>
+    <div class="col-desc">
+      เก็บหมวดหมู่ประเภทปัญหา (เช่น ถนน, ไฟฟ้า, น้ำประปา) ทั้ง 7 หมวดเดิมและหมวดที่ Admin สร้างเพิ่ม
+      แต่ละหมวดผูกกับช่างที่รับผิดชอบ และอัปเดต <code>specialty</code> ของช่างอัตโนมัติ
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ (Field Name)</th>
+          <th>ประเภทข้อมูล (Type)</th>
+          <th>ขนาด (Length)</th>
+          <th>คีย์ (Key)</th>
+          <th>คำอธิบาย (Description)</th>
+          <th>ข้อจำกัด (Constraint)</th>
+          <th>บังคับ (Required)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">name</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-uk">UQ</span></td>
+          <td>ชื่อ key ของหมวดหมู่ (ภาษาอังกฤษ) ใช้เป็น software identifier ใน ticket.category</td>
+          <td>ไม่ซ้ำ, trim. ตัวอย่าง: Road, Water, Electricity, Garbage, Animal, Tree, Hazard</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">label</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อหมวดหมู่ภาษาไทยสำหรับแสดงผลบน UI</td>
+          <td>ห้ามว่าง, trim. ตัวอย่าง: ถนน/ทางเท้า, ท่อแตก/น้ำไม่ไหล</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">icon</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>Emoji ไอคอนประกอบหมวดหมู่ สำหรับแสดงบน UI</td>
+          <td>ตัวอย่าง: 🛣️ 🚰 💡 🗑️ 🐍 🌳 🔥; default: 📌</td>
+          <td class="req-yes">default: 📌</td>
+        </tr>
+        <tr>
+          <td class="fname">technicianIds</td>
+          <td class="ftype">Array[ObjectId]</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>รายการรหัสช่างที่ผูกกับหมวดนี้ เมื่ออัปเดตจะเปลี่ยน specialty ของช่างด้วย</td>
+          <td>ref: User[], [] = ไม่มีช่างผูก</td>
+          <td class="req-no">default: []</td>
+        </tr>
+        <tr>
+          <td class="fname">isDefault</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระบุว่าเป็น 7 หมวดหมวดเดิมของระบบหรือไม่ ป้องกันการลบถ้ามี ticket ค้างอยู่</td>
+          <td>true = ห้ามลบถ้ามี active ticket; false = หมวด custom (default)</td>
+          <td class="req-no">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่สร้างหมวดหมู่ (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">updatedAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่แก้ไขล่าสุด (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       5. COLLECTION: comments
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">5</div>
+      <h2>Collection: comments <span>ข้อความแชทในตั๋ว</span></h2>
+      <div class="collection-badge">comments</div>
+    </div>
+    <div class="col-desc">
+      เก็บข้อความสนทนา (chat) ระหว่างประชาชน / ช่าง / Admin ในแต่ละ ticket
+      แต่ละข้อความมี ticketId เป็น index สำหรับ query เร็ว และมีระบบ auto-delete เมื่อ chatExpiresAt ผ่านแล้ว (+24h หลัง
+      completed)
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ (Field Name)</th>
+          <th>ประเภทข้อมูล (Type)</th>
+          <th>ขนาด (Length)</th>
+          <th>คีย์ (Key)</th>
+          <th>คำอธิบาย (Description)</th>
+          <th>ข้อจำกัด (Constraint)</th>
+          <th>บังคับ (Required)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">ticketId</td>
+          <td class="ftype">String</td>
+          <td class="flen">10</td>
+          <td class="fkey"><span class="badge badge-idx">IDX</span></td>
+          <td>รหัส ticket ที่ comment นี้เป็นส่วนหนึ่ง (soft reference รูปแบบ TKT-xxxxx)</td>
+          <td>ห้ามว่าง, มี index เพื่อการ query เร็ว</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">userId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิง users._id ผู้ส่งข้อความ</td>
+          <td>ref: User, ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">userName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อผู้ส่งข้อความ บันทึกไว้แสดงผลโดยไม่ต้อง JOIN</td>
+          <td>ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">userRole</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>บทบาทของผู้ส่งข้อความ ใช้แสดง badge สีต่างกันบน UI</td>
+          <td>
+            <ul class="enum-list">
+              <li>citizen</li>
+              <li>technician</li>
+              <li>admin</li>
+            </ul>
+          </td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">message</td>
+          <td class="ftype">String</td>
+          <td class="flen">500</td>
+          <td class="fkey">—</td>
+          <td>เนื้อหาข้อความแชท ผ่าน XSS sanitize ก่อนบันทึก</td>
+          <td>ห้ามว่าง, maxlength: 500 ตัวอักษร, ผ่าน xss library</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่ส่งข้อความ (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">updatedAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่อัปเดตล่าสุด (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       6. COLLECTION: counters
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">6</div>
+      <h2>Collection: counters <span>ตัวนับ ID อัตโนมัติ</span></h2>
+      <div class="collection-badge">counters</div>
+    </div>
+    <div class="col-desc">
+      เก็บตัวนับ (sequence) สำหรับสร้าง ID แบบ human-readable ให้กับ tickets (<code>TKT-xxxxx</code>) และ helprequests
+      (<code>HELP-xxxxx</code>)
+      ใช้ pattern <code>findOneAndUpdate + $inc + upsert</code> เพื่อป้องกัน race condition (atomic operation)
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ (Field Name)</th>
+          <th>ประเภทข้อมูล (Type)</th>
+          <th>ขนาด (Length)</th>
+          <th>คีย์ (Key)</th>
+          <th>คำอธิบาย (Description)</th>
+          <th>ข้อจำกัด (Constraint)</th>
+          <th>บังคับ (Required)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">name</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-uk">UQ</span></td>
+          <td>ชื่อตัวนับ ระบุว่าใช้สำหรับ collection ใด</td>
+          <td>
+            <ul class="enum-list">
+              <li>ticket</li>
+              <li>help</li>
+            </ul>
+            ไม่ซ้ำในระบบ
+          </td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">seq</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เลขลำดับปัจจุบัน เพิ่มขึ้น 1 ทุกครั้งที่ Counter.nextSeq() ถูกเรียก (atomic $inc)</td>
+          <td>≥ 0, เพิ่มค่าอัตโนมัติด้วย $inc; upsert ถ้าไม่มีเอกสาร</td>
+          <td class="req-yes">default: 0</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ══ KEY LEGEND ════════════════════════════════════════════════ -->
+    <div class="index-card" style="margin-top:48px;">
+      <h3>🔑 คำอธิบายสัญลักษณ์ (Legend)</h3>
+      <div class="index-grid">
+        <div class="index-item" style="border-left-color:#92400e;">
+          <div><span class="badge badge-pk">PK</span> &nbsp;Primary Key</div>
+          <div class="idx-desc">รหัสหลักประจำเอกสาร ไม่ซ้ำในระบบ</div>
+        </div>
+        <div class="index-item" style="border-left-color:#5b21b6;">
+          <div><span class="badge badge-fk">FK</span> &nbsp;Foreign Key</div>
+          <div class="idx-desc">อ้างอิงไปยัง collection อื่น (ref)</div>
+        </div>
+        <div class="index-item" style="border-left-color:#991b1b;">
+          <div><span class="badge badge-uk">UQ</span> &nbsp;Unique Key</div>
+          <div class="idx-desc">ค่าห้ามซ้ำกันในระบบ</div>
+        </div>
+        <div class="index-item" style="border-left-color:#065f46;">
+          <div><span class="badge badge-idx">IDX</span> &nbsp;Indexed</div>
+          <div class="idx-desc">มี database index เพื่อการค้นหาเร็ว</div>
+        </div>
+        <div class="index-item" style="border-left-color:#dc2626;">
+          <div class="req-yes">Required</div>
+          <div class="idx-desc">ข้อมูลบังคับ ห้ามเป็นค่าว่าง (NOT NULL)</div>
+        </div>
+        <div class="index-item" style="border-left-color:#6b7280;">
+          <div class="req-no">Nullable / Optional</div>
+          <div class="idx-desc">ข้อมูลไม่บังคับ อนุญาตเป็น null/ค่าว่าง</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FOOTER ════════════════════════════════════════════════════ -->
+    <div class="footer">
+      <strong>ResolvNow Data Dictionary</strong> — ระบบรับแจ้งเรื่องร้องเรียนสมาร์ทซิตี้<br />
+      MongoDB Atlas · Mongoose 9 · Node.js + Express 4 · Deploy: Render.com<br />
+      จัดทำ: 2026 | ครอบคลุม 6 collections, 70+ fields
+    </div>
+
+  </div><!-- /page -->
+
+</body>
+
+</html>
