@@ -16,8 +16,8 @@ var _tcOpen = null;       // currently expanded ticketId
 /* priority bucket helper */
 function _tcPrioBucket(t) {
   var u = t.urgency || '';
-  if (t.priorityScore >= 70 || u === 'urgent')  return 'urgent';
-  if (t.priorityScore >= 40 || u === 'medium')  return 'medium';
+  if (t.priorityScore >= 70 || u === 'urgent') return 'urgent';
+  if (t.priorityScore >= 40 || u === 'medium') return 'medium';
   return 'normal';
 }
 
@@ -44,7 +44,7 @@ function renderTech(data) {
   /* ── store master list ── */
   _tcAllTickets = data;
   window._tcTickets = {};
-  data.forEach(function(t){ window._tcTickets[t.ticketId] = t; });
+  data.forEach(function (t) { window._tcTickets[t.ticketId] = t; });
 
   // FIX-#5 Modal Event Loss Guard:
   // ถ้า modal รายละเอียดงานเปิดอยู่ → อัปเดตข้อมูลใน memory เท่านั้น
@@ -112,31 +112,31 @@ function _tcRenderGrid(filter, animate) {
   var el = ge('techCards');
   if (!el) return;
 
-  var isDoneStatus = function(t){ return t.status === 'completed' || t.status === 'rejected'; };
+  var isDoneStatus = function (t) { return t.status === 'completed' || t.status === 'rejected'; };
 
   var data;
   if (filter === 'all') {
     data = _tcAllTickets;
   } else if (filter === 'completed' || filter === 'rejected') {
     // Done filter: show only tickets with that exact status
-    data = _tcAllTickets.filter(function(t){ return t.status === filter; });
+    data = _tcAllTickets.filter(function (t) { return t.status === filter; });
   } else {
     // Priority filter (urgent/medium/normal): active tickets only
-    data = _tcAllTickets.filter(function(t){
+    data = _tcAllTickets.filter(function (t) {
       return _tcPrioBucket(t) === filter && !isDoneStatus(t);
     });
   }
 
   if (!data.length) {
-    var lm = { urgent:'ด่วนมาก', medium:'ด่วน', normal:'ปกติ', completed:'เสร็จสิ้น', rejected:'ปฏิเสธ' };
+    var lm = { urgent: 'ด่วนมาก', medium: 'ด่วน', normal: 'ปกติ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ' };
     var msg = filter === 'all' ? 'ไม่มีงานในแผนกของคุณ' : 'ไม่มีงานในสถานะ "' + (lm[filter] || filter) + '"';
     el.innerHTML = '<div class="empty">' + msg + '</div>';
     return;
   }
 
   /* ── Split into active / done, active always first ── */
-  var active = data.filter(function(t){ return !isDoneStatus(t); });
-  var done   = data.filter(function(t){ return isDoneStatus(t); });
+  var active = data.filter(function (t) { return !isDoneStatus(t); });
+  var done = data.filter(function (t) { return isDoneStatus(t); });
 
   var h = '<div class="citizen-grid">';
 
@@ -164,20 +164,24 @@ function _tcRenderGrid(filter, animate) {
     el.innerHTML = h;
     window.scrollTo(0, savedScroll);
     _suppressCardAnim = false;
-    requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      el.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1)';
-      el.style.opacity = '1';
-      setTimeout(function(){ el.style.transition = ''; el.style.opacity = ''; el.classList.remove('tcard-instant'); }, 480);
-    }); });
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        el.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1)';
+        el.style.opacity = '1';
+        setTimeout(function () { el.style.transition = ''; el.style.opacity = ''; el.classList.remove('tcard-instant'); }, 480);
+      });
+    });
   } else {
     el.innerHTML = h;
     window.scrollTo(0, savedScroll);
     if (el.style.opacity === '0') {
-      requestAnimationFrame(function(){ requestAnimationFrame(function(){
-        el.style.transition = 'opacity 0.42s cubic-bezier(.22,1,.36,1)';
-        el.style.opacity = '1';
-        setTimeout(function(){ el.style.transition = ''; el.style.opacity = ''; }, 450);
-      }); });
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.transition = 'opacity 0.42s cubic-bezier(.22,1,.36,1)';
+          el.style.opacity = '1';
+          setTimeout(function () { el.style.transition = ''; el.style.opacity = ''; }, 450);
+        });
+      });
     }
   }
 }
@@ -223,7 +227,7 @@ function tcToggle(ticketId) {
     if (t.beforeImage || t.afterImage) {
       h += '<div class="irow">';
       if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-      if (t.afterImage)  h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage  + '\',\'หลัง\')"><img src="' + t.afterImage  + '"/><div class="ilbl">หลังซ่อม</div></div>';
+      if (t.afterImage) h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลังซ่อม</div></div>';
       h += '</div>';
     }
   } else {
@@ -302,7 +306,7 @@ function tcToggle(ticketId) {
   ge('mTicketDetail').classList.add('on');
 
   // Auto-scroll modal body to the active step so the action button is visible
-  setTimeout(function() {
+  setTimeout(function () {
     var body = ge('tdModalBody');
     var activeStep = body ? body.querySelector('.sbody') : null;
     if (activeStep) {
@@ -326,7 +330,7 @@ function rejectJob(btn) {
   ge('techRejectReason').value = '';
   hideE('techRejectErr');
   ge('mTechReject').classList.add('on');
-  setTimeout(function() { ge('techRejectReason').focus(); }, 200);
+  setTimeout(function () { ge('techRejectReason').focus(); }, 200);
 }
 function closeTechRejectModal() {
   ge('mTechReject').classList.remove('on');
@@ -370,11 +374,11 @@ function completeJob(btn) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: 'completed' })
   })
-    .then(function() { _apiDone = true; tryFinish(); })
-    .catch(function() { _apiDone = true; tryFinish(); }); // reload แม้ error
+    .then(function () { _apiDone = true; tryFinish(); })
+    .catch(function () { _apiDone = true; tryFinish(); }); // reload แม้ error
 
   // 2) เล่น animation — เมื่อ animation จบจึงเซ็ต animDone
-  _showTechComplete(function() {
+  _showTechComplete(function () {
     _animDone = true;
     tryFinish();
   });
@@ -394,18 +398,24 @@ function _showTechComplete(onDone) {
 
   // ── Orb system — ธีมช่าง: gold primary, blue secondary, teal accent ──
   var tcOrbData = [
-    { color:'radial-gradient(circle at 40% 40%,rgba(251,191,36,.55) 0%,rgba(245,158,11,.25) 40%,transparent 70%)',
-      size:'520px', top:'-12%', left:'-10%', dur:'20s', delay:'0s',
-      tx1:'60px', ty1:'-40px', tx2:'110px', ty2:'28px', tx3:'38px', ty3:'-58px' },
-    { color:'radial-gradient(circle at 40% 40%,rgba(96,165,250,.38) 0%,rgba(37,99,235,.18) 40%,transparent 70%)',
-      size:'440px', top:'40%', left:'55%', dur:'26s', delay:'-8s',
-      tx1:'-68px', ty1:'48px', tx2:'-115px', ty2:'-30px', tx3:'-48px', ty3:'68px' },
-    { color:'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
-      size:'340px', top:'65%', left:'8%', dur:'18s', delay:'-4s',
-      tx1:'46px', ty1:'-56px', tx2:'82px', ty2:'19px', tx3:'29px', ty3:'-76px' }
+    {
+      color: 'radial-gradient(circle at 40% 40%,rgba(251,191,36,.55) 0%,rgba(245,158,11,.25) 40%,transparent 70%)',
+      size: '520px', top: '-12%', left: '-10%', dur: '20s', delay: '0s',
+      tx1: '60px', ty1: '-40px', tx2: '110px', ty2: '28px', tx3: '38px', ty3: '-58px'
+    },
+    {
+      color: 'radial-gradient(circle at 40% 40%,rgba(96,165,250,.38) 0%,rgba(37,99,235,.18) 40%,transparent 70%)',
+      size: '440px', top: '40%', left: '55%', dur: '26s', delay: '-8s',
+      tx1: '-68px', ty1: '48px', tx2: '-115px', ty2: '-30px', tx3: '-48px', ty3: '68px'
+    },
+    {
+      color: 'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
+      size: '340px', top: '65%', left: '8%', dur: '18s', delay: '-4s',
+      tx1: '46px', ty1: '-56px', tx2: '82px', ty2: '19px', tx3: '29px', ty3: '-76px'
+    }
   ];
   var tcOrbHtml = '';
-  tcOrbData.forEach(function(o) {
+  tcOrbData.forEach(function (o) {
     tcOrbHtml += '<div style="position:absolute;border-radius:50%;pointer-events:none;'
       + 'width:' + o.size + ';height:' + o.size + ';'
       + 'top:' + o.top + ';left:' + o.left + ';'
@@ -482,8 +492,8 @@ function _showTechComplete(onDone) {
   document.body.appendChild(ov);
 
   // Fade in
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
       ov.style.opacity = '1';
     });
   });
@@ -563,7 +573,7 @@ function triggerUpload(el) {
   var target = el.closest ? el.closest('[data-id][data-type]') : el;
   if (!target) target = el;
 
-  upId   = target.getAttribute('data-id');
+  upId = target.getAttribute('data-id');
   upType = target.getAttribute('data-type');
 
   if (!upId || !upType) {
@@ -587,7 +597,7 @@ function triggerUpload(el) {
     fd.append('image', f);
     fetch('/api/tickets/' + _upId + '/upload/' + _upType, { method: 'POST', body: fd })
       .then(function (r) {
-        if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'upload failed ' + r.status); });
+        if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'upload failed ' + r.status); });
         return r.json();
       })
       .then(function (d) {
@@ -595,11 +605,11 @@ function triggerUpload(el) {
         // อัปเดต memory store ทันที แล้ว re-render modal โดยไม่ต้องรอ poll
         if (window._tcTickets && window._tcTickets[_upId]) {
           if (_upType === 'before') window._tcTickets[_upId].beforeImage = d.url;
-          if (_upType === 'after')  window._tcTickets[_upId].afterImage  = d.url;
+          if (_upType === 'after') window._tcTickets[_upId].afterImage = d.url;
           for (var i = 0; i < _tcAllTickets.length; i++) {
             if (_tcAllTickets[i].ticketId === _upId) {
               if (_upType === 'before') _tcAllTickets[i].beforeImage = d.url;
-              if (_upType === 'after')  _tcAllTickets[i].afterImage  = d.url;
+              if (_upType === 'after') _tcAllTickets[i].afterImage = d.url;
               break;
             }
           }

@@ -18,11 +18,11 @@ function fmtDate(d) {
   if (!d) return '—';
   var dt = new Date(d);
   if (isNaN(dt)) return d;
-  var day   = String(dt.getDate()).padStart(2, '0');
+  var day = String(dt.getDate()).padStart(2, '0');
   var month = String(dt.getMonth() + 1).padStart(2, '0');
-  var year  = dt.getFullYear();
-  var hh    = String(dt.getHours()).padStart(2, '0');
-  var mm    = String(dt.getMinutes()).padStart(2, '0');
+  var year = dt.getFullYear();
+  var hh = String(dt.getHours()).padStart(2, '0');
+  var mm = String(dt.getMinutes()).padStart(2, '0');
   return day + '/' + month + '/' + year + ' ' + hh + ':' + mm;
 }
 /* ── Splash Screen ───────────────────────────────────── */

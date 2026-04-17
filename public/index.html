@@ -60,8 +60,11 @@
         <!-- Login Form -->
         <div id="fLogin" class="auth-flip-panel auth-flip-front">
           <form onsubmit="event.preventDefault(); doLogin();">
-            <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com" maxlength="40" autocorrect="off" autocapitalize="none" spellcheck="false" /></div>
-            <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน" maxlength="40" autocorrect="off" autocomplete="current-password" autocapitalize="off" spellcheck="false" lang="en" /></div>
+            <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com"
+                maxlength="40" autocorrect="off" autocapitalize="none" spellcheck="false" /></div>
+            <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน"
+                maxlength="40" autocorrect="off" autocomplete="current-password" autocapitalize="off" spellcheck="false"
+                lang="en" /></div>
             <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
             <button type="submit" class="btnp btn-ripple">เข้าสู่ระบบ</button>
           </form>
@@ -131,9 +134,11 @@
         <div class="fg"><label>Email</label><input type="email" id="llEmail" placeholder="example@gmail.com"
             onkeydown="if(event.key==='Enter')ge('llPass').focus()" /></div>
         <div class="fg"><label>Password</label><input type="password" id="llPass"
-            placeholder="รหัสผ่านอย่างน้อย 6 ตัวอักษร" autocapitalize="off" autocorrect="off" lang="en" onkeydown="if(event.key==='Enter')ge('llPass2').focus()" /></div>
+            placeholder="รหัสผ่านอย่างน้อย 6 ตัวอักษร" autocapitalize="off" autocorrect="off" lang="en"
+            onkeydown="if(event.key==='Enter')ge('llPass2').focus()" /></div>
         <div class="fg"><label>ยืนยัน Password</label><input type="password" id="llPass2" placeholder="ยืนยันรหัสผ่าน"
-            autocapitalize="off" autocorrect="off" lang="en" onkeydown="if(event.key==='Enter')doLineLinkRegister()" /></div>
+            autocapitalize="off" autocorrect="off" lang="en" onkeydown="if(event.key==='Enter')doLineLinkRegister()" />
+        </div>
         <button class="btnp btn-ripple" id="btnLineLink" onclick="doLineLinkRegister()" style="margin-bottom:10px">✨
           สร้างบัญชีและผูกกับ LINE</button>
         <button onclick="doLineLinkSkip()"
@@ -320,23 +325,35 @@
                 <div class="pie-wrap">
                   <div class="ov-donut-wrap">
                     <svg id="pieChart" viewBox="0 0 160 160" width="160" height="160">
-                      <circle class="ov-donut-bg" cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9" stroke-width="22"/>
-                      <circle id="ov-seg-done" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gDone)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
-                      <circle id="ov-seg-inpg" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gInpg)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
-                      <circle id="ov-seg-pend" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gPend)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+                      <circle class="ov-donut-bg" cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9"
+                        stroke-width="22" />
+                      <circle id="ov-seg-done" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gDone)"
+                        stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0"
+                        transform="rotate(-90 80 80)" />
+                      <circle id="ov-seg-inpg" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gInpg)"
+                        stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0"
+                        transform="rotate(-90 80 80)" />
+                      <circle id="ov-seg-pend" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gPend)"
+                        stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0"
+                        transform="rotate(-90 80 80)" />
                       <defs>
                         <linearGradient id="gDone" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#4ade80"/>
+                          <stop offset="0%" stop-color="#22c55e" />
+                          <stop offset="100%" stop-color="#4ade80" />
                         </linearGradient>
                         <linearGradient id="gInpg" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a78bfa"/>
+                          <stop offset="0%" stop-color="#8b5cf6" />
+                          <stop offset="100%" stop-color="#a78bfa" />
                         </linearGradient>
                         <linearGradient id="gPend" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#fbbf24"/>
+                          <stop offset="0%" stop-color="#f59e0b" />
+                          <stop offset="100%" stop-color="#fbbf24" />
                         </linearGradient>
                       </defs>
-                      <text id="ov-center-num" x="80" y="76" text-anchor="middle" dominant-baseline="middle" font-size="26" font-weight="800" font-family="Inter,sans-serif" fill="#0f172a">0</text>
-                      <text x="80" y="96" text-anchor="middle" dominant-baseline="middle" font-size="9" font-weight="600" font-family="Prompt,sans-serif" fill="#94a3b8" letter-spacing="1">TOTAL</text>
+                      <text id="ov-center-num" x="80" y="76" text-anchor="middle" dominant-baseline="middle"
+                        font-size="26" font-weight="800" font-family="Inter,sans-serif" fill="#0f172a">0</text>
+                      <text x="80" y="96" text-anchor="middle" dominant-baseline="middle" font-size="9"
+                        font-weight="600" font-family="Prompt,sans-serif" fill="#94a3b8" letter-spacing="1">TOTAL</text>
                     </svg>
                   </div>
                   <div class="ov-legend" id="pieLegend"></div>
@@ -684,12 +701,19 @@
                 <span class="cg-select-arrow">▾</span>
               </button>
               <div class="cg-select-panel">
-                <div class="cg-select-opt selected" data-value="all" onclick="cgDropPick('cgStatusFilter','all','🗂️ ทั้งหมด',cgApplyFilter)">🗂️ ทั้งหมด</div>
-                <div class="cg-select-opt" data-value="pending" onclick="cgDropPick('cgStatusFilter','pending','⏳ รอดำเนินการ',cgApplyFilter)">⏳ รอดำเนินการ</div>
-                <div class="cg-select-opt" data-value="assigned" onclick="cgDropPick('cgStatusFilter','assigned','🔧 รับงานแล้ว',cgApplyFilter)">🔧 รับงานแล้ว</div>
-                <div class="cg-select-opt" data-value="in_progress" onclick="cgDropPick('cgStatusFilter','in_progress','🔨 กำลังดำเนินการ',cgApplyFilter)">🔨 กำลังดำเนินการ</div>
-                <div class="cg-select-opt" data-value="completed" onclick="cgDropPick('cgStatusFilter','completed','✅ เสร็จสิ้น',cgApplyFilter)">✅ เสร็จสิ้น</div>
-                <div class="cg-select-opt" data-value="rejected" onclick="cgDropPick('cgStatusFilter','rejected','❌ ปฏิเสธ',cgApplyFilter)">❌ ปฏิเสธ</div>
+                <div class="cg-select-opt selected" data-value="all"
+                  onclick="cgDropPick('cgStatusFilter','all','🗂️ ทั้งหมด',cgApplyFilter)">🗂️ ทั้งหมด</div>
+                <div class="cg-select-opt" data-value="pending"
+                  onclick="cgDropPick('cgStatusFilter','pending','⏳ รอดำเนินการ',cgApplyFilter)">⏳ รอดำเนินการ</div>
+                <div class="cg-select-opt" data-value="assigned"
+                  onclick="cgDropPick('cgStatusFilter','assigned','🔧 รับงานแล้ว',cgApplyFilter)">🔧 รับงานแล้ว</div>
+                <div class="cg-select-opt" data-value="in_progress"
+                  onclick="cgDropPick('cgStatusFilter','in_progress','🔨 กำลังดำเนินการ',cgApplyFilter)">🔨
+                  กำลังดำเนินการ</div>
+                <div class="cg-select-opt" data-value="completed"
+                  onclick="cgDropPick('cgStatusFilter','completed','✅ เสร็จสิ้น',cgApplyFilter)">✅ เสร็จสิ้น</div>
+                <div class="cg-select-opt" data-value="rejected"
+                  onclick="cgDropPick('cgStatusFilter','rejected','❌ ปฏิเสธ',cgApplyFilter)">❌ ปฏิเสธ</div>
               </div>
             </div>
           </div>
@@ -722,12 +746,18 @@
                 <span class="cg-select-arrow">▾</span>
               </button>
               <div class="cg-select-panel">
-                <div class="cg-select-opt selected" data-value="all" onclick="cgDropPick('tcPriorityFilter','all','🗂️ ทั้งหมด',tcApplyFilter)">🗂️ ทั้งหมด</div>
-                <div class="cg-select-opt" data-value="urgent" onclick="cgDropPick('tcPriorityFilter','urgent','⚡ ด่วนมาก',tcApplyFilter)">⚡ ด่วนมาก</div>
-                <div class="cg-select-opt" data-value="medium" onclick="cgDropPick('tcPriorityFilter','medium','⏰ ด่วน',tcApplyFilter)">⏰ ด่วน</div>
-                <div class="cg-select-opt" data-value="normal" onclick="cgDropPick('tcPriorityFilter','normal','🔵 ปกติ',tcApplyFilter)">🔵 ปกติ</div>
-                <div class="cg-select-opt" data-value="completed" onclick="cgDropPick('tcPriorityFilter','completed','✅ เสร็จสิ้น',tcApplyFilter)">✅ เสร็จสิ้น</div>
-                <div class="cg-select-opt" data-value="rejected" onclick="cgDropPick('tcPriorityFilter','rejected','❌ ปฏิเสธ',tcApplyFilter)">❌ ปฏิเสธ</div>
+                <div class="cg-select-opt selected" data-value="all"
+                  onclick="cgDropPick('tcPriorityFilter','all','🗂️ ทั้งหมด',tcApplyFilter)">🗂️ ทั้งหมด</div>
+                <div class="cg-select-opt" data-value="urgent"
+                  onclick="cgDropPick('tcPriorityFilter','urgent','⚡ ด่วนมาก',tcApplyFilter)">⚡ ด่วนมาก</div>
+                <div class="cg-select-opt" data-value="medium"
+                  onclick="cgDropPick('tcPriorityFilter','medium','⏰ ด่วน',tcApplyFilter)">⏰ ด่วน</div>
+                <div class="cg-select-opt" data-value="normal"
+                  onclick="cgDropPick('tcPriorityFilter','normal','🔵 ปกติ',tcApplyFilter)">🔵 ปกติ</div>
+                <div class="cg-select-opt" data-value="completed"
+                  onclick="cgDropPick('tcPriorityFilter','completed','✅ เสร็จสิ้น',tcApplyFilter)">✅ เสร็จสิ้น</div>
+                <div class="cg-select-opt" data-value="rejected"
+                  onclick="cgDropPick('tcPriorityFilter','rejected','❌ ปฏิเสธ',tcApplyFilter)">❌ ปฏิเสธ</div>
               </div>
             </div>
           </div>
@@ -756,9 +786,12 @@
       <button class="mc" onclick="closeChPw()">✕</button>
       <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
       <div class="ebox" id="chErr"></div>
-      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocapitalize="off" autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" autocapitalize="off" autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocapitalize="off" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocapitalize="off"
+          autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"
+          autocapitalize="off" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocapitalize="off"
+          autocorrect="off" lang="en" /></div>
       <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
     </div>
   </div>
@@ -923,9 +956,8 @@
       <div class="fg">
         <label style="font-size:12px;font-weight:700;color:var(--navy)">รหัสผ่าน Admin <span
             style="color:var(--r)">*</span></label>
-        <input type="password" id="deleteAllPwInput" placeholder="ใส่รหัสผ่าน..."
-          autocapitalize="off" autocorrect="off" lang="en"
-          onkeydown="if(event.key==='Enter')submitDeleteAllPw()"
+        <input type="password" id="deleteAllPwInput" placeholder="ใส่รหัสผ่าน..." autocapitalize="off" autocorrect="off"
+          lang="en" onkeydown="if(event.key==='Enter')submitDeleteAllPw()"
           style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box" />
       </div>
       <div class="ebox" id="deleteAllPwErr" style="margin-top:4px"></div>
@@ -1306,7 +1338,7 @@
       <div class="chat-input-wrap">
         <input type="text" id="chatInput" placeholder="พิมพ์ข้อความ..." maxlength="500"
           onkeydown="if(event.key==='Enter')sendComment()" />
-        <button onclick="sendComment()" class="chat-send-btn btn-ripple" id="chatSendBtn">📨</button>
+        <button onclick="sendComment()" class="chat-send-btn btn-ripple" id="chatSendBtn">📤</button>
       </div>
     </div>
   </div>

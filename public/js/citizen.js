@@ -16,30 +16,30 @@ var TOTAL_STEPS = 5;
 
 // Transition map: step → { forward: [exitClass, enterClass], backward: [exitClass, enterClass] }
 var WIZ_TRANS = {
-  1: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  },
-  2: { fwd: ['exit-top',  'enter-bottom'],  bwd: ['exit-bottom','enter-top']   },
-  3: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  },
-  4: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  },
-  5: { fwd: ['exit-left', 'enter-right'],   bwd: ['exit-right', 'enter-left']  }
+  1: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
+  2: { fwd: ['exit-top', 'enter-bottom'], bwd: ['exit-bottom', 'enter-top'] },
+  3: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
+  4: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
+  5: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] }
 };
 
 function wizGoTo(from, to) {
   var isForward = to > from;
   var fromEl = ge('wiz' + from);
-  var toEl   = ge('wiz' + to);
+  var toEl = ge('wiz' + to);
   if (!fromEl || !toEl) return;
 
   var trans = WIZ_TRANS[from] || WIZ_TRANS[1];
-  var exitCls  = isForward ? trans.fwd[0] : trans.bwd[0];
+  var exitCls = isForward ? trans.fwd[0] : trans.bwd[0];
   var enterCls = isForward ? trans.fwd[1] : trans.bwd[1];
 
   // Exit current step
   fromEl.classList.add(exitCls);
-  setTimeout(function() {
+  setTimeout(function () {
     fromEl.classList.remove('active', exitCls);
     // Enter new step
     toEl.classList.add('active', enterCls);
-    setTimeout(function() {
+    setTimeout(function () {
       toEl.classList.remove(enterCls);
     }, 500);
   }, 340);
@@ -87,7 +87,7 @@ function wizUpdateProgress(step) {
   if (fill) fill.style.width = pct + '%';
 
   // Dots
-  document.querySelectorAll('.step-dot').forEach(function(d) {
+  document.querySelectorAll('.step-dot').forEach(function (d) {
     var s = parseInt(d.getAttribute('data-step'));
     d.classList.remove('on', 'done');
     if (s === step) d.classList.add('on');
@@ -182,9 +182,9 @@ function aiSuggestUrgency() {
       ge('tUrg').value = urg;
       hideE('urgErr');
       var cfg = {
-        urgent:  { icon: '⚡',   label: 'ด่วนมาก',  sub: 'AI ประเมินว่าเรื่องนี้เร่งด่วนมาก', bg: '#fff5f5', border: '#fc8181', labelColor: '#c53030' },
-        medium:  { icon: '⏰️',  label: 'ด่วน',     sub: 'AI ประเมินว่าควรเร่งดำเนินการ',       bg: '#fffbeb', border: '#f6ad55', labelColor: '#c05621' },
-        normal:  { icon: '🔵',   label: 'ปกติ',     sub: 'AI ประเมินว่าไม่เร่งด่วน',     bg: '#ebf8ff', border: '#90cdf4', labelColor: '#2b6cb0' }
+        urgent: { icon: '⚡', label: 'ด่วนมาก', sub: 'AI ประเมินว่าเรื่องนี้เร่งด่วนมาก', bg: '#fff5f5', border: '#fc8181', labelColor: '#c53030' },
+        medium: { icon: '⏰️', label: 'ด่วน', sub: 'AI ประเมินว่าควรเร่งดำเนินการ', bg: '#fffbeb', border: '#f6ad55', labelColor: '#c05621' },
+        normal: { icon: '🔵', label: 'ปกติ', sub: 'AI ประเมินว่าไม่เร่งด่วน', bg: '#ebf8ff', border: '#90cdf4', labelColor: '#2b6cb0' }
       }[urg];
       ge('urgAiIcon').textContent = cfg.icon;
       ge('urgAiLabel').textContent = cfg.label;
@@ -226,8 +226,8 @@ function captureGPS() {
       // Reverse geocode: get human-readable address
       _gpsAddress = 'กำลังโหลดที่อยู่...';
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&accept-language=th', { headers: { 'Accept': 'application/json' } })
-        .then(function(r){ return r.json(); })
-        .then(function(d){
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
           var a = d.address || {};
           var parts = [];
           if (a.road) parts.push(a.road);
@@ -239,17 +239,17 @@ function captureGPS() {
           var bt = ge('gpsBtnText');
           if (bt) bt.textContent = _gpsAddress;
         })
-        .catch(function(){ _gpsAddress = lat + ', ' + lng; });
+        .catch(function () { _gpsAddress = lat + ', ' + lng; });
       // Build mini map (OpenStreetMap embed)
       var delta = 0.005;
-      var bbox = (parseFloat(lng)-delta)+','+(parseFloat(lat)-delta)+','+(parseFloat(lng)+delta)+','+(parseFloat(lat)+delta);
+      var bbox = (parseFloat(lng) - delta) + ',' + (parseFloat(lat) - delta) + ',' + (parseFloat(lng) + delta) + ',' + (parseFloat(lat) + delta);
       var mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lng;
       ge('gpsResult').innerHTML =
         '<div style="font-weight:700;margin-bottom:6px;font-size:12px">✅ ตำแหน่ง GPS ที่บันทึก</div>' +
         '<iframe src="' + mapUrl + '" style="width:100%;height:180px;border:none;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
-          '<span style="font-size:10px;color:#2d6a4f">±' + acc + 'm</span>' +
-          '<a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600">🗺️ Google Maps</a>' +
+        '<span style="font-size:10px;color:#2d6a4f">±' + acc + 'm</span>' +
+        '<a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600">🗺️ Google Maps</a>' +
         '</div>';
       ge('gpsResult').style.display = 'block';
       btn.style.background = '#f0fff4';
@@ -312,7 +312,7 @@ async function submitTicket() {
     }
 
     // ── Success Animation ─────────────────────────────────
-    _showSubmitSuccess(data.ticketId, function() {
+    _showSubmitSuccess(data.ticketId, function () {
       // Reset form fields
       ge('tDesc').value = '';
       ge('cImg').value = '';
@@ -332,7 +332,7 @@ async function submitTicket() {
       var gpsBtn = ge('btnGps'); var gpsIcon2 = ge('gpsIcon'); var gpsBtnText = ge('gpsBtnText');
       gpsBtn.style.background = ''; gpsBtn.style.borderColor = ''; gpsBtn.style.color = '';
       gpsIcon2.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
-      document.querySelectorAll('#catGrid .catbox').forEach(function(b){ b.classList.remove('on'); });
+      document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
       // Reset image picker UI
       var pw = ge('cImgPreviewWrap'); var pb = ge('cImgPickerBtns');
       if (pw) pw.style.display = 'none';
@@ -340,7 +340,7 @@ async function submitTicket() {
       var pi = ge('cImgPreviewImg'); if (pi) pi.src = '';
       // Reset wizard to step 1
       _curStep = 1;
-      document.querySelectorAll('.wiz-step').forEach(function(s){ s.classList.remove('active','enter-right','enter-left','enter-bottom','enter-top','exit-left','exit-right','exit-top'); });
+      document.querySelectorAll('.wiz-step').forEach(function (s) { s.classList.remove('active', 'enter-right', 'enter-left', 'enter-bottom', 'enter-top', 'exit-left', 'exit-right', 'exit-top'); });
       var wiz1 = ge('wiz1');
       if (wiz1) { wiz1.classList.add('active'); var h2 = wiz1.querySelector('h2'); if (h2) h2.textContent = 'ประเภทปัญหา'; }
       wizUpdateProgress(1);
@@ -424,7 +424,7 @@ async function openCameraCapture() {
     //         ส่ง resolution ที่ผิด → canvas ยืดภาพเมื่อวาด videoWidth/Height
     // aspectRatio 4:3 เข้ากันได้กับ sensor ทั้ง landscape และ portrait
     _camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: _camFacing, aspectRatio: { ideal: 4/3 } },
+      video: { facingMode: _camFacing, aspectRatio: { ideal: 4 / 3 } },
       audio: false
     });
     video.srcObject = _camStream;
@@ -454,7 +454,7 @@ function closeCameraCapture() {
 
 function _stopCamStream() {
   if (_camStream) {
-    _camStream.getTracks().forEach(function(t) { t.stop(); });
+    _camStream.getTracks().forEach(function (t) { t.stop(); });
     _camStream = null;
   }
 }
@@ -467,7 +467,7 @@ async function switchCamera() {
   try {
     // FIX-4.1: ใช้ aspectRatio เหมือน openCameraCapture (ป้องกัน portrait stretch)
     _camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: _camFacing, aspectRatio: { ideal: 4/3 } },
+      video: { facingMode: _camFacing, aspectRatio: { ideal: 4 / 3 } },
       audio: false
     });
     video.srcObject = _camStream;
@@ -499,10 +499,10 @@ function takeCameraPhoto() {
   var flash = document.createElement('div');
   flash.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;opacity:.8;pointer-events:none;transition:opacity .3s';
   document.body.appendChild(flash);
-  setTimeout(function() { flash.style.opacity = '0'; setTimeout(function() { flash.remove(); }, 300); }, 50);
+  setTimeout(function () { flash.style.opacity = '0'; setTimeout(function () { flash.remove(); }, 300); }, 50);
 
   // Convert canvas to Blob then to File
-  canvas.toBlob(function(blob) {
+  canvas.toBlob(function (blob) {
     var file = new File([blob], 'camera_' + Date.now() + '.jpg', { type: 'image/jpeg' });
 
     // Sync to main cImg input
@@ -510,7 +510,7 @@ function takeCameraPhoto() {
       var dt = new DataTransfer();
       dt.items.add(file);
       ge('cImg').files = dt.files;
-    } catch(ex) { /* fallback */ }
+    } catch (ex) { /* fallback */ }
 
     // Show preview
     var url = URL.createObjectURL(blob);
@@ -536,7 +536,7 @@ function renderCitizen(data) {
 
   // Store ticket lookup for expand panel
   window._cgTickets = {};
-  data.forEach(function(t){ window._cgTickets[t.ticketId] = t; });
+  data.forEach(function (t) { window._cgTickets[t.ticketId] = t; });
 
   // Keep current filter selection if any
   var sel = ge('cgStatusFilter');
@@ -560,20 +560,20 @@ function _cgRenderGrid(filter) {
 
   var data = filter === 'all'
     ? _cgAllTickets
-    : _cgAllTickets.filter(function(t){ return t.status === filter; });
+    : _cgAllTickets.filter(function (t) { return t.status === filter; });
 
   if (!data.length) {
-    var labelMap = { pending:'รอดำเนินการ', assigned:'รับงานแล้ว', in_progress:'กำลังดำเนินการ', completed:'เสร็จสิ้น', rejected:'ปฏิเสธ' };
+    var labelMap = { pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ' };
     var msg = filter === 'all' ? 'ยังไม่มีเรื่องร้องเรียน' : 'ไม่มีเรื่องร้องเรียนในสถานะ "' + (labelMap[filter] || filter) + '"';
     el.innerHTML = '<div class="empty">' + msg + '</div>';
     return;
   }
 
-  var isDoneCg = function(t){ return t.status === 'completed' || t.status === 'rejected'; };
+  var isDoneCg = function (t) { return t.status === 'completed' || t.status === 'rejected'; };
 
   /* ── Split active / done ── */
-  var cgActive = data.filter(function(t){ return !isDoneCg(t); });
-  var cgDone   = data.filter(function(t){ return isDoneCg(t); });
+  var cgActive = data.filter(function (t) { return !isDoneCg(t); });
+  var cgDone = data.filter(function (t) { return isDoneCg(t); });
 
   var h = '<div class="citizen-grid">';
 
@@ -648,7 +648,7 @@ function cgToggle(ticketId) {
   if (done && (t.beforeImage || t.afterImage)) {
     h += '<div class="cg-techwork"><div class="cg-techwork-title">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div class="cg-techwork-imgs">';
     if (t.beforeImage) h += '<div class="cg-techwork-img"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" /><span>ก่อน</span></div>';
-    if (t.afterImage)  h += '<div class="cg-techwork-img"><img src="' + t.afterImage  + '" onclick="viewImg(this.src,\'หลัง\')" /><span>หลัง</span></div>';
+    if (t.afterImage) h += '<div class="cg-techwork-img"><img src="' + t.afterImage + '" onclick="viewImg(this.src,\'หลัง\')" /><span>หลัง</span></div>';
     h += '</div></div>';
   } else if (!done && t.status !== 'pending' && t.status !== 'rejected' && t.beforeImage) {
     h += '<div class="cg-inprog"><div class="cg-inprog-title">&#128295; ช่างกำลังดำเนินการ</div>';
@@ -694,18 +694,24 @@ function _showSubmitSuccess(ticketId, onDone) {
 
   // ── Orb system (3 orbs — track.html / login style) ──
   var ssOrbData = [
-    { color:'radial-gradient(circle at 40% 40%,rgba(52,211,153,.5) 0%,rgba(16,185,129,.22) 40%,transparent 70%)',
-      size:'500px', top:'-12%', left:'-10%', dur:'20s', delay:'0s',
-      tx1:'55px', ty1:'-35px', tx2:'100px', ty2:'25px', tx3:'35px', ty3:'-55px' },
-    { color:'radial-gradient(circle at 40% 40%,rgba(96,165,250,.35) 0%,rgba(37,99,235,.15) 40%,transparent 70%)',
-      size:'420px', top:'40%', left:'55%', dur:'26s', delay:'-8s',
-      tx1:'-65px', ty1:'45px', tx2:'-110px', ty2:'-28px', tx3:'-45px', ty3:'65px' },
-    { color:'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
-      size:'340px', top:'65%', left:'8%', dur:'18s', delay:'-4s',
-      tx1:'45px', ty1:'-55px', tx2:'80px', ty2:'18px', tx3:'28px', ty3:'-75px' }
+    {
+      color: 'radial-gradient(circle at 40% 40%,rgba(52,211,153,.5) 0%,rgba(16,185,129,.22) 40%,transparent 70%)',
+      size: '500px', top: '-12%', left: '-10%', dur: '20s', delay: '0s',
+      tx1: '55px', ty1: '-35px', tx2: '100px', ty2: '25px', tx3: '35px', ty3: '-55px'
+    },
+    {
+      color: 'radial-gradient(circle at 40% 40%,rgba(96,165,250,.35) 0%,rgba(37,99,235,.15) 40%,transparent 70%)',
+      size: '420px', top: '40%', left: '55%', dur: '26s', delay: '-8s',
+      tx1: '-65px', ty1: '45px', tx2: '-110px', ty2: '-28px', tx3: '-45px', ty3: '65px'
+    },
+    {
+      color: 'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
+      size: '340px', top: '65%', left: '8%', dur: '18s', delay: '-4s',
+      tx1: '45px', ty1: '-55px', tx2: '80px', ty2: '18px', tx3: '28px', ty3: '-75px'
+    }
   ];
   var ssOrbHtml = '';
-  ssOrbData.forEach(function(o) {
+  ssOrbData.forEach(function (o) {
     ssOrbHtml += '<div style="position:absolute;border-radius:50%;pointer-events:none;'
       + 'width:' + o.size + ';height:' + o.size + ';'
       + 'top:' + o.top + ';left:' + o.left + ';'
@@ -781,17 +787,17 @@ function _showSubmitSuccess(ticketId, onDone) {
   // Fade in immediately
   ov.style.opacity = '0';
   ov.style.transition = 'opacity .3s ease';
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
       ov.style.opacity = '1';
     });
   });
 
   // After 2.8s — fade out then call onDone
-  setTimeout(function() {
+  setTimeout(function () {
     ov.style.transition = 'opacity .45s ease';
     ov.style.opacity = '0';
-    setTimeout(function() {
+    setTimeout(function () {
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (typeof onDone === 'function') onDone();
     }, 450);
@@ -814,7 +820,7 @@ function openRatingModal(ticketId, citizenName) {
   if (ge('ratingReason')) ge('ratingReason').value = '';
   if (ge('starLabel')) ge('starLabel').textContent = '';
   // reset stars
-  document.querySelectorAll('.star-btn').forEach(function(b) {
+  document.querySelectorAll('.star-btn').forEach(function (b) {
     b.classList.remove('on');
     b.style.color = '';
     b.style.transform = '';
@@ -834,16 +840,16 @@ function closeRatingModal() {
 function setRatingStar(val) {
   _ratingVal = val;
   var LABELS = { 1: '😤 ไม่พอใจมาก', 2: '😞 ไม่ค่อยพอใจ', 3: '😐 พอใจปานกลาง', 4: '😊 พอใจมาก', 5: '😄 พอใจมากที่สุด!' };
-  var COLORS  = { 1: '#dc2626', 2: '#f97316', 3: '#ca8a04', 4: '#16a34a', 5: '#059669' };
+  var COLORS = { 1: '#dc2626', 2: '#f97316', 3: '#ca8a04', 4: '#16a34a', 5: '#059669' };
   // Animate each star
-  document.querySelectorAll('.star-btn').forEach(function(b) {
+  document.querySelectorAll('.star-btn').forEach(function (b) {
     var bv = parseInt(b.getAttribute('data-val'));
     b.classList.toggle('on', bv <= val);
     b.style.color = bv <= val ? '#f59e0b' : '#d1d5db';
     // micro-bounce
     if (bv <= val) {
       b.style.transform = 'scale(1.3)';
-      setTimeout(function() { b.style.transform = ''; }, 180);
+      setTimeout(function () { b.style.transform = ''; }, 180);
     }
   });
   var lbl = ge('starLabel');
@@ -879,7 +885,7 @@ async function submitRating() {
     closeRatingModal();
     showToast('✅ ขอบคุณสำหรับการประเมิน! ' + '⭐'.repeat(finalStars));
     loadTickets();
-  } catch(e) {
+  } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
     showE('ratingErr', 'เกิดข้อผิดพลาด');
   }

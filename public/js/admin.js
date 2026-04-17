@@ -38,7 +38,7 @@ async function loadAdmin() {
     animateNum(ge('sTD'), tks.length);
 
     // SLA breached count
-    var slaCount = tks.filter(function(t) {
+    var slaCount = tks.filter(function (t) {
       if (t.status === 'completed' || t.status === 'rejected') return t.slaBreached;
       if (t.status === 'pending' && t.slaAssignDeadline) return new Date() > new Date(t.slaAssignDeadline);
       if ((t.status === 'assigned' || t.status === 'in_progress') && t.slaCompleteDeadline) return new Date() > new Date(t.slaCompleteDeadline);
@@ -106,10 +106,10 @@ function drawPie(p, i, d) {
     if (!el) continue;
     var frac = segs[k].val / total;
     var dash = frac * C;
-    var gap  = C - dash;
+    var gap = C - dash;
     // leave 2px gap between segments for separation
     var finalDash = Math.max(0, dash - 2);
-    el.style.strokeDasharray  = finalDash + ' ' + (C - finalDash);
+    el.style.strokeDasharray = finalDash + ' ' + (C - finalDash);
     el.style.strokeDashoffset = -offset;
     offset += dash;
   }
@@ -117,22 +117,22 @@ function drawPie(p, i, d) {
   // Legend
   var data = [
     { val: p, pct: Math.round(p / total * 100), color: 'linear-gradient(135deg,#f59e0b,#fbbf24)', label: 'รอดำเนินการ', icon: '⏳' },
-    { val: i, pct: Math.round(i / total * 100), color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', label: 'กำลังซ่อม',   icon: '🔧' },
-    { val: d, pct: Math.round(d / total * 100), color: 'linear-gradient(135deg,#22c55e,#4ade80)', label: 'เสร็จสิ้น',   icon: '✅' }
+    { val: i, pct: Math.round(i / total * 100), color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', label: 'กำลังซ่อม', icon: '🔧' },
+    { val: d, pct: Math.round(d / total * 100), color: 'linear-gradient(135deg,#22c55e,#4ade80)', label: 'เสร็จสิ้น', icon: '✅' }
   ];
   var lg = ge('pieLegend');
   if (!lg) return;
-  lg.innerHTML = data.map(function(item) {
+  lg.innerHTML = data.map(function (item) {
     return '<div class="ov-legend-item">' +
       '<div class="ov-legend-icon" style="background:' + item.color + '">' + item.icon + '</div>' +
       '<div class="ov-legend-body">' +
-        '<div class="ov-legend-row">' +
-          '<span class="ov-legend-label">' + item.label + '</span>' +
-          '<span class="ov-legend-count">' + item.val + '</span>' +
-        '</div>' +
-        '<div class="ov-legend-bar-track"><div class="ov-legend-bar" style="width:' + item.pct + '%;background:' + item.color + '"></div></div>' +
+      '<div class="ov-legend-row">' +
+      '<span class="ov-legend-label">' + item.label + '</span>' +
+      '<span class="ov-legend-count">' + item.val + '</span>' +
       '</div>' +
-    '</div>';
+      '<div class="ov-legend-bar-track"><div class="ov-legend-bar" style="width:' + item.pct + '%;background:' + item.color + '"></div></div>' +
+      '</div>' +
+      '</div>';
   }).join('');
 }
 
@@ -144,14 +144,14 @@ function renderTechStatus(techs) {
   for (var i = 0; i < techs.length; i++) {
     var t = techs[i];
     var isReady = t.statusLabel === 'READY';
-    var isBusy  = t.statusLabel === 'BUSY';
-    var isFull  = t.statusLabel === 'FULL';
+    var isBusy = t.statusLabel === 'BUSY';
+    var isFull = t.statusLabel === 'FULL';
     var csClass = isReady ? 'cs-ready' : isBusy ? 'cs-busy' : 'cs-full';
-    var avRing  = isReady ? 'av-ring-ready' : isBusy ? 'av-ring-busy' : 'av-ring-full';
-    var barCls  = isReady ? 'tb-ready' : isBusy ? 'tb-busy' : 'tb-full';
-    var cap     = parseInt(t.capacity || 0);
+    var avRing = isReady ? 'av-ring-ready' : isBusy ? 'av-ring-busy' : 'av-ring-full';
+    var barCls = isReady ? 'tb-ready' : isBusy ? 'tb-busy' : 'tb-full';
+    var cap = parseInt(t.capacity || 0);
     var safeName = escapeHTML(t.name || '?');
-    var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+    var initials = (t.name || '?').split(' ').slice(0, 2).map(function (w) { return w[0] || ''; }).join('').toUpperCase();
     var statusIcon = isReady ? '🟢' : isBusy ? '🟡' : '🔴';
     var jobText = t.activeJobs > 0
       ? '<span class="ts-jobs">' + t.activeJobs + ' งาน</span>'
@@ -165,15 +165,15 @@ function renderTechStatus(techs) {
     h += '</div>';
     // Middle: name + dept + bar
     h += '<div class="ts-info">';
-    h += '<div class="ts-name">' + (DEPT_ICON[t.specialty]||'') + ' ' + safeName + '</div>';
-    h += '<div class="ts-dept">' + escapeHTML(DEPT[t.specialty]||t.specialty||'') + '</div>';
+    h += '<div class="ts-name">' + (DEPT_ICON[t.specialty] || '') + ' ' + safeName + '</div>';
+    h += '<div class="ts-dept">' + escapeHTML(DEPT[t.specialty] || t.specialty || '') + '</div>';
     h += '<div class="ts-bar-wrap">';
     h += '<div class="ts-bar ' + barCls + '" style="width:' + cap + '%"></div>';
     h += '</div>';
     h += '</div>';
     // Right: status badge + job count
     h += '<div class="ts-right">';
-    h += '<span class="cstatus ' + csClass + '">' + statusIcon + ' ' + escapeHTML(t.statusLabel||'') + '</span>';
+    h += '<span class="cstatus ' + csClass + '">' + statusIcon + ' ' + escapeHTML(t.statusLabel || '') + '</span>';
     h += jobText;
     h += '</div>';
     h += '</div>';
@@ -200,28 +200,28 @@ function renderQueue(tks, techs) {
     for (var j = 0; j < techs.length; j++) {
       var tc = techs[j];
       var match = tc.specialty === t.category;
-      var optText = (match ? '⭐ ' : '') + (DEPT_ICON[tc.specialty]||'') + ' ' + tc.name + ' — ' + tc.statusLabel;
-      var optAttrs = 'value="'+tc.id+'"' + (tc.statusLabel==='FULL' ? ' disabled' : '');
-      opts += '<option '+optAttrs+'>'+optText+'</option>';
-      mobOpts += '<option '+optAttrs+'>'+optText+'</option>';
+      var optText = (match ? '⭐ ' : '') + (DEPT_ICON[tc.specialty] || '') + ' ' + tc.name + ' — ' + tc.statusLabel;
+      var optAttrs = 'value="' + tc.id + '"' + (tc.statusLabel === 'FULL' ? ' disabled' : '');
+      opts += '<option ' + optAttrs + '>' + optText + '</option>';
+      mobOpts += '<option ' + optAttrs + '>' + optText + '</option>';
     }
-    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
-    var gpsUrl = (t.lat && t.lng) ? 'https://www.google.com/maps?q='+t.lat+','+t.lng : '';
+    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
+    var gpsUrl = (t.lat && t.lng) ? 'https://www.google.com/maps?q=' + t.lat + ',' + t.lng : '';
 
     // ── Desktop table row ──
     h += '<tr>';
-    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+escapeHTML(t.ticketId)+'</td>';
-    h += '<td style="font-size:12px">'+escapeHTML(t.citizenName)+'</td>';
-    h += '<td>'+(DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+'</td>';
-    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 '+escapeHTML(t.location||'')+gpsLink+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escapeHTML(t.description||'')+'</div></td>';
-    h += '<td>'+pLabel(t.priorityScore)+(t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 '+parseInt(t.upvoteCount||0)+'</div>' : '')+'</td>';
+    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">' + escapeHTML(t.ticketId) + '</td>';
+    h += '<td style="font-size:12px">' + escapeHTML(t.citizenName) + '</td>';
+    h += '<td>' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + '</td>';
+    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 ' + escapeHTML(t.location || '') + gpsLink + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">' + escapeHTML(t.description || '') + '</div></td>';
+    h += '<td>' + pLabel(t.priorityScore) + (t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 ' + parseInt(t.upvoteCount || 0) + '</div>' : '') + '</td>';
     h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
-    h += '<td>'+(t.citizenImage ? '<img src="'+escapeHTML(t.citizenImage)+'" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb"/>' : '<span style="color:var(--muted);font-size:12px">—</span>')+'</td>';
+    h += '<td>' + (t.citizenImage ? '<img src="' + escapeHTML(t.citizenImage) + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb"/>' : '<span style="color:var(--muted);font-size:12px">—</span>') + '</td>';
     h += '<td style="min-width:160px"><div style="font-size:10px;font-weight:700;color:var(--blue2);margin-bottom:5px">🤖 AI RECOMMEND</div>';
-    h += '<select id="tsel_'+t.ticketId+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:11px;font-family:Prompt,sans-serif;outline:none;background:#fff">'+opts+'</select></td>';
+    h += '<select id="tsel_' + t.ticketId + '" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:11px;font-family:Prompt,sans-serif;outline:none;background:#fff">' + opts + '</select></td>';
     h += '<td><div style="display:flex;gap:5px;flex-direction:column;align-items:center">';
-    h += '<button class="abt abt-blue btn-ripple" data-id="'+t.ticketId+'" onclick="approveTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✓ Approve</button>';
-    h += '<button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✕ Reject</button>';
+    h += '<button class="abt abt-blue btn-ripple" data-id="' + t.ticketId + '" onclick="approveTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✓ Approve</button>';
+    h += '<button class="abt abt-red btn-ripple" data-id="' + t.ticketId + '" onclick="rejectTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✕ Reject</button>';
     h += '</div></td>';
     h += '</tr>';
 
@@ -232,34 +232,34 @@ function renderQueue(tks, techs) {
     // Header row: ID + priority + SLA badges
     mh += '<div class="queue-mob-card-header">';
     mh += '<div>';
-    mh += '<div class="queue-mob-card-id">#'+escapeHTML(t.ticketId)+'</div>';
-    mh += '<div class="queue-mob-card-citizen">👤 '+escapeHTML(t.citizenName)+'</div>';
+    mh += '<div class="queue-mob-card-id">#' + escapeHTML(t.ticketId) + '</div>';
+    mh += '<div class="queue-mob-card-citizen">👤 ' + escapeHTML(t.citizenName) + '</div>';
     mh += '</div>';
-    mh += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+priorityHtml+slaHtml+'</div>';
+    mh += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' + priorityHtml + slaHtml + '</div>';
     mh += '</div>';
     // Category + location + description
     mh += '<div class="queue-mob-card-body">';
-    mh += '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">'+(DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+'</div>';
-    mh += '<div class="queue-mob-card-location">📍 '+escapeHTML(t.location||'')+(gpsUrl ? ' <a href="'+gpsUrl+'" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '')+'</div>';
-    mh += '<div class="queue-mob-card-desc">'+escapeHTML(t.description||'')+'</div>';
+    mh += '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + '</div>';
+    mh += '<div class="queue-mob-card-location">📍 ' + escapeHTML(t.location || '') + (gpsUrl ? ' <a href="' + gpsUrl + '" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '') + '</div>';
+    mh += '<div class="queue-mob-card-desc">' + escapeHTML(t.description || '') + '</div>';
     mh += '</div>';
     // Image + meta
     if (t.citizenImage) {
       mh += '<div class="queue-mob-card-meta">';
-      mh += '<img src="'+escapeHTML(t.citizenImage)+'" class="queue-mob-card-img" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" title="รูปผู้แจ้ง"/>';
+      mh += '<img src="' + escapeHTML(t.citizenImage) + '" class="queue-mob-card-img" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" title="รูปผู้แจ้ง"/>';
       mh += '<span style="font-size:11px;color:var(--muted)">รูปประกอบ</span>';
       mh += '</div>';
     }
     if (t.upvoteCount > 0) {
-      mh += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">👍 '+parseInt(t.upvoteCount||0)+' upvote</div>';
+      mh += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">👍 ' + parseInt(t.upvoteCount || 0) + ' upvote</div>';
     }
     // Assign dropdown
     mh += '<div class="queue-mob-assign-label">🤖 AI RECOMMEND — เลือกช่าง</div>';
-    mh += '<select id="tsel_mob_'+t.ticketId+'" class="queue-mob-select" onchange="document.getElementById(\'tsel_'+t.ticketId+'\') && (document.getElementById(\'tsel_'+t.ticketId+'\').value=this.value)">'+mobOpts+'</select>';
+    mh += '<select id="tsel_mob_' + t.ticketId + '" class="queue-mob-select" onchange="document.getElementById(\'tsel_' + t.ticketId + '\') && (document.getElementById(\'tsel_' + t.ticketId + '\').value=this.value)">' + mobOpts + '</select>';
     // Action buttons
     mh += '<div class="queue-mob-actions">';
-    mh += '<button class="queue-mob-btn-approve btn-ripple" data-id="'+t.ticketId+'" onclick="approveMob(this)">✓ Approve</button>';
-    mh += '<button class="queue-mob-btn-reject btn-ripple" data-id="'+t.ticketId+'" onclick="rejectTicket(this)">✕ Reject</button>';
+    mh += '<button class="queue-mob-btn-approve btn-ripple" data-id="' + t.ticketId + '" onclick="approveMob(this)">✓ Approve</button>';
+    mh += '<button class="queue-mob-btn-reject btn-ripple" data-id="' + t.ticketId + '" onclick="rejectTicket(this)">✕ Reject</button>';
     mh += '</div>';
     mh += '</div>';
   }
@@ -331,7 +331,7 @@ let _adminMap = null;
 let _mapMarkers = [];
 let _isMapMode = false;
 
-window.toggleMap = function() {
+window.toggleMap = function () {
   _isMapMode = !_isMapMode;
   if (_isMapMode) {
     ge('queueTableContainer').style.display = 'none';
@@ -349,7 +349,7 @@ window.toggleMap = function() {
   }
 };
 
-window.initMapIfNeeded = function() {
+window.initMapIfNeeded = function () {
   if (!_adminMap) {
     _adminMap = L.map('queueMapContainer').setView([13.829, 100.551], 11);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -357,23 +357,23 @@ window.initMapIfNeeded = function() {
       attribution: '© OpenStreetMap, © CARTO'
     }).addTo(_adminMap);
   }
-  setTimeout(function() { _adminMap.invalidateSize(); updateMapMarkers(); }, 100);
+  setTimeout(function () { _adminMap.invalidateSize(); updateMapMarkers(); }, 100);
 };
 
-window.updateMapMarkers = function() {
+window.updateMapMarkers = function () {
   if (!_adminMap || !_lastAdminTickets) return;
   // Clear old markers
-  _mapMarkers.forEach(function(m) { _adminMap.removeLayer(m); });
+  _mapMarkers.forEach(function (m) { _adminMap.removeLayer(m); });
   _mapMarkers = [];
 
   var active = _lastAdminTickets.filter(t => t.status !== 'completed' && t.status !== 'rejected');
-  
+
   // Custom icons mapping
   var icons = {
     Road: '🛣️', Water: '💧', Electricity: '💡', Garbage: '🗑️', Animal: '🐍', Tree: '🌿', Hazard: '🚨'
   };
 
-  active.forEach(function(t) {
+  active.forEach(function (t) {
     if (t.lat && t.lng) {
       var marker = L.marker([t.lat, t.lng]).addTo(_adminMap);
       var iText = icons[t.category] || '📍';
@@ -421,16 +421,16 @@ function renderAllQueue(tks, filter) {
   var filtered = tks;
   var filterLabel = null;
   if (filter === 'urgent') {
-    filtered = tks.filter(function(t) { return t.priorityScore >= 70 && t.status !== 'completed' && t.status !== 'rejected'; });
+    filtered = tks.filter(function (t) { return t.priorityScore >= 70 && t.status !== 'completed' && t.status !== 'rejected'; });
     filterLabel = '🔴 งานด่วนมาก (คะแนน ≥ 70)';
   } else if (filter === 'medium') {
-    filtered = tks.filter(function(t) { return t.priorityScore >= 40 && t.priorityScore < 70 && t.status !== 'completed' && t.status !== 'rejected'; });
+    filtered = tks.filter(function (t) { return t.priorityScore >= 40 && t.priorityScore < 70 && t.status !== 'completed' && t.status !== 'rejected'; });
     filterLabel = '🟡 งานด่วน (คะแนน 40–69)';
   } else if (filter === 'normal') {
-    filtered = tks.filter(function(t) { return t.priorityScore < 40 && t.status !== 'completed' && t.status !== 'rejected'; });
+    filtered = tks.filter(function (t) { return t.priorityScore < 40 && t.status !== 'completed' && t.status !== 'rejected'; });
     filterLabel = '🟢 งานปกติ (คะแนน < 40)';
   } else if (filter === 'sla') {
-    filtered = tks.filter(function(t) {
+    filtered = tks.filter(function (t) {
       if (t.status === 'completed' || t.status === 'rejected') return t.slaBreached;
       if (t.status === 'pending' && t.slaAssignDeadline) return new Date() > new Date(t.slaAssignDeadline);
       if ((t.status === 'assigned' || t.status === 'in_progress') && t.slaCompleteDeadline) return new Date() > new Date(t.slaCompleteDeadline);
@@ -438,7 +438,7 @@ function renderAllQueue(tks, filter) {
     });
     filterLabel = '⏰ งานล่าช้า (SLA เกินกำหนด)';
   } else if (filter === 'completed') {
-    filtered = tks.filter(function(t) { return t.status === 'completed'; });
+    filtered = tks.filter(function (t) { return t.status === 'completed'; });
     filterLabel = '✅ งานสำเร็จแล้ว';
   }
 
@@ -466,40 +466,40 @@ function renderAllQueue(tks, filter) {
   }
   // completed: เรียงตามเวลาอัปเดตล่าสุดก่อน; อื่นๆ เรียงตาม priority
   if (filter === 'completed') {
-    filtered.sort(function(a, b) { return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt); });
+    filtered.sort(function (a, b) { return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt); });
   } else {
-    filtered.sort(function(a,b){ return b.priorityScore - a.priorityScore; });
+    filtered.sort(function (a, b) { return b.priorityScore - a.priorityScore; });
   }
   var h = '';
   for (var i = 0; i < filtered.length; i++) {
     var t = filtered[i];
-    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q='+t.lat+','+t.lng+'" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
+    var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
     h += '<tr>';
-    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">'+t.ticketId+'</td>';
-    h += '<td style="font-size:12px">'+escapeHTML(t.citizenName)+'</td>';
-    h += '<td>'+(DEPT_ICON[t.category]||'')+' '+escapeHTML(DEPT[t.category]||t.category)+'</td>';
-    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 '+escapeHTML(t.location)+gpsLink+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escapeHTML(t.description)+'</div></td>';
-    h += '<td>'+pLabel(t.priorityScore)+'</td>';
-    h += '<td>'+statusBadge(t.status)+'</td>';
-    h += '<td style="font-size:12px">'+(t.assignedName ? escapeHTML(t.assignedName) : '<span style="color:var(--muted)">—</span>')+'</td>';
+    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">' + t.ticketId + '</td>';
+    h += '<td style="font-size:12px">' + escapeHTML(t.citizenName) + '</td>';
+    h += '<td>' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + '</td>';
+    h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 ' + escapeHTML(t.location) + gpsLink + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">' + escapeHTML(t.description) + '</div></td>';
+    h += '<td>' + pLabel(t.priorityScore) + '</td>';
+    h += '<td>' + statusBadge(t.status) + '</td>';
+    h += '<td style="font-size:12px">' + (t.assignedName ? escapeHTML(t.assignedName) : '<span style="color:var(--muted)">—</span>') + '</td>';
     h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
     // Images
     var imgCell = '';
-    if (t.status==='completed' && (t.beforeImage||t.afterImage)) {
+    if (t.status === 'completed' && (t.beforeImage || t.afterImage)) {
       imgCell = '<div style="display:flex;gap:4px">';
-      if (t.beforeImage) imgCell += '<div style="text-align:center">'+imgThumb(t.beforeImage,'ก่อน')+'<div style="font-size:9px;color:var(--g);margin-top:2px;font-weight:700">ก่อน</div></div>';
-      if (t.afterImage) imgCell += '<div style="text-align:center">'+imgThumb(t.afterImage,'หลัง')+'<div style="font-size:9px;color:var(--blue2);margin-top:2px;font-weight:700">หลัง</div></div>';
+      if (t.beforeImage) imgCell += '<div style="text-align:center">' + imgThumb(t.beforeImage, 'ก่อน') + '<div style="font-size:9px;color:var(--g);margin-top:2px;font-weight:700">ก่อน</div></div>';
+      if (t.afterImage) imgCell += '<div style="text-align:center">' + imgThumb(t.afterImage, 'หลัง') + '<div style="font-size:9px;color:var(--blue2);margin-top:2px;font-weight:700">หลัง</div></div>';
       imgCell += '</div>';
     } else {
       imgCell = imgThumb(t.citizenImage, 'รูปผู้แจ้ง');
     }
-    h += '<td>'+imgCell+'</td>';
-    h += '<td><select data-id="'+t.ticketId+'" onchange="adminChSt(this)" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:9px;font-family:Prompt,sans-serif;outline:none;background:#fff">';
-    ['pending','assigned','in_progress','completed','rejected'].forEach(function(s){
-      h += '<option value="'+s+'"'+(t.status===s ? ' selected' : '')+'>'+stTH(s)+'</option>';
+    h += '<td>' + imgCell + '</td>';
+    h += '<td><select data-id="' + t.ticketId + '" onchange="adminChSt(this)" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:9px;font-family:Prompt,sans-serif;outline:none;background:#fff">';
+    ['pending', 'assigned', 'in_progress', 'completed', 'rejected'].forEach(function (s) {
+      h += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + stTH(s) + '</option>';
     });
-    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">'+fmtDate(t.createdAt)+'</td>';
-    h += '<td><div style="display:flex;gap:6px;flex-direction:column;align-items:center;padding:2px 6px"><button class="btn-chat" onclick="openTicketChat(\''+t.ticketId+'\')">💬</button><button class="abt abt-red btn-ripple" data-id="'+t.ticketId+'" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
+    h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">' + fmtDate(t.createdAt) + '</td>';
+    h += '<td><div style="display:flex;gap:6px;flex-direction:column;align-items:center;padding:2px 6px"><button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')">💬</button><button class="abt abt-red btn-ripple" data-id="' + t.ticketId + '" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
     h += '</tr>';
   }
   el.innerHTML = h;
@@ -531,9 +531,9 @@ function adminChSt(sel) {
   fetch('/api/tickets/' + id + '/status', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: status })
-  }).then(function(r) {
-    return r.json().then(function(d) { return { ok: r.ok, data: d }; });
-  }).then(function(result) {
+  }).then(function (r) {
+    return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+  }).then(function (result) {
     if (!result.ok) {
       // BUG-014: show error if transition is invalid, then reload to sync dropdown
       showToast(result.data.error || 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
@@ -550,21 +550,21 @@ function renderTechFull(techs) {
   var h = '';
   for (var i = 0; i < techs.length; i++) {
     var t = techs[i];
-    var csClass = t.statusLabel==='READY' ? 'cs-ready' : t.statusLabel==='BUSY' ? 'cs-busy' : 'cs-full';
-    var initials = (t.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('');
+    var csClass = t.statusLabel === 'READY' ? 'cs-ready' : t.statusLabel === 'BUSY' ? 'cs-busy' : 'cs-full';
+    var initials = (t.name || '?').split(' ').slice(0, 2).map(function (w) { return w[0] || ''; }).join('');
     h += '<div class="tech-card">';
     h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
     h += '<div style="display:flex;align-items:center;gap:10px">';
-    h += '<div class="tech-av" style="width:42px;height:42px;font-size:16px">'+initials+'</div>';
-    h += '<div><div style="font-size:15px;font-weight:700;color:var(--navy)">'+(DEPT_ICON[t.specialty]||'')+' '+(DEPT[t.specialty]||t.specialty)+'</div><div style="font-size:12px;color:var(--muted)">'+t.name+'</div></div>';
+    h += '<div class="tech-av" style="width:42px;height:42px;font-size:16px">' + initials + '</div>';
+    h += '<div><div style="font-size:15px;font-weight:700;color:var(--navy)">' + (DEPT_ICON[t.specialty] || '') + ' ' + (DEPT[t.specialty] || t.specialty) + '</div><div style="font-size:12px;color:var(--muted)">' + t.name + '</div></div>';
     h += '</div>';
-    h += '<span class="cstatus '+csClass+'">'+t.statusLabel+'</span>';
+    h += '<span class="cstatus ' + csClass + '">' + t.statusLabel + '</span>';
     h += '</div>';
-    h += '<div class="tech-bar-wrap" style="margin-bottom:8px"><div class="tech-bar" style="width:'+t.capacity+'%"></div></div>';
-    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:10px"><span>งานค้าง: <strong style="color:var(--navy)">'+t.activeJobs+'</strong></span><span>รวมทั้งหมด: <strong style="color:var(--navy)">'+t.totalJobs+'</strong></span></div>';
+    h += '<div class="tech-bar-wrap" style="margin-bottom:8px"><div class="tech-bar" style="width:' + t.capacity + '%"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:10px"><span>งานค้าง: <strong style="color:var(--navy)">' + t.activeJobs + '</strong></span><span>รวมทั้งหมด: <strong style="color:var(--navy)">' + t.totalJobs + '</strong></span></div>';
     h += '<div style="display:flex;gap:6px">';
-    h += '<button class="cat-btn cat-btn-edit btn-ripple" style="font-size:11px;padding:7px 0" onclick="openEditTechModal(\''+t.id+'\')">✏️ แก้ไข</button>';
-    h += '<button class="cat-btn cat-btn-del btn-ripple" style="font-size:11px;padding:7px 0;max-width:42px" onclick="deleteTech(\''+t.id+'\',\''+escapeHTML(t.name)+'\')">🗑️</button>';
+    h += '<button class="cat-btn cat-btn-edit btn-ripple" style="font-size:11px;padding:7px 0" onclick="openEditTechModal(\'' + t.id + '\')">✏️ แก้ไข</button>';
+    h += '<button class="cat-btn cat-btn-del btn-ripple" style="font-size:11px;padding:7px 0;max-width:42px" onclick="deleteTech(\'' + t.id + '\',\'' + escapeHTML(t.name) + '\')">🗑️</button>';
     h += '</div>';
     h += '</div>';
   }
@@ -592,7 +592,7 @@ function openAddTechModal() {
   hideE('addTechErr');
   _populateSpecialtySelect('addTechSpecialty');
   ge('mAddTech').classList.add('on');
-  setTimeout(function() { ge('addTechFname').focus(); }, 200);
+  setTimeout(function () { ge('addTechFname').focus(); }, 200);
 }
 
 function closeAddTechModal() {
@@ -629,7 +629,7 @@ function openEditTechModal(techId) {
   _editTechId = techId;
   // Find tech from last admin data
   var techs = _lastAdminTechs || [];
-  var tech = techs.find(function(t) { return t.id === techId; });
+  var tech = techs.find(function (t) { return t.id === techId; });
   if (!tech) return;
 
   ge('editTechFname').value = tech.firstName || '';
@@ -639,7 +639,7 @@ function openEditTechModal(techId) {
   _populateSpecialtySelect('editTechSpecialty');
   ge('editTechSpecialty').value = tech.specialty || '';
   ge('mEditTech').classList.add('on');
-  setTimeout(function() { ge('editTechFname').focus(); }, 200);
+  setTimeout(function () { ge('editTechFname').focus(); }, 200);
 }
 
 function closeEditTechModal() {
@@ -760,7 +760,7 @@ async function confirmDeleteAll() {
     if (!res.ok) {
       // server-side password check — แสดง error และเปิด modal ให้กรอกใหม่
       closeDeleteAllConfirm();
-      setTimeout(function() {
+      setTimeout(function () {
         ge('deleteAllPwInput').value = '';
         hideE('deleteAllPwErr');
         showE('deleteAllPwErr', data.error || 'รหัสผ่านไม่ถูกต้อง');
@@ -768,7 +768,7 @@ async function confirmDeleteAll() {
         inp.classList.remove('pw-shake');
         void inp.offsetWidth;
         inp.classList.add('pw-shake');
-        setTimeout(function() { inp.classList.remove('pw-shake'); }, 450);
+        setTimeout(function () { inp.classList.remove('pw-shake'); }, 450);
         ge('mDeleteAllPw').classList.add('on');
         inp.focus();
       }, 100);
@@ -789,14 +789,14 @@ async function confirmDeleteAll() {
 ══════════════════════════════════════════════════════════ */
 
 var EMOJI_PRESETS = [
-  '🛣️','💧','💡','🗑️','🐍','🌿','🚨','🌊','🔥','🏗️',
-  '🚗','🚰','🏠','🏥','🏫','🏢','🚧','⚡','🌳','🐕',
-  '🐈','🐀','🦟','💨','🌧️','🌪️','☀️','🔔','📢','🔇',
-  '🚽','🚿','🛠️','🔨','⛽','🅿️','♻️','🧹','🧪','🏭',
-  '🎵','📡','🚦','🛤️','🏖️','🌉','⚠️','🔌','🚲','🛵',
-  '🏕️','🗼','🏗️','🧱','🪵','🪨','🛶','⛲','🗺️','📌',
-  '🔧','🔩','⚙️','🧰','🪛','🔬','🔭','💊','💉','🩺',
-  '🐾','🦎','🐢','🦅','🐝','🦇','🐟','🪴','🌻','🍂'
+  '🛣️', '💧', '💡', '🗑️', '🐍', '🌿', '🚨', '🌊', '🔥', '🏗️',
+  '🚗', '🚰', '🏠', '🏥', '🏫', '🏢', '🚧', '⚡', '🌳', '🐕',
+  '🐈', '🐀', '🦟', '💨', '🌧️', '🌪️', '☀️', '🔔', '📢', '🔇',
+  '🚽', '🚿', '🛠️', '🔨', '⛽', '🅿️', '♻️', '🧹', '🧪', '🏭',
+  '🎵', '📡', '🚦', '🛤️', '🏖️', '🌉', '⚠️', '🔌', '🚲', '🛵',
+  '🏕️', '🗼', '🏗️', '🧱', '🪵', '🪨', '🛶', '⛲', '🗺️', '📌',
+  '🔧', '🔩', '⚙️', '🧰', '🪛', '🔬', '🔭', '💊', '💉', '🩺',
+  '🐾', '🦎', '🐢', '🦅', '🐝', '🦇', '🐟', '🪴', '🌻', '🍂'
 ];
 
 var _editCatId = null;
@@ -817,7 +817,7 @@ async function renderCategories() {
     var h = '';
     for (var i = 0; i < cats.length; i++) {
       var c = cats[i];
-      var techNames = c.technicians.map(function(t) { return t.name; }).join(', ') || '<span style="color:var(--muted)">ยังไม่มีช่าง</span>';
+      var techNames = c.technicians.map(function (t) { return t.name; }).join(', ') || '<span style="color:var(--muted)">ยังไม่มีช่าง</span>';
       h += '<div class="cat-mgmt-card">';
       h += '<div class="cat-mgmt-header">';
       h += '<div class="cat-mgmt-icon">' + c.icon + '</div>';
@@ -856,7 +856,7 @@ function renderEmojiPicker(gridId, inputId) {
 function selectEmoji(btn, inputId) {
   // Remove selection from siblings
   var parent = btn.parentElement;
-  parent.querySelectorAll('.emoji-pick-btn').forEach(function(b) { b.classList.remove('selected'); });
+  parent.querySelectorAll('.emoji-pick-btn').forEach(function (b) { b.classList.remove('selected'); });
   btn.classList.add('selected');
   ge(inputId).value = btn.dataset.emoji;
   // Preview
@@ -873,7 +873,7 @@ function openAddCategoryModal() {
   ge('selectedEmojiPreview').innerHTML = '';
   renderEmojiPicker('emojiPickerGrid', 'addCatIcon');
   ge('mAddCategory').classList.add('on');
-  setTimeout(function() { ge('addCatName').focus(); }, 200);
+  setTimeout(function () { ge('addCatName').focus(); }, 200);
 }
 
 function closeAddCategoryModal() {
@@ -908,7 +908,7 @@ async function submitAddCategory() {
 function openEditCategoryModal(catId) {
   _editCatId = catId;
   var cats = _categoriesCache || [];
-  var cat = cats.find(function(c) { return c._id === catId; });
+  var cat = cats.find(function (c) { return c._id === catId; });
   if (!cat) return;
 
   ge('editCatCurrentIcon').textContent = cat.icon;
@@ -918,9 +918,9 @@ function openEditCategoryModal(catId) {
   hideE('editCatErr');
   renderEmojiPicker('editEmojiPickerGrid', 'editCatIcon');
   // Pre-select current emoji
-  setTimeout(function() {
+  setTimeout(function () {
     var btns = ge('editEmojiPickerGrid').querySelectorAll('.emoji-pick-btn');
-    btns.forEach(function(b) {
+    btns.forEach(function (b) {
       if (b.dataset.emoji === cat.icon) b.classList.add('selected');
     });
   }, 50);
@@ -1005,8 +1005,8 @@ async function openTechLinkModal(catId, catLabel) {
     if (!res1.ok || !res2.ok) return;
     var allTechs = await res1.json();
     var cats = await res2.json();
-    var cat = cats.find(function(c) { return c._id === catId; });
-    var linkedIds = cat ? cat.technicians.map(function(t) { return t._id; }) : [];
+    var cat = cats.find(function (c) { return c._id === catId; });
+    var linkedIds = cat ? cat.technicians.map(function (t) { return t._id; }) : [];
 
     var el = ge('techLinkList');
     if (!allTechs.length) { el.innerHTML = '<div class="empty" style="padding:20px;text-align:center">ไม่มีช่างในระบบ</div>'; return; }
@@ -1028,8 +1028,8 @@ async function openTechLinkModal(catId, catLabel) {
     el.innerHTML = h;
 
     // Toggle visual on change
-    el.querySelectorAll('.tech-link-cb').forEach(function(cb) {
-      cb.addEventListener('change', function() {
+    el.querySelectorAll('.tech-link-cb').forEach(function (cb) {
+      cb.addEventListener('change', function () {
         var item = this.closest('.tech-link-item');
         var status = item.querySelector('.tech-link-status');
         if (this.checked) {
@@ -1055,7 +1055,7 @@ async function saveTechLinks() {
   if (!_techLinkCatId) return;
   var checkboxes = ge('techLinkList').querySelectorAll('.tech-link-cb:checked');
   var ids = [];
-  checkboxes.forEach(function(cb) { ids.push(cb.value); });
+  checkboxes.forEach(function (cb) { ids.push(cb.value); });
 
   var btn = ge('btnSaveTechLinks');
   btn.disabled = true;
@@ -1114,9 +1114,9 @@ function openReportModal() {
 
   // Radio highlight binding
   var opts = document.querySelectorAll('.report-range-opt');
-  opts.forEach(function(opt) {
-    opt.addEventListener('change', function() {
-      opts.forEach(function(o) { o.classList.remove('on'); });
+  opts.forEach(function (opt) {
+    opt.addEventListener('change', function () {
+      opts.forEach(function (o) { o.classList.remove('on'); });
       this.classList.add('on');
     });
   });
@@ -1139,7 +1139,7 @@ async function downloadExcel() {
   try {
     var res = await fetch('/api/tickets/report/excel?range=' + range);
     if (!res.ok) {
-      var err = await res.json().catch(function() { return {}; });
+      var err = await res.json().catch(function () { return {}; });
       showToast(err.error || 'ไม่สามารถดาวน์โหลดได้', 'error');
       st.textContent = '';
       btn.disabled = false;
@@ -1152,7 +1152,7 @@ async function downloadExcel() {
     a.download = 'ResolveNow_Report_' + new Date().toISOString().slice(0, 10) + '.xlsx';
     document.body.appendChild(a);
     a.click();
-    setTimeout(function() { URL.revokeObjectURL(url); a.remove(); }, 200);
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 200);
     st.textContent = '✅ ดาวน์โหลดสำเร็จ!';
     showToast('ดาวน์โหลด Excel สำเร็จ 📊', 'success');
   } catch (e) {
@@ -1174,7 +1174,7 @@ async function printPDF() {
   try {
     var res = await fetch('/api/tickets/report?range=' + range);
     if (!res.ok) {
-      var err = await res.json().catch(function() { return {}; });
+      var err = await res.json().catch(function () { return {}; });
       showToast(err.error || 'ไม่สามารถโหลดได้', 'error');
       st.textContent = '';
       btn.disabled = false;
@@ -1205,10 +1205,10 @@ function _openPdfWindow(data) {
   if (typeof DEPT !== 'undefined') { for (var k in DEPT) catMap[k] = DEPT[k]; }
 
   var counts = { pending: 0, assigned: 0, in_progress: 0, completed: 0, rejected: 0 };
-  tickets.forEach(function(t) { if (counts[t.status] !== undefined) counts[t.status]++; });
+  tickets.forEach(function (t) { if (counts[t.status] !== undefined) counts[t.status]++; });
 
-  var completed = tickets.filter(function(t) { return t.status === 'completed'; });
-  completed.sort(function(a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+  var completed = tickets.filter(function (t) { return t.status === 'completed'; });
+  completed.sort(function (a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
 
   // Build HTML
   var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"/>';
@@ -1253,15 +1253,15 @@ function _openPdfWindow(data) {
   // ── Page 2+: Case cards grouped by status ──
   if (tickets.length > 0) {
     var stColors = { pending: '#f59e0b', assigned: '#3b82f6', in_progress: '#8b5cf6', completed: '#22c55e', rejected: '#ef4444' };
-    var stIcons  = { pending: '⏳', assigned: '📋', in_progress: '🔧', completed: '✅', rejected: '❌' };
+    var stIcons = { pending: '⏳', assigned: '📋', in_progress: '🔧', completed: '✅', rejected: '❌' };
 
     // Define status groups order
     var groups = [
-      { key: 'pending',     label: 'รอดำเนินการ',      color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', icon: '⏳' },
-      { key: 'in_progress', label: 'กำลังดำเนินการ',   color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', icon: '🔧' },
-      { key: 'assigned',    label: 'รับงานแล้ว',        color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', icon: '📋' },
-      { key: 'completed',   label: 'เสร็จสิ้นแล้ว',    color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' },
-      { key: 'rejected',    label: 'ปฏิเสธ',           color: '#ef4444', bg: '#fff1f2', border: '#fecaca', icon: '❌' }
+      { key: 'pending', label: 'รอดำเนินการ', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', icon: '⏳' },
+      { key: 'in_progress', label: 'กำลังดำเนินการ', color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', icon: '🔧' },
+      { key: 'assigned', label: 'รับงานแล้ว', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', icon: '📋' },
+      { key: 'completed', label: 'เสร็จสิ้นแล้ว', color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' },
+      { key: 'rejected', label: 'ปฏิเสธ', color: '#ef4444', bg: '#fff1f2', border: '#fecaca', icon: '❌' }
     ];
 
     html += '<div class="rpt-page">';
@@ -1272,8 +1272,8 @@ function _openPdfWindow(data) {
       var created = new Date(t.createdAt);
       var updated = new Date(t.updatedAt);
       var stColor = stColors[t.status] || '#94a3b8';
-      var stIcon  = stIcons[t.status]  || '⚪';
-      var stLabel = stMap[t.status]    || t.status;
+      var stIcon = stIcons[t.status] || '⚪';
+      var stLabel = stMap[t.status] || t.status;
 
       // Duration
       var duration = '—';
@@ -1294,7 +1294,7 @@ function _openPdfWindow(data) {
       if (t.afterImage || t.citizenImage) {
         imgHtml += '<div class="rpt-card-imgs">';
         if (t.citizenImage) imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img-card" alt="รูปปัญหา"/><div class="rpt-img-label">📸 ก่อนซ่อม</div></div>';
-        if (t.afterImage)   imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.afterImage)   + '" class="rpt-img-card" alt="รูปผลงาน"/><div class="rpt-img-label">✅ หลังซ่อม</div></div>';
+        if (t.afterImage) imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.afterImage) + '" class="rpt-img-card" alt="รูปผลงาน"/><div class="rpt-img-label">✅ หลังซ่อม</div></div>';
         imgHtml += '</div>';
       }
 
@@ -1330,11 +1330,11 @@ function _openPdfWindow(data) {
     // Render each group
     for (var g = 0; g < groups.length; g++) {
       var grp = groups[g];
-      var grpTickets = tickets.filter(function(t) { return t.status === grp.key; });
+      var grpTickets = tickets.filter(function (t) { return t.status === grp.key; });
       if (!grpTickets.length) continue;
 
       // Sort by date newest first within group
-      grpTickets.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+      grpTickets.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
 
       // Group section header — bold full-band style
       html += '<div class="rpt-group-header" style="background:linear-gradient(135deg,' + grp.color + 'dd,' + grp.color + 'aa);border-top:3px solid ' + grp.color + ';border-bottom:1px solid ' + grp.border + '">';
@@ -1367,7 +1367,7 @@ function _openPdfWindow(data) {
   html += 'var start=-Math.PI/2,cx=100,cy=100,r=85;';
   html += 'data.forEach(function(d){var sl=(d.v/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+sl);ctx.closePath();ctx.fillStyle=d.c;ctx.fill();start+=sl;});';
   html += 'ctx.beginPath();ctx.arc(cx,cy,45,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();';
-  html += 'ctx.font="700 22px Inter,sans-serif";ctx.fillStyle="#0f172a";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("'+tickets.length+'",cx,cy-6);';
+  html += 'ctx.font="700 22px Inter,sans-serif";ctx.fillStyle="#0f172a";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("' + tickets.length + '",cx,cy-6);';
   html += 'ctx.font="500 11px Prompt,sans-serif";ctx.fillStyle="#94a3b8";ctx.fillText("รายการ",cx,cy+12);';
   html += '})();';
   // Auto-print
@@ -1425,13 +1425,13 @@ function _getPdfStyles() {
     '.rpt-group-count{padding:4px 14px;border-radius:99px;color:#fff;font-size:12px;font-weight:800;flex-shrink:0;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.4)}' +
     '.rpt-footer{text-align:center;font-size:10px;color:#94a3b8;padding-top:20px;border-top:1px solid #e2e8f0;margin-top:32px}' +
     '@media print{' +
-      'body{padding:10px 14px;font-size:11px}' +
-      '.rpt-card{page-break-inside:avoid;break-inside:avoid;margin-bottom:10px}' +
-      '.rpt-group-header{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;margin:16px -2px 10px}' +
-      '.rpt-stat{padding:10px 14px;min-width:80px}' +
-      '.rpt-stat-num{font-size:22px}' +
-      '.rpt-card-key{min-width:110px}' +
-      '.rpt-img-card{width:75px;height:75px}' +
+    'body{padding:10px 14px;font-size:11px}' +
+    '.rpt-card{page-break-inside:avoid;break-inside:avoid;margin-bottom:10px}' +
+    '.rpt-group-header{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;margin:16px -2px 10px}' +
+    '.rpt-stat{padding:10px 14px;min-width:80px}' +
+    '.rpt-stat-num{font-size:22px}' +
+    '.rpt-card-key{min-width:110px}' +
+    '.rpt-img-card{width:75px;height:75px}' +
     '@page{size:A4;margin:12mm 10mm}' +
     '}';
 }
