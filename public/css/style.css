@@ -2087,6 +2087,67 @@ a {
   font-size: 13px
 }
 
+/* ── Location Tab Switcher ──────────────────────────── */
+.loc-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.loc-tab {
+  flex: 1;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: 'Prompt', sans-serif;
+  white-space: nowrap;
+}
+
+.loc-tab.on {
+  background: #fff;
+  color: var(--blue2);
+  box-shadow: 0 2px 8px rgba(0,0,0,.09);
+}
+
+.loc-tab:hover:not(.on) {
+  color: var(--navy);
+  background: rgba(255,255,255,.6);
+}
+
+.loc-panel {
+  margin-bottom: 4px;
+}
+
+/* ── Place Search Results ───────────────────────────── */
+.loc-search-item {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  background: #fff;
+  transition: background .15s;
+}
+
+.loc-search-item:last-child {
+  border-bottom: none;
+}
+
+.loc-search-item:hover {
+  background: #f0f4ff;
+}
+
+.loc-search-item:active {
+  background: #e0e7ff;
+}
+
 /* AI urgency box */
 .urg-box {
   display: flex;

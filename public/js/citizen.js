@@ -211,7 +211,6 @@ function captureGPS() {
   var btn = ge('btnGps');
   var icon = ge('gpsIcon');
   var text = ge('gpsBtnText');
-  // Show loading state
   btn.disabled = true;
   icon.textContent = '⏳';
   text.textContent = 'กำลังระบุตำแหน่ง...';
@@ -220,10 +219,8 @@ function captureGPS() {
       var lat = pos.coords.latitude.toFixed(6);
       var lng = pos.coords.longitude.toFixed(6);
       var acc = Math.round(pos.coords.accuracy);
-      // Store in hidden fields
       ge('tLat').value = lat;
       ge('tLng').value = lng;
-      // Reverse geocode: get human-readable address
       _gpsAddress = 'กำลังโหลดที่อยู่...';
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&accept-language=th', { headers: { 'Accept': 'application/json' } })
         .then(function (r) { return r.json(); })
@@ -235,23 +232,14 @@ function captureGPS() {
           if (a.city || a.town || a.county) parts.push(a.city || a.town || a.county);
           if (a.state) parts.push(a.state);
           _gpsAddress = parts.join(', ') || d.display_name || (lat + ', ' + lng);
-          // Update button text live
           var bt = ge('gpsBtnText');
           if (bt) bt.textContent = _gpsAddress;
+          _updateGpsResult(lat, lng, _gpsAddress, acc);
         })
-        .catch(function () { _gpsAddress = lat + ', ' + lng; });
-      // Build mini map (OpenStreetMap embed)
-      var delta = 0.005;
-      var bbox = (parseFloat(lng) - delta) + ',' + (parseFloat(lat) - delta) + ',' + (parseFloat(lng) + delta) + ',' + (parseFloat(lat) + delta);
-      var mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lng;
-      ge('gpsResult').innerHTML =
-        '<div style="font-weight:700;margin-bottom:6px;font-size:12px">✅ ตำแหน่ง GPS ที่บันทึก</div>' +
-        '<iframe src="' + mapUrl + '" style="width:100%;height:180px;border:none;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
-        '<span style="font-size:10px;color:#2d6a4f">±' + acc + 'm</span>' +
-        '<a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600">🗺️ Google Maps</a>' +
-        '</div>';
-      ge('gpsResult').style.display = 'block';
+        .catch(function () {
+          _gpsAddress = lat + ', ' + lng;
+          _updateGpsResult(lat, lng, _gpsAddress, acc);
+        });
       btn.style.background = '#f0fff4';
       btn.style.borderColor = '#9ae6b4';
       btn.style.color = '#276749';
@@ -271,6 +259,173 @@ function captureGPS() {
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
+}
+
+/* ── Shared location result preview ────────────────── */
+function _updateGpsResult(lat, lng, address, acc) {
+  var delta = 0.005;
+  var bbox = (parseFloat(lng)-delta)+','+(parseFloat(lat)-delta)+','+(parseFloat(lng)+delta)+','+(parseFloat(lat)+delta);
+  var mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+lat+'%2C'+lng;
+  var accHtml = acc ? '<span style="font-size:10px;color:#2d6a4f">±'+acc+'m</span>' : '';
+  ge('gpsResult').innerHTML =
+    '<div style="font-weight:700;margin-bottom:4px;font-size:12px">✅ ตำแหน่งที่เลือก</div>' +
+    '<div style="font-size:12px;color:#166534;margin-bottom:6px;line-height:1.4">📍 '+(address || lat+', '+lng)+'</div>' +
+    '<iframe src="'+mapUrl+'" style="width:100%;height:160px;border:none;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
+    accHtml +
+    '<a href="https://www.google.com/maps?q='+lat+','+lng+'" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600;margin-left:auto">🗺️ Google Maps</a>' +
+    '</div>';
+  ge('gpsResult').style.display = 'block';
+}
+
+/* ── Location Tab Switcher ──────────────────────────── */
+var _locActiveTab = 'gps';
+
+function switchLocTab(tab) {
+  _locActiveTab = tab;
+  var tabs = ['Gps','Map','Search'];
+  tabs.forEach(function(t) {
+    var btn = ge('locTab'+t);
+    var panel = ge('locPanel'+t);
+    var isActive = t.toLowerCase() === tab;
+    if (btn) btn.classList.toggle('on', isActive);
+    if (panel) panel.style.display = isActive ? 'block' : 'none';
+  });
+  if (tab === 'map') _initMapPicker();
+}
+
+/* ── Interactive Map Picker (Leaflet) ───────────────── */
+var _mapPickerInited = false;
+var _mapPickerObj = null;
+var _mapPickerMarker = null;
+
+function _initMapPicker() {
+  if (_mapPickerInited) {
+    if (_mapPickerObj) setTimeout(function() { _mapPickerObj.invalidateSize(); }, 100);
+    return;
+  }
+  if (typeof L === 'undefined') {
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/sp38=';
+    s.crossOrigin = '';
+    s.onload = function() { _buildLeafletMap(); };
+    document.head.appendChild(s);
+  } else {
+    _buildLeafletMap();
+  }
+}
+
+function _buildLeafletMap() {
+  _mapPickerInited = true;
+  var lat = parseFloat(ge('tLat').value) || 13.7563;
+  var lng = parseFloat(ge('tLng').value) || 100.5018;
+  var zoom = ge('tLat').value ? 16 : 13;
+
+  _mapPickerObj = L.map('mapPicker', { zoomControl: true }).setView([lat, lng], zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+  }).addTo(_mapPickerObj);
+
+  var icon = L.divIcon({
+    html: '<div style="font-size:30px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))">📍</div>',
+    className: '', iconSize: [30,30], iconAnchor: [15,30]
+  });
+  _mapPickerMarker = L.marker([lat, lng], { icon: icon, draggable: true }).addTo(_mapPickerObj);
+
+  // Click on map to move pin
+  _mapPickerObj.on('click', function(e) { _setMapPin(e.latlng.lat, e.latlng.lng); });
+  // Drag marker
+  _mapPickerMarker.on('dragend', function(e) {
+    var p = e.target.getLatLng();
+    _setMapPin(p.lat, p.lng);
+  });
+
+  // If already have coords, show address label
+  if (ge('tLat').value) {
+    var addrEl = ge('mapPickerAddr');
+    if (addrEl && _gpsAddress) addrEl.textContent = '📍 ' + _gpsAddress;
+  }
+}
+
+function _setMapPin(lat, lng) {
+  ge('tLat').value = lat.toFixed(6);
+  ge('tLng').value = lng.toFixed(6);
+  if (_mapPickerMarker) _mapPickerMarker.setLatLng([lat, lng]);
+  var addrEl = ge('mapPickerAddr');
+  if (addrEl) addrEl.textContent = '⏳ กำลังโหลดที่อยู่...';
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&accept-language=th', { headers: { 'Accept': 'application/json' } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var a = d.address || {};
+      var parts = [];
+      if (a.road) parts.push(a.road);
+      if (a.suburb || a.village || a.neighbourhood) parts.push(a.suburb || a.village || a.neighbourhood);
+      if (a.city || a.town || a.county) parts.push(a.city || a.town || a.county);
+      if (a.state) parts.push(a.state);
+      _gpsAddress = parts.join(', ') || d.display_name || (lat.toFixed(6)+', '+lng.toFixed(6));
+      if (addrEl) addrEl.textContent = '📍 ' + _gpsAddress;
+      _updateGpsResult(lat.toFixed(6), lng.toFixed(6), _gpsAddress, null);
+    })
+    .catch(function() {
+      _gpsAddress = lat.toFixed(6)+', '+lng.toFixed(6);
+      if (addrEl) addrEl.textContent = '📍 ' + _gpsAddress;
+      _updateGpsResult(lat.toFixed(6), lng.toFixed(6), _gpsAddress, null);
+    });
+}
+
+/* ── Place Search (Nominatim) ───────────────────────── */
+var _locSearchTimer = null;
+
+function debounceLocSearch() {
+  clearTimeout(_locSearchTimer);
+  var q = (ge('locSearchInput').value || '').trim();
+  var resBox = ge('locSearchResults');
+  if (q.length < 2) { resBox.style.display = 'none'; return; }
+  ge('locSearchSpinner').style.display = 'block';
+  _locSearchTimer = setTimeout(function() { _doLocSearch(q); }, 700);
+}
+
+function _doLocSearch(q) {
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=6&accept-language=th', {
+    headers: { 'Accept': 'application/json' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(results) {
+    ge('locSearchSpinner').style.display = 'none';
+    var box = ge('locSearchResults');
+    if (!results.length) {
+      box.innerHTML = '<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">🔍 ไม่พบสถานที่</div>';
+      box.style.display = 'block';
+      return;
+    }
+    var h = '';
+    results.forEach(function(r) {
+      var parts = (r.display_name || '').split(',');
+      var main = parts.slice(0,2).join(',').trim();
+      var sub = parts.slice(2,5).join(',').trim();
+      // encode for onclick attribute safely
+      var dn = (r.display_name || '').replace(/\\/g,'\\\\').replace(/'/g,'&#39;');
+      h += '<div class="loc-search-item" onclick="selectLocResult('+r.lat+','+r.lon+',\''+dn+'\')">'+
+        '<div style="font-size:13px;font-weight:700;color:var(--navy)">'+escapeHTML(main)+'</div>'+
+        (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+escapeHTML(sub)+'</div>' : '')+
+        '</div>';
+    });
+    box.innerHTML = h;
+    box.style.display = 'block';
+  })
+  .catch(function() { ge('locSearchSpinner').style.display = 'none'; });
+}
+
+function selectLocResult(lat, lng, displayName) {
+  ge('tLat').value = parseFloat(lat).toFixed(6);
+  ge('tLng').value = parseFloat(lng).toFixed(6);
+  _gpsAddress = displayName;
+  ge('locSearchResults').style.display = 'none';
+  var inp = ge('locSearchInput');
+  if (inp) inp.value = displayName.split(',').slice(0,2).join(',').trim();
+  _updateGpsResult(parseFloat(lat).toFixed(6), parseFloat(lng).toFixed(6), displayName, null);
+  showToast('✅ เลือกตำแหน่งแล้ว');
 }
 
 /* ── Submit Ticket ───────────────────────────────────── */
@@ -332,6 +487,11 @@ async function submitTicket() {
       var gpsBtn = ge('btnGps'); var gpsIcon2 = ge('gpsIcon'); var gpsBtnText = ge('gpsBtnText');
       gpsBtn.style.background = ''; gpsBtn.style.borderColor = ''; gpsBtn.style.color = '';
       gpsIcon2.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
+      // Reset location tab back to GPS
+      switchLocTab('gps');
+      var locInp = ge('locSearchInput'); if (locInp) locInp.value = '';
+      var locRes = ge('locSearchResults'); if (locRes) locRes.style.display = 'none';
+      var mapAddr = ge('mapPickerAddr'); if (mapAddr) mapAddr.textContent = '';
       document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
       // Reset image picker UI
       var pw = ge('cImgPreviewWrap'); var pb = ge('cImgPickerBtns');

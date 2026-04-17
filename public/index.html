@@ -599,19 +599,52 @@
                   <h2>ระบุสถานที่</h2>
                   <div class="wiz-icon">📍</div>
                 </div>
+                <p class="wiz-sub">เลือกตำแหน่งที่ต้องการแจ้งเรื่อง</p>
               </div>
-              <button type="button" id="btnGps" class="gps-btn" onclick="captureGPS()" style="margin-bottom:12px">
-                <span id="gpsIcon">📍</span>
-                <span id="gpsBtnText">ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน</span>
-              </button>
-              <div id="gpsResult" class="gps-result" style="display:none">
-                <strong>✅ ได้รับตำแหน่ง GPS แล้ว</strong>
-                <div id="gpsCoords" style="font-size:11px;word-break:break-all"></div>
-                <a id="gpsMapLink" href="#" target="_blank" style="font-size:11px;color:var(--blue);font-weight:600">🗺️
-                  ดูบน Google Maps</a>
+
+              <!-- ── Tab switcher ── -->
+              <div class="loc-tabs">
+                <button class="loc-tab on" id="locTabGps" onclick="switchLocTab('gps')">📍 GPS อัตโนมัติ</button>
+                <button class="loc-tab" id="locTabMap" onclick="switchLocTab('map')">🗺️ แผนที่</button>
+                <button class="loc-tab" id="locTabSearch" onclick="switchLocTab('search')">🔍 ค้นหา</button>
               </div>
+
+              <!-- ── Panel: GPS ── -->
+              <div id="locPanelGps" class="loc-panel">
+                <button type="button" id="btnGps" class="gps-btn" onclick="captureGPS()">
+                  <span id="gpsIcon">📍</span>
+                  <span id="gpsBtnText">ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน</span>
+                </button>
+              </div>
+
+              <!-- ── Panel: Interactive Map Picker ── -->
+              <div id="locPanelMap" class="loc-panel" style="display:none">
+                <p style="font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.5">
+                  แตะบนแผนที่หรือลากหมุด 📍 เพื่อเลือกตำแหน่ง
+                </p>
+                <div id="mapPicker" style="width:100%;height:240px;border-radius:12px;border:1.5px solid var(--border);overflow:hidden;position:relative;background:#f1f5f9"></div>
+                <div id="mapPickerAddr" style="font-size:12px;color:var(--navy);margin-top:8px;min-height:16px;font-weight:600;line-height:1.5"></div>
+              </div>
+
+              <!-- ── Panel: Place Search ── -->
+              <div id="locPanelSearch" class="loc-panel" style="display:none">
+                <div style="position:relative;margin-bottom:8px">
+                  <input type="text" id="locSearchInput"
+                    placeholder="ค้นหาสถานที่ เช่น วัดอรุณ, ถนนสีลม..."
+                    oninput="debounceLocSearch()"
+                    style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box;transition:var(--transition)"
+                    onfocus="this.style.borderColor='var(--blue2)';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
+                  <span id="locSearchSpinner" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">⏳</span>
+                </div>
+                <div id="locSearchResults" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);display:none;max-height:220px;overflow-y:auto"></div>
+              </div>
+
+              <!-- ── Shared: confirmed location preview ── -->
+              <div id="gpsResult" class="gps-result" style="display:none"></div>
               <input type="hidden" id="tLat" />
               <input type="hidden" id="tLng" />
+
               <div class="wiz-nav" style="margin-top:20px">
                 <button class="wiz-back btn-ripple" onclick="wizBack(3)">← ย้อนกลับ</button>
                 <button class="wiz-next btn-ripple" onclick="wizNext(3)">ถัดไป →</button>
