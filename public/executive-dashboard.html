@@ -539,13 +539,13 @@
 
     <!-- ── STAT CARDS ─────────────── -->
     <div class="stat-grid">
-      <div class="stat-card" style="--card-accent:var(--green-mid)" onclick="location.href='/'">
+      <div class="stat-card" style="--card-accent:var(--green-mid); cursor:default">
         <div class="stat-label">Ticket ทั้งหมด</div>
         <div class="stat-value" id="sc-total">—</div>
         <span class="stat-delta up" id="sc-total-delta">⬆ กำลังโหลด</span>
         <div class="stat-sub">เทียบกับเดือนที่แล้ว</div>
       </div>
-      <div class="stat-card" style="--card-accent:#16a34a" onclick="location.href='/'">
+      <div class="stat-card" style="--card-accent:#16a34a; cursor:default">
         <div class="stat-label">งานสำเร็จ</div>
         <div class="stat-value" id="sc-done">—</div>
         <span class="stat-delta up" id="sc-done-delta">⬆ กำลังโหลด</span>
@@ -572,14 +572,18 @@
         <div class="chart-card-head">
           <div>
             <div class="chart-card-title">📈 Ticket ตามช่วงเวลา</div>
-            <div class="chart-card-sub">แสดงข้อมูลย้อนหลัง 6 เดือน</div>
+            <div class="chart-card-sub" id="lineChartSub">แสดงข้อมูลย้อนหลัง 6 เดือน</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <div class="line-legend">
               <div class="ll-item"><div class="ll-dot" style="background:var(--green-mid)"></div>เปิดใหม่</div>
               <div class="ll-item"><div class="ll-dot" style="background:var(--amber)"></div>สำเร็จ</div>
             </div>
-            <span class="chart-card-menu">···</span>
+            <select id="lineChartMonths" class="tb-action-btn" style="padding: 2px 8px; font-size: 11px; margin-left:8px; border:1px solid #e2e8f0" onchange="renderLineChart()">
+              <option value="3">3 เดือน</option>
+              <option value="6" selected>6 เดือน</option>
+              <option value="12">12 เดือน</option>
+            </select>
           </div>
         </div>
         <canvas id="lineChart" height="100"></canvas>
@@ -828,7 +832,13 @@ function renderLineChart() {
   const openData = [];
   const doneData = [];
 
-  for (let i = 5; i >= 0; i--) {
+  const mSelect = document.getElementById('lineChartMonths');
+  const numMonths = mSelect ? parseInt(mSelect.value) : 6;
+  
+  const subEl = document.getElementById('lineChartSub');
+  if(subEl) subEl.textContent = `แสดงข้อมูลย้อนหลัง ${numMonths} เดือน`;
+
+  for (let i = numMonths - 1; i >= 0; i--) {
     const d = new Date();
     d.setMonth(d.getMonth()-i, 1);
     const y = d.getFullYear(), m = d.getMonth();
