@@ -325,7 +325,7 @@
     .gauge-wrap { display: flex; flex-direction: column; align-items: center; }
     .gauge-svg-wrap { position: relative; width: 180px; height: 100px; margin-bottom: 10px; }
     .gauge-center {
-      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
       text-align: center;
     }
     .gauge-num { font-size: 28px; font-weight: 800; color: var(--text-dark); line-height: 1; }
@@ -519,10 +519,7 @@
     </div>
 
     <div class="topbar-right">
-      <div class="live-pill">
-        <div class="live-dot"></div>
-        Real-time
-      </div>
+
       <div class="tb-btns">
         <button class="tb-action-btn" onclick="refreshAll()">🔄 รีเฟรชข้อมูล</button>
       </div>
@@ -558,7 +555,7 @@
         <div class="stat-label">⏰ SLA เกินกำหนด</div>
         <div class="stat-value" id="sc-sla">—</div>
         <span class="stat-delta down" id="sc-sla-delta">กำลังโหลด</span>
-        <div class="stat-sub">ต้องแก้ไขด่วน</div>
+        <div class="stat-sub" id="sc-sla-sub">กำลังโหลด</div>
       </div>
       <div class="stat-card" style="--card-accent:#2563eb">
         <div class="stat-label">อัตราสำเร็จ</div>
@@ -664,10 +661,7 @@
               <path d="M 18 90 A 72 72 0 0 1 162 90" fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linecap="round"/>
               <!-- Fill -->
               <path id="gaugeFill" d="M 18 90 A 72 72 0 0 1 162 90" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"/>
-              <!-- Needle -->
-              <line id="gaugeNeedle" x1="90" y1="90" x2="90" y2="28" stroke="#1a3d2b" stroke-width="3" stroke-linecap="round" transform="rotate(0 90 90)"/>
-              <circle cx="90" cy="90" r="7" fill="var(--green-dark)"/>
-              <circle cx="90" cy="90" r="4" fill="white"/>
+
             </svg>
             <div class="gauge-center">
               <div class="gauge-num" id="gaugeNum">0</div>
@@ -823,6 +817,7 @@ function renderStatCards() {
   ge('sc-done-delta').textContent = '✅ อัตราสำเร็จ ' + rate + '%';
   ge('sc-sla-delta').className = breached>0 ? 'stat-delta down' : 'stat-delta up';
   ge('sc-sla-delta').textContent = breached>0 ? '⚠ ต้องแก้ไขด่วน' : '✅ ทุก Ticket ตรงเวลา';
+  if(ge('sc-sla-sub')) ge('sc-sla-sub').textContent = breached>0 ? 'ต้องแก้ไขด่วน' : 'ยอดเยี่ยม';
   ge('sc-rate-delta').className = rate>=70 ? 'stat-delta up' : 'stat-delta down';
   ge('sc-rate-delta').textContent = rate >= 70 ? '📈 ดีเยี่ยม' : '📉 ควรปรับปรุง';
 }
@@ -1037,12 +1032,8 @@ function renderGauge() {
   const pct = ready / total;
   const arcTotal = 226; // roughly π * r (semi-circle)
   const dashOffset = arcTotal - (pct * arcTotal);
-  const needle = ge('gaugeNeedle');
   const gaugeFill = ge('gaugeFill');
-
-  // Needle: -90deg = left (0%) → 0deg = up center → angle = -90 + pct*180
-  const angle = -90 + (pct * 180);
-  needle.setAttribute('transform', `rotate(${angle} 90 90)`);
+  
   gaugeFill.style.strokeDashoffset = dashOffset;
   gaugeFill.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)';
 
@@ -1075,7 +1066,9 @@ function renderTechStatusList() {
   if (!_techs.length) { el.innerHTML='<div style="text-align:center;color:var(--text-muted);padding:20px">ไม่มีข้อมูลช่าง</div>'; return; }
 
   el.innerHTML = _techs.map(t=>{
-    const initials=((t.firstName||t.name||'?')[0]+(t.lastName||'')[0]||'').toUpperCase()||'?';
+    const f = t.firstName || t.name || '?';
+    const l = t.lastName && t.lastName !== '-' ? t.lastName : '';
+    const initials = (f[0] + (l ? l[0] : '')).toUpperCase();
     const badge = t.statusLabel==='READY'
       ? '<span class="ts-badge ready">🟢 READY</span>'
       : t.statusLabel==='BUSY'
