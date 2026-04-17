@@ -136,6 +136,7 @@ io.on('connection', (socket) => {
   app.use('/api/help-requests', require('./routes/helpRequests'));
   app.use('/api/ai', require('./routes/ai'));
   app.use('/api/categories', require('./routes/categories'));
+  app.use('/api/ceo', require('./routes/ceo')); // CEO read-only dashboard API
   app.use('/api/track', require('./routes/track'));
   app.use('/auth/line', require('./routes/lineAuth'));
 
@@ -246,6 +247,11 @@ io.on('connection', (socket) => {
   // ─── Public Track Page ─────────────────────────────────────────
   app.get('/track', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'track.html'))
+  );
+
+  // ─── CEO Executive Dashboard ────────────────────────────────────
+  app.get('/ceo', (req, res) =>
+    res.sendFile(path.join(__dirname, 'public', 'executive-dashboard.html'))
   );
 
   // ─── Fallback (SPA) ──────────────────────────────────────────
