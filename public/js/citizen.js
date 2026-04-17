@@ -283,95 +283,14 @@ var _locActiveTab = 'gps';
 
 function switchLocTab(tab) {
   _locActiveTab = tab;
-  var tabs = ['Gps','Map','Search'];
+  var tabs = ['Gps', 'Search'];
   tabs.forEach(function(t) {
-    var btn = ge('locTab'+t);
-    var panel = ge('locPanel'+t);
+    var btn = ge('locTab' + t);
+    var panel = ge('locPanel' + t);
     var isActive = t.toLowerCase() === tab;
     if (btn) btn.classList.toggle('on', isActive);
     if (panel) panel.style.display = isActive ? 'block' : 'none';
   });
-  if (tab === 'map') _initMapPicker();
-}
-
-/* ── Interactive Map Picker (Leaflet) ───────────────── */
-var _mapPickerInited = false;
-var _mapPickerObj = null;
-var _mapPickerMarker = null;
-
-function _initMapPicker() {
-  if (_mapPickerInited) {
-    if (_mapPickerObj) setTimeout(function() { _mapPickerObj.invalidateSize(); }, 100);
-    return;
-  }
-  if (typeof L === 'undefined') {
-    var s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/sp38=';
-    s.crossOrigin = '';
-    s.onload = function() { _buildLeafletMap(); };
-    document.head.appendChild(s);
-  } else {
-    _buildLeafletMap();
-  }
-}
-
-function _buildLeafletMap() {
-  _mapPickerInited = true;
-  var lat = parseFloat(ge('tLat').value) || 13.7563;
-  var lng = parseFloat(ge('tLng').value) || 100.5018;
-  var zoom = ge('tLat').value ? 16 : 13;
-
-  _mapPickerObj = L.map('mapPicker', { zoomControl: true }).setView([lat, lng], zoom);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 19
-  }).addTo(_mapPickerObj);
-
-  var icon = L.divIcon({
-    html: '<div style="font-size:30px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))">📍</div>',
-    className: '', iconSize: [30,30], iconAnchor: [15,30]
-  });
-  _mapPickerMarker = L.marker([lat, lng], { icon: icon, draggable: true }).addTo(_mapPickerObj);
-
-  // Click on map to move pin
-  _mapPickerObj.on('click', function(e) { _setMapPin(e.latlng.lat, e.latlng.lng); });
-  // Drag marker
-  _mapPickerMarker.on('dragend', function(e) {
-    var p = e.target.getLatLng();
-    _setMapPin(p.lat, p.lng);
-  });
-
-  // If already have coords, show address label
-  if (ge('tLat').value) {
-    var addrEl = ge('mapPickerAddr');
-    if (addrEl && _gpsAddress) addrEl.textContent = '📍 ' + _gpsAddress;
-  }
-}
-
-function _setMapPin(lat, lng) {
-  ge('tLat').value = lat.toFixed(6);
-  ge('tLng').value = lng.toFixed(6);
-  if (_mapPickerMarker) _mapPickerMarker.setLatLng([lat, lng]);
-  var addrEl = ge('mapPickerAddr');
-  if (addrEl) addrEl.textContent = '⏳ กำลังโหลดที่อยู่...';
-  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&accept-language=th', { headers: { 'Accept': 'application/json' } })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      var a = d.address || {};
-      var parts = [];
-      if (a.road) parts.push(a.road);
-      if (a.suburb || a.village || a.neighbourhood) parts.push(a.suburb || a.village || a.neighbourhood);
-      if (a.city || a.town || a.county) parts.push(a.city || a.town || a.county);
-      if (a.state) parts.push(a.state);
-      _gpsAddress = parts.join(', ') || d.display_name || (lat.toFixed(6)+', '+lng.toFixed(6));
-      if (addrEl) addrEl.textContent = '📍 ' + _gpsAddress;
-      _updateGpsResult(lat.toFixed(6), lng.toFixed(6), _gpsAddress, null);
-    })
-    .catch(function() {
-      _gpsAddress = lat.toFixed(6)+', '+lng.toFixed(6);
-      if (addrEl) addrEl.textContent = '📍 ' + _gpsAddress;
-      _updateGpsResult(lat.toFixed(6), lng.toFixed(6), _gpsAddress, null);
-    });
 }
 
 /* ── Place Search (Nominatim) ───────────────────────── */
@@ -491,7 +410,6 @@ async function submitTicket() {
       switchLocTab('gps');
       var locInp = ge('locSearchInput'); if (locInp) locInp.value = '';
       var locRes = ge('locSearchResults'); if (locRes) locRes.style.display = 'none';
-      var mapAddr = ge('mapPickerAddr'); if (mapAddr) mapAddr.textContent = '';
       document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
       // Reset image picker UI
       var pw = ge('cImgPreviewWrap'); var pb = ge('cImgPickerBtns');
