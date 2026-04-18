@@ -655,20 +655,19 @@
               </div>
 
               <!-- Hidden gallery input only -->
-              <input type="file" id="cImgGallery" accept="image/*" style="display:none"
+              <input type="file" id="cImgGallery" accept="image/*" multiple style="display:none"
                 onchange="prevCitizenImg(event)" />
               <!-- Unified hidden input used by rest of form -->
-              <input type="file" id="cImg" accept="image/*" style="display:none" />
+              <input type="file" id="cImg" accept="image/*" multiple style="display:none" />
 
               <!-- Preview area -->
               <div id="cImgPrev" style="margin-bottom:16px">
                 <!-- Image preview (hidden until selected) -->
-                <div id="cImgPreviewWrap" style="display:none;position:relative;margin-bottom:14px">
-                  <img id="cImgPreviewImg" src="" alt="preview"
-                    style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;border:2px solid var(--border)" />
-                  <button onclick="clearCitizenImg()" type="button"
-                    style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:99px;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+                <div id="cImgPreviewWrap" style="display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+                  <!-- Dynamic previews injected via JS -->
                 </div>
+
+                <div id="cImgCountInfo" style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;text-align:right"></div>
 
                 <!-- Two-button picker (shown when no image) -->
                 <div id="cImgPickerBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">

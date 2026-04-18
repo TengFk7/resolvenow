@@ -85,6 +85,12 @@ async function purgeTicketImages(tickets) {
       const pid = extractPublicId(t[field]);
       if (pid) publicIds.push(pid);
     }
+    if (t.citizenImages) {
+      for (const imgUrl of t.citizenImages) {
+        const pid = extractPublicId(imgUrl);
+        if (pid) publicIds.push(pid);
+      }
+    }
   }
   if (publicIds.length === 0) return;
   // destroy ทีละอัน (แบบ parallel เพื่อความเร็ว)

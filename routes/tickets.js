@@ -61,6 +61,15 @@ function getFileUrl(req) {
   return BASE_URL ? BASE_URL + '/uploads/' + req.file.filename : '/uploads/' + req.file.filename;
 }
 
+function getFileUrls(req) {
+  if (!req.files || !req.files.length) return [];
+  return req.files.map(file => {
+    if (isCloudinaryConfigured()) return file.path;
+    const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
+    return BASE_URL ? BASE_URL + '/uploads/' + file.filename : '/uploads/' + file.filename;
+  });
+}
+
 // ─── Reverse Geocoding ───────────────────────────────────────────
 async function reverseGeocode(lat, lng) {
   try {
@@ -107,6 +116,7 @@ function formatTicket(t, currentUserId) {
     assignedName: t.assignedName,
     rejectReason: t.rejectReason,
     citizenImage: t.citizenImage,
+    citizenImages: t.citizenImages || [],
     beforeImage: t.beforeImage,
     afterImage: t.afterImage,
     rating: t.rating,
@@ -174,6 +184,7 @@ router.get('/report', requireAuth, async (req, res) => {
         rating: t.rating || null,
         ratingReason: t.ratingReason || null,
         citizenImage: t.citizenImage || null,
+        citizenImages: t.citizenImages || [],
         beforeImage: t.beforeImage || null,
         afterImage: t.afterImage || null,
         slaBreached: t.slaBreached || false,
@@ -317,14 +328,14 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // ─── POST /api/tickets ───────────────────────────────────────────
-router.post('/', requireAuth, upload.single('image'), async (req, res) => {
+router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
   try {
     const { category, description: rawDescription, location, urgency, lat, lng } = req.body;
     const user = await User.findById(req.session.userId);
     if (!category || !rawDescription || !location)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
-    if (!req.file)
-      return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่ง' });
+    if (!req.files || req.files.length === 0)
+      return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่งอย่างน้อย 1 รูป' });
 
     // XSS-FIX: sanitize user-supplied text before storing
     const description = xss(rawDescription.trim());
@@ -357,7 +368,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
       urgency: urg,
       priorityScore: score,
       status: 'pending',
-      citizenImage: getFileUrl(req),
+      citizenImage: getFileUrls(req)[0], // For backward compatibility
+      citizenImages: getFileUrls(req),
       slaAssignDeadline: sla.slaAssignDeadline,
       slaCompleteDeadline: sla.slaCompleteDeadline,
     }).save();
@@ -368,10 +380,14 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
   } catch (e) {
     console.error(e);
     // ROLLBACK-FIX: ถ้า DB save ล้มเหลว ให้ลบรูปที่ upload ขึ้น Cloudinary ไปแล้วออก
-    if (req.file && req.file.filename && isCloudinaryConfigured()) {
-      cloudinary.uploader.destroy(req.file.filename).catch(err =>
-        console.warn('[Cloudinary] rollback destroy failed:', err?.message)
-      );
+    if (req.files && isCloudinaryConfigured()) {
+      for (const file of req.files) {
+        if (file.filename) {
+          cloudinary.uploader.destroy(file.filename).catch(err =>
+            console.warn('[Cloudinary] rollback destroy failed:', err?.message)
+          );
+        }
+      }
     }
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
   }
@@ -731,7 +747,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้น' });
 
     // CLOUDINARY-FIX: ดึงรูปก่อนลบแล้วค่อย purge
-    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('citizenImage beforeImage afterImage ticketId');
+    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('citizenImage citizenImages beforeImage afterImage ticketId');
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
     if (isCloudinaryConfigured()) {
@@ -758,7 +774,7 @@ router.delete('/', requireAuth, async (req, res) => {
 
     // CLOUDINARY-FIX: ดึงรูปทั้งหมดก่อนลบ แล้วค่อย purge
     if (isCloudinaryConfigured()) {
-      const allTickets = await Ticket.find({}).select('citizenImage beforeImage afterImage');
+      const allTickets = await Ticket.find({}).select('citizenImage citizenImages beforeImage afterImage');
       await purgeTicketImages(allTickets);
     }
 

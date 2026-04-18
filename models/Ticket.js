@@ -18,6 +18,7 @@ const ticketSchema = new mongoose.Schema({
   rejectReason:  { type: String, default: null },
   // รูปภาพ (URL จาก Cloudinary หรือ local)
   citizenImage:  { type: String, default: null },
+  citizenImages: { type: [String], default: [] },
   beforeImage:   { type: String, default: null },
   afterImage:    { type: String, default: null },
   // ประเมินความพึงพอใจ

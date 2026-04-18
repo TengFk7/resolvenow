@@ -513,11 +513,6 @@
 
   <!-- TOPBAR -->
   <header class="topbar">
-    <div class="topbar-search">
-      <span class="topbar-search-icon">🔍</span>
-      <input type="text" placeholder="ค้นหาข้อมูล..." id="topbarSearch" />
-    </div>
-
     <div class="topbar-right">
 
       <div class="tb-btns">
@@ -802,13 +797,8 @@ function renderStatCards() {
   const done = _tickets.filter(t=>t.status==='completed').length;
   const rate = total ? Math.round(done/total*100) : 0;
 
-  const now = new Date();
-  const breached = _tickets.filter(t=>{
-    if(t.status==='completed'||t.status==='rejected') return t.slaBreached;
-    if(t.status==='pending'&&t.slaAssignDeadline) return now > new Date(t.slaAssignDeadline);
-    if((t.status==='assigned'||t.status==='in_progress')&&t.slaCompleteDeadline) return now > new Date(t.slaCompleteDeadline);
-    return false;
-  }).length;
+  // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว (ceo.js ประเมิน deadline ครบทุก status)
+  const breached = _tickets.filter(t => t.slaBreached).length;
 
   animNum(ge('sc-total'), total);
   animNum(ge('sc-done'), done);
@@ -1051,13 +1041,8 @@ function renderGauge() {
   const tkTotal = _tickets.length || 1;
   const done = _tickets.filter(t=>t.status==='completed').length;
   const inpg = _tickets.filter(t=>t.status==='in_progress'||t.status==='assigned').length;
-  const now = new Date();
-  const breached = _tickets.filter(t=>{
-    if(t.status==='completed'||t.status==='rejected') return false;
-    if(t.status==='pending'&&t.slaAssignDeadline) return now>new Date(t.slaAssignDeadline);
-    if((t.status==='assigned'||t.status==='in_progress')&&t.slaCompleteDeadline) return now>new Date(t.slaCompleteDeadline);
-    return false;
-  }).length;
+  // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว
+  const breached = _tickets.filter(t => t.slaBreached && t.status !== 'completed' && t.status !== 'rejected').length;
   const onTimePct  = Math.max(0, Math.round(done/tkTotal*100));
   const nearPct    = Math.max(0, Math.round(inpg/tkTotal*100));
   const breachPct  = Math.max(0, Math.round(breached/tkTotal*100));
@@ -1111,12 +1096,8 @@ function renderSLAOverview() {
   const pend = _tickets.filter(t=>t.status==='pending').length;
   const inpg = _tickets.filter(t=>t.status==='in_progress').length;
   const rjct = _tickets.filter(t=>t.status==='rejected').length;
-  const breached = _tickets.filter(t=>{
-    if(t.status==='completed'||t.status==='rejected') return t.slaBreached;
-    if(t.status==='pending'&&t.slaAssignDeadline) return now>new Date(t.slaAssignDeadline);
-    if((t.status==='assigned'||t.status==='in_progress')&&t.slaCompleteDeadline) return now>new Date(t.slaCompleteDeadline);
-    return false;
-  }).length;
+  // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว
+  const breached = _tickets.filter(t => t.slaBreached).length;
 
   ge('slaOnTime').textContent = done;
   ge('slaPending').textContent = pend;

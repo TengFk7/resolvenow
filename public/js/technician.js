@@ -218,7 +218,14 @@ function tcToggle(ticketId) {
   h += '<div class="cg-detail-row"><span class="cg-dl">👤 ผู้แจ้ง</span><span class="cg-dv">' + escapeHTML(t.citizenName) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">🕐 วันที่</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
 
-  if (t.citizenImage) {
+  if (t.citizenImages && t.citizenImages.length > 0) {
+    h += '<div><div class="citizen-img-label">รูปจากผู้แจ้ง ('+t.citizenImages.length+')</div>';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">';
+    t.citizenImages.forEach(function(img) {
+      h += '<img class="citizen-img" style="margin:0;max-width:120px;max-height:120px" src="' + img + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/>';
+    });
+    h += '</div></div>';
+  } else if (t.citizenImage) {
     h += '<div><div class="citizen-img-label">รูปจากผู้แจ้ง</div><img class="citizen-img" src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')"/></div>';
   }
 

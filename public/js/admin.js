@@ -1291,9 +1291,15 @@ function _openPdfWindow(data) {
       var stars = t.rating ? '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) : '—';
 
       var imgHtml = '';
-      if (t.afterImage || t.citizenImage) {
+      if (t.afterImage || (t.citizenImages && t.citizenImages.length) || t.citizenImage) {
         imgHtml += '<div class="rpt-card-imgs">';
-        if (t.citizenImage) imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img-card" alt="รูปปัญหา"/><div class="rpt-img-label">📸 ก่อนซ่อม</div></div>';
+        if (t.citizenImages && t.citizenImages.length > 0) {
+          t.citizenImages.forEach(function(img, i) {
+            imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(img) + '" class="rpt-img-card" alt="รูปปัญหา '+(i+1)+'"/><div class="rpt-img-label">📸 ก่อนซ่อม '+(i+1)+'</div></div>';
+          });
+        } else if (t.citizenImage) {
+          imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img-card" alt="รูปปัญหา"/><div class="rpt-img-label">📸 ก่อนซ่อม</div></div>';
+        }
         if (t.afterImage) imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.afterImage) + '" class="rpt-img-card" alt="รูปผลงาน"/><div class="rpt-img-label">✅ หลังซ่อม</div></div>';
         imgHtml += '</div>';
       }
@@ -1414,7 +1420,7 @@ function _getPdfStyles() {
     '.rpt-card-desc .rpt-card-val{color:#334155;font-style:italic}' +
     '.rpt-stars{color:#f59e0b;font-weight:700;font-family:"Inter",sans-serif;letter-spacing:1px}' +
     '.rpt-card-reject{margin-top:8px;background:#fff1f1;border:1px solid #fecaca;border-radius:6px;padding:6px 10px;font-size:11px;color:#b91c1c}' +
-    '.rpt-card-imgs{display:flex;flex-direction:column;gap:8px;flex-shrink:0}' +
+    '.rpt-card-imgs{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}' +
     '.rpt-img-wrap{text-align:center}' +
     '.rpt-img-card{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;display:block}' +
     '.rpt-img-label{font-size:9px;color:#64748b;margin-top:3px;font-weight:600}' +

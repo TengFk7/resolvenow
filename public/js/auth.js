@@ -352,10 +352,14 @@ async function doLogout() {
             acEl.style.opacity = '';    // ล้าง inline opacity
             acEl.classList.remove('card-enter');
           }
-          // Reset hero-enter ด้วย (เพื่อให้ animation re-trigger ได้ถ้าต้องการ)
+          // Reset hero-enter แล้วใส่กลับ เพื่อให้ animation re-trigger
           var heroEl = document.querySelector('.auth-hero-content');
           if (heroEl) {
             heroEl.classList.remove('hero-enter');
+            void heroEl.offsetWidth; // force reflow ก่อน re-add
+            requestAnimationFrame(function () {
+              heroEl.classList.add('hero-enter');
+            });
           }
 
           ap.style.display = 'flex';

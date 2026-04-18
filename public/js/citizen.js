@@ -1,5 +1,5 @@
 var _gpsAddress = '';
-var _citizenImgDataUrl = ''; // stores preview DataURL for summary
+var _citizenImages = []; // stores array of {file, dataUrl}
 
 /* ─────────────────────────────────────────────
    public/js/citizen.js — Citizen Features
@@ -71,7 +71,7 @@ function wizNext(step) {
     }
   }
   if (step === 4) {
-    if (!_citizenImgDataUrl) { showToast('กรุณาแนบรูปภาพก่อน', true); return; }
+    if (_citizenImages.length === 0) { showToast('กรุณาแนบรูปภาพก่อน', true); return; }
   }
   if (step < TOTAL_STEPS) wizGoTo(step, step + 1);
 }
@@ -109,9 +109,16 @@ function wizBuildSummary() {
   h += sumRow('📝', 'รายละเอียด', escapeHTML(desc) || '—');
   h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + escapeHTML(_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
   // Show image thumbnail instead of filename
-  var imgHtml = _citizenImgDataUrl
-    ? '<img src="' + _citizenImgDataUrl + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:10px;margin-top:6px;border:1.5px solid var(--border)"/>'
-    : '❌ ยังไม่ได้แนบ';
+  var imgHtml = '';
+  if (_citizenImages.length) {
+    imgHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">';
+    _citizenImages.forEach(function(img) {
+      imgHtml += '<img src="' + img.dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"/>';
+    });
+    imgHtml += '</div>';
+  } else {
+    imgHtml = '❌ ยังไม่ได้แนบ';
+  }
   h += sumRowRaw('📷', 'รูปภาพ', imgHtml);
   h += sumRow('🤖', 'ระดับความเร่งด่วน', urgTH);
   ge('wizSummary').innerHTML = h;
@@ -359,8 +366,7 @@ async function submitTicket() {
   if (!urg) { urg = 'normal'; ge('tUrg').value = 'normal'; } else hideE('urgErr');
   if (!lat || !lng) { showToast('กรุณาระบุตำแหน่ง GPS ก่อนส่ง', true); ok = false; }
   if (!desc) { showToast('กรุณากรอกรายละเอียด', true); ok = false; }
-  var f = ge('cImg').files[0];
-  if (!f && !_citizenImgDataUrl) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
+  if (_citizenImages.length === 0) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
   if (!ok) return;
 
   // ── Disable submit button to prevent double-submit ────
@@ -375,8 +381,9 @@ async function submitTicket() {
     fd.append('description', desc);
     fd.append('lat', lat);
     fd.append('lng', lng);
-    var f = ge('cImg').files[0];
-    if (f) fd.append('image', f);
+    _citizenImages.forEach(function(img) {
+      fd.append('images', img.file);
+    });
     var res = await fetch('/api/tickets', { method: 'POST', body: fd });
     var data = await res.json();
     if (!res.ok) {
@@ -398,7 +405,8 @@ async function submitTicket() {
       _gpsAddress = ''; // BUG-007: reset GPS address to prevent stale data on next submission
       ge('descCount').textContent = '0';
       ge('gpsResult').style.display = 'none';
-      _citizenImgDataUrl = '';
+      _citizenImages = [];
+      _renderCitizenImgs();
       ge('urgAiIcon').textContent = '🤖'; ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
       ge('urgAiLabel').style.color = '#4a5568';
       ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
@@ -410,12 +418,8 @@ async function submitTicket() {
       switchLocTab('gps');
       var locInp = ge('locSearchInput'); if (locInp) locInp.value = '';
       var locRes = ge('locSearchResults'); if (locRes) locRes.style.display = 'none';
-      document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
       // Reset image picker UI
-      var pw = ge('cImgPreviewWrap'); var pb = ge('cImgPickerBtns');
-      if (pw) pw.style.display = 'none';
-      if (pb) pb.style.display = 'grid';
-      var pi = ge('cImgPreviewImg'); if (pi) pi.src = '';
+      _renderCitizenImgs();
       // Reset wizard to step 1
       _curStep = 1;
       document.querySelectorAll('.wiz-step').forEach(function (s) { s.classList.remove('active', 'enter-right', 'enter-left', 'enter-bottom', 'enter-top', 'exit-left', 'exit-right', 'exit-top'); });
@@ -438,43 +442,67 @@ async function submitTicket() {
 }
 
 /* ── Image Preview (before upload) ──────────────────── */
+function _renderCitizenImgs() {
+  var pw = ge('cImgPreviewWrap');
+  var pb = ge('cImgPickerBtns');
+  var ci = ge('cImgCountInfo');
+  if (!pw) return;
+
+  if (_citizenImages.length > 0) {
+    var html = '';
+    _citizenImages.forEach(function(img, idx) {
+      var flexBasis = _citizenImages.length === 1 ? '100%' : 'calc(50% - 4px)';
+      var maxH = _citizenImages.length === 1 ? '220px' : '150px';
+      html += '<div style="position:relative;flex:1 1 '+flexBasis+';min-width:100px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">';
+      html += '<img src="'+img.dataUrl+'" style="width:100%;height:'+maxH+';object-fit:cover;display:block" />';
+      html += '<button type="button" onclick="removeCitizenImg('+idx+')" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>';
+      html += '</div>';
+    });
+    
+    pw.innerHTML = html;
+    pw.style.display = 'flex';
+    if (ci) { ci.innerHTML = 'แนบแล้ว <b>' + _citizenImages.length + '/5</b> รูป'; ci.style.display = 'block'; }
+    if (pb) pb.style.display = _citizenImages.length >= 5 ? 'none' : 'grid';
+  } else {
+    pw.innerHTML = '';
+    pw.style.display = 'none';
+    if (ci) ci.style.display = 'none';
+    if (pb) pb.style.display = 'grid';
+  }
+}
+
+function removeCitizenImg(idx) {
+  _citizenImages.splice(idx, 1);
+  _renderCitizenImgs();
+}
+
 function prevCitizenImg(e) {
-  var f = e.target.files[0];
-  if (!f) return;
+  var files = e.target.files;
+  if (!files || !files.length) return;
 
-  // Sync to the main #cImg input so FormData works as before
-  try {
-    var dt = new DataTransfer();
-    dt.items.add(f);
-    ge('cImg').files = dt.files;
-  } catch (ex) { /* Safari fallback — FormData will use _citizenImgDataUrl */ }
+  if (_citizenImages.length + files.length > 5) {
+    showToast('รวมรูปแล้วอัปโหลดได้สูงสุด 5 รูปเท่านั้น', true);
+    e.target.value = '';
+    return;
+  }
 
-  var r = new FileReader();
-  r.onload = function (ev) {
-    _citizenImgDataUrl = ev.target.result;
-    // Show preview image, hide picker buttons
-    var pi = ge('cImgPreviewImg');
-    var pw = ge('cImgPreviewWrap');
-    var pb = ge('cImgPickerBtns');
-    if (pi) pi.src = ev.target.result;
-    if (pw) pw.style.display = 'block';
-    if (pb) pb.style.display = 'none';
-  };
-  r.readAsDataURL(f);
+  Array.from(files).forEach(function (f) {
+    var r = new FileReader();
+    r.onload = function (ev) {
+      _citizenImages.push({ file: f, dataUrl: ev.target.result });
+      _renderCitizenImgs();
+    };
+    r.readAsDataURL(f);
+  });
+  e.target.value = '';
 }
 
 /* ── Clear selected image ───────────────────────────── */
 function clearCitizenImg() {
-  ge('cImg').value = '';
-  ge('cImgGallery').value = '';
-  _citizenImgDataUrl = '';
-  var pi = ge('cImgPreviewImg');
-  var pw = ge('cImgPreviewWrap');
-  var pb = ge('cImgPickerBtns');
-  if (pi) pi.src = '';
-  if (pw) pw.style.display = 'none';
-  if (pb) pb.style.display = 'grid';
+  _citizenImages = [];
+  _renderCitizenImgs();
 }
+
 
 /* ══════════════════════════════════════════
    IN-APP CAMERA (getUserMedia — Android/iOS/Desktop)
@@ -583,22 +611,15 @@ function takeCameraPhoto() {
   canvas.toBlob(function (blob) {
     var file = new File([blob], 'camera_' + Date.now() + '.jpg', { type: 'image/jpeg' });
 
-    // Sync to main cImg input
-    try {
-      var dt = new DataTransfer();
-      dt.items.add(file);
-      ge('cImg').files = dt.files;
-    } catch (ex) { /* fallback */ }
+    // Limit to 5
+    if (_citizenImages.length >= 5) {
+      showToast('สามารถอัปโหลดได้สูงสุด 5 รูป', true);
+      closeCameraCapture();
+      return;
+    }
 
-    // Show preview
-    var url = URL.createObjectURL(blob);
-    _citizenImgDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-    var pi = ge('cImgPreviewImg');
-    var pw = ge('cImgPreviewWrap');
-    var pb = ge('cImgPickerBtns');
-    if (pi) pi.src = url;
-    if (pw) pw.style.display = 'block';
-    if (pb) pb.style.display = 'none';
+    _citizenImages.push({ file: file, dataUrl: canvas.toDataURL('image/jpeg', 0.85) });
+    _renderCitizenImgs();
 
     // Close camera
     closeCameraCapture();
@@ -716,7 +737,17 @@ function cgToggle(ticketId) {
   // ── Build body HTML
   var h = '';
 
-  if (t.citizenImage) {
+  if (t.citizenImages && t.citizenImages.length > 0) {
+    if (t.citizenImages.length === 1) {
+      h += '<img src="' + t.citizenImages[0] + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" />';
+    } else {
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:12px">';
+      t.citizenImages.forEach(function(imgUrl) {
+        h += '<img src="' + imgUrl + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" style="margin:0;height:80px;object-fit:cover" />';
+      });
+      h += '</div>';
+    }
+  } else if (t.citizenImage) {
     h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" />';
   }
 
