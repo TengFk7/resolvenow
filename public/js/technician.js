@@ -214,7 +214,14 @@ function tcToggle(ticketId) {
   // ── Build body — same content as before, just without the wrapping div
   var h = '';
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
-  h += '<div class="cg-detail-row"><span class="cg-dl">📍 สถานที่</span><span class="cg-dv">' + escapeHTML(t.location) + '</span></div>';
+  var mapUrl = (t.lat && t.lng)
+    ? 'https://www.google.com/maps?q=' + t.lat + ',' + t.lng
+    : 'https://www.google.com/maps/search/' + encodeURIComponent(t.location);
+  h += '<div class="cg-detail-row"><span class="cg-dl">📍 สถานที่</span>'
+    + '<span class="cg-dv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+    + escapeHTML(t.location)
+    + '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" class="btn-map-link" onclick="event.stopPropagation()">🗺️ ดูแผนที่</a>'
+    + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">👤 ผู้แจ้ง</span><span class="cg-dv">' + escapeHTML(t.citizenName) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">🕐 วันที่</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
 
@@ -231,10 +238,14 @@ function tcToggle(ticketId) {
 
   if (isDone) {
     h += '<div class="status-done-box ' + t.status + '">' + (t.status === 'completed' ? '✅ งานเสร็จสิ้นแล้ว' : '❌ ปฏิเสธงานนี้แล้ว') + '</div>';
-    if (t.beforeImage || t.afterImage) {
+    var afterArr = (t.afterImages && t.afterImages.length) ? t.afterImages : (t.afterImage ? [t.afterImage] : []);
+    if (t.beforeImage || afterArr.length) {
       h += '<div class="irow">';
       if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
-      if (t.afterImage) h += '<div class="islot has" onclick="viewImg(\'' + t.afterImage + '\',\'หลัง\')"><img src="' + t.afterImage + '"/><div class="ilbl">หลังซ่อม</div></div>';
+      for (var ai = 0; ai < afterArr.length; ai++) {
+        h += '<div class="islot has" onclick="viewImg(\'' + afterArr[ai] + '\',\'หลังซ่อม ' + (ai+1) + '\')">';
+        h += '<img src="' + afterArr[ai] + '"/><div class="ilbl">หลังซ่อม' + (afterArr.length > 1 ? ' ' + (ai+1) : '') + '</div></div>';
+      }
       h += '</div>';
     }
   } else {
@@ -281,17 +292,33 @@ function tcToggle(ticketId) {
       + '<div class="slbl">หลักฐานหลังการดำเนินการ</div>'
       + '<span class="sstat ' + s3 + '">' + (s3 === 'done' ? 'เสร็จ' : s3 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
     if (s3 === 'active') {
-      h += '<div class="sbody"><p>ถ่ายรูปหลังซ่อม เพื่อปิดงาน</p><div class="irow">';
+      var afterImgs = (t.afterImages && t.afterImages.length) ? t.afterImages : (t.afterImage ? [t.afterImage] : []);
+      var MAX_AFTER = 5;
+      var canAddMore = afterImgs.length < MAX_AFTER;
+      h += '<div class="sbody"><p>ถ่ายรูปหลังซ่อม เพื่อปิดงาน <span style="font-size:11px;color:var(--muted);font-weight:600">(' + afterImgs.length + '/' + MAX_AFTER + ' รูป)</span></p>';
+      /* ─ ก่อนซ่อม row ─ */
+      h += '<div class="irow">';
       if (t.beforeImage) h += '<div class="islot has" onclick="viewImg(\'' + t.beforeImage + '\',\'ก่อน\')"><img src="' + t.beforeImage + '"/><div class="ilbl">ก่อนซ่อม</div></div>';
       else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
-      if (t.afterImage) h += '<div class="islot has" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><img src="' + t.afterImage + '"/><div class="ilbl">✅ คลิกเปลี่ยน</div></div>';
-      else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายหลังซ่อม</div></div>';
       h += '</div>';
-      h += '<div style="margin-bottom:12px">'
+      /* ─ หลังซ่อม grid ─ */
+      h += '<div style="margin:6px 0 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">รูปหลังซ่อม</div>';
+      h += '<div class="after-img-grid">';
+      for (var aii = 0; aii < afterImgs.length; aii++) {
+        h += '<div class="islot has after-slot" onclick="viewImg(\'' + afterImgs[aii] + '\',\'หลังซ่อม ' + (aii+1) + '\')">';
+        h += '<img src="' + afterImgs[aii] + '"/><div class="ilbl">หลัง ' + (aii+1) + '</div></div>';
+      }
+      if (canAddMore) {
+        h += '<div class="islot after-slot after-add-slot" data-id="' + t.ticketId + '" data-type="after" onclick="triggerUpload(this)">'
+          + '<div style="font-size:22px;padding:8px 0">📷</div>'
+          + '<div class="ilbl">' + (afterImgs.length === 0 ? 'เพิ่มรูปหลังซ่อม' : '+ เพิ่มรูป') + '</div></div>';
+      }
+      h += '</div>';
+      h += '<div style="margin:10px 0 12px">'
         + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บรรยายงานที่ทำ</label>'
         + '<textarea class="tech-note" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
-      h += '<button class="btnclose"' + (t.afterImage ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
-      if (!t.afterImage) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมก่อน</p>';
+      h += '<button class="btnclose"' + (afterImgs.length > 0 ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
+      if (afterImgs.length === 0) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมอย่างน้อย 1 รูป</p>';
       h += '</div>';
     }
     h += '</div>';
@@ -597,26 +624,38 @@ function triggerUpload(el) {
   var _upId = upId;
   var _upType = upType;
 
+  // เปิด multiple สำหรับ after เท่านั้น (before ยังเป็น single)
+  inp.multiple = (_upType === 'after');
+
   inp.onchange = function (e) {
-    var f = e.target.files[0];
-    if (!f) return;
+    var files = Array.from(e.target.files);
+    if (!files.length) return;
     var fd = new FormData();
-    fd.append('image', f);
+    files.forEach(function (f) { fd.append('image', f); });
     fetch('/api/tickets/' + _upId + '/upload/' + _upType, { method: 'POST', body: fd })
       .then(function (r) {
         if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'upload failed ' + r.status); });
         return r.json();
       })
       .then(function (d) {
-        showToast('✅ อัปโหลดสำเร็จ');
+        var count = (d.urls || [d.url]).filter(Boolean).length;
+        showToast('✅ อัปโหลด ' + count + ' รูปสำเร็จ');
         // อัปเดต memory store ทันที แล้ว re-render modal โดยไม่ต้องรอ poll
         if (window._tcTickets && window._tcTickets[_upId]) {
-          if (_upType === 'before') window._tcTickets[_upId].beforeImage = d.url;
-          if (_upType === 'after') window._tcTickets[_upId].afterImage = d.url;
+          if (_upType === 'before') {
+            window._tcTickets[_upId].beforeImage = d.url;
+          }
+          if (_upType === 'after') {
+            window._tcTickets[_upId].afterImages = d.urls || (d.url ? [d.url] : []);
+            window._tcTickets[_upId].afterImage = (d.urls && d.urls[0]) || d.url || null;
+          }
           for (var i = 0; i < _tcAllTickets.length; i++) {
             if (_tcAllTickets[i].ticketId === _upId) {
               if (_upType === 'before') _tcAllTickets[i].beforeImage = d.url;
-              if (_upType === 'after') _tcAllTickets[i].afterImage = d.url;
+              if (_upType === 'after') {
+                _tcAllTickets[i].afterImages = d.urls || (d.url ? [d.url] : []);
+                _tcAllTickets[i].afterImage = (d.urls && d.urls[0]) || d.url || null;
+              }
               break;
             }
           }

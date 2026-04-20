@@ -119,6 +119,7 @@ function formatTicket(t, currentUserId) {
     citizenImages: t.citizenImages || [],
     beforeImage: t.beforeImage,
     afterImage: t.afterImage,
+    afterImages: t.afterImages || [],
     rating: t.rating,
     ratingReason: t.ratingReason,
     ratedAt: t.ratedAt,
@@ -559,9 +560,9 @@ router.post('/:id/upload/before', requireAuth, upload.single('image'), async (re
 });
 
 // ─── POST /api/tickets/:id/upload/after ──────────────────────────
-// FIX-#7 Broken Access Control + FIX-#1 Workflow:
+// รองรับ multi-upload สูงสุด 5 รูป (afterImages[])
 // ❶ ต้องเป็น technician  ❷ ต้องเป็นช่างเจ้าของงาน  ❸ ticket ต้องอยู่สถานะ in_progress
-router.post('/:id/upload/after', requireAuth, upload.single('image'), async (req, res) => {
+router.post('/:id/upload/after', requireAuth, upload.array('image', 5), async (req, res) => {
   try {
     const caller = await User.findById(req.session.userId);
 
@@ -569,7 +570,7 @@ router.post('/:id/upload/after', requireAuth, upload.single('image'), async (req
     if (!caller || caller.role !== 'technician')
       return res.status(403).json({ error: 'เฉพาะช่างเท่านั้นที่อัปโหลดรูปได้' });
 
-    if (!req.file) return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });
+    if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
@@ -581,10 +582,18 @@ router.post('/:id/upload/after', requireAuth, upload.single('image'), async (req
     if (ticket.status !== 'in_progress')
       return res.status(400).json({ error: 'ต้องอยู่ในสถานะ "กำลังดำเนินการ" จึงจะอัปโหลดรูปหลังทำงานได้' });
 
-    ticket.afterImage = getFileUrl(req);
+    const newUrls = getFileUrls(req);
+    const MAX_AFTER = 5;
+    // รวม URLs ใหม่เข้ากับที่มีอยู่ ไม่เกิน 5 รูป
+    const merged = [...(ticket.afterImages || []), ...newUrls].slice(0, MAX_AFTER);
+    if (merged.length >= MAX_AFTER && (ticket.afterImages || []).length >= MAX_AFTER) {
+      return res.status(400).json({ error: 'อัปโหลดรูปหลังซ่อมได้สูงสุด 5 รูปแล้ว' });
+    }
+    ticket.afterImages = merged;
+    ticket.afterImage = merged[0] || null;   // backward compat
     await ticket.save();
     emitUpdate(req);
-    res.json({ message: 'อัปโหลดสำเร็จ', url: ticket.afterImage });
+    res.json({ message: 'อัปโหลดสำเร็จ', urls: merged, url: merged[0] || null });
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 

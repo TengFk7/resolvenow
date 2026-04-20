@@ -159,90 +159,102 @@ function flexMsg(altText, bubble) {
   return { type: 'flex', altText, contents: bubble };
 }
 
-// ── Before/After Image Flex Card (Admin) ───────────────────
-// แสดงรูปก่อน-หลัง สำหรับ Admin
-function makeImageCard(ticket, beforeUrl, afterUrl) {
-  const hasBoth = !!(beforeUrl && afterUrl);
+// ── Image URL normalizer ─────────────────────────────────────
+function normalizeUrl(url) {
+  if (!url) return null;
+  return url.startsWith('http') ? url : BASE_URL + url;
+}
 
-  let imageRow;
-  if (hasBoth) {
-    imageRow = {
-      type: 'box',
-      layout: 'horizontal',
-      spacing: 'sm',
-      margin: 'md',
-      contents: [
-        {
-          type: 'box',
-          layout: 'vertical',
-          flex: 1,
-          cornerRadius: '6px',
-          contents: [
-            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
-            { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }
-          ]
-        },
-        {
-          type: 'box',
-          layout: 'vertical',
-          flex: 1,
-          cornerRadius: '6px',
-          contents: [
-            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
-            { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
-          ]
-        }
-      ]
-    };
-  } else {
-    const singleUrl = beforeUrl || afterUrl;
-    const label = beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนดนการ';
-    const labelColor = beforeUrl ? T.label : '#34d399';
-    imageRow = {
-      type: 'box',
-      layout: 'vertical',
-      margin: 'md',
-      cornerRadius: '6px',
-      contents: [
-        { type: 'image', url: singleUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' },
-        { type: 'text', text: label, size: 'xs', color: labelColor, align: 'center', margin: 'xs' }
-      ]
+// ── Build one image-box (for Flex contents) ──────────────────
+// เพิ่ม action เพื่อให้กดรูปแล้วเปิดประโยครูปเต็มใน LINE browser
+function imgBox(url, label, labelColor, flex) {
+  const box = {
+    type: 'box', layout: 'vertical', cornerRadius: '6px',
+    action: { type: 'uri', label: 'ดูรูป', uri: url },
+    contents: [
+      { type: 'image', url, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
+      { type: 'text', text: label, size: 'xxs', color: labelColor || T.label, align: 'center', margin: 'xs' }
+    ]
+  };
+  if (flex !== undefined) box.flex = flex;
+  return box;
+}
+
+// ── makeImageCards — Admin: adaptive carousel by afterImages count ──
+// Returns array of flex messages (1 bubble or carousel)
+function makeImageCards(ticket, beforeUrl, afterUrls) {
+  // afterUrls = array of after-repair image URLs
+  const count = afterUrls.length;
+  const headerBox = {
+    type: 'box', layout: 'vertical',
+    contents: [
+      brandRow(),
+      { type: 'text', text: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ', size: 'lg', weight: 'bold', color: T.title, margin: 'sm' }
+    ],
+    backgroundColor: T.hImage, paddingAll: '16px'
+  };
+  const ticketRow = {
+    type: 'box', layout: 'horizontal',
+    contents: [
+      { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
+      { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
+    ]
+  };
+
+  // Helper: build a single bubble body
+  function makeBubbleBody(bodyContents) {
+    return {
+      type: 'bubble', size: 'mega',
+      header: headerBox,
+      body: { type: 'box', layout: 'vertical', contents: [ticketRow, ...bodyContents], backgroundColor: T.bodyBg, paddingAll: '16px' }
     };
   }
 
-  return {
-    type: 'flex',
-    altText: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ — ' + ticket.ticketId,
-    contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          brandRow(),
-          { type: 'text', text: '\uD83D\uDCF7 รูปก่อน-หลังดำเนินการ', size: 'lg', weight: 'bold', color: T.title, margin: 'sm' }
-        ],
-        backgroundColor: T.hImage,
-        paddingAll: '16px'
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'box', layout: 'horizontal', contents: [
-              { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
-              { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
-            ]
-          },
-          imageRow
-        ],
-        backgroundColor: T.bodyBg,
-        paddingAll: '16px'
-      }
+  let bubbles = [];
+
+  if (count === 0) {
+    // Only before image
+    if (!beforeUrl) return [];
+    bubbles.push(makeBubbleBody([{
+      type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px',
+      action: { type: 'uri', label: 'ดูรูป', uri: beforeUrl },
+      contents: [
+        { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' },
+        { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xs', color: T.label, align: 'center', margin: 'xs' }
+      ]
+    }]));
+  } else if (count === 1) {
+    // Before + 1 After — side by side
+    const row = beforeUrl
+      ? { type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md', contents: [imgBox(beforeUrl, '\u23F0 ก่อน', T.label, 1), imgBox(afterUrls[0], '\u2705 หลัง 1', '#34d399', 1)] }
+      : { type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px', action: { type: 'uri', label: 'ดูรูป', uri: afterUrls[0] }, contents: [{ type: 'image', url: afterUrls[0], size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' }, { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xs', color: '#34d399', align: 'center', margin: 'xs' }] };
+    bubbles.push(makeBubbleBody([row]));
+  } else if (count === 2) {
+    // Before wide + 2 Afters side by side
+    const rows = [];
+    if (beforeUrl) rows.push({ type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px', action: { type: 'uri', label: 'ดูรูป', uri: beforeUrl }, contents: [{ type: 'image', url: beforeUrl, size: 'full', aspectRatio: '20:9', aspectMode: 'cover', gravity: 'center' }, { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }] });
+    rows.push({ type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md', contents: [imgBox(afterUrls[0], '\u2705 หลัง 1', '#34d399', 1), imgBox(afterUrls[1], '\u2705 หลัง 2', '#34d399', 1)] });
+    bubbles.push(makeBubbleBody(rows));
+  } else {
+    // 3-5 afters: Bubble 1 = before + first 2 afters, then extra bubbles
+    const rows1 = [];
+    if (beforeUrl) rows1.push({ type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px', action: { type: 'uri', label: 'ดูรูป', uri: beforeUrl }, contents: [{ type: 'image', url: beforeUrl, size: 'full', aspectRatio: '20:9', aspectMode: 'cover', gravity: 'center' }, { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }] });
+    rows1.push({ type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md', contents: [imgBox(afterUrls[0], '\u2705 หลัง 1', '#34d399', 1), imgBox(afterUrls[1], '\u2705 หลัง 2', '#34d399', 1)] });
+    bubbles.push(makeBubbleBody(rows1));
+    // Extra afters in pairs
+    for (let i = 2; i < count; i += 2) {
+      const pair = [imgBox(afterUrls[i], '\u2705 หลัง ' + (i + 1), '#34d399', 1)];
+      if (afterUrls[i + 1]) pair.push(imgBox(afterUrls[i + 1], '\u2705 หลัง ' + (i + 2), '#34d399', 1));
+      bubbles.push(makeBubbleBody([{ type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md', contents: pair }]));
     }
-  };
+  }
+
+  if (bubbles.length === 0) return [];
+  if (bubbles.length === 1) {
+    return [{ type: 'flex', altText: '\uD83D\uDCF7 รูปก่อน-หลัง — ' + ticket.ticketId, contents: bubbles[0] }];
+  }
+  // Multiple bubbles → carousel
+  return [{ type: 'flex', altText: '\uD83D\uDCF7 รูปก่อน-หลัง — ' + ticket.ticketId, contents: { type: 'carousel', contents: bubbles } }];
 }
 
 // ── notifyNewTicket ──────────────────────────────────────────
@@ -332,14 +344,14 @@ async function notifyCompleted(ticket) {
   });
 
   // ── รูปภาพก่อน-หลัง ──────────────────────────────────────
-  const beforeUrl = ticket.beforeImage
-    ? (ticket.beforeImage.startsWith('http') ? ticket.beforeImage : BASE_URL + ticket.beforeImage)
-    : null;
-  const afterUrl = ticket.afterImage
-    ? (ticket.afterImage.startsWith('http') ? ticket.afterImage : BASE_URL + ticket.afterImage)
-    : null;
+  const beforeUrl = normalizeUrl(ticket.beforeImage);
+  // รวบ afterImages[] (ใหม่) + afterImage (backward compat)
+  const rawAfters = (ticket.afterImages && ticket.afterImages.length)
+    ? ticket.afterImages
+    : (ticket.afterImage ? [ticket.afterImage] : []);
+  const afterUrls = rawAfters.map(normalizeUrl).filter(Boolean);
 
-  // Admin bubble + imageCard แยก
+  // Admin bubble + adaptive image carousel
   const adminBubble = makeBubble({
     headerBg: T.hDone,
     headerTitle: '\u2705 ดำเนินการเสร็จสิ้นแล้ว!',
@@ -348,13 +360,14 @@ async function notifyCompleted(ticket) {
       { icon: '\uD83D\uDCCD', label: 'สถานที่', value: ticket.location || '-' },
       { icon: '\uD83D\uDC77', label: 'ช่างผู้ดำเนินการ', value: techName },
       { icon: '\uD83D\uDC64', label: 'ผู้แจ้ง', value: ticket.citizenName || '-' },
-      { icon: '\uD83D\uDD50', label: 'เสร็จเมื่อ', value: now }
+      { icon: '\uD83D\uDD50', label: 'เสร็จเมื่อ', value: now },
+      { icon: '\uD83D\uDCF7', label: 'รูปหลังซ่อม', value: afterUrls.length + ' รูป' }
     ],
     footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 ดูในระบบ', url: BASE_URL, style: 'primary', color: T.btnBlue }] : []
   });
 
-  const imageCard = (beforeUrl || afterUrl)
-    ? [makeImageCard(ticket, beforeUrl, afterUrl)]
+  const imageCard = (beforeUrl || afterUrls.length > 0)
+    ? makeImageCards(ticket, beforeUrl, afterUrls)
     : [];
 
   // ── LIFF URLs สำหรับปุ่มดาว ──────────────────────────────
@@ -371,39 +384,31 @@ async function notifyCompleted(ticket) {
       (rating ? '&rating=' + rating : '');
   }
 
-  // ── imageBodyRows — แทรกรูปในบอดี้การ์ด citizen ──────────
-  const imageBodyRows = (beforeUrl || afterUrl) ? [
-    { type: 'separator', margin: 'lg', color: T.sep },
-    ...(beforeUrl && afterUrl ? [{
-      type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md',
-      contents: [
-        {
-          type: 'box', layout: 'vertical', flex: 1, cornerRadius: '6px',
-          contents: [
-            { type: 'image', url: beforeUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
-            { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }
-          ]
-        },
-        {
-          type: 'box', layout: 'vertical', flex: 1, cornerRadius: '6px',
-          contents: [
-            { type: 'image', url: afterUrl, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', gravity: 'center' },
-            { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xxs', color: '#34d399', align: 'center', margin: 'xs' }
-          ]
-        }
-      ]
-    }] : [{
-      type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px',
-      contents: [
-        { type: 'image', url: beforeUrl || afterUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' },
-        {
-          type: 'text',
-          text: beforeUrl ? '\u23F0 ก่อนดำเนินการ' : '\u2705 หลังดำเนินการ',
-          size: 'xs', color: beforeUrl ? T.label : '#34d399', align: 'center', margin: 'xs'
-        }
-      ]
-    }])
-  ] : [];
+  // ── imageBodyRows — แทรกรูปใน citizen card (adaptive) ──────
+  // Layout: 1 after = side-by-side with before | 2+ = before wide + pairs
+  const imageBodyRows = [];
+  if (beforeUrl || afterUrls.length > 0) {
+    imageBodyRows.push({ type: 'separator', margin: 'lg', color: T.sep });
+    if (afterUrls.length === 0 && beforeUrl) {
+      // only before
+      imageBodyRows.push({ type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px', action: { type: 'uri', label: 'ดูรูป', uri: beforeUrl }, contents: [{ type: 'image', url: beforeUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' }, { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xs', color: T.label, align: 'center', margin: 'xs' }] });
+    } else if (afterUrls.length === 1) {
+      // 1 after: side-by-side
+      if (beforeUrl) {
+        imageBodyRows.push({ type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md', contents: [imgBox(beforeUrl, '\u23F0 ก่อน', T.label, 1), imgBox(afterUrls[0], '\u2705 หลัง', '#34d399', 1)] });
+      } else {
+        imageBodyRows.push({ type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px', action: { type: 'uri', label: 'ดูรูป', uri: afterUrls[0] }, contents: [{ type: 'image', url: afterUrls[0], size: 'full', aspectRatio: '20:13', aspectMode: 'cover', gravity: 'center' }, { type: 'text', text: '\u2705 หลังดำเนินการ', size: 'xs', color: '#34d399', align: 'center', margin: 'xs' }] });
+      }
+    } else {
+      // 2+ afters: before wide, then pairs
+      if (beforeUrl) imageBodyRows.push({ type: 'box', layout: 'vertical', margin: 'md', cornerRadius: '6px', action: { type: 'uri', label: 'ดูรูป', uri: beforeUrl }, contents: [{ type: 'image', url: beforeUrl, size: 'full', aspectRatio: '20:9', aspectMode: 'cover', gravity: 'center' }, { type: 'text', text: '\u23F0 ก่อนดำเนินการ', size: 'xxs', color: T.label, align: 'center', margin: 'xs' }] });
+      for (let i = 0; i < afterUrls.length; i += 2) {
+        const pair = [imgBox(afterUrls[i], '\u2705 หลัง ' + (i + 1), '#34d399', 1)];
+        if (afterUrls[i + 1]) pair.push(imgBox(afterUrls[i + 1], '\u2705 หลัง ' + (i + 2), '#34d399', 1));
+        imageBodyRows.push({ type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'sm', contents: pair });
+      }
+    }
+  }
 
 
   const citizenMessages = [];

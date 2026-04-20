@@ -8104,6 +8104,67 @@ a {
 }
 .cg-chat-btn { width: 100%; }
 
+/* ── Map link button (in ticket detail 📍 row) ── */
+.btn-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border: 1.5px solid #6ee7b7;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .18s, border-color .18s, box-shadow .18s, transform .15s cubic-bezier(.34,1.56,.64,1);
+  cursor: pointer;
+  font-family: 'Prompt', sans-serif;
+}
+.btn-map-link:hover {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #059669;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(16,185,129,.35);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+.btn-map-link:active {
+  transform: translateY(0);
+}
+
+/* ── After-image multi-upload grid (tech step 3) ── */
+.after-img-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.after-slot {
+  aspect-ratio: 1;
+  height: auto !important;
+  min-height: 72px;
+}
+.after-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.after-add-slot {
+  border-style: dashed !important;
+  border-color: #93c5fd !important;
+  background: #eff6ff !important;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, transform .15s cubic-bezier(.34,1.56,.64,1);
+}
+.after-add-slot:hover {
+  background: #dbeafe !important;
+  border-color: var(--blue2) !important;
+  transform: scale(1.04);
+}
+
 /* ── Rating done ── */
 .cg-rating-done {
   display: flex;

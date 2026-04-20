@@ -20,7 +20,8 @@ const ticketSchema = new mongoose.Schema({
   citizenImage:  { type: String, default: null },
   citizenImages: { type: [String], default: [] },
   beforeImage:   { type: String, default: null },
-  afterImage:    { type: String, default: null },
+  afterImage:    { type: String, default: null },   // backward compat (รูปแรก)
+  afterImages:   { type: [String], default: [] },   // รูปหลังซ่อม สูงสุด 5 รูป
   // ประเมินความพึงพอใจ
   rating:        { type: Number, min: 1, max: 5, default: null },
   ratingReason:  { type: String, default: null },
