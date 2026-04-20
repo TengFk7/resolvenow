@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,29 +8,47 @@
   <meta name="description" content="ResolveNow Executive Dashboard — ภาพรวมสำหรับผู้บริหาร">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --sidebar-w: 220px;
-      --green-dark: #1a3d2b;
-      --green-mid: #2d6a4f;
-      --green-light: #40916c;
-      --green-accent: #52b788;
-      --green-bright: #74c69d;
-      --amber: #f4a623;
-      --amber-light: #fbbf24;
-      --bg: #f0f2f0;
+      /* ── Main theme (navy/blue — same as admin sidebar) ── */
+      --navy: #0a1628;
+      --navy2: #0f2040;
+      --navy3: #162a52;
+      --blue: #1a4fa0;
+      --blue2: #2563eb;
+      --blue3: #3b82f6;
+      --gold: #f59e0b;
+      --gold2: #fbbf24;
+      /* legacy aliases so nothing else breaks */
+      --green-dark: var(--navy);
+      --green-mid: var(--blue);
+      --green-light: var(--blue2);
+      --green-accent: var(--blue3);
+      --green-bright: #60a5fa;
+      --amber: var(--gold);
+      --amber-light: var(--gold2);
+      --bg: #f0f4ff;
       --white: #ffffff;
       --card-bg: #ffffff;
-      --text-dark: #1a1a2e;
+      --text-dark: #1e293b;
       --text-mid: #4a5568;
       --text-muted: #94a3b8;
       --border: #e2e8f0;
-      --shadow: 0 2px 12px rgba(0,0,0,.07);
-      --shadow-hover: 0 8px 28px rgba(0,0,0,.12);
+      --shadow: 0 2px 12px rgba(10, 22, 40, .07);
+      --shadow-hover: 0 8px 28px rgba(10, 22, 40, .14);
       --radius: 16px;
       --radius-sm: 10px;
       --transition: .2s ease;
@@ -47,81 +66,226 @@
     .sidebar {
       width: var(--sidebar-w);
       min-height: 100vh;
-      background: var(--green-dark);
+      background: linear-gradient(180deg, var(--navy) 0%, var(--navy3) 100%);
       display: flex;
       flex-direction: column;
       position: fixed;
-      top: 0; left: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      bottom: 0;
       z-index: 100;
       overflow: hidden;
+      box-shadow: 4px 0 24px rgba(10, 22, 40, .25);
     }
 
     .sb-logo {
       padding: 28px 22px 20px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
+      border-bottom: 1px solid rgba(255, 255, 255, .07);
     }
+
     .sb-logo-brand {
-      display: flex; align-items: center; gap: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
+
     .sb-logo-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--green-accent), var(--green-bright));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(82,183,136,.35);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, .4);
+      animation: logoIconFloat 4s ease-in-out infinite;
     }
-    .sb-logo-text { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
-    .sb-logo-text span { color: var(--amber-light); }
+
+    .sb-logo-text {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.3px;
+    }
+
+    /* ── ResolveNow Logo Animations ── */
+    @keyframes logoIconFloat {
+
+      0%,
+      100% {
+        transform: translateY(0);
+        filter: drop-shadow(0 0 8px rgba(37, 99, 235, .5));
+      }
+
+      50% {
+        transform: translateY(-3px);
+        filter: drop-shadow(0 0 16px rgba(37, 99, 235, .85));
+      }
+    }
+
+    @keyframes logoBreathe {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-2px);
+      }
+    }
+
+    @keyframes resolveShimmer {
+      0% {
+        background-position: 0% center;
+      }
+
+      100% {
+        background-position: 300% center;
+      }
+    }
+
+    @keyframes nowGlow {
+
+      0%,
+      100% {
+        text-shadow: 0 0 6px rgba(251, 191, 36, 0), 0 0 12px rgba(251, 191, 36, 0);
+      }
+
+      50% {
+        text-shadow: 0 0 8px rgba(251, 191, 36, .75), 0 0 22px rgba(251, 191, 36, .45), 0 0 40px rgba(245, 158, 11, .2);
+      }
+    }
+
+    .logo-anim {
+      animation: logoBreathe 5s ease-in-out infinite;
+      display: inline-block;
+      will-change: transform;
+      isolation: isolate;
+    }
+
+    .resolve-shimmer {
+      background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 25%, #818cf8 50%, #3b82f6 75%, #1e3a8a 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: resolveShimmer 4s linear infinite;
+      will-change: background-position;
+      display: inline-block;
+    }
+
+    .now-gold {
+      color: #fbbf24;
+      display: inline-block;
+      animation: nowGlow 3.5s ease-in-out infinite;
+      will-change: text-shadow;
+    }
 
     .sb-section-label {
-      font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
-      color: rgba(255,255,255,.35); text-transform: uppercase;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, .35);
+      text-transform: uppercase;
       padding: 20px 22px 8px;
     }
 
-    .sb-nav { flex: 1; padding: 4px 12px; }
+    .sb-nav {
+      flex: 1;
+      padding: 4px 12px;
+    }
+
     .sb-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-radius: 10px;
-      color: rgba(255,255,255,.6);
-      font-size: 13.5px; font-weight: 500;
-      cursor: pointer; transition: var(--transition);
-      margin-bottom: 2px; user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      color: rgba(255, 255, 255, .6);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 2px;
+      user-select: none;
     }
-    .sb-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+
+    .sb-item:hover {
+      background: rgba(255, 255, 255, .08);
+      color: rgba(255, 255, 255, .9);
+    }
+
     .sb-item.on {
-      background: linear-gradient(135deg, var(--green-light), var(--green-accent));
-      color: #fff; font-weight: 700;
-      box-shadow: 0 4px 14px rgba(64,145,108,.4);
+      background: linear-gradient(135deg, rgba(37, 99, 235, .5), rgba(37, 99, 235, .25));
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, .25);
     }
-    .sb-item-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+
+    .sb-item-icon {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
 
     .sb-bottom {
       padding: 16px 12px;
-      border-top: 1px solid rgba(255,255,255,.08);
+      border-top: 1px solid rgba(255, 255, 255, .07);
     }
+
     .sb-promo {
-      background: linear-gradient(135deg, #1b5e3f, #2d6a4f);
-      border: 1px solid rgba(82,183,136,.25);
-      border-radius: 14px; padding: 16px;
-      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, rgba(37, 99, 235, .25), rgba(37, 99, 235, .12));
+      border: 1px solid rgba(37, 99, 235, .25);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
     }
+
     .sb-promo::before {
-      content: ''; position: absolute;
-      top: -20px; right: -20px;
-      width: 80px; height: 80px;
+      content: '';
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(116,198,157,.3), transparent);
+      background: radial-gradient(circle, rgba(37, 99, 235, .3), transparent);
     }
-    .sb-promo-icon { font-size: 22px; margin-bottom: 6px; }
-    .sb-promo-text { font-size: 11px; color: rgba(255,255,255,.75); line-height: 1.5; margin-bottom: 10px; }
+
+    .sb-promo-icon {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .sb-promo-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .75);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
     .sb-promo-btn {
-      display: inline-block; padding: 6px 14px;
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
-      border-radius: 20px; font-size: 11px; font-weight: 600; color: #fff;
-      cursor: pointer; transition: var(--transition); text-decoration: none;
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, .15);
+      border: 1px solid rgba(255, 255, 255, .25);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
     }
-    .sb-promo-btn:hover { background: rgba(255,255,255,.25); }
+
+    .sb-promo-btn:hover {
+      background: rgba(255, 255, 255, .25);
+    }
 
     /* ── MAIN ─────────────────────────────────── */
     .main {
@@ -134,64 +298,142 @@
 
     /* ── TOPBAR ──────────────────────────────── */
     .topbar {
-      position: sticky; top: 0; z-index: 50;
-      background: rgba(240,242,240,.88);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(240, 244, 255, .9);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(0,0,0,.06);
+      border-bottom: 1px solid rgba(37, 99, 235, .1);
       padding: 0 28px;
       height: 60px;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 16px;
     }
+
     .topbar-search {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 24px; padding: 8px 16px;
-      width: 280px; transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 8px 16px;
+      width: 280px;
+      transition: var(--transition);
       box-shadow: var(--shadow);
     }
-    .topbar-search:focus-within { border-color: var(--green-accent); box-shadow: 0 0 0 3px rgba(82,183,136,.15); }
+
+    .topbar-search:focus-within {
+      border-color: var(--blue2);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
     .topbar-search input {
-      border: none; outline: none; background: none;
-      font-size: 13px; color: var(--text-dark); width: 100%;
+      border: none;
+      outline: none;
+      background: none;
+      font-size: 13px;
+      color: var(--text-dark);
+      width: 100%;
       font-family: inherit;
     }
-    .topbar-search input::placeholder { color: var(--text-muted); }
-    .topbar-search-icon { color: var(--text-muted); font-size: 14px; }
 
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .topbar-page-title { font-size: 20px; font-weight: 700; color: var(--text-dark); display: none; }
+    .topbar-search input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .topbar-search-icon {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .topbar-page-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: none;
+    }
 
     .tb-icon-btn {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--white); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 15px; transition: var(--transition);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      transition: var(--transition);
       box-shadow: var(--shadow);
     }
-    .tb-icon-btn:hover { background: var(--green-accent); color: #fff; border-color: var(--green-accent); }
 
-    .tb-btns { display: flex; align-items: center; gap: 8px; }
+    .tb-icon-btn:hover {
+      background: var(--blue2);
+      color: #fff;
+      border-color: var(--blue2);
+    }
+
+    .tb-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .tb-action-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: 20px;
-      border: 1.5px solid var(--border); background: var(--white);
-      font-size: 12px; font-weight: 600; color: var(--text-mid);
-      cursor: pointer; transition: var(--transition); font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: inherit;
     }
-    .tb-action-btn:hover { border-color: var(--green-accent); color: var(--green-accent); }
+
+    .tb-action-btn:hover {
+      border-color: var(--blue2);
+      color: var(--blue2);
+    }
+
     .tb-action-btn.primary {
-      background: var(--green-mid); border-color: var(--green-mid); color: #fff;
+      background: var(--blue2);
+      border-color: var(--blue2);
+      color: #fff;
     }
-    .tb-action-btn.primary:hover { background: var(--green-light); }
+
+    .tb-action-btn.primary:hover {
+      background: var(--blue);
+    }
 
     .tb-avatar {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
       background: linear-gradient(135deg, var(--amber), #ef6c00);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 14px; color: #fff;
-      cursor: pointer; box-shadow: 0 2px 8px rgba(244,166,35,.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(244, 166, 35, .4);
       border: 2.5px solid var(--white);
     }
 
@@ -200,14 +442,24 @@
       padding: 24px 28px 40px;
       flex: 1;
     }
+
     .page-header {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 22px;
     }
+
     .page-header h1 {
-      font-size: 22px; font-weight: 700; color: var(--text-dark);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-dark);
     }
-    .page-header .header-actions { display: flex; gap: 8px; }
+
+    .page-header .header-actions {
+      display: flex;
+      gap: 8px;
+    }
 
     /* ── STAT CARDS ──────────────────────────── */
     .stat-grid {
@@ -216,6 +468,7 @@
       gap: 16px;
       margin-bottom: 20px;
     }
+
     .stat-card {
       background: var(--card-bg);
       border-radius: var(--radius);
@@ -224,27 +477,75 @@
       box-shadow: var(--shadow);
       transition: var(--transition);
       cursor: pointer;
-      position: relative; overflow: hidden;
+      position: relative;
+      overflow: hidden;
     }
+
     .stat-card::before {
-      content: ''; position: absolute;
-      top: 0; right: 0; width: 80px; height: 80px;
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
       border-radius: 0 var(--radius) 0 80px;
       opacity: .04;
       background: var(--card-accent, var(--green-mid));
     }
-    .stat-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
-    .stat-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
-    .stat-value { font-size: 28px; font-weight: 800; color: var(--text-dark); line-height: 1; margin-bottom: 10px; font-family: 'Inter', sans-serif; }
+
+    .stat-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1;
+      margin-bottom: 10px;
+      font-family: 'Inter', sans-serif;
+    }
+
     .stat-delta {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 11px; font-weight: 700; padding: 3px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
       border-radius: 20px;
     }
-    .stat-delta.up { background: #f0fdf4; color: #16a34a; }
-    .stat-delta.down { background: #fef2f2; color: #dc2626; }
-    .stat-delta.neutral { background: #f8fafc; color: #475569; }
-    .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    .stat-delta.up {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .stat-delta.down {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .stat-delta.neutral {
+      background: #f8fafc;
+      color: #475569;
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
 
     /* ── CHART GRID ──────────────────────────── */
     .chart-row {
@@ -252,9 +553,18 @@
       gap: 16px;
       margin-bottom: 16px;
     }
-    .chart-row.r-7-3 { grid-template-columns: 1fr 320px; }
-    .chart-row.r-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .chart-row.r-4-6 { grid-template-columns: 1fr 1.6fr; }
+
+    .chart-row.r-7-3 {
+      grid-template-columns: 1fr 320px;
+    }
+
+    .chart-row.r-3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .chart-row.r-4-6 {
+      grid-template-columns: 1fr 1.6fr;
+    }
 
     .chart-card {
       background: var(--card-bg);
@@ -264,649 +574,1051 @@
       padding: 20px 22px;
       transition: var(--transition);
     }
-    .chart-card:hover { box-shadow: var(--shadow-hover); }
+
+    .chart-card:hover {
+      box-shadow: var(--shadow-hover);
+    }
 
     .chart-card-head {
-      display: flex; align-items: flex-start; justify-content: space-between;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       margin-bottom: 16px;
     }
+
     .chart-card-title {
-      font-size: 14px; font-weight: 700; color: var(--text-dark);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
     }
+
     .chart-card-sub {
-      font-size: 11px; color: var(--text-muted); margin-top: 2px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
-    .chart-card-menu { font-size: 18px; color: var(--text-muted); cursor: pointer; }
+
+    .chart-card-menu {
+      font-size: 18px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
 
     /* ── Line chart legend ── */
     .line-legend {
-      display: flex; gap: 16px; margin-bottom: 10px;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 10px;
     }
-    .ll-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-mid); }
-    .ll-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .ll-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-mid);
+    }
+
+    .ll-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
 
     /* ── Category bars ────── */
-    .cat-bar-list { display: flex; flex-direction: column; gap: 12px; }
+    .cat-bar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .cat-bar-item {}
-    .cat-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px; }
-    .cat-bar-name { font-weight: 600; color: var(--text-dark); display: flex; align-items: center; gap: 6px; }
-    .cat-bar-count { font-weight: 700; color: var(--text-mid); }
-    .cat-bar-pct { font-size: 11px; color: var(--text-muted); }
-    .cat-bar-track { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
-    .cat-bar-fill { height: 100%; border-radius: 99px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+
+    .cat-bar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .cat-bar-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cat-bar-count {
+      font-weight: 700;
+      color: var(--text-mid);
+    }
+
+    .cat-bar-pct {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .cat-bar-track {
+      height: 6px;
+      background: #f1f5f9;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .cat-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width .8s cubic-bezier(.4, 0, .2, 1);
+    }
 
     /* ── Radar ────────────── */
-    .radar-wrap { position: relative; height: 220px; }
+    .radar-wrap {
+      position: relative;
+      height: 220px;
+    }
 
     /* ── Donut ────────────── */
     .donut-wrap {
-      display: flex; flex-direction: column; align-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
     }
-    .donut-chart-wrap { position: relative; width: 160px; height: 160px; margin: 0 auto 14px; }
+
+    .donut-chart-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 14px;
+    }
+
     .donut-center {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       text-align: center;
     }
-    .donut-center-num { font-size: 26px; font-weight: 800; color: var(--text-dark); line-height: 1; }
-    .donut-center-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-    .donut-legend { width: 100%; }
-    .donut-leg-item {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 12px; margin-bottom: 8px;
+
+    .donut-center-num {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1;
     }
-    .donut-leg-left { display: flex; align-items: center; gap: 8px; }
-    .donut-leg-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-    .donut-leg-name { color: var(--text-mid); font-weight: 500; }
-    .donut-leg-val { font-weight: 700; color: var(--text-dark); }
-    .donut-leg-pct { color: var(--text-muted); font-size: 11px; margin-left: 4px; }
+
+    .donut-center-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .donut-legend {
+      width: 100%;
+    }
+
+    .donut-leg-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .donut-leg-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .donut-leg-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .donut-leg-name {
+      color: var(--text-mid);
+      font-weight: 500;
+    }
+
+    .donut-leg-val {
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .donut-leg-pct {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-left: 4px;
+    }
 
     /* ── Gauge ────────────── */
-    .gauge-wrap { display: flex; flex-direction: column; align-items: center; }
-    .gauge-svg-wrap { position: relative; width: 180px; height: 100px; margin-bottom: 10px; }
+    .gauge-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .gauge-svg-wrap {
+      position: relative;
+      width: 180px;
+      height: 100px;
+      margin-bottom: 10px;
+    }
+
     .gauge-center {
-      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
       text-align: center;
     }
-    .gauge-num { font-size: 28px; font-weight: 800; color: var(--text-dark); line-height: 1; }
-    .gauge-sub-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+    .gauge-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1;
+    }
+
+    .gauge-sub-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
     .gauge-splits {
-      display: flex; justify-content: space-between; width: 100%;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
       margin-top: 10px;
     }
-    .gauge-split { text-align: center; }
-    .gauge-split-val { font-size: 18px; font-weight: 800; color: var(--text-dark); }
-    .gauge-split-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-    .gauge-split-dot { width: 10px; height: 4px; border-radius: 2px; margin: 4px auto 0; }
+
+    .gauge-split {
+      text-align: center;
+    }
+
+    .gauge-split-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-dark);
+    }
+
+    .gauge-split-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .gauge-split-dot {
+      width: 10px;
+      height: 4px;
+      border-radius: 2px;
+      margin: 4px auto 0;
+    }
 
     /* ── Tech status row ────── */
-    .tech-status-list { display: flex; flex-direction: column; gap: 10px; }
+    .tech-status-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
     .tech-status-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: 10px;
-      border: 1px solid var(--border); background: #fafafa;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fafafa;
     }
+
     .tech-status-av {
-      width: 34px; height: 34px; border-radius: 50%;
-      background: var(--green-mid); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--green-mid);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
     }
-    .tech-status-name { font-size: 12px; font-weight: 700; color: var(--text-dark); }
-    .tech-status-dept { font-size: 11px; color: var(--text-muted); }
-    .tech-status-right { margin-left: auto; text-align: right; }
-    .tech-status-jobs { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+
+    .tech-status-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .tech-status-dept {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .tech-status-right {
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .tech-status-jobs {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
     .ts-badge {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      padding: 2px 7px; border-radius: 20px;
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
     }
-    .ts-badge.ready { background: #f0fdf4; color: #16a34a; }
-    .ts-badge.busy { background: #fffbeb; color: #ca8a04; }
-    .ts-badge.full { background: #fef2f2; color: #dc2626; }
-    .tech-bar-wrap { flex: 1; min-width: 60px; }
-    .tech-bar-track { height: 4px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-    .tech-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,var(--green-mid),var(--green-accent)); }
+
+    .ts-badge.ready {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .ts-badge.busy {
+      background: #fffbeb;
+      color: #ca8a04;
+    }
+
+    .ts-badge.full {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .tech-bar-wrap {
+      flex: 1;
+      min-width: 60px;
+    }
+
+    .tech-bar-track {
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .tech-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--green-mid), var(--green-accent));
+    }
 
     /* ── SLA Overview ─────── */
-    .sla-row { display: flex; gap: 6px; margin-bottom: 12px; }
+    .sla-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
     .sla-seg {
-      flex: 1; height: 8px; border-radius: 99px;
+      flex: 1;
+      height: 8px;
+      border-radius: 99px;
     }
+
     .sla-time-row {
-      display: flex; justify-content: space-between;
-      font-size: 11px; color: var(--text-muted); margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
     }
+
     .sla-mini-stat {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
     }
-    .sla-mini-stat:last-child { border-bottom: none; }
-    .sla-mini-label { font-size: 12px; color: var(--text-mid); }
-    .sla-mini-val { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+
+    .sla-mini-stat:last-child {
+      border-bottom: none;
+    }
+
+    .sla-mini-label {
+      font-size: 12px;
+      color: var(--text-mid);
+    }
+
+    .sla-mini-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
 
     /* ── Loading overlay ──── */
     #loadingOverlay {
-      position: fixed; inset: 0;
-      background: var(--green-dark);
-      display: flex; align-items: center; justify-content: center;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #07111f 0%, #0c1e3a 50%, #101627 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 9999;
       transition: opacity .5s ease;
     }
-    .loading-content { text-align: center; }
-    .loading-logo { font-size: 42px; margin-bottom: 14px; }
-    .loading-brand { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-    .loading-brand span { color: var(--amber-light); }
-    .loading-sub { font-size: 13px; color: rgba(255,255,255,.5); margin-bottom: 28px; }
-    .loading-spinner {
-      width: 36px; height: 36px; border-radius: 50%;
-      border: 3px solid rgba(255,255,255,.15);
-      border-top-color: var(--green-accent);
-      animation: spin .8s linear infinite; margin: 0 auto;
+
+    .loading-content {
+      text-align: center;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-logo {
+      font-size: 42px;
+      margin-bottom: 14px;
+      animation: logoIconFloat 4s ease-in-out infinite;
+    }
+
+    .loading-brand {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .loading-brand .now-gold {
+      color: var(--gold2);
+    }
+
+    .loading-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, .5);
+      margin-bottom: 28px;
+    }
+
+    .loading-spinner {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, .15);
+      border-top-color: var(--blue3);
+      animation: spin .8s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* ── Auth guard ─────────── */
     #authGuard {
-      position: fixed; inset: 0;
-      background: var(--green-dark);
-      display: none; align-items: center; justify-content: center;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #07111f 0%, #0c1e3a 50%, #101627 100%);
+      display: none;
+      align-items: center;
+      justify-content: center;
       z-index: 9998;
     }
+
     .auth-guard-card {
-      background: var(--white); border-radius: 20px;
-      padding: 36px; text-align: center; max-width: 340px;
+      background: var(--white);
+      border-radius: 20px;
+      padding: 36px;
+      text-align: center;
+      max-width: 340px;
     }
-    .auth-guard-icon { font-size: 48px; margin-bottom: 12px; }
-    .auth-guard-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .auth-guard-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+    .auth-guard-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .auth-guard-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .auth-guard-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
     .auth-guard-btn {
-      display: inline-block; padding: 10px 28px;
-      background: var(--green-mid); color: #fff;
-      border-radius: 12px; font-weight: 700; text-decoration: none;
-      font-size: 14px; transition: var(--transition);
+      display: inline-block;
+      padding: 10px 28px;
+      background: var(--blue2);
+      color: #fff;
+      border-radius: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 14px;
+      transition: var(--transition);
     }
-    .auth-guard-btn:hover { background: var(--green-light); }
+
+    .auth-guard-btn:hover {
+      background: var(--blue);
+    }
 
     /* ── Date badge ─────────── */
     .date-badge {
-      font-size: 12px; color: var(--text-muted); font-weight: 500;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
     /* ── Refresh badge ────── */
     .live-pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: #f0fdf4; border: 1px solid #bbf7d0;
-      border-radius: 20px; padding: 4px 10px;
-      font-size: 11px; font-weight: 700; color: #16a34a;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #16a34a;
     }
+
     .live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
       background: #16a34a;
       animation: pulse-green 1.4s ease infinite;
     }
+
     @keyframes pulse-green {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .4; transform: scale(.7); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .4;
+        transform: scale(.7);
+      }
     }
 
     /* ── Scroll ─────────────── */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 99px;
+    }
 
     /* ── Responsive ──────────── */
     @media (max-width: 1200px) {
-      .stat-grid { grid-template-columns: repeat(2, 1fr); }
-      .chart-row.r-7-3 { grid-template-columns: 1fr; }
-      .chart-row.r-3 { grid-template-columns: 1fr 1fr; }
+      .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .chart-row.r-7-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-row.r-3 {
+        grid-template-columns: 1fr 1fr;
+      }
     }
+
     @media (max-width: 860px) {
-      :root { --sidebar-w: 0px; }
-      .sidebar { display: none; }
-      .stat-grid { grid-template-columns: 1fr 1fr; }
-      .chart-row.r-3 { grid-template-columns: 1fr; }
-      .chart-row.r-4-6 { grid-template-columns: 1fr; }
-      .content { padding: 16px 14px 40px; }
+      :root {
+        --sidebar-w: 0px;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .stat-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .chart-row.r-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-row.r-4-6 {
+        grid-template-columns: 1fr;
+      }
+
+      .content {
+        padding: 16px 14px 40px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- Loading overlay -->
-<div id="loadingOverlay">
-  <div class="loading-content">
-    <div class="loading-logo">🏛️</div>
-    <div class="loading-brand">Resolve<span>Now</span></div>
-    <div class="loading-sub">กำลังโหลดข้อมูลผู้บริหาร...</div>
-    <div class="loading-spinner"></div>
-  </div>
-</div>
-
-
-<!-- ── SIDEBAR ──────────────────────────────────── -->
-<aside class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-brand">
-      <div class="sb-logo-icon">🏛️</div>
-      <div class="sb-logo-text">Resolve<span>Now</span></div>
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div class="loading-content">
+      <div class="loading-logo">🏛️</div>
+      <div class="loading-brand logo-anim"><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span>
+      </div>
+      <div class="loading-sub">กำลังโหลดข้อมูลผู้บริหาร...</div>
+      <div class="loading-spinner"></div>
     </div>
   </div>
 
-  <div class="sb-section-label">TOOLS</div>
-  <nav class="sb-nav" style="flex:unset">
-    <div class="sb-item" onclick="refreshAll()">
-      <span class="sb-item-icon">🔄</span> รีเฟรชข้อมูล
-    </div>
-    <div class="sb-item" onclick="window.print()">
-      <span class="sb-item-icon">🖨️</span> พิมพ์รายงาน
-    </div>
-    <div class="sb-item" onclick="location.href='/track'">
-      <span class="sb-item-icon">🗺️</span> ตรวจสอบ Ticket
-    </div>
-  </nav>
 
-
-</aside>
-
-<!-- ── MAIN AREA ─────────────────────────────────── -->
-<div class="main">
-
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="topbar-right">
-
-      <div class="tb-btns">
-        <button class="tb-action-btn" onclick="refreshAll()">🔄 รีเฟรชข้อมูล</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- CONTENT -->
-  <div class="content">
-
-    <!-- Page header -->
-    <div class="page-header">
-      <div>
-        <h1 id="pageTitle">Overview</h1>
-        <div class="date-badge" id="pageDateBadge"></div>
+  <!-- ── SIDEBAR ──────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-brand">
+        <div class="sb-logo-icon">🏛️</div>
+        <div class="sb-logo-text logo-anim"><span class="resolve-shimmer">Resolve</span><span
+            class="now-gold">Now</span></div>
       </div>
     </div>
 
-    <!-- ── STAT CARDS ─────────────── -->
-    <div class="stat-grid">
-      <div class="stat-card" style="--card-accent:var(--green-mid); cursor:default">
-        <div class="stat-label">Ticket ทั้งหมด</div>
-        <div class="stat-value" id="sc-total">—</div>
-        <span class="stat-delta up" id="sc-total-delta">⬆ กำลังโหลด</span>
-        <div class="stat-sub">เทียบกับเดือนที่แล้ว</div>
+    <div class="sb-section-label">TOOLS</div>
+    <nav class="sb-nav" style="flex:unset">
+      <div class="sb-item" onclick="refreshAll()">
+        <span class="sb-item-icon">🔄</span> รีเฟรชข้อมูล
       </div>
-      <div class="stat-card" style="--card-accent:#16a34a; cursor:default">
-        <div class="stat-label">งานสำเร็จ</div>
-        <div class="stat-value" id="sc-done">—</div>
-        <span class="stat-delta up" id="sc-done-delta">⬆ กำลังโหลด</span>
-        <div class="stat-sub">เทียบกับเดือนที่แล้ว</div>
+      <div class="sb-item" onclick="window.print()">
+        <span class="sb-item-icon">🖨️</span> พิมพ์รายงาน
       </div>
-      <div class="stat-card" style="--card-accent:#ef4444">
-        <div class="stat-label">⏰ SLA เกินกำหนด</div>
-        <div class="stat-value" id="sc-sla">—</div>
-        <span class="stat-delta down" id="sc-sla-delta">กำลังโหลด</span>
-        <div class="stat-sub" id="sc-sla-sub">กำลังโหลด</div>
+      <div class="sb-item" onclick="location.href='/track'">
+        <span class="sb-item-icon">🗺️</span> ตรวจสอบ Ticket
       </div>
-      <div class="stat-card" style="--card-accent:#2563eb">
-        <div class="stat-label">อัตราสำเร็จ</div>
-        <div class="stat-value" id="sc-rate">—</div>
-        <span class="stat-delta neutral" id="sc-rate-delta">กำลังโหลด</span>
-        <div class="stat-sub">ของงานทั้งหมด</div>
-      </div>
-    </div>
+    </nav>
 
-    <!-- ── ROW 1: Line chart + Category bars ─── -->
-    <div class="chart-row r-7-3">
-      <!-- Tickets Over Time -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">📈 Ticket ตามช่วงเวลา</div>
-            <div class="chart-card-sub" id="lineChartSub">แสดงข้อมูลย้อนหลัง 6 เดือน</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div class="line-legend">
-              <div class="ll-item"><div class="ll-dot" style="background:var(--green-mid)"></div>เปิดใหม่</div>
-              <div class="ll-item"><div class="ll-dot" style="background:var(--amber)"></div>สำเร็จ</div>
+
+  </aside>
+
+  <!-- ── MAIN AREA ─────────────────────────────────── -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-right">
+
+        <div class="tb-btns">
+          <button class="tb-action-btn" onclick="refreshAll()">🔄 รีเฟรชข้อมูล</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <h1 id="pageTitle">Overview</h1>
+          <div class="date-badge" id="pageDateBadge"></div>
+        </div>
+      </div>
+
+      <!-- ── STAT CARDS ─────────────── -->
+      <div class="stat-grid">
+        <div class="stat-card" style="--card-accent:var(--green-mid); cursor:default">
+          <div class="stat-label">Ticket ทั้งหมด</div>
+          <div class="stat-value" id="sc-total">—</div>
+          <span class="stat-delta up" id="sc-total-delta">⬆ กำลังโหลด</span>
+          <div class="stat-sub">เทียบกับเดือนที่แล้ว</div>
+        </div>
+        <div class="stat-card" style="--card-accent:#16a34a; cursor:default">
+          <div class="stat-label">งานสำเร็จ</div>
+          <div class="stat-value" id="sc-done">—</div>
+          <span class="stat-delta up" id="sc-done-delta">⬆ กำลังโหลด</span>
+          <div class="stat-sub">เทียบกับเดือนที่แล้ว</div>
+        </div>
+        <div class="stat-card" style="--card-accent:#ef4444">
+          <div class="stat-label">⏰ SLA เกินกำหนด</div>
+          <div class="stat-value" id="sc-sla">—</div>
+          <span class="stat-delta down" id="sc-sla-delta">กำลังโหลด</span>
+          <div class="stat-sub" id="sc-sla-sub">กำลังโหลด</div>
+        </div>
+        <div class="stat-card" style="--card-accent:#2563eb">
+          <div class="stat-label">อัตราสำเร็จ</div>
+          <div class="stat-value" id="sc-rate">—</div>
+          <span class="stat-delta neutral" id="sc-rate-delta">กำลังโหลด</span>
+          <div class="stat-sub">ของงานทั้งหมด</div>
+        </div>
+      </div>
+
+      <!-- ── ROW 1: Line chart + Category bars ─── -->
+      <div class="chart-row r-7-3">
+        <!-- Tickets Over Time -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">📈 Ticket ตามช่วงเวลา</div>
+              <div class="chart-card-sub" id="lineChartSub">แสดงข้อมูลย้อนหลัง 6 เดือน</div>
             </div>
-            <select id="lineChartMonths" class="tb-action-btn" style="padding: 2px 8px; font-size: 11px; margin-left:8px; border:1px solid #e2e8f0" onchange="renderLineChart()">
-              <option value="3">3 เดือน</option>
-              <option value="6" selected>6 เดือน</option>
-              <option value="12">12 เดือน</option>
-            </select>
-          </div>
-        </div>
-        <canvas id="lineChart" height="100"></canvas>
-      </div>
-
-      <!-- Category breakdown -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">Ticket ตามหมวดหมู่</div>
-            <div class="chart-card-sub">Top categories</div>
-          </div>
-          <span class="chart-card-menu">···</span>
-        </div>
-        <div class="cat-bar-list" id="catBarList">
-          <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">กำลังโหลด...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── ROW 2: Radar + Donut + Gauge ─────── -->
-    <div class="chart-row r-3">
-
-      <!-- Radar: Tech workload -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">🔧 Workload ทีมช่าง</div>
-            <div class="chart-card-sub">ภาระงานแต่ละแผนก</div>
-          </div>
-          <span class="chart-card-menu">···</span>
-        </div>
-        <div class="radar-wrap">
-          <canvas id="radarChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Donut: Status -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">สถานะ Ticket</div>
-            <div class="chart-card-sub">แบ่งตามสถานะปัจจุบัน</div>
-          </div>
-          <span class="chart-card-menu">···</span>
-        </div>
-        <div class="donut-wrap">
-          <div class="donut-chart-wrap">
-            <canvas id="donutChart" width="160" height="160"></canvas>
-            <div class="donut-center">
-              <div class="donut-center-num" id="donut-total">0</div>
-              <div class="donut-center-label">TOTAL</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="line-legend">
+                <div class="ll-item">
+                  <div class="ll-dot" style="background:var(--green-mid)"></div>เปิดใหม่
+                </div>
+                <div class="ll-item">
+                  <div class="ll-dot" style="background:var(--amber)"></div>สำเร็จ
+                </div>
+              </div>
+              <select id="lineChartMonths" class="tb-action-btn"
+                style="padding: 2px 8px; font-size: 11px; margin-left:8px; border:1px solid #e2e8f0"
+                onchange="renderLineChart()">
+                <option value="3">3 เดือน</option>
+                <option value="6" selected>6 เดือน</option>
+                <option value="12">12 เดือน</option>
+              </select>
             </div>
           </div>
-          <div class="donut-legend" id="donutLegend"></div>
+          <canvas id="lineChart" height="100"></canvas>
         </div>
-      </div>
 
-      <!-- Gauge: Users -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">👥 สถานะทีมช่าง</div>
-            <div class="chart-card-sub">พร้อมรับงาน / ไม่พร้อม</div>
+        <!-- Category breakdown -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">Ticket ตามหมวดหมู่</div>
+              <div class="chart-card-sub">Top categories</div>
+            </div>
+            <span class="chart-card-menu">···</span>
           </div>
-          <span class="chart-card-menu">···</span>
-        </div>
-        <div class="gauge-wrap">
-          <div class="gauge-svg-wrap">
-            <svg width="180" height="100" viewBox="0 0 180 100">
-              <defs>
-                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#ef4444"/>
-                  <stop offset="50%" stop-color="#f59e0b"/>
-                  <stop offset="100%" stop-color="#22c55e"/>
-                </linearGradient>
-              </defs>
-              <!-- Track -->
-              <path d="M 18 90 A 72 72 0 0 1 162 90" fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linecap="round"/>
-              <!-- Fill -->
-              <path id="gaugeFill" d="M 18 90 A 72 72 0 0 1 162 90" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"/>
-
-            </svg>
-            <div class="gauge-center">
-              <div class="gauge-num" id="gaugeNum">0</div>
-              <div class="gauge-sub-label">ช่างพร้อมงาน</div>
-            </div>
-          </div>
-          <div class="gauge-splits" id="gaugeSplits" style="max-width:180px">
-            <div class="gauge-split">
-              <div class="gauge-split-val" id="gsReady">0</div>
-              <div class="gauge-split-dot" style="background:#22c55e"></div>
-              <div class="gauge-split-label">READY</div>
-            </div>
-            <div class="gauge-split">
-              <div class="gauge-split-val" id="gsBusy">0</div>
-              <div class="gauge-split-dot" style="background:#f59e0b"></div>
-              <div class="gauge-split-label">BUSY</div>
-            </div>
-            <div class="gauge-split">
-              <div class="gauge-split-val" id="gsFull">0</div>
-              <div class="gauge-split-dot" style="background:#ef4444"></div>
-              <div class="gauge-split-label">FULL</div>
-            </div>
+          <div class="cat-bar-list" id="catBarList">
+            <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">กำลังโหลด...</div>
           </div>
         </div>
       </div>
 
-    </div>
+      <!-- ── ROW 2: Radar + Donut + Gauge ─────── -->
+      <div class="chart-row r-3">
 
-    <!-- ── ROW 3: Tech status list + SLA panel ─ -->
-    <div class="chart-row r-4-6">
-
-      <!-- SLA Overview -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">⏱️ SLA Overview</div>
-            <div class="chart-card-sub">อัตราการทำงานตามกำหนด</div>
+        <!-- Radar: Tech workload -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">🔧 Workload ทีมช่าง</div>
+              <div class="chart-card-sub">ภาระงานแต่ละแผนก</div>
+            </div>
+            <span class="chart-card-menu">···</span>
           </div>
-          <span class="chart-card-menu">···</span>
+          <div class="radar-wrap">
+            <canvas id="radarChart"></canvas>
+          </div>
         </div>
-        <div class="sla-row" id="slaSegRow">
-          <div class="sla-seg" style="background:#22c55e;flex:7"></div>
-          <div class="sla-seg" style="background:#f59e0b;flex:2"></div>
-          <div class="sla-seg" style="background:#ef4444;flex:1"></div>
+
+        <!-- Donut: Status -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">สถานะ Ticket</div>
+              <div class="chart-card-sub">แบ่งตามสถานะปัจจุบัน</div>
+            </div>
+            <span class="chart-card-menu">···</span>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut-chart-wrap">
+              <canvas id="donutChart" width="160" height="160"></canvas>
+              <div class="donut-center">
+                <div class="donut-center-num" id="donut-total">0</div>
+                <div class="donut-center-label">TOTAL</div>
+              </div>
+            </div>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
         </div>
-        <div class="sla-time-row">
-          <span>ตรงเวลา</span>
-          <span>ใกล้กำหนด</span>
-          <span>เกินกำหนด</span>
+
+        <!-- Gauge: Users -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">👥 สถานะทีมช่าง</div>
+              <div class="chart-card-sub">พร้อมรับงาน / ไม่พร้อม</div>
+            </div>
+            <span class="chart-card-menu">···</span>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge-svg-wrap">
+              <svg width="180" height="100" viewBox="0 0 180 100">
+                <defs>
+                  <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#ef4444" />
+                    <stop offset="50%" stop-color="#f59e0b" />
+                    <stop offset="100%" stop-color="#22c55e" />
+                  </linearGradient>
+                </defs>
+                <!-- Track -->
+                <path d="M 18 90 A 72 72 0 0 1 162 90" fill="none" stroke="#e2e8f0" stroke-width="12"
+                  stroke-linecap="round" />
+                <!-- Fill -->
+                <path id="gaugeFill" d="M 18 90 A 72 72 0 0 1 162 90" fill="none" stroke="url(#gaugeGrad)"
+                  stroke-width="12" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" />
+
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-num" id="gaugeNum">0</div>
+                <div class="gauge-sub-label">ช่างพร้อมงาน</div>
+              </div>
+            </div>
+            <div class="gauge-splits" id="gaugeSplits" style="max-width:180px">
+              <div class="gauge-split">
+                <div class="gauge-split-val" id="gsReady">0</div>
+                <div class="gauge-split-dot" style="background:#22c55e"></div>
+                <div class="gauge-split-label">READY</div>
+              </div>
+              <div class="gauge-split">
+                <div class="gauge-split-val" id="gsBusy">0</div>
+                <div class="gauge-split-dot" style="background:#f59e0b"></div>
+                <div class="gauge-split-label">BUSY</div>
+              </div>
+              <div class="gauge-split">
+                <div class="gauge-split-val" id="gsFull">0</div>
+                <div class="gauge-split-dot" style="background:#ef4444"></div>
+                <div class="gauge-split-label">FULL</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="slaMiniStats">
-          <div class="sla-mini-stat"><span class="sla-mini-label">✅ เสร็จตรงเวลา</span><span class="sla-mini-val" id="slaOnTime">—</span></div>
-          <div class="sla-mini-stat"><span class="sla-mini-label">⚡ Ticket รอมอบหมาย</span><span class="sla-mini-val" id="slaPending">—</span></div>
-          <div class="sla-mini-stat"><span class="sla-mini-label">🔧 กำลังดำเนินการ</span><span class="sla-mini-val" id="slaInProgress">—</span></div>
-          <div class="sla-mini-stat"><span class="sla-mini-label">⏰ เกินกำหนด SLA</span><span class="sla-mini-val" id="slaBreached" style="color:#dc2626">—</span></div>
-          <div class="sla-mini-stat"><span class="sla-mini-label">❌ ปฏิเสธ</span><span class="sla-mini-val" id="slaRejected">—</span></div>
+
+      </div>
+
+      <!-- ── ROW 3: Tech status list + SLA panel ─ -->
+      <div class="chart-row r-4-6">
+
+        <!-- SLA Overview -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">⏱️ SLA Overview</div>
+              <div class="chart-card-sub">อัตราการทำงานตามกำหนด</div>
+            </div>
+            <span class="chart-card-menu">···</span>
+          </div>
+          <div class="sla-row" id="slaSegRow">
+            <div class="sla-seg" style="background:#22c55e;flex:7"></div>
+            <div class="sla-seg" style="background:#f59e0b;flex:2"></div>
+            <div class="sla-seg" style="background:#ef4444;flex:1"></div>
+          </div>
+          <div class="sla-time-row">
+            <span>ตรงเวลา</span>
+            <span>ใกล้กำหนด</span>
+            <span>เกินกำหนด</span>
+          </div>
+          <div id="slaMiniStats">
+            <div class="sla-mini-stat"><span class="sla-mini-label">✅ เสร็จตรงเวลา</span><span class="sla-mini-val"
+                id="slaOnTime">—</span></div>
+            <div class="sla-mini-stat"><span class="sla-mini-label">⚡ Ticket รอมอบหมาย</span><span class="sla-mini-val"
+                id="slaPending">—</span></div>
+            <div class="sla-mini-stat"><span class="sla-mini-label">🔧 กำลังดำเนินการ</span><span class="sla-mini-val"
+                id="slaInProgress">—</span></div>
+            <div class="sla-mini-stat"><span class="sla-mini-label">⏰ เกินกำหนด SLA</span><span class="sla-mini-val"
+                id="slaBreached" style="color:#dc2626">—</span></div>
+            <div class="sla-mini-stat"><span class="sla-mini-label">❌ ปฏิเสธ</span><span class="sla-mini-val"
+                id="slaRejected">—</span></div>
+          </div>
+        </div>
+
+        <!-- Technician Status -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">🔧 สถานะช่างแต่ละคน</div>
+              <div class="chart-card-sub">ภาระงานและความพร้อม</div>
+            </div>
+            <span class="chart-card-menu">···</span>
+          </div>
+          <div class="tech-status-list" id="techStatusList">
+            <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">กำลังโหลด...</div>
+          </div>
         </div>
       </div>
 
-      <!-- Technician Status -->
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <div class="chart-card-title">🔧 สถานะช่างแต่ละคน</div>
-            <div class="chart-card-sub">ภาระงานและความพร้อม</div>
-          </div>
-          <span class="chart-card-menu">···</span>
-        </div>
-        <div class="tech-status-list" id="techStatusList">
-          <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">กำลังโหลด...</div>
-        </div>
-      </div>
-    </div>
+    </div><!-- /content -->
+  </div><!-- /main -->
 
-  </div><!-- /content -->
-</div><!-- /main -->
+  <script>
+    /* ─────────────────────────────────────────────
+       Executive Dashboard — ResolveNow
+       Fetches: /api/tickets, /api/technicians, /api/categories
+    ───────────────────────────────────────────── */
 
-<script>
-/* ─────────────────────────────────────────────
-   Executive Dashboard — ResolveNow
-   Fetches: /api/tickets, /api/technicians, /api/categories
-───────────────────────────────────────────── */
+    const DEPT = {
+      Road: 'ถนน/ทางเท้า', Water: 'ท่อน้ำแตก', Electricity: 'ไฟฟ้า',
+      Garbage: 'ขยะตกค้าง', Animal: 'สัตว์มีพิษ', Tree: 'กิ่งไม้วางทาง', Hazard: 'เพลิง/ภัยพิบัติ'
+    };
+    const DEPT_ICON = { Road: '🛣️', Water: '💧', Electricity: '💡', Garbage: '🗑️', Animal: '🐍', Tree: '🌿', Hazard: '🚨' };
+    const CAT_COLORS = [
+      '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#f4a623', '#ef4444', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981'
+    ];
 
-const DEPT = {
-  Road:'ถนน/ทางเท้า', Water:'ท่อน้ำแตก', Electricity:'ไฟฟ้า',
-  Garbage:'ขยะตกค้าง', Animal:'สัตว์มีพิษ', Tree:'กิ่งไม้วางทาง', Hazard:'เพลิง/ภัยพิบัติ'
-};
-const DEPT_ICON = { Road:'🛣️', Water:'💧', Electricity:'💡', Garbage:'🗑️', Animal:'🐍', Tree:'🌿', Hazard:'🚨' };
-const CAT_COLORS = [
-  '#2d6a4f','#40916c','#52b788','#74c69d','#f4a623','#ef4444','#8b5cf6','#3b82f6','#06b6d4','#10b981'
-];
-
-let _tickets = [], _techs = [], _categories = [];
-let _lineChart = null, _radarChart = null, _donutChart = null;
+    let _tickets = [], _techs = [], _categories = [];
+    let _lineChart = null, _radarChart = null, _donutChart = null;
 
 
 
-function ge(id) { return document.getElementById(id); }
+    function ge(id) { return document.getElementById(id); }
 
-/* ── 2. Fetch all data ─────────────────────── */
-async function fetchData() {
-  const [r1, r2, r3] = await Promise.all([
-    fetch('/api/ceo/tickets'),
-    fetch('/api/ceo/technicians'),
-    fetch('/api/ceo/categories')
-  ]);
-  _tickets = await r1.json();
-  _techs = await r2.json();
-  _categories = await r3.json();
+    /* ── 2. Fetch all data ─────────────────────── */
+    async function fetchData() {
+      const [r1, r2, r3] = await Promise.all([
+        fetch('/api/ceo/tickets'),
+        fetch('/api/ceo/technicians'),
+        fetch('/api/ceo/categories')
+      ]);
+      _tickets = await r1.json();
+      _techs = await r2.json();
+      _categories = await r3.json();
 
-  // Update DEPT/DEPT_ICON dynamically
-  _categories.forEach(c => {
-    DEPT[c.name] = c.label;
-    DEPT_ICON[c.name] = c.icon;
-  });
-}
-
-/* ── 3. Render everything ──────────────────── */
-function renderAll() {
-  renderStatCards();
-  renderLineChart();
-  renderCatBars();
-  renderDonut();
-  renderRadar();
-  renderGauge();
-  renderTechStatusList();
-  renderSLAOverview();
-  updatePageDate();
-}
-
-/* ── 3a. Stat cards ────────────────────────── */
-function renderStatCards() {
-  const total = _tickets.length;
-  const done = _tickets.filter(t=>t.status==='completed').length;
-  const rate = total ? Math.round(done/total*100) : 0;
-
-  // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว (ceo.js ประเมิน deadline ครบทุก status)
-  const breached = _tickets.filter(t => t.slaBreached).length;
-
-  animNum(ge('sc-total'), total);
-  animNum(ge('sc-done'), done);
-  animNum(ge('sc-sla'), breached);
-  ge('sc-rate').textContent = rate + '%';
-
-  ge('sc-total-delta').className = 'stat-delta up';
-  ge('sc-total-delta').textContent = '⬆ ' + total + ' รายการทั้งหมด';
-  ge('sc-done-delta').className = 'stat-delta up';
-  ge('sc-done-delta').textContent = '✅ อัตราสำเร็จ ' + rate + '%';
-  ge('sc-sla-delta').className = breached>0 ? 'stat-delta down' : 'stat-delta up';
-  ge('sc-sla-delta').textContent = breached>0 ? '⚠ ต้องแก้ไขด่วน' : '✅ ทุก Ticket ตรงเวลา';
-  if(ge('sc-sla-sub')) ge('sc-sla-sub').textContent = breached>0 ? 'ต้องแก้ไขด่วน' : 'ยอดเยี่ยม';
-  ge('sc-rate-delta').className = rate>=70 ? 'stat-delta up' : 'stat-delta down';
-  ge('sc-rate-delta').textContent = rate >= 70 ? '📈 ดีเยี่ยม' : '📉 ควรปรับปรุง';
-}
-
-/* ── 3b. Line chart ────────────────────────── */
-function renderLineChart() {
-  const months = [];
-  const openData = [];
-  const doneData = [];
-
-  const mSelect = document.getElementById('lineChartMonths');
-  const numMonths = mSelect ? parseInt(mSelect.value) : 6;
-  
-  const subEl = document.getElementById('lineChartSub');
-  if(subEl) subEl.textContent = `แสดงข้อมูลย้อนหลัง ${numMonths} เดือน`;
-
-  for (let i = numMonths - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth()-i, 1);
-    const y = d.getFullYear(), m = d.getMonth();
-    months.push(d.toLocaleString('th-TH',{month:'short',year:'2-digit'}));
-    const mTks = _tickets.filter(t => {
-      const cd = new Date(t.createdAt);
-      return cd.getFullYear()===y && cd.getMonth()===m;
-    });
-    openData.push(mTks.length);
-    doneData.push(mTks.filter(t=>t.status==='completed').length);
-  }
-
-  if (_lineChart) _lineChart.destroy();
-  const ctx = ge('lineChart').getContext('2d');
-  const gradGreen = ctx.createLinearGradient(0,0,0,200);
-  gradGreen.addColorStop(0,'rgba(45,106,79,.25)');
-  gradGreen.addColorStop(1,'rgba(45,106,79,.0)');
-  const gradAmber = ctx.createLinearGradient(0,0,0,200);
-  gradAmber.addColorStop(0,'rgba(244,166,35,.18)');
-  gradAmber.addColorStop(1,'rgba(244,166,35,.0)');
-
-  _lineChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: months,
-      datasets: [
-        {
-          label: 'เปิดใหม่',
-          data: openData,
-          borderColor: '#2d6a4f',
-          backgroundColor: gradGreen,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#2d6a4f',
-          tension: .45, fill: true
-        },
-        {
-          label: 'สำเร็จ',
-          data: doneData,
-          borderColor: '#f4a623',
-          backgroundColor: gradAmber,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#f4a623',
-          tension: .45, fill: true
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false }, tooltip: { mode:'index', intersect:false } },
-      scales: {
-        x: { grid: { display:false }, ticks: { font:{size:11}, color:'#94a3b8' } },
-        y: { grid: { color:'#f1f5f9', lineWidth:1 }, ticks: { font:{size:11}, color:'#94a3b8' }, beginAtZero:true }
-      }
+      // Update DEPT/DEPT_ICON dynamically
+      _categories.forEach(c => {
+        DEPT[c.name] = c.label;
+        DEPT_ICON[c.name] = c.icon;
+      });
     }
-  });
-}
 
-/* ── 3c. Category bars ─────────────────────── */
-function renderCatBars() {
-  const counts = {};
-  _tickets.forEach(t => {
-    counts[t.category] = (counts[t.category]||0) + 1;
-  });
-  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,7);
-  const max = sorted[0] ? sorted[0][1] : 1;
+    /* ── 3. Render everything ──────────────────── */
+    function renderAll() {
+      renderStatCards();
+      renderLineChart();
+      renderCatBars();
+      renderDonut();
+      renderRadar();
+      renderGauge();
+      renderTechStatusList();
+      renderSLAOverview();
+      updatePageDate();
+    }
 
-  const el = ge('catBarList');
-  if (!sorted.length) { el.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px">ยังไม่มีข้อมูล</div>'; return; }
+    /* ── 3a. Stat cards ────────────────────────── */
+    function renderStatCards() {
+      const total = _tickets.length;
+      const done = _tickets.filter(t => t.status === 'completed').length;
+      const rate = total ? Math.round(done / total * 100) : 0;
 
-  el.innerHTML = sorted.map(([cat,cnt],i) => {
-    const pct = Math.round(cnt/max*100);
-    const totalPct = Math.round(cnt/_tickets.length*100);
-    const label = DEPT[cat]||cat;
-    const icon  = DEPT_ICON[cat]||'📌';
-    const color = CAT_COLORS[i % CAT_COLORS.length];
-    return `<div class="cat-bar-item">
+      // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว (ceo.js ประเมิน deadline ครบทุก status)
+      const breached = _tickets.filter(t => t.slaBreached).length;
+
+      animNum(ge('sc-total'), total);
+      animNum(ge('sc-done'), done);
+      animNum(ge('sc-sla'), breached);
+      ge('sc-rate').textContent = rate + '%';
+
+      ge('sc-total-delta').className = 'stat-delta up';
+      ge('sc-total-delta').textContent = '⬆ ' + total + ' รายการทั้งหมด';
+      ge('sc-done-delta').className = 'stat-delta up';
+      ge('sc-done-delta').textContent = '✅ อัตราสำเร็จ ' + rate + '%';
+      ge('sc-sla-delta').className = breached > 0 ? 'stat-delta down' : 'stat-delta up';
+      ge('sc-sla-delta').textContent = breached > 0 ? '⚠ ต้องแก้ไขด่วน' : '✅ ทุก Ticket ตรงเวลา';
+      if (ge('sc-sla-sub')) ge('sc-sla-sub').textContent = breached > 0 ? 'ต้องแก้ไขด่วน' : 'ยอดเยี่ยม';
+      ge('sc-rate-delta').className = rate >= 70 ? 'stat-delta up' : 'stat-delta down';
+      ge('sc-rate-delta').textContent = rate >= 70 ? '📈 ดีเยี่ยม' : '📉 ควรปรับปรุง';
+    }
+
+    /* ── 3b. Line chart ────────────────────────── */
+    function renderLineChart() {
+      const months = [];
+      const openData = [];
+      const doneData = [];
+
+      const mSelect = document.getElementById('lineChartMonths');
+      const numMonths = mSelect ? parseInt(mSelect.value) : 6;
+
+      const subEl = document.getElementById('lineChartSub');
+      if (subEl) subEl.textContent = `แสดงข้อมูลย้อนหลัง ${numMonths} เดือน`;
+
+      for (let i = numMonths - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i, 1);
+        const y = d.getFullYear(), m = d.getMonth();
+        months.push(d.toLocaleString('th-TH', { month: 'short', year: '2-digit' }));
+        const mTks = _tickets.filter(t => {
+          const cd = new Date(t.createdAt);
+          return cd.getFullYear() === y && cd.getMonth() === m;
+        });
+        openData.push(mTks.length);
+        doneData.push(mTks.filter(t => t.status === 'completed').length);
+      }
+
+      if (_lineChart) _lineChart.destroy();
+      const ctx = ge('lineChart').getContext('2d');
+      const gradGreen = ctx.createLinearGradient(0, 0, 0, 200);
+      gradGreen.addColorStop(0, 'rgba(45,106,79,.25)');
+      gradGreen.addColorStop(1, 'rgba(45,106,79,.0)');
+      const gradAmber = ctx.createLinearGradient(0, 0, 0, 200);
+      gradAmber.addColorStop(0, 'rgba(244,166,35,.18)');
+      gradAmber.addColorStop(1, 'rgba(244,166,35,.0)');
+
+      _lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [
+            {
+              label: 'เปิดใหม่',
+              data: openData,
+              borderColor: '#2d6a4f',
+              backgroundColor: gradGreen,
+              borderWidth: 2.5,
+              pointRadius: 4,
+              pointBackgroundColor: '#2d6a4f',
+              tension: .45, fill: true
+            },
+            {
+              label: 'สำเร็จ',
+              data: doneData,
+              borderColor: '#f4a623',
+              backgroundColor: gradAmber,
+              borderWidth: 2.5,
+              pointRadius: 4,
+              pointBackgroundColor: '#f4a623',
+              tension: .45, fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#94a3b8' } },
+            y: { grid: { color: '#f1f5f9', lineWidth: 1 }, ticks: { font: { size: 11 }, color: '#94a3b8' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    /* ── 3c. Category bars ─────────────────────── */
+    function renderCatBars() {
+      const counts = {};
+      _tickets.forEach(t => {
+        counts[t.category] = (counts[t.category] || 0) + 1;
+      });
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      const max = sorted[0] ? sorted[0][1] : 1;
+
+      const el = ge('catBarList');
+      if (!sorted.length) { el.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px">ยังไม่มีข้อมูล</div>'; return; }
+
+      el.innerHTML = sorted.map(([cat, cnt], i) => {
+        const pct = Math.round(cnt / max * 100);
+        const totalPct = Math.round(cnt / _tickets.length * 100);
+        const label = DEPT[cat] || cat;
+        const icon = DEPT_ICON[cat] || '📌';
+        const color = CAT_COLORS[i % CAT_COLORS.length];
+        return `<div class="cat-bar-item">
       <div class="cat-bar-header">
         <div class="cat-bar-name">${icon} ${label}</div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -918,45 +1630,45 @@ function renderCatBars() {
         <div class="cat-bar-fill" style="width:${pct}%;background:${color}"></div>
       </div>
     </div>`;
-  }).join('');
-}
-
-/* ── 3d. Donut chart ───────────────────────── */
-function renderDonut() {
-  const pend = _tickets.filter(t=>t.status==='pending').length;
-  const asgn = _tickets.filter(t=>t.status==='assigned').length;
-  const inpg = _tickets.filter(t=>t.status==='in_progress').length;
-  const done = _tickets.filter(t=>t.status==='completed').length;
-  const rjct = _tickets.filter(t=>t.status==='rejected').length;
-  const total = _tickets.length;
-
-  ge('donut-total').textContent = total;
-
-  if (_donutChart) _donutChart.destroy();
-  const ctx = ge('donutChart').getContext('2d');
-  _donutChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['รอดำเนินการ','รับงานแล้ว','กำลังซ่อม','สำเร็จ','ปฏิเสธ'],
-      datasets: [{
-        data: [pend,asgn,inpg,done,rjct],
-        backgroundColor: ['#f59e0b','#3b82f6','#8b5cf6','#22c55e','#ef4444'],
-        borderWidth: 3,
-        borderColor: '#fff',
-        hoverOffset: 8
-      }]
-    },
-    options: {
-      cutout: '68%',
-      responsive: true,
-      plugins: { legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.raw+' ('+Math.round(c.raw/(total||1)*100)+'%)';} }} }
+      }).join('');
     }
-  });
 
-  const colors = ['#f59e0b','#3b82f6','#8b5cf6','#22c55e','#ef4444'];
-  const labels = ['รอดำเนินการ','รับงาน','กำลังซ่อม','สำเร็จ','ปฏิเสธ'];
-  const vals   = [pend,asgn,inpg,done,rjct];
-  ge('donutLegend').innerHTML = labels.map((l,i)=>`
+    /* ── 3d. Donut chart ───────────────────────── */
+    function renderDonut() {
+      const pend = _tickets.filter(t => t.status === 'pending').length;
+      const asgn = _tickets.filter(t => t.status === 'assigned').length;
+      const inpg = _tickets.filter(t => t.status === 'in_progress').length;
+      const done = _tickets.filter(t => t.status === 'completed').length;
+      const rjct = _tickets.filter(t => t.status === 'rejected').length;
+      const total = _tickets.length;
+
+      ge('donut-total').textContent = total;
+
+      if (_donutChart) _donutChart.destroy();
+      const ctx = ge('donutChart').getContext('2d');
+      _donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['รอดำเนินการ', 'รับงานแล้ว', 'กำลังซ่อม', 'สำเร็จ', 'ปฏิเสธ'],
+          datasets: [{
+            data: [pend, asgn, inpg, done, rjct],
+            backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#22c55e', '#ef4444'],
+            borderWidth: 3,
+            borderColor: '#fff',
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          cutout: '68%',
+          responsive: true,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return ' ' + c.label + ': ' + c.raw + ' (' + Math.round(c.raw / (total || 1) * 100) + '%)'; } } } }
+        }
+      });
+
+      const colors = ['#f59e0b', '#3b82f6', '#8b5cf6', '#22c55e', '#ef4444'];
+      const labels = ['รอดำเนินการ', 'รับงาน', 'กำลังซ่อม', 'สำเร็จ', 'ปฏิเสธ'];
+      const vals = [pend, asgn, inpg, done, rjct];
+      ge('donutLegend').innerHTML = labels.map((l, i) => `
     <div class="donut-leg-item">
       <div class="donut-leg-left">
         <div class="donut-leg-dot" style="background:${colors[i]}"></div>
@@ -964,118 +1676,118 @@ function renderDonut() {
       </div>
       <div>
         <span class="donut-leg-val">${vals[i]}</span>
-        <span class="donut-leg-pct">• ${total?Math.round(vals[i]/total*100):0}%</span>
+        <span class="donut-leg-pct">• ${total ? Math.round(vals[i] / total * 100) : 0}%</span>
       </div>
     </div>`).join('');
-}
-
-/* ── 3e. Radar chart ───────────────────────── */
-function renderRadar() {
-  const deptCounts = {};
-  _techs.forEach(t => {
-    const dept = DEPT[t.specialty]||t.specialty||'อื่นๆ';
-    deptCounts[dept] = (deptCounts[dept]||0) + (t.activeJobs||0);
-  });
-
-  const labels = Object.keys(deptCounts);
-  const data   = Object.values(deptCounts);
-  if (!labels.length) return;
-
-  if (_radarChart) _radarChart.destroy();
-  const ctx = ge('radarChart').getContext('2d');
-  const grad = ctx.createRadialGradient(100,100,0,100,100,100);
-  grad.addColorStop(0,'rgba(82,183,136,.3)');
-  grad.addColorStop(1,'rgba(82,183,136,.05)');
-
-  _radarChart = new Chart(ctx, {
-    type:'radar',
-    data:{
-      labels,
-      datasets:[{
-        label:'งานค้าง',
-        data,
-        backgroundColor: grad,
-        borderColor:'#40916c',
-        borderWidth:2,
-        pointBackgroundColor:'#2d6a4f',
-        pointRadius:4,
-        pointHoverRadius:6
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
-      scales:{
-        r:{
-          ticks:{font:{size:10},color:'#94a3b8',backdropColor:'transparent',stepSize:1},
-          grid:{color:'rgba(0,0,0,.06)'},
-          pointLabels:{font:{size:11,weight:'600'},color:'#4a5568'}
-        }
-      }
     }
-  });
-}
 
-/* ── 3f. Gauge ─────────────────────────────── */
-function renderGauge() {
-  const ready = _techs.filter(t=>t.statusLabel==='READY').length;
-  const busy  = _techs.filter(t=>t.statusLabel==='BUSY').length;
-  const full  = _techs.filter(t=>t.statusLabel==='FULL').length;
-  const total = _techs.length || 1;
+    /* ── 3e. Radar chart ───────────────────────── */
+    function renderRadar() {
+      const deptCounts = {};
+      _techs.forEach(t => {
+        const dept = DEPT[t.specialty] || t.specialty || 'อื่นๆ';
+        deptCounts[dept] = (deptCounts[dept] || 0) + (t.activeJobs || 0);
+      });
 
-  ge('gaugeNum').textContent = ready;
-  ge('gsReady').textContent = ready;
-  ge('gsBusy').textContent = busy;
-  ge('gsFull').textContent = full;
+      const labels = Object.keys(deptCounts);
+      const data = Object.values(deptCounts);
+      if (!labels.length) return;
 
-  // Animate gauge fill
-  const pct = ready / total;
-  const arcTotal = 226; // roughly π * r (semi-circle)
-  const dashOffset = arcTotal - (pct * arcTotal);
-  const gaugeFill = ge('gaugeFill');
-  
-  gaugeFill.style.strokeDashoffset = dashOffset;
-  gaugeFill.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)';
+      if (_radarChart) _radarChart.destroy();
+      const ctx = ge('radarChart').getContext('2d');
+      const grad = ctx.createRadialGradient(100, 100, 0, 100, 100, 100);
+      grad.addColorStop(0, 'rgba(82,183,136,.3)');
+      grad.addColorStop(1, 'rgba(82,183,136,.05)');
 
-  // SLA segments
-  const tkTotal = _tickets.length || 1;
-  const done = _tickets.filter(t=>t.status==='completed').length;
-  const inpg = _tickets.filter(t=>t.status==='in_progress'||t.status==='assigned').length;
-  // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว
-  const breached = _tickets.filter(t => t.slaBreached && t.status !== 'completed' && t.status !== 'rejected').length;
-  const onTimePct  = Math.max(0, Math.round(done/tkTotal*100));
-  const nearPct    = Math.max(0, Math.round(inpg/tkTotal*100));
-  const breachPct  = Math.max(0, Math.round(breached/tkTotal*100));
-  const rem        = Math.max(0, 100-onTimePct-nearPct-breachPct);
+      _radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'งานค้าง',
+            data,
+            backgroundColor: grad,
+            borderColor: '#40916c',
+            borderWidth: 2,
+            pointBackgroundColor: '#2d6a4f',
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              ticks: { font: { size: 10 }, color: '#94a3b8', backdropColor: 'transparent', stepSize: 1 },
+              grid: { color: 'rgba(0,0,0,.06)' },
+              pointLabels: { font: { size: 11, weight: '600' }, color: '#4a5568' }
+            }
+          }
+        }
+      });
+    }
 
-  ge('slaSegRow').innerHTML =
-    `<div class="sla-seg" style="background:#22c55e;flex:${onTimePct||1}"></div>` +
-    `<div class="sla-seg" style="background:#3b82f6;flex:${rem||1}"></div>` +
-    `<div class="sla-seg" style="background:#f59e0b;flex:${nearPct||1}"></div>` +
-    `<div class="sla-seg" style="background:#ef4444;flex:${breachPct||1}"></div>`;
-}
+    /* ── 3f. Gauge ─────────────────────────────── */
+    function renderGauge() {
+      const ready = _techs.filter(t => t.statusLabel === 'READY').length;
+      const busy = _techs.filter(t => t.statusLabel === 'BUSY').length;
+      const full = _techs.filter(t => t.statusLabel === 'FULL').length;
+      const total = _techs.length || 1;
 
-/* ── 3g. Tech status list ──────────────────── */
-function renderTechStatusList() {
-  const el = ge('techStatusList');
-  if (!_techs.length) { el.innerHTML='<div style="text-align:center;color:var(--text-muted);padding:20px">ไม่มีข้อมูลช่าง</div>'; return; }
+      ge('gaugeNum').textContent = ready;
+      ge('gsReady').textContent = ready;
+      ge('gsBusy').textContent = busy;
+      ge('gsFull').textContent = full;
 
-  el.innerHTML = _techs.map(t=>{
-    const f = t.firstName || t.name || '?';
-    const l = t.lastName && t.lastName !== '-' ? t.lastName : '';
-    const initials = (f[0] + (l ? l[0] : '')).toUpperCase();
-    const badge = t.statusLabel==='READY'
-      ? '<span class="ts-badge ready">🟢 READY</span>'
-      : t.statusLabel==='BUSY'
-      ? '<span class="ts-badge busy">🟡 BUSY</span>'
-      : '<span class="ts-badge full">🔴 FULL</span>';
-    const dept = DEPT[t.specialty]||t.specialty||'—';
-    const icon = DEPT_ICON[t.specialty]||'👷';
-    const cap  = parseInt(t.capacity||0);
-    return `<div class="tech-status-item">
+      // Animate gauge fill
+      const pct = ready / total;
+      const arcTotal = 226; // roughly π * r (semi-circle)
+      const dashOffset = arcTotal - (pct * arcTotal);
+      const gaugeFill = ge('gaugeFill');
+
+      gaugeFill.style.strokeDashoffset = dashOffset;
+      gaugeFill.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)';
+
+      // SLA segments
+      const tkTotal = _tickets.length || 1;
+      const done = _tickets.filter(t => t.status === 'completed').length;
+      const inpg = _tickets.filter(t => t.status === 'in_progress' || t.status === 'assigned').length;
+      // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว
+      const breached = _tickets.filter(t => t.slaBreached && t.status !== 'completed' && t.status !== 'rejected').length;
+      const onTimePct = Math.max(0, Math.round(done / tkTotal * 100));
+      const nearPct = Math.max(0, Math.round(inpg / tkTotal * 100));
+      const breachPct = Math.max(0, Math.round(breached / tkTotal * 100));
+      const rem = Math.max(0, 100 - onTimePct - nearPct - breachPct);
+
+      ge('slaSegRow').innerHTML =
+        `<div class="sla-seg" style="background:#22c55e;flex:${onTimePct || 1}"></div>` +
+        `<div class="sla-seg" style="background:#3b82f6;flex:${rem || 1}"></div>` +
+        `<div class="sla-seg" style="background:#f59e0b;flex:${nearPct || 1}"></div>` +
+        `<div class="sla-seg" style="background:#ef4444;flex:${breachPct || 1}"></div>`;
+    }
+
+    /* ── 3g. Tech status list ──────────────────── */
+    function renderTechStatusList() {
+      const el = ge('techStatusList');
+      if (!_techs.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px">ไม่มีข้อมูลช่าง</div>'; return; }
+
+      el.innerHTML = _techs.map(t => {
+        const f = t.firstName || t.name || '?';
+        const l = t.lastName && t.lastName !== '-' ? t.lastName : '';
+        const initials = (f[0] + (l ? l[0] : '')).toUpperCase();
+        const badge = t.statusLabel === 'READY'
+          ? '<span class="ts-badge ready">🟢 READY</span>'
+          : t.statusLabel === 'BUSY'
+            ? '<span class="ts-badge busy">🟡 BUSY</span>'
+            : '<span class="ts-badge full">🔴 FULL</span>';
+        const dept = DEPT[t.specialty] || t.specialty || '—';
+        const icon = DEPT_ICON[t.specialty] || '👷';
+        const cap = parseInt(t.capacity || 0);
+        return `<div class="tech-status-item">
       <div class="tech-status-av">${initials}</div>
       <div style="flex:1;min-width:0">
-        <div class="tech-status-name">${icon} ${t.name||t.firstName||'?'}</div>
+        <div class="tech-status-name">${icon} ${t.name || t.firstName || '?'}</div>
         <div class="tech-status-dept">${dept}</div>
         <div class="tech-bar-wrap" style="margin-top:5px">
           <div class="tech-bar-track"><div class="tech-bar-fill" style="width:${cap}%"></div></div>
@@ -1083,76 +1795,77 @@ function renderTechStatusList() {
       </div>
       <div class="tech-status-right">
         ${badge}
-        <div class="tech-status-jobs" style="margin-top:4px">${t.activeJobs||0} งาน</div>
+        <div class="tech-status-jobs" style="margin-top:4px">${t.activeJobs || 0} งาน</div>
       </div>
     </div>`;
-  }).join('');
-}
+      }).join('');
+    }
 
-/* ── 3h. SLA panel ─────────────────────────── */
-function renderSLAOverview() {
-  const now = new Date();
-  const done = _tickets.filter(t=>t.status==='completed').length;
-  const pend = _tickets.filter(t=>t.status==='pending').length;
-  const inpg = _tickets.filter(t=>t.status==='in_progress').length;
-  const rjct = _tickets.filter(t=>t.status==='rejected').length;
-  // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว
-  const breached = _tickets.filter(t => t.slaBreached).length;
+    /* ── 3h. SLA panel ─────────────────────────── */
+    function renderSLAOverview() {
+      const now = new Date();
+      const done = _tickets.filter(t => t.status === 'completed').length;
+      const pend = _tickets.filter(t => t.status === 'pending').length;
+      const inpg = _tickets.filter(t => t.status === 'in_progress').length;
+      const rjct = _tickets.filter(t => t.status === 'rejected').length;
+      // ใช้ค่า slaBreached ที่ server คำนวณมาให้ถูกต้องแล้ว
+      const breached = _tickets.filter(t => t.slaBreached).length;
 
-  ge('slaOnTime').textContent = done;
-  ge('slaPending').textContent = pend;
-  ge('slaInProgress').textContent = inpg;
-  ge('slaBreached').textContent = breached;
-  ge('slaRejected').textContent = rjct;
-}
+      ge('slaOnTime').textContent = done;
+      ge('slaPending').textContent = pend;
+      ge('slaInProgress').textContent = inpg;
+      ge('slaBreached').textContent = breached;
+      ge('slaRejected').textContent = rjct;
+    }
 
-/* ── Helpers ───────────────────────────────── */
-function animNum(el, target) {
-  if(!el) return;
-  const start = parseInt(el.textContent)||0;
-  const steps = 24;
-  let step = 0;
-  const timer = setInterval(()=>{
-    step++;
-    el.textContent = Math.round(start + (target-start)*(step/steps));
-    if(step>=steps){ el.textContent=target; clearInterval(timer); }
-  }, 16);
-}
+    /* ── Helpers ───────────────────────────────── */
+    function animNum(el, target) {
+      if (!el) return;
+      const start = parseInt(el.textContent) || 0;
+      const steps = 24;
+      let step = 0;
+      const timer = setInterval(() => {
+        step++;
+        el.textContent = Math.round(start + (target - start) * (step / steps));
+        if (step >= steps) { el.textContent = target; clearInterval(timer); }
+      }, 16);
+    }
 
-function updatePageDate() {
-  const now = new Date();
-  const opt = {weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'};
-  ge('pageDateBadge').textContent = now.toLocaleString('th-TH',opt);
-}
+    function updatePageDate() {
+      const now = new Date();
+      const opt = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      ge('pageDateBadge').textContent = now.toLocaleString('th-TH', opt);
+    }
 
 
 
-async function refreshAll() {
-  try {
-    await fetchData();
-    renderAll();
-  } catch(e) { console.error(e); }
-}
+    async function refreshAll() {
+      try {
+        await fetchData();
+        renderAll();
+      } catch (e) { console.error(e); }
+    }
 
-/* ── Init ──────────────────────────────────── */
-async function init() {
-  try {
-    await fetchData();
-    renderAll();
-  } catch(e) {
-    console.error('Dashboard load error:', e);
-  }
+    /* ── Init ──────────────────────────────────── */
+    async function init() {
+      try {
+        await fetchData();
+        renderAll();
+      } catch (e) {
+        console.error('Dashboard load error:', e);
+      }
 
-  // Hide loading
-  const lo = ge('loadingOverlay');
-  lo.style.opacity = '0';
-  setTimeout(() => lo.style.display='none', 500);
+      // Hide loading
+      const lo = ge('loadingOverlay');
+      lo.style.opacity = '0';
+      setTimeout(() => lo.style.display = 'none', 500);
 
-  // Auto-refresh every 30s
-  setInterval(refreshAll, 30000);
-}
+      // Auto-refresh every 30s
+      setInterval(refreshAll, 30000);
+    }
 
-document.addEventListener('DOMContentLoaded', init);
-</script>
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
+
 </html>

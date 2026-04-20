@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────
    public/js/admin.js — Admin Dashboard Logic
    • Page navigation
    • Data loading (tickets + technicians)
@@ -1294,8 +1294,8 @@ function _openPdfWindow(data) {
       if (t.afterImage || (t.citizenImages && t.citizenImages.length) || t.citizenImage) {
         imgHtml += '<div class="rpt-card-imgs">';
         if (t.citizenImages && t.citizenImages.length > 0) {
-          t.citizenImages.forEach(function(img, i) {
-            imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(img) + '" class="rpt-img-card" alt="รูปปัญหา '+(i+1)+'"/><div class="rpt-img-label">📸 ก่อนซ่อม '+(i+1)+'</div></div>';
+          t.citizenImages.forEach(function (img, i) {
+            imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(img) + '" class="rpt-img-card" alt="รูปปัญหา ' + (i + 1) + '"/><div class="rpt-img-label">📸 ก่อนซ่อม ' + (i + 1) + '</div></div>';
           });
         } else if (t.citizenImage) {
           imgHtml += '<div class="rpt-img-wrap"><img src="' + escapeHTML(t.citizenImage) + '" class="rpt-img-card" alt="รูปปัญหา"/><div class="rpt-img-label">📸 ก่อนซ่อม</div></div>';
