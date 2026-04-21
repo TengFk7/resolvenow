@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>ResolveNow — Project Poster</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --navy: #0a1628;
+      --navy2: #0f2040;
+      --navy3: #162a52;
+      --blue: #1a4fa0;
+      --blue2: #2563eb;
+      --blue3: #3b82f6;
+      --gold: #f59e0b;
+      --gold2: #fbbf24;
+      --bg: #f0f4ff;
+      --white: #fff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+
+    body {
+      font-family: 'Prompt', 'Inter', sans-serif;
+      background: #e8edf8;
+      padding: 24px;
+      color: var(--text);
+    }
+
+    /* A4-ish poster */
+    .poster {
+      width: 1100px;
+      min-height: 780px;
+      margin: 0 auto;
+      background: var(--white);
+      border-radius: 20px;
+      box-shadow: 0 20px 80px rgba(10, 22, 40, .18);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── HEADER ──────────────────────────── */
+    .poster-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 60%, var(--blue) 100%);
+      padding: 28px 36px 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .poster-header::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: 200px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, .3), transparent 70%);
+    }
+
+    .poster-header::after {
+      content: '';
+      position: absolute;
+      bottom: -40px;
+      left: 380px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 191, 36, .15), transparent 70%);
+    }
+
+    .brand-col {}
+
+    .brand-title {
+      font-size: 48px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .brand-resolve {
+      background: linear-gradient(90deg, #60a5fa, #93c5fd, #60a5fa);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: 200% center
+      }
+    }
+
+    .brand-now {
+      color: var(--gold2);
+      -webkit-text-fill-color: var(--gold2);
+    }
+
+    .brand-sub {
+      font-size: 16px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, .75);
+      margin-top: 6px;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 20px;
+      padding: 5px 14px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, .8);
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .6;
+        transform: scale(1.3)
+      }
+    }
+
+    /* Team Box */
+    .team-box {
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 14px;
+      padding: 18px 22px;
+      min-width: 310px;
+      backdrop-filter: blur(12px);
+      position: relative;
+      z-index: 1;
+    }
+
+    .team-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold2);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .team-sub {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .65);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+    }
+
+    .team-member {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .85);
+      padding: 2px 0;
+    }
+
+    .team-member span {
+      color: rgba(255, 255, 255, .5);
+      font-size: 10px;
+    }
+
+    /* ── BODY ──────────────────────────── */
+    .poster-body {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 0;
+    }
+
+    .left-col {
+      padding: 24px 28px;
+    }
+
+    .right-col {
+      background: linear-gradient(180deg, #f8faff 0%, #f0f4ff 100%);
+      border-left: 1px solid var(--border);
+      padding: 24px 20px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 22px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: .3px;
+      border-left: 3px solid var(--blue2);
+      padding-left: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-title-th {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .section-title-en {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .section-body {
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.75;
+    }
+
+    /* Key points list */
+    .kp-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .kp-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12.5px;
+      color: #334155;
+      line-height: 1.6;
+    }
+
+    .kp-icon {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--blue2), var(--blue3));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #fff;
+      margin-top: 1px;
+    }
+
+    /* Impact grid */
+    .impact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .impact-card {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .impact-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--blue);
+      line-height: 1;
+    }
+
+    .impact-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* Flow diagram */
+    .flow-section {
+      margin-bottom: 20px;
+    }
+
+    .flow-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .flow-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      position: relative;
+      padding-bottom: 14px;
+    }
+
+    .flow-step:last-child {
+      padding-bottom: 0;
+    }
+
+    .flow-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .flow-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, .35);
+    }
+
+    .flow-line {
+      width: 2px;
+      flex: 1;
+      background: linear-gradient(180deg, var(--blue2), rgba(37, 99, 235, .2));
+      min-height: 18px;
+      margin-top: 2px;
+    }
+
+    .flow-content {
+      padding-top: 4px;
+    }
+
+    .flow-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .flow-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+
+    /* Tech Tools */
+    .tech-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .tech-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      transition: .2s;
+    }
+
+    .tech-card:hover {
+      border-color: var(--blue3);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, .12);
+    }
+
+    .tech-logo {
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+
+    .tech-name {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* Status bar at bottom */
+    .poster-footer {
+      background: linear-gradient(90deg, var(--navy), var(--navy3));
+      padding: 12px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .6);
+    }
+
+    .footer-url {
+      font-size: 11px;
+      color: var(--gold2);
+      font-weight: 600;
+    }
+
+    .footer-tags {
+      display: flex;
+      gap: 8px;
+    }
+
+    .footer-tag {
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .15);
+      font-size: 10px;
+      color: rgba(255, 255, 255, .7);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="poster">
+
+    <!-- HEADER -->
+    <div class="poster-header">
+      <div class="brand-col">
+        <div class="brand-title">
+          <span class="brand-resolve">Resolve</span><span class="brand-now">Now</span>
+        </div>
+        <div class="brand-sub">ระบบแจ้งเรื่องร้องเรียน — Smart City Complaint Platform</div>
+        <div class="brand-badge">
+          <span class="badge-dot"></span>
+          Production · Render.com · Node.js + MongoDB + LINE API
+        </div>
+      </div>
+      <div class="team-box">
+        <div class="team-title">👥 Team &amp; Advisor</div>
+        <div class="team-sub">อาจารย์ที่ปรึกษา : ชสรส (Advisor)</div>
+        <div class="team-grid">
+          <div class="team-member">นาย วุฒิไร พุลวัน</div>
+          <div class="team-member">นาย ชาตโยดม ช้อยเครือ</div>
+          <div class="team-member">นาย พิทักษพล ชินระสุรรณ</div>
+          <div class="team-member">นาย รุ่งกฤษฏิ์ ยู่ฮวารี</div>
+          <div class="team-member">นาย อนุกันต์ ไพรสังวร</div>
+          <div class="team-member">นาย สุรเดช วะระบุ</div>
+          <div class="team-member">นาย กรณัส กิรมย์ลักขัว</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="poster-body">
+
+      <!-- LEFT COL -->
+      <div class="left-col">
+
+        <!-- CHALLENGE -->
+        <div class="section">
+          <div class="section-title">
+            <span>⚡</span>
+            <div>
+              <div class="section-title-th">ที่มาและความสำคัญ</div>
+              <div class="section-title-en">The Challenge</div>
+            </div>
+          </div>
+          <div class="section-body">
+            ปัจจุบันการรับเรื่องร้องเรียนในองค์กรส่วนท้องถิ่น ยังขาดระบบที่มีประสิทธิภาพ
+            ทำให้เกิดความล่าช้าในการดำเนินการ ข้อมูลกระจัดกระจาย และขาดการติดตามสถานะ
+            โปรเจกต์นี้พัฒนาระบบรับแจ้งเรื่องร้องเรียนผ่าน <strong>LINE Official Account</strong> โดยนำ AI
+            วิเคราะห์และจัดการเรื่องร้องเรียนโดยอัตโนมัติ เพื่อยกระดับการบริการและความพึงพอใจของผู้ใช้งาน
+          </div>
+        </div>
+
+        <!-- SOLUTION -->
+        <div class="section">
+          <div class="section-title">
+            <span>🔧</span>
+            <div>
+              <div class="section-title-th">แนวทางการแก้ไขและฟังก์ชันหลัก</div>
+              <div class="section-title-en">Solution &amp; Key Functions</div>
+            </div>
+          </div>
+          <div class="kp-list">
+            <div class="kp-item">
+              <div class="kp-icon">📲</div>
+              <div>รับแจ้งเรื่องร้องเรียนผ่าน <strong>LINE Official Account</strong> และ Web Portal โดยมีหมวดหมู่ 7
+                ประเภท (ถนน, น้ำ, ไฟฟ้า, ขยะ, สัตว์, ต้นไม้, ภัยพิบัติ) พร้อมระบบ GPS</div>
+            </div>
+            <div class="kp-item">
+              <div class="kp-icon">🤖</div>
+              <div>ใช้ <strong>AI (Anthropic Claude)</strong> วิเคราะห์และจัดหมวดหมู่เรื่องร้องเรียนอัตโนมัติ พร้อมคำนวณ
+                Priority Score</div>
+            </div>
+            <div class="kp-item">
+              <div class="kp-icon">⚡</div>
+              <div>Real-time updates ด้วย <strong>Socket.io</strong> — Admin Dashboard
+                อัปเดตทันทีเมื่อมีเรื่องร้องเรียนใหม่</div>
+            </div>
+            <div class="kp-item">
+              <div class="kp-icon">📊</div>
+              <div>ระบบ <strong>SLA</strong> ติดตามกำหนดเวลา — urgent 8 ชม., medium 48 ชม., normal 72 ชม.
+                พร้อมแจ้งเตือนเมื่อเกินกำหนด</div>
+            </div>
+            <div class="kp-item">
+              <div class="kp-icon">🗺️</div>
+              <div><strong>Heatmap</strong> แสดงจุดร้องเรียนบนแผนที่ (Leaflet.js) และระบบ Admin Dashboard
+                สำหรับผู้บริหาร</div>
+            </div>
+            <div class="kp-item">
+              <div class="kp-icon">⭐</div>
+              <div>ประชาชนประเมินผลงานผ่าน <strong>LINE LIFF Rating</strong> (1–5 ดาว) หลังเรื่องร้องเรียนได้รับการแก้ไข
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMPACT -->
+        <div class="section">
+          <div class="section-title">
+            <span>🎯</span>
+            <div>
+              <div class="section-title-th">ประโยชน์ที่ได้รับ</div>
+              <div class="section-title-en">Impact</div>
+            </div>
+          </div>
+          <div class="impact-grid">
+            <div class="impact-card">
+              <div class="impact-num" style="color:#2563eb">3</div>
+              <div class="impact-label">บทบาทผู้ใช้งาน<br>ประชาชน · ช่าง · แอดมิน</div>
+            </div>
+            <div class="impact-card">
+              <div class="impact-num" style="color:#16a34a">7+</div>
+              <div class="impact-label">หมวดหมู่ร้องเรียน<br>พร้อม Custom Categories</div>
+            </div>
+            <div class="impact-card" style="background:linear-gradient(135deg,#fefce8,#fef9c3);border-color:#fde047;">
+              <div class="impact-num" style="color:#ca8a04">Real-time</div>
+              <div class="impact-label">Socket.io + LINE Push<br>แจ้งเตือนทันที</div>
+            </div>
+            <div class="impact-card" style="background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border-color:#d8b4fe;">
+              <div class="impact-num" style="color:#9333ea">SLA</div>
+              <div class="impact-label">ระบบติดตามกำหนดเวลา<br>ลดความล่าช้า</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /left-col -->
+
+      <!-- RIGHT COL -->
+      <div class="right-col">
+
+        <!-- FLOW -->
+        <div class="flow-section">
+          <div class="flow-title">🔄 กระบวนการทำงาน</div>
+          <div class="flow-diagram">
+
+            <div class="flow-step">
+              <div class="flow-left">
+                <div class="flow-circle">1</div>
+                <div class="flow-line"></div>
+              </div>
+              <div class="flow-content">
+                <div class="flow-name">📲 แจ้งเรื่องร้องเรียน</div>
+                <div class="flow-desc">ประชาชนแจ้งผ่าน LINE OA หรือ Web Portal พร้อมรูปภาพและ GPS</div>
+              </div>
+            </div>
+
+            <div class="flow-step">
+              <div class="flow-left">
+                <div class="flow-circle">2</div>
+                <div class="flow-line"></div>
+              </div>
+              <div class="flow-content">
+                <div class="flow-name">🤖 AI วิเคราะห์อัตโนมัติ</div>
+                <div class="flow-desc">Claude จัดหมวดหมู่ คำนวณ Priority Score ส่ง LINE notification</div>
+              </div>
+            </div>
+
+            <div class="flow-step">
+              <div class="flow-left">
+                <div class="flow-circle">3</div>
+                <div class="flow-line"></div>
+              </div>
+              <div class="flow-content">
+                <div class="flow-name">👨‍💼 Admin มอบหมายงาน</div>
+                <div class="flow-desc">แอดมินดู Dashboard มอบหมายช่างตามความเชี่ยวชาญและ Workload</div>
+              </div>
+            </div>
+
+            <div class="flow-step">
+              <div class="flow-left">
+                <div class="flow-circle">4</div>
+                <div class="flow-line"></div>
+              </div>
+              <div class="flow-content">
+                <div class="flow-name">🔨 ช่างดำเนินการ</div>
+                <div class="flow-desc">ช่างรับงาน อัปโหลดรูปก่อน-หลัง อัปเดตสถานะ In Progress → Completed</div>
+              </div>
+            </div>
+
+            <div class="flow-step">
+              <div class="flow-left">
+                <div class="flow-circle">5</div>
+              </div>
+              <div class="flow-content">
+                <div class="flow-name">⭐ ประชาชนประเมิน</div>
+                <div class="flow-desc">รับ LINE push → กดดาว 1–5 ผ่าน LIFF โดยไม่ต้อง login ระบบ</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TECH -->
+        <div>
+          <div class="tech-title">🛠️ Software Tools &amp; Technologies</div>
+          <div class="tech-grid">
+            <div class="tech-card">
+              <div class="tech-logo">⚛️</div>
+              <div class="tech-name">Node.js + Express</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">🍃</div>
+              <div class="tech-name">MongoDB Atlas</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">💚</div>
+              <div class="tech-name">LINE Messaging API</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">🔌</div>
+              <div class="tech-name">Socket.io v4</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">☁️</div>
+              <div class="tech-name">Cloudinary</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">🤖</div>
+              <div class="tech-name">Anthropic Claude AI</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">🗺️</div>
+              <div class="tech-name">Leaflet.js Heatmap</div>
+            </div>
+            <div class="tech-card">
+              <div class="tech-logo">🚀</div>
+              <div class="tech-name">Render.com Deploy</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /right-col -->
+    </div><!-- /poster-body -->
+
+    <!-- FOOTER -->
+    <div class="poster-footer">
+      <div class="footer-text">ResolveNow — ระบบรับแจ้งเรื่องร้องเรียน Smart City Platform · 2025–2026</div>
+      <div class="footer-tags">
+        <span class="footer-tag">#SmartCity</span>
+        <span class="footer-tag">#LINE OA</span>
+        <span class="footer-tag">#AI</span>
+        <span class="footer-tag">#SLA</span>
+      </div>
+      <div class="footer-url">resolvenow-hlv5.onrender.com</div>
+    </div>
+
+  </div><!-- /poster -->
+
+  <div style="text-align:center;margin-top:16px;font-size:12px;color:#94a3b8;">
+    ResolveNow Project Poster · พิมพ์ด้วย Ctrl+P เพื่อบันทึก PDF (กำหนดหน้า Landscape A3)
+  </div>
+
+</body>
+
+</html>

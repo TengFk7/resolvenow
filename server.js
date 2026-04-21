@@ -254,6 +254,11 @@ io.on('connection', (socket) => {
     res.sendFile(path.join(__dirname, 'public', 'executive-dashboard.html'))
   );
 
+  // ─── Project Poster ──────────────────────────────────────────────
+  app.get('/project', (req, res) =>
+    res.sendFile(path.join(__dirname, 'public', 'project-poster.html'))
+  );
+
   // ─── Fallback (SPA) ──────────────────────────────────────────
   app.get('*', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'index.html'))
