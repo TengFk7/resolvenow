@@ -8527,4 +8527,290 @@ a {
   }
 }
 
-
+
+/* ════════════════════════════════════════════════════════
+   DARK MODE — Comprehensive Override
+   แก้ปัญหาตัวอักษรจาง/มองไม่เห็นทั้งระบบ
+════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+
+  /* ── ALL "navy" coloured TEXT → bright readable ── */
+  .al h1,
+  .fg label,
+  .topbar-title h2,
+  .uname,
+  .sval,
+  .panel-head h3,
+  .ov-panel-title,
+  .ov-legend-label,
+  .ov-legend-count,
+  .ts-name,
+  .ncard h2,
+  .tctitle,
+  .slbl,
+  .urg-label,
+  .tab.on,
+  .tab:hover:not(.on),
+  .ts-num,
+  .catbox:hover,
+  .catbox.sel,
+  .loc-tab:hover:not(.on),
+  .uarea:hover {
+    color: #e2e8f0 !important;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: #0d1f3c !important;
+    border-bottom-color: rgba(255,255,255,.09) !important;
+    box-shadow: 0 1px 8px rgba(0,0,0,.35) !important;
+  }
+  .topbar-clock {
+    background: rgba(255,255,255,.07) !important;
+    border-color: rgba(255,255,255,.1) !important;
+    color: #94a3b8 !important;
+  }
+  .topbar-logout {
+    border-color: rgba(239,68,68,.35) !important;
+    background: rgba(239,68,68,.1) !important;
+    color: #fca5a5 !important;
+  }
+  .topbar-logout:hover { color: #fff !important; }
+
+  /* ── AUTH CARD ── */
+  .ac {
+    background: rgba(10,22,40,.97) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,.6) !important;
+  }
+  .tabs {
+    background: rgba(255,255,255,.07) !important;
+  }
+  .tab { color: #94a3b8 !important; }
+  .tab.on {
+    background: rgba(255,255,255,.14) !important;
+    color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3) !important;
+  }
+
+  /* ── FORM INPUTS ── */
+  .fg input, .fg select, .fg textarea,
+  .tech-note, .otp-box,
+  select, input[type="text"], input[type="search"],
+  input[type="email"], input[type="password"], input[type="tel"],
+  textarea {
+    background: rgba(255,255,255,.07) !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(255,255,255,.18) !important;
+  }
+  .fg input::placeholder, .fg textarea::placeholder,
+  .tech-note::placeholder {
+    color: rgba(255,255,255,.35) !important;
+  }
+  .fg input:focus, .fg select:focus, .fg textarea:focus {
+    border-color: var(--blue2) !important;
+    background: rgba(37,99,235,.08) !important;
+  }
+  .otp-info {
+    background: rgba(255,255,255,.05) !important;
+    color: #94a3b8 !important;
+  }
+  select option {
+    background: #0f2040 !important;
+    color: #e2e8f0 !important;
+  }
+
+  /* ── PANELS & CARDS ── */
+  .panel, .scard, .ncard, .nsc,
+  .ts-item, .ts-card, .tcard {
+    background: #0f2040 !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+  .panel-head {
+    border-bottom-color: rgba(255,255,255,.07) !important;
+  }
+  .ov-panel {
+    background: linear-gradient(160deg, #0f2040 60%, #0a1e3a 100%) !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+  .ov-panel-head {
+    border-bottom-color: rgba(255,255,255,.07) !important;
+  }
+  .ov-legend-item {
+    background: rgba(255,255,255,.05) !important;
+    border-color: rgba(255,255,255,.07) !important;
+  }
+  .ov-legend-item:hover {
+    background: rgba(255,255,255,.09) !important;
+    border-color: rgba(99,130,200,.3) !important;
+  }
+  .ov-legend-bar-track { background: rgba(255,255,255,.1) !important; }
+  .tchead {
+    background: linear-gradient(to right, #0d1f3c, #0f2040) !important;
+    border-bottom-color: rgba(255,255,255,.07) !important;
+  }
+
+  /* ── TABLES ── */
+  .queue-table th {
+    background: rgba(255,255,255,.04) !important;
+    border-bottom-color: rgba(255,255,255,.07) !important;
+    color: #94a3b8 !important;
+  }
+  .queue-table td {
+    border-bottom-color: rgba(255,255,255,.05) !important;
+    color: #cbd5e1 !important;
+  }
+  .queue-table tbody tr:hover {
+    background: rgba(255,255,255,.04) !important;
+  }
+  .queue-mob-card {
+    background: #0f2040 !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+
+  /* ── STATUS BADGES ── */
+  .sbadge.pending {
+    background: rgba(234,179,8,.18) !important;
+    color: #fde047 !important;
+    border-color: rgba(234,179,8,.35) !important;
+  }
+  .sbadge.assigned {
+    background: rgba(37,99,235,.18) !important;
+    color: #93c5fd !important;
+    border-color: rgba(37,99,235,.35) !important;
+  }
+  .sbadge.in_progress {
+    background: rgba(109,40,217,.2) !important;
+    color: #c4b5fd !important;
+    border-color: rgba(109,40,217,.35) !important;
+  }
+  .sbadge.completed {
+    background: rgba(22,163,74,.18) !important;
+    color: #86efac !important;
+    border-color: rgba(22,163,74,.35) !important;
+  }
+  .sbadge.rejected {
+    background: rgba(185,28,28,.18) !important;
+    color: #fca5a5 !important;
+    border-color: rgba(185,28,28,.35) !important;
+  }
+
+  /* ── CATEGORY BOXES & LOCATION TABS ── */
+  .catbox {
+    background: rgba(255,255,255,.05) !important;
+    border-color: rgba(255,255,255,.12) !important;
+    color: #94a3b8 !important;
+  }
+  .catbox:hover {
+    background: rgba(37,99,235,.12) !important;
+    border-color: rgba(37,99,235,.35) !important;
+  }
+  .catbox.sel {
+    background: linear-gradient(135deg, rgba(37,99,235,.2), rgba(37,99,235,.1)) !important;
+    border-color: var(--blue2) !important;
+    color: #93c5fd !important;
+  }
+  .loc-tabs { background: rgba(255,255,255,.07) !important; }
+  .loc-tab { color: #64748b !important; }
+  .loc-tab.on {
+    background: rgba(255,255,255,.14) !important;
+    color: #93c5fd !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3) !important;
+  }
+
+  /* ── UPLOAD & MISC LIGHT BACKGROUNDS ── */
+  .uarea {
+    background: rgba(255,255,255,.04) !important;
+    border-color: rgba(255,255,255,.15) !important;
+    color: #64748b !important;
+  }
+  .uarea:hover {
+    background: rgba(37,99,235,.08) !important;
+    border-color: var(--blue2) !important;
+    color: #93c5fd !important;
+  }
+  .urg-box {
+    background: rgba(255,255,255,.04) !important;
+    border-color: rgba(255,255,255,.12) !important;
+  }
+  .urg-box.urgent { background: rgba(239,68,68,.07) !important; }
+  .urg-box.medium { background: rgba(245,158,11,.07) !important; }
+  .urg-box.normal { background: rgba(34,197,94,.07) !important; }
+  .tech-card {
+    background: rgba(255,255,255,.05) !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+  .citizen-ticket {
+    background: rgba(255,255,255,.04) !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+  .citizen-ticket:hover { background: rgba(255,255,255,.07) !important; }
+
+  /* ── WORKFLOW STEPS ── */
+  .step {
+    background: rgba(255,255,255,.04) !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+  .sbody { border-top-color: rgba(255,255,255,.07) !important; }
+  .snum {
+    background: rgba(255,255,255,.1) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255,255,255,.1) !important;
+  }
+  .sstat {
+    background: rgba(255,255,255,.08) !important;
+    color: #94a3b8 !important;
+  }
+
+  /* ── IMAGE SLOTS ── */
+  .islot {
+    background: rgba(255,255,255,.05) !important;
+    border-color: rgba(255,255,255,.15) !important;
+  }
+  .islot:hover { background: rgba(37,99,235,.1) !important; }
+  .ilbl {
+    background: rgba(255,255,255,.05) !important;
+    color: #94a3b8 !important;
+  }
+
+  /* ── ACTION BUTTONS (gray/light) ── */
+  .abt-gray {
+    background: rgba(255,255,255,.08) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255,255,255,.12) !important;
+  }
+  .abt-gray:hover {
+    background: rgba(255,255,255,.15) !important;
+    color: #e2e8f0 !important;
+  }
+
+  /* ── MISC BARS & DIVIDERS ── */
+  .ts-bar-wrap { background: rgba(255,255,255,.1) !important; }
+  .ts-av-dot { border-color: #0f2040 !important; }
+  .divider-line { background: rgba(255,255,255,.1) !important; }
+
+  /* ── GPS BUTTON ── */
+  .gps-btn {
+    background: linear-gradient(135deg, rgba(37,99,235,.1), rgba(37,99,235,.07)) !important;
+    border-color: rgba(37,99,235,.35) !important;
+    color: #93c5fd !important;
+  }
+  .gps-result {
+    background: rgba(22,163,74,.08) !important;
+    border-color: rgba(22,163,74,.3) !important;
+    color: #86efac !important;
+  }
+
+  /* ── SEARCH DROPDOWN ── */
+  .loc-search-item {
+    background: #0f2040 !important;
+    border-bottom-color: rgba(255,255,255,.07) !important;
+    color: #e2e8f0 !important;
+  }
+  .loc-search-item:hover { background: rgba(37,99,235,.12) !important; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar-thumb {
+    background: rgba(99,130,200,.4) !important;
+  }
+
+} /* end @media (prefers-color-scheme: dark) */
