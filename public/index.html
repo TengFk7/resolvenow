@@ -30,14 +30,13 @@
 
 <body>
 
-  <!-- ── AUTH ──────────────────────────────────────────────── -->
+  <!-- ────────────────────────────────────────────── AUTH ──────────────────────────────────────────────── -->
   <div class="aw" id="authPage">
     <!-- Hero Panel (desktop) -->
     <div class="auth-hero">
-      <div class="auth-decor"></div>
-      <div class="auth-decor2"></div>
+      <div id="authOrbLayer" class="auth-orb-layer"></div>
       <div class="auth-hero-content">
-        <h1>Resolve<span>Now</span></h1>
+        <h1 class="logo-anim" style="font-size:52px;letter-spacing:-1.5px;"><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></h1>
       </div>
     </div>
 
@@ -618,15 +617,17 @@
               <!-- ── Panel: Place Search ── -->
               <div id="locPanelSearch" class="loc-panel" style="display:none">
                 <div style="position:relative;margin-bottom:8px">
-                  <input type="text" id="locSearchInput"
-                    placeholder="ค้นหาสถานที่ เช่น วัดอรุณ, ถนนสีลม..."
+                  <input type="text" id="locSearchInput" placeholder="ค้นหาสถานที่ เช่น วัดอรุณ, ถนนสีลม..."
                     oninput="debounceLocSearch()"
                     style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box;transition:var(--transition)"
                     onfocus="this.style.borderColor='var(--blue2)';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
-                  <span id="locSearchSpinner" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">⏳</span>
+                  <span id="locSearchSpinner"
+                    style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">⏳</span>
                 </div>
-                <div id="locSearchResults" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);display:none;max-height:220px;overflow-y:auto"></div>
+                <div id="locSearchResults"
+                  style="border-radius:12px;overflow:hidden;border:1px solid var(--border);display:none;max-height:220px;overflow-y:auto">
+                </div>
               </div>
 
               <!-- ── Shared: confirmed location preview ── -->
@@ -666,7 +667,8 @@
                   <!-- Dynamic previews injected via JS -->
                 </div>
 
-                <div id="cImgCountInfo" style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;text-align:right"></div>
+                <div id="cImgCountInfo"
+                  style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;text-align:right"></div>
 
                 <!-- Two-button picker (shown when no image) -->
                 <div id="cImgPickerBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -1464,6 +1466,67 @@
       <div style="width:48px"></div>
     </div>
   </div>
+
+  <script>
+    // ── Auth Hero Orb Background (matches track.html) ─────────
+    (function initAuthOrbs() {
+      const layer = document.getElementById('authOrbLayer');
+      if (!layer) return;
+
+      const orbConfigs = [
+        { type: 'gold', w: 420, h: 380, l: 8, t: -10, dur: 28, delay: 0, blur: 80, tx1: '50px', ty1: '70px', tx2: '100px', ty2: '25px', tx3: '25px', ty3: '95px' },
+        { type: 'gold', w: 300, h: 300, l: 58, t: 50, dur: 32, delay: 7, blur: 70, tx1: '-70px', ty1: '-55px', tx2: '-35px', ty2: '-110px', tx3: '-85px', ty3: '-28px' },
+        { type: 'blue', w: 380, h: 360, l: 60, t: -8, dur: 30, delay: 4, blur: 75, tx1: '-60px', ty1: '80px', tx2: '-110px', ty2: '35px', tx3: '-45px', ty3: '110px' },
+        { type: 'blue', w: 260, h: 240, l: -5, t: 55, dur: 26, delay: 11, blur: 65, tx1: '80px', ty1: '-45px', tx2: '55px', ty2: '-100px', tx3: '100px', ty3: '-18px' },
+        { type: 'teal', w: 200, h: 180, l: 75, t: 68, dur: 20, delay: 2, blur: 50, tx1: '-55px', ty1: '-70px', tx2: '-90px', ty2: '-28px', tx3: '-35px', ty3: '-90px' },
+        { type: 'teal', w: 160, h: 160, l: 20, t: 35, dur: 22, delay: 16, blur: 45, tx1: '60px', ty1: '55px', tx2: '35px', ty2: '90px', tx3: '80px', ty3: '18px' },
+      ];
+
+      orbConfigs.forEach(cfg => {
+        const el = document.createElement('div');
+        el.className = `auth-orb auth-orb-${cfg.type}`;
+        el.style.cssText = [
+          `width:${cfg.w}px`, `height:${cfg.h}px`,
+          `left:${cfg.l}%`, `top:${cfg.t}%`,
+          `--orb-dur:${cfg.dur}s`, `--orb-delay:${cfg.delay}s`,
+          `--orb-blur:${cfg.blur}px`,
+          `--tx1:${cfg.tx1}`, `--ty1:${cfg.ty1}`,
+          `--tx2:${cfg.tx2}`, `--ty2:${cfg.ty2}`,
+          `--tx3:${cfg.tx3}`, `--ty3:${cfg.ty3}`,
+        ].join(';');
+        layer.appendChild(el);
+      });
+
+      // Gold sparkles
+      [[8, 10, 20, 3.5, 0], [5, 25, 45, 4.2, 0.8], [7, 55, 15, 5.0, 1.6],
+      [6, 75, 30, 3.8, 2.4], [9, 88, 60, 4.5, 0.5], [5, 40, 72, 3.2, 1.9],
+      [6, 18, 85, 5.5, 3.1], [8, 62, 88, 4.0, 0.3]].forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'auth-sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`, `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle,rgba(251,191,36,.95) 0%,rgba(245,158,11,.4) 60%,transparent 100%)`,
+          `box-shadow:0 0 ${sz * 2}px ${sz}px rgba(251,191,36,.35)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+
+      // Blue sparkles
+      [[6, 30, 10, 4.8, 1.2], [7, 50, 50, 3.9, 2.0], [5, 70, 80, 5.2, 0.7],
+      [8, 15, 65, 4.1, 3.3], [6, 82, 42, 3.7, 1.5]].forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'auth-sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`, `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle,rgba(147,197,253,.9) 0%,rgba(96,165,250,.4) 60%,transparent 100%)`,
+          `box-shadow:0 0 ${sz * 2}px ${sz}px rgba(96,165,250,.3)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+    })();
+  </script>
 
 </body>
 

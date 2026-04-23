@@ -252,6 +252,17 @@
   --bd: #cbd5e1;
   --transition: .3s cubic-bezier(.4, 0, .2, 1);
 }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #0a1628;
+    --text: #e5e7eb;
+    --muted: #a1a1aa;
+    --card-bg: #162a52;
+    --border: rgba(255,255,255,.2);
+    --glass: rgba(255,255,255,.05);
+    --glass2: rgba(255,255,255,.85);
+  }
+}
 
 /* ── Reset ─────────────────────────────────────────────── */
 *,
@@ -435,7 +446,7 @@ a {
   overflow: hidden;
   display: flex;
   align-items: stretch;
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 60%, #1e3a6e 100%);
+  background: linear-gradient(160deg, #07111f 0%, #0c1e3a 50%, #101627 100%);
   transform-style: preserve-3d;
   z-index: 9999;
 }
@@ -456,8 +467,9 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 30% 40%, rgba(37, 99, 235, .3) 0%, transparent 60%),
-    radial-gradient(circle at 70% 80%, rgba(245, 158, 11, .15) 0%, transparent 50%);
+  background: radial-gradient(ellipse 60% 60% at 30% 40%, rgba(37, 99, 235, .18) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 70% 80%, rgba(245, 158, 11, .10) 0%, transparent 65%);
+  z-index: 0;
 }
 
 .auth-hero-content {
@@ -541,6 +553,69 @@ a {
   position: absolute;
   bottom: 60px;
   left: 40px;
+}
+
+/* ── Auth Hero Orb Layer (matches track.html atmosphere) ── */
+.auth-orb-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(var(--orb-blur, 60px));
+  opacity: 0;
+  animation: authOrbDrift var(--orb-dur, 22s) var(--orb-delay, 0s) ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.auth-orb-gold {
+  background: radial-gradient(circle at 40% 40%,
+    rgba(251, 191, 36, 0.55) 0%,
+    rgba(245, 158, 11, 0.25) 40%,
+    transparent 70%);
+}
+
+.auth-orb-blue {
+  background: radial-gradient(circle at 40% 40%,
+    rgba(96, 165, 250, 0.38) 0%,
+    rgba(37, 99, 235, 0.18) 40%,
+    transparent 70%);
+}
+
+.auth-orb-teal {
+  background: radial-gradient(circle at 40% 40%,
+    rgba(45, 212, 191, 0.32) 0%,
+    rgba(20, 184, 166, 0.14) 45%,
+    transparent 70%);
+}
+
+.auth-sparkle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: authSparkleTwinkle var(--sp-dur, 4s) var(--sp-delay, 0s) ease-in-out infinite;
+}
+
+@keyframes authOrbDrift {
+  0% { opacity: 0; transform: translate(0px, 0px) scale(1); }
+  8% { opacity: 1; }
+  25% { opacity: 0.85; transform: translate(var(--tx1), var(--ty1)) scale(1.06); }
+  50% { opacity: 0.7; transform: translate(var(--tx2), var(--ty2)) scale(0.96); }
+  75% { opacity: 0.85; transform: translate(var(--tx3), var(--ty3)) scale(1.04); }
+  92% { opacity: 1; }
+  100% { opacity: 0; transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes authSparkleTwinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  40% { opacity: 0.9; transform: scale(1); }
+  70% { opacity: 0.5; transform: scale(0.8); }
 }
 
 /* Auth card — starts off-screen right, slides in */
