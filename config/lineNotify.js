@@ -82,7 +82,8 @@ function brandRow() {
       text: '\uD83C\uDFDB\uFE0F ResolveNow',
       size: 'sm',
       color: T.brand,
-      weight: 'bold'
+      weight: 'bold',
+      align: 'center'
     }]
   };
 }
