@@ -699,15 +699,6 @@ async function notifyRatingThanks(ticket, stars) {
           weight: 'bold',
           margin: 'lg',
           wrap: true
-        },
-        {
-          type: 'text',
-          text: 'ความคิดเห็นของคุณช่วยพัฒนาบริการของเราให้ดียิ่งขึ้น',
-          size: 'xs',
-          align: 'center',
-          color: T.label,
-          margin: 'sm',
-          wrap: true
         }
       ]
     }
