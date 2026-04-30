@@ -10,7 +10,7 @@ const Ticket = require('../models/Ticket');
 const Counter = require('../models/Counter');
 const Comment = require('../models/Comment');
 const { STATUSES } = require('../data/store');
-const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected, notifyFollowers } = require('../config/lineNotify');
+const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected, notifyFollowers, notifyRatingThanks } = require('../config/lineNotify');
 const { upload: cloudinaryUpload, isCloudinaryConfigured, cloudinary, purgeTicketImages } = require('../config/cloudinary');
 
 // ─── SLA Deadline Helper ─────────────────────────────────────────
@@ -673,6 +673,10 @@ router.put('/:id/rating/liff', async (req, res) => {
 
     emitUpdate(req);
     console.log('[LIFF Rating] Ticket:', ticket.ticketId, '→', stars, 'ดาว');
+
+    // ส่ง LINE ขอบคุณ + แสดงดาวที่ user กด (non-blocking)
+    notifyRatingThanks(ticket, stars).catch(e => console.error('[LINE] notifyRatingThanks error:', e));
+
     res.json({ message: 'บันทึกคะแนนสำเร็จ', rating: stars });
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });

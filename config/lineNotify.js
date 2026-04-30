@@ -602,11 +602,129 @@ async function notifyFollowers(ticket, newStatus) {
   await Promise.all(tasks);
 }
 
+// ── notifyRatingThanks ──────────────────────────────────────────
+// ส่งข้อความขอบคุณ + แสดงดาวที่ user ให้ หลังจาก submit rating ผ่าน LIFF
+async function notifyRatingThanks(ticket, stars) {
+  if (!ticket.citizenLineId) return;
+
+  // ดาวที่ user เลือก (filled ★) และดาวที่เหลือ (empty ☆)
+  const starFilled = '\u2605'.repeat(stars);          // ★★★★★
+  const starEmpty  = '\u2606'.repeat(5 - stars);     // ☆☆☆☆☆
+  const starDisplay = starFilled + starEmpty;
+
+  const STAR_LABELS = ['', '😞 แย่มาก', '😐 พอใช้', '🙂 ดีพอควร', '😊 ดีมาก', '🤩 ดีเยี่ยม!'];
+  const label = STAR_LABELS[stars] || '';
+
+  // Header color: gold for 4-5 stars, blue for 3, muted for 1-2
+  const headerBg = stars >= 4 ? '#1a1400' : stars === 3 ? T.hProg : '#140a0a';
+  const starColor = stars >= 4 ? '#fbbf24' : stars === 3 ? '#60a5fa' : '#94a3b8';
+  const accentColor = stars >= 4 ? T.btnGold5 : stars === 3 ? T.btnBlue : '#94a3b8';
+
+  const bubble = {
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '20px',
+      backgroundColor: headerBg,
+      contents: [
+        brandRow(),
+        {
+          type: 'text',
+          text: '\u2B50 ขอบคุณสำหรับคะแนนที่คุณให้',
+          size: 'lg',
+          weight: 'bold',
+          color: '#ffffff',
+          margin: 'sm',
+          wrap: true
+        }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: '20px',
+      backgroundColor: T.bodyBg,
+      contents: [
+        // ── ดาวขนาดใหญ่ตรงกลาง ──
+        {
+          type: 'box',
+          layout: 'vertical',
+          margin: 'md',
+          contents: [
+            {
+              type: 'text',
+              text: starDisplay,
+              size: 'xxl',
+              align: 'center',
+              color: starColor,
+              margin: 'none'
+            },
+            {
+              type: 'text',
+              text: label + ' (' + stars + '/5 ดาว)',
+              size: 'sm',
+              align: 'center',
+              color: accentColor,
+              weight: 'bold',
+              margin: 'sm'
+            }
+          ]
+        },
+        { type: 'separator', margin: 'lg', color: T.sep },
+        // ── ข้อมูล ticket ──
+        {
+          type: 'box', layout: 'horizontal', margin: 'lg',
+          contents: [
+            { type: 'text', text: '\uD83D\uDCCB Ticket', size: 'sm', color: T.label, flex: 2 },
+            { type: 'text', text: ticket.ticketId, size: 'sm', color: T.value, weight: 'bold', flex: 3, align: 'end' }
+          ]
+        },
+        {
+          type: 'box', layout: 'horizontal', margin: 'sm',
+          contents: [
+            { type: 'text', text: '\uD83D\uDCCD สถานที่', size: 'sm', color: T.label, flex: 2 },
+            { type: 'text', text: ticket.location || '-', size: 'sm', color: T.value, flex: 3, align: 'end', wrap: true }
+          ]
+        },
+        { type: 'separator', margin: 'lg', color: T.sep },
+        // ── ข้อความปิดท้าย ──
+        {
+          type: 'text',
+          text: '\uD83C\uDF1F ขอบคุณที่ใช้บริการ ResolveNow',
+          size: 'sm',
+          align: 'center',
+          color: T.brand,
+          weight: 'bold',
+          margin: 'lg',
+          wrap: true
+        },
+        {
+          type: 'text',
+          text: 'ความคิดเห็นของคุณช่วยพัฒนาบริการของเราให้ดียิ่งขึ้น',
+          size: 'xs',
+          align: 'center',
+          color: T.label,
+          margin: 'sm',
+          wrap: true
+        }
+      ]
+    }
+  };
+
+  return pushTo(
+    ticket.citizenLineId,
+    [{ type: 'flex', altText: '⭐ ขอบคุณสำหรับคะแนน ' + stars + ' ดาว — ' + ticket.ticketId, contents: bubble }]
+  );
+}
+
 module.exports = {
   notifyNewTicket,
   notifyAssigned,
   notifyInProgress,
   notifyCompleted,
   notifyRejected,
-  notifyFollowers
+  notifyFollowers,
+  notifyRatingThanks
 };

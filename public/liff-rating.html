@@ -363,17 +363,74 @@
       text-align: center;
       padding: 8px 0;
     }
-    .success-icon {
-      font-size: 72px;
+    .success-confetti {
+      font-size: 60px;
+      margin-bottom: 12px;
+      animation: bounceIn .65s cubic-bezier(.34,1.56,.64,1) both;
+      display: block;
+    }
+    .success-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+    .success-thank {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 18px;
+      letter-spacing: 0.2px;
+    }
+    /* Big star row on success */
+    .success-stars {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 10px;
+      animation: fadeIn .5s .3s ease both;
+    }
+    .success-stars .ss {
+      font-size: 36px;
+      line-height: 1;
+      transition: color .15s;
+    }
+    .success-stars .ss.filled {
+      color: var(--gold2);
+      text-shadow: 0 0 16px rgba(251,191,36,.6), 0 0 6px rgba(245,158,11,.4);
+    }
+    .success-stars .ss.empty  { color: #cbd5e1; }
+    .success-rating-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold);
       margin-bottom: 20px;
-      animation: bounceIn .6s cubic-bezier(.34,1.56,.64,1) both;
+      letter-spacing: 0.2px;
+      animation: fadeIn .5s .45s ease both;
     }
-    @keyframes bounceIn {
-      from { opacity: 0; transform: scale(0.4); }
-      to   { opacity: 1; transform: scale(1); }
+    /* Divider */
+    .success-divider {
+      width: 80%;
+      height: 1px;
+      background: rgba(99,130,200,.15);
+      margin: 0 auto 16px;
+      animation: fadeIn .5s .5s ease both;
     }
-    .success-title { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
-    .success-sub   { font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .success-sub {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.7;
+      animation: fadeIn .5s .55s ease both;
+    }
+    .success-brand {
+      margin-top: 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      letter-spacing: 0.5px;
+      animation: fadeIn .5s .65s ease both;
+    }
 
     /* === Already Rated === */
     .already-rated {
@@ -382,6 +439,10 @@
       align-items: center;
       text-align: center;
       padding: 8px 0;
+    }
+    @keyframes bounceIn {
+      from { opacity: 0; transform: scale(0.4); }
+      to   { opacity: 1; transform: scale(1); }
     }
 
     /* === Error State (bad params) === */
@@ -461,9 +522,21 @@
 
     <!-- Success Screen -->
     <div class="success-screen" id="successScreen">
-      <div class="success-icon">🎉</div>
-      <div class="success-title">ขอบคุณครับ!</div>
-      <div class="success-sub">ข้อมูลของคุณถูกบันทึกแล้ว<br>ความคิดเห็นของคุณจะช่วยพัฒนาบริการของเรา</div>
+      <span class="success-confetti">🎉</span>
+      <div class="success-title">ขอบคุณสำหรับคะแนนที่คุณให้!</div>
+      <div class="success-thank">ขอบคุณที่ใช้บริการ ResolveNow 🌟</div>
+      <!-- Stars filled dynamically by JS -->
+      <div class="success-stars" id="successStars">
+        <span class="ss empty">☆</span>
+        <span class="ss empty">☆</span>
+        <span class="ss empty">☆</span>
+        <span class="ss empty">☆</span>
+        <span class="ss empty">☆</span>
+      </div>
+      <div class="success-rating-label" id="successRatingLabel"></div>
+      <div class="success-divider"></div>
+      <div class="success-sub">ความคิดเห็นของคุณถูกบันทึกแล้ว<br>และจะช่วยพัฒนาบริการของเราให้ดียิ่งขึ้น</div>
+      <div class="success-brand">🏛️ ResolveNow — ระบบรับแจ้งเรื่องร้องเรียน</div>
     </div>
 
     <!-- Already rated -->
@@ -656,7 +729,16 @@
         throw new Error(data.error || "เกิดข้อผิดพลาด");
       }
       showOnly(successScreen); successScreen.style.display = "flex";
-      setTimeout(function() { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 2500);
+      // Fill success stars
+      var ssNodes = document.querySelectorAll('#successStars .ss');
+      ssNodes.forEach(function(el, i) {
+        if (i < selected) { el.textContent = '\u2605'; el.classList.add('filled'); el.classList.remove('empty'); }
+        else              { el.textContent = '\u2606'; el.classList.remove('filled'); el.classList.add('empty'); }
+      });
+      var LABELS = ['', '\uD83D\uDE1E \u0e41\u0e22\u0e48\u0e21\u0e32\u0e01', '\uD83D\uDE10 \u0e1e\u0e2d\u0e43\u0e0a\u0e49', '\uD83D\uDE42 \u0e14\u0e35\u0e1e\u0e2d\u0e04\u0e27\u0e23', '\uD83D\uDE0A \u0e14\u0e35\u0e21\u0e32\u0e01', '\uD83E\uDD29 \u0e14\u0e35\u0e40\u0e22\u0e35\u0e48\u0e22\u0e21!'];
+      var rlEl = document.getElementById('successRatingLabel');
+      if (rlEl) rlEl.textContent = (LABELS[selected] || '') + ' (' + selected + '/5 \u0e14\u0e32\u0e27)';
+      setTimeout(function() { if (window.liff && liff.isInClient()) liff.closeWindow(); }, 3500);
     } catch(err) {
       showError(err.message || "ไม่สามารถส่งการประเมินได้ กรุณาลองใหม่");
       submitting = false;
