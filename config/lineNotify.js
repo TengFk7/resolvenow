@@ -117,7 +117,8 @@ function makeBubble({ headerBg, headerTitle, headerTitleColor, rows, footerBtns 
           weight: 'bold',
           color: headerTitleColor || T.title,
           margin: 'sm',
-          wrap: true
+          wrap: true,
+          align: 'center'
         }
       ],
       backgroundColor: headerBg || T.headerBg2,
@@ -426,7 +427,7 @@ async function notifyCompleted(ticket) {
           layout: 'vertical',
           contents: [
             brandRow(),
-            { type: 'text', text: '\uD83C\uDF89 งานเสร็จสิ้นแล้ว!', size: 'xl', weight: 'bold', color: T.title, margin: 'sm' }
+            { type: 'text', text: '\uD83C\uDF89 งานเสร็จสิ้นแล้ว!', size: 'xl', weight: 'bold', color: T.title, margin: 'sm', align: 'center', wrap: true }
           ],
           backgroundColor: T.hDone,
           paddingAll: '20px'
@@ -638,7 +639,8 @@ async function notifyRatingThanks(ticket, stars) {
           weight: 'bold',
           color: '#ffffff',
           margin: 'sm',
-          wrap: true
+          wrap: true,
+          align: 'center'
         }
       ]
     },
