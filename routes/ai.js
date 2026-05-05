@@ -1,18 +1,12 @@
 // ─── routes/ai.js ─────────────────────────────────────────────
-// POST /api/ai/urgency  — วิเคราะห์ระดับความเร่งด่วนด้วย Gemini 2.5 Flash (หลัก)
-//                         fallback → rule-based
+// POST /api/ai/urgency  — วิเคราะห์ระดับความเร่งด่วนด้วย Claude
 // รับ: { description, category }
 
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const { GoogleGenAI } = require('@google/genai');
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const CLAUDE_KEY  = process.env.ANTHROPIC_API_KEY;
-
-// ── Gemini client (สร้างครั้งเดียว ถ้ามี key) ────────────────────
-const genAI = GEMINI_KEY ? new GoogleGenAI({ apiKey: GEMINI_KEY }) : null;
+const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY;
 
 // ── Rule-based fallback ──────────────────────────────────────────
 // ใช้เมื่อ CLAUDE ไม่พร้อมหรือ network error
@@ -251,9 +245,14 @@ const FEW_SHOT = `
 กีดขวาง | "เพื่อนบ้านปลูกต้นไม้กิ่งยื่นเข้ามาในรั้วบ้านเราเล็กน้อย" → normal
 `;
 
-// ── Gemini urgency analyzer ─────────────────────────────────────
-async function geminiUrgency(description, category) {
-  if (!genAI) return null;
+router.post('/urgency', async (req, res) => {
+  const { description, category } = req.body;
+  if (!description || description.trim().length < 5)
+    return res.json({ urgency: ruleBasedUrgency('', category), source: 'default' });
+
+  if (!CLAUDE_KEY) {
+    return res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
+  }
 
   const catCtx = CAT_CONTEXT[category] || 'ประเภท: ทั่วไป';
   const prompt = `คุณคือระบบจำแนกระดับความเร่งด่วนของคำร้องเรียนจากประชาชนในไทย ตอบด้วยคำเดียวเท่านั้น: urgent, medium, หรือ normal
@@ -268,111 +267,47 @@ ${catCtx}
 รายละเอียด: "${description.replace(/"/g, "'")}"
 คำตอบ (urgent/medium/normal):`;
 
-  const response = await genAI.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: { temperature: 0, maxOutputTokens: 8, thinkingConfig: { thinkingBudget: 0 } }
+  const body = JSON.stringify({
+    model: 'claude-haiku-4-5',
+    max_tokens: 8,
+    temperature: 0,
+    messages: [{ role: 'user', content: prompt }]
   });
-
-  const text = (response.text || '').trim().toLowerCase();
-  console.log(`[Gemini urgency] [${category}] "${description.slice(0, 50)}" → "${text}"`);
-
-  if (text.includes('urgent')) return 'urgent';
-  if (text.includes('medium')) return 'medium';
-  if (text.includes('normal')) return 'normal';
-  return null; // unexpected → fallback
-}
-
-router.post('/urgency', async (req, res) => {
-  const { description, category } = req.body;
-  if (!description || description.trim().length < 5)
-    return res.json({ urgency: ruleBasedUrgency('', category), source: 'default' });
-
-  // ── 1. ลอง Gemini ก่อน (ถ้ามี GEMINI_API_KEY) ──────────────────
-  if (genAI) {
-    try {
-      const urgency = await geminiUrgency(description, category);
-      if (urgency) return res.json({ urgency, source: 'gemini' });
-    } catch (err) {
-      console.error('[Gemini] error:', err.message);
-    }
-  }
-
-  // ── 2. Fallback → rule-based ────────────────────────────────────
-  return res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
-});
-
-// ── Embedding cache (in-memory, expires 30 min) ──────────────────
-const _embCache = new Map(); // ticketId → { vec, expiresAt }
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-function _cacheClean() {
-  const now = Date.now();
-  for (const [k, v] of _embCache) { if (v.expiresAt < now) _embCache.delete(k); }
-}
-
-async function getEmbedding(text) {
-  if (!genAI) return null;
-  const resp = await genAI.models.embedContent({
-    model: 'gemini-embedding-001',
-    contents: text,
-    config: { taskType: 'SEMANTIC_SIMILARITY' }
-  });
-  return resp.embeddings[0].values;
-}
-
-function cosineSim(a, b) {
-  let dot = 0, na = 0, nb = 0;
-  for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] ** 2; nb += b[i] ** 2; }
-  return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-9);
-}
-
-// POST /api/ai/similar — ค้นหา ticket ที่คล้ายกันด้วย Gemini Embedding
-const Ticket = require('../models/Ticket');
-
-router.post('/similar', async (req, res) => {
-  const { description } = req.body;
-  if (!description || description.trim().length < 5)
-    return res.json({ tickets: [] });
-  if (!genAI)
-    return res.json({ tickets: [], source: 'disabled' });
 
   try {
-    // 1. Embed คำร้องปัจจุบัน
-    const queryVec = await getEmbedding(description.trim());
-    if (!queryVec) return res.json({ tickets: [] });
-
-    // 2. ดึง ticket (pending/assigned/in_progress) ล่าสุด 200 รายการ
-    _cacheClean();
-    const tickets = await Ticket.find(
-      { status: { $in: ['pending', 'assigned', 'in_progress', 'completed'] } },
-      { ticketId: 1, description: 1, category: 1, status: 1, urgency: 1, citizenImage: 1, createdAt: 1 }
-    ).sort({ createdAt: -1 }).limit(200).lean();
-
-    // 3. Embed ทุก ticket (ใช้ cache ถ้ามี)
-    const now = Date.now();
-    const embedJobs = tickets.map(async (t) => {
-      const cached = _embCache.get(t.ticketId);
-      if (cached && cached.expiresAt > now) return { t, vec: cached.vec };
-      const vec = await getEmbedding(t.description);
-      if (vec) _embCache.set(t.ticketId, { vec, expiresAt: now + CACHE_TTL });
-      return { t, vec };
+    const result = await new Promise((resolve) => {
+      const reqC = https.request({
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          'x-api-key': CLAUDE_KEY,
+          'anthropic-version': '2023-06-01'
+        }
+      }, (r) => {
+        let d = '';
+        r.on('data', c => (d += c));
+        r.on('end', () => {
+          try {
+            const json = JSON.parse(d);
+            const text = (json.content?.[0]?.text || '').trim().toLowerCase();
+            console.log(`[AI urgency] [${category}] "${description.slice(0, 50)}" → "${text}"`);
+            if (text.includes('urgent')) resolve('urgent');
+            else if (text.includes('medium')) resolve('medium');
+            else if (text.includes('normal')) resolve('normal');
+            else { console.log('[AI] unexpected response, using rule-based'); resolve(ruleBasedUrgency(description, category)); }
+          } catch { resolve(ruleBasedUrgency(description, category)); }
+        });
+      });
+      reqC.on('error', () => resolve(ruleBasedUrgency(description, category)));
+      reqC.write(body);
+      reqC.end();
     });
-    const results = await Promise.all(embedJobs);
-
-    // 4. คำนวณ cosine similarity แล้ว filter >= 0.75
-    const scored = results
-      .filter(r => r.vec)
-      .map(r => ({ ...r.t, score: cosineSim(queryVec, r.vec) }))
-      .filter(r => r.score >= 0.75)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-
-    console.log(`[Gemini Embedding] similar for "${description.slice(0, 40)}" → ${scored.length} results`);
-    res.json({ tickets: scored, source: 'embedding' });
-  } catch (err) {
-    console.error('[Gemini Embedding] error:', err.message);
-    res.json({ tickets: [], error: err.message });
+    res.json({ urgency: result, source: 'ai' });
+  } catch {
+    res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
   }
 });
 

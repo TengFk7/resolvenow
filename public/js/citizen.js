@@ -170,8 +170,6 @@ function aiSuggestUrgency() {
     ge('urgAiBox').style.background = '#f8fafc';
     ge('urgAiBox').style.borderColor = '#cbd5e0';
     hideE('urgErr');
-    // ซ่อน similar panel ด้วยเมื่อ desc สั้น
-    var sb = ge('similarBox'); if (sb) sb.style.display = 'none';
     return;
   }
   // debounce 900ms
@@ -208,58 +206,6 @@ function aiSuggestUrgency() {
       ge('urgAiSub').textContent = 'กรุณาตรวจสอบการเชื่อมต่อ';
     }
   }, 900);
-}
-
-/* ── AI Similar Tickets (Gemini Embedding) ──────────── */
-var _simTimer = null;
-function aiSuggestSimilar() {
-  var desc = ge('tDesc').value.trim();
-  var sb = ge('similarBox');
-  if (!sb) return;
-  if (desc.length < 10) { sb.style.display = 'none'; return; }
-
-  clearTimeout(_simTimer);
-  _simTimer = setTimeout(async function () {
-    try {
-      var r = await fetch('/api/ai/similar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc })
-      });
-      var d = await r.json();
-      var tickets = d.tickets || [];
-      if (!tickets.length) { sb.style.display = 'none'; return; }
-
-      var urgIcon = { urgent: '⚡', medium: '⏰', normal: '🔵' };
-      var stMap = { pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น' };
-      var stColor = { pending: '#f59e0b', assigned: '#3b82f6', in_progress: '#8b5cf6', completed: '#22c55e' };
-      var pct = function(s) { return Math.round(s * 100); };
-
-      var h = '';
-      tickets.forEach(function(t) {
-        var icon = urgIcon[t.urgency] || '🔵';
-        var stLabel = stMap[t.status] || t.status;
-        var stClr = stColor[t.status] || '#94a3b8';
-        var matchPct = pct(t.score);
-        h += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:8px;transition:.2s" ' +
-          'onmouseenter="this.style.background=\'#f0f4ff\';this.style.borderColor=\'#93c5fd\'" ' +
-          'onmouseleave="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'">';
-        h += '<div style="font-size:20px;flex-shrink:0;margin-top:2px">' + icon + '</div>';
-        h += '<div style="flex:1;min-width:0">';
-        h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
-        h += '<span style="font-size:11px;font-weight:700;color:#64748b">' + escapeHTML(t.ticketId) + '</span>';
-        h += '<span style="font-size:10px;font-weight:700;color:' + stClr + ';background:' + stClr + '18;padding:1px 7px;border-radius:999px">' + stLabel + '</span>';
-        h += '<span style="margin-left:auto;font-size:10px;color:#22c55e;font-weight:700;background:#f0fdf4;padding:1px 7px;border-radius:999px">🔗 ' + matchPct + '%</span>';
-        h += '</div>';
-        h += '<div style="font-size:12px;color:#334155;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHTML(t.description) + '</div>';
-        h += '</div></div>';
-      });
-      ge('similarList').innerHTML = h;
-      sb.style.display = 'block';
-    } catch (e) {
-      var sb2 = ge('similarBox'); if (sb2) sb2.style.display = 'none';
-    }
-  }, 1200); // debounce 1.2s (หลัง urgency 0.9s)
 }
 
 
