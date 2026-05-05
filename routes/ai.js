@@ -7,6 +7,7 @@ const router = express.Router();
 const https = require('https');
 
 const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
 // ── Rule-based fallback ──────────────────────────────────────────
 // ใช้เมื่อ CLAUDE ไม่พร้อมหรือ network error
@@ -250,10 +251,6 @@ router.post('/urgency', async (req, res) => {
   if (!description || description.trim().length < 5)
     return res.json({ urgency: ruleBasedUrgency('', category), source: 'default' });
 
-  if (!CLAUDE_KEY) {
-    return res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
-  }
-
   const catCtx = CAT_CONTEXT[category] || 'ประเภท: ทั่วไป';
   const prompt = `คุณคือระบบจำแนกระดับความเร่งด่วนของคำร้องเรียนจากประชาชนในไทย ตอบด้วยคำเดียวเท่านั้น: urgent, medium, หรือ normal
 
@@ -267,48 +264,97 @@ ${catCtx}
 รายละเอียด: "${description.replace(/"/g, "'")}"
 คำตอบ (urgent/medium/normal):`;
 
-  const body = JSON.stringify({
-    model: 'claude-haiku-4-5',
-    max_tokens: 8,
-    temperature: 0,
-    messages: [{ role: 'user', content: prompt }]
-  });
-
-  try {
-    const result = await new Promise((resolve) => {
-      const reqC = https.request({
-        hostname: 'api.anthropic.com',
-        path: '/v1/messages',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body),
-          'x-api-key': CLAUDE_KEY,
-          'anthropic-version': '2023-06-01'
-        }
-      }, (r) => {
-        let d = '';
-        r.on('data', c => (d += c));
-        r.on('end', () => {
-          try {
-            const json = JSON.parse(d);
-            const text = (json.content?.[0]?.text || '').trim().toLowerCase();
-            console.log(`[AI urgency] [${category}] "${description.slice(0, 50)}" → "${text}"`);
-            if (text.includes('urgent')) resolve('urgent');
-            else if (text.includes('medium')) resolve('medium');
-            else if (text.includes('normal')) resolve('normal');
-            else { console.log('[AI] unexpected response, using rule-based'); resolve(ruleBasedUrgency(description, category)); }
-          } catch { resolve(ruleBasedUrgency(description, category)); }
+  // 1. Try Gemini 2.5 Flash
+  if (GEMINI_KEY) {
+    try {
+      const urgency = await new Promise((resolve, reject) => {
+        const body = JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 1024 }
         });
+        const reqC = https.request({
+          hostname: 'generativelanguage.googleapis.com',
+          path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+          }
+        }, (r) => {
+          let d = '';
+          r.on('data', c => (d += c));
+          r.on('end', () => {
+            try {
+              const json = JSON.parse(d);
+              if (json.error) return reject(json.error.message);
+              const text = (json.candidates?.[0]?.content?.parts?.[0]?.text || '').trim().toLowerCase();
+              console.log(`[AI urgency] [Gemini] [${category}] "${description.slice(0, 50)}" → "${text}"`);
+              if (text.includes('urgent')) resolve('urgent');
+              else if (text.includes('medium')) resolve('medium');
+              else if (text.includes('normal')) resolve('normal');
+              else reject('Unexpected response');
+            } catch (e) { reject(e); }
+          });
+        });
+        reqC.on('error', reject);
+        reqC.write(body);
+        reqC.end();
       });
-      reqC.on('error', () => resolve(ruleBasedUrgency(description, category)));
-      reqC.write(body);
-      reqC.end();
-    });
-    res.json({ urgency: result, source: 'ai' });
-  } catch {
-    res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
+      return res.json({ urgency, source: 'gemini' });
+    } catch (err) {
+      console.log(`[AI urgency] [Gemini] failed: ${err.message || err}, falling back to Claude...`);
+    }
   }
+
+  // 2. Try Claude
+  if (CLAUDE_KEY) {
+    try {
+      const urgency = await new Promise((resolve, reject) => {
+        const body = JSON.stringify({
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 8,
+          temperature: 0,
+          messages: [{ role: 'user', content: prompt }]
+        });
+        const reqC = https.request({
+          hostname: 'api.anthropic.com',
+          path: '/v1/messages',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+            'x-api-key': CLAUDE_KEY,
+            'anthropic-version': '2023-06-01'
+          }
+        }, (r) => {
+          let d = '';
+          r.on('data', c => (d += c));
+          r.on('end', () => {
+            try {
+              const json = JSON.parse(d);
+              if (json.error) return reject(json.error.message);
+              const text = (json.content?.[0]?.text || '').trim().toLowerCase();
+              console.log(`[AI urgency] [Claude] [${category}] "${description.slice(0, 50)}" → "${text}"`);
+              if (text.includes('urgent')) resolve('urgent');
+              else if (text.includes('medium')) resolve('medium');
+              else if (text.includes('normal')) resolve('normal');
+              else reject('Unexpected response');
+            } catch (e) { reject(e); }
+          });
+        });
+        reqC.on('error', reject);
+        reqC.write(body);
+        reqC.end();
+      });
+      return res.json({ urgency, source: 'claude' });
+    } catch (err) {
+      console.log(`[AI urgency] [Claude] failed: ${err.message || err}, falling back to rule-based...`);
+    }
+  }
+
+  // 3. Fallback to Rule-based
+  console.log(`[AI urgency] [Rule-based] using fallback for "${description.slice(0, 50)}"`);
+  return res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
 });
 
 module.exports = router;
