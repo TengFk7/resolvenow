@@ -562,7 +562,7 @@
                   style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">รายละเอียด
                   <span style="color:var(--r)">*</span></label>
                 <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ เช่น ท่อน้ำแตกที่หน้าบ้าน..." maxlength="200"
-                  oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestUrgency()"
+                  oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestUrgency(); aiSuggestSimilar()"
                   style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;outline:none;background:#fafafa;font-family:'Prompt',sans-serif;resize:vertical;min-height:100px;transition:var(--transition)"
                   onfocus="this.style.borderColor='var(--blue2)';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
                   onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"></textarea>
@@ -582,6 +582,13 @@
                 </div>
                 <input type="hidden" id="tUrg" value="" />
               </div>
+              <!-- ── Similar Tickets Panel (Gemini Embedding) ── -->
+              <div id="similarBox" style="display:none;margin-bottom:18px">
+                <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+                  🔍 เรื่องคล้ายกันที่เคยแจ้งแล้ว</div>
+                <div id="similarList"></div>
+              </div>
+
               <div class="wiz-nav">
                 <button class="wiz-back btn-ripple" onclick="wizBack(2)">← ย้อนกลับ</button>
                 <button class="wiz-next btn-ripple" onclick="wizNext(2)">ถัดไป →</button>
