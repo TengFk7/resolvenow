@@ -217,9 +217,8 @@ io.on('connection', (socket) => {
 </html>`;
 
   app.get('/Datadic', (req, res) => {
-    if (req.session && req.session.dadicAuth) {
-      return res.sendFile(path.join(__dirname, 'data_dictionary.html'));
-    }
+    // ต้อง login ใหม่ทุกครั้ง — ล้าง session ทุก GET เพื่อไม่ให้ cache
+    if (req.session) req.session.dadicAuth = false;
     res.send(DADIC_PAGE());
   });
 
@@ -236,8 +235,8 @@ io.on('connection', (socket) => {
       if (!user) return res.send(DADIC_PAGE('ไม่พบบัญชี Admin หรืออีเมลไม่ถูกต้อง'));
       const ok = await bcryptDadic.compare(password, user.password);
       if (!ok) return res.send(DADIC_PAGE('รหัสผ่านไม่ถูกต้อง'));
-      req.session.dadicAuth = true;
-      return res.redirect('/Datadic');
+      // ✅ ผ่านแล้ว — ส่งไฟล์ตรงๆ โดยไม่เก็บ session (ต้อง login ใหม่ทุกครั้ง)
+      return res.sendFile(path.join(__dirname, 'data_dictionary.html'));
     } catch (err) {
       console.error('[Datadic] login error:', err.message);
       return res.send(DADIC_PAGE('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'));

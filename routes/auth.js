@@ -194,7 +194,8 @@ router.get('/me', async (req, res) => {
     if (!user) return res.json({ loggedIn: false });
     res.json({ id: user._id, firstName: user.firstName, lastName: user.lastName,
                email: user.email, role: user.role, specialty: user.specialty,
-               lineUserId: user.lineUserId, avatar: user.avatar, loggedIn: true });
+               lineUserId: user.lineUserId, avatar: user.avatar,
+               createdViaLine: !!user.createdViaLine, loggedIn: true });
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 

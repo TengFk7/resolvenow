@@ -501,10 +501,164 @@
         display: none;
       }
     }
+    /* ── Login Overlay ────────────────────────────────────────── */
+    #ddLoginOverlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0a0e27 0%, #16213e 50%, #0f3460 100%);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    .dd-login-card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 24px;
+      padding: 44px 40px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .dd-login-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #1a56db, #3b82f6);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.4);
+    }
+
+    .dd-login-title {
+      font-size: 22pt;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .dd-login-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px;
+      padding: 3px 14px;
+      font-size: 9pt;
+      color: #90cdf4;
+      margin-bottom: 22px;
+    }
+
+    .dd-login-sub {
+      font-size: 10pt;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 28px;
+    }
+
+    .dd-login-label {
+      display: block;
+      text-align: left;
+      font-size: 10pt;
+      font-weight: 700;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 8px;
+    }
+
+    .dd-login-input {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 11pt;
+      color: #fff;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+
+    .dd-login-input::placeholder { color: rgba(255,255,255,0.35); }
+
+    .dd-login-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+    }
+
+    .dd-login-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #1a56db, #3b82f6);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 12pt;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(59,130,246,0.45);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      margin-top: 4px;
+    }
+
+    .dd-login-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(59,130,246,0.55);
+    }
+
+    .dd-login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .dd-login-err {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fca5a5;
+      font-size: 10pt;
+      margin-top: 14px;
+      display: none;
+      text-align: left;
+    }
+
+    @media print {
+      #ddLoginOverlay { display: none !important; }
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- ══ ADMIN LOGIN OVERLAY ══════════════════════════════════════ -->
+  <div id="ddLoginOverlay">
+    <div class="dd-login-card">
+      <div class="dd-login-icon">📋</div>
+      <div class="dd-login-title">Data Dictionary</div>
+      <div class="dd-login-badge">🔒 เฉพาะผู้ดูแลระบบ (Admin)</div>
+      <p class="dd-login-sub">กรุณาเข้าสู่ระบบด้วยบัญชี Admin เพื่อดูเอกสาร</p>
+      <label class="dd-login-label">อีเมล (Email)</label>
+      <input id="ddEmail" class="dd-login-input" type="email" placeholder="Email ผู้ดูแลระบบ"
+        autocomplete="username" autocapitalize="off" autocorrect="off" />
+      <label class="dd-login-label">รหัสผ่าน (Password)</label>
+      <input id="ddPassword" class="dd-login-input" type="password" placeholder="••••••••"
+        autocomplete="current-password" />
+      <button class="dd-login-btn" id="ddLoginBtn" onclick="ddLogin()">เข้าสู่ระบบ →</button>
+      <div class="dd-login-err" id="ddLoginErr"></div>
+    </div>
+  </div>
 
   <button class="print-btn" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
 
@@ -1600,5 +1754,82 @@
   </div><!-- /page -->
 
 </body>
+
+<script>
+  /* ══ Data Dictionary Admin Login Guard ══════════════════════════
+     - แสดง overlay ทุกครั้งที่เปิดหน้า (ไม่ cache session)
+     - เรียก /api/auth/login แล้วตรวจว่า role === 'admin'
+     - ถ้าผ่านแล้ว ซ่อน overlay และแสดงเนื้อหา
+  ═══════════════════════════════════════════════════════════════ */
+  (function () {
+    // Enter key submits
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var overlay = document.getElementById('ddLoginOverlay');
+        if (overlay && overlay.style.display !== 'none') ddLogin();
+      }
+    });
+  })();
+
+  async function ddLogin() {
+    var emailEl = document.getElementById('ddEmail');
+    var passEl  = document.getElementById('ddPassword');
+    var btn     = document.getElementById('ddLoginBtn');
+    var errEl   = document.getElementById('ddLoginErr');
+
+    var email    = (emailEl.value || '').trim();
+    var password = (passEl.value  || '');
+
+    errEl.style.display = 'none';
+
+    if (!email || !password) {
+      errEl.textContent = '⚠️ กรุณากรอกอีเมลและรหัสผ่าน';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังตรวจสอบ...';
+
+    try {
+      var res  = await fetch('/api/auth/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, password })
+      });
+      var data = await res.json();
+
+      if (!res.ok) {
+        errEl.textContent = '❌ ' + (data.error || 'เข้าสู่ระบบไม่สำเร็จ');
+        errEl.style.display = 'block';
+        passEl.value = '';
+        passEl.focus();
+        return;
+      }
+
+      if (!data.user || data.user.role !== 'admin') {
+        errEl.textContent = '🚫 คุณไม่มีสิทธิ์เข้าถึงเอกสารนี้ (ต้องเป็น Admin เท่านั้น)';
+        errEl.style.display = 'block';
+        emailEl.value = '';
+        passEl.value  = '';
+        emailEl.focus();
+        return;
+      }
+
+      // ✅ Login สำเร็จ + เป็น Admin → ซ่อน overlay
+      var overlay = document.getElementById('ddLoginOverlay');
+      overlay.style.transition = 'opacity 0.4s ease';
+      overlay.style.opacity    = '0';
+      setTimeout(function () { overlay.style.display = 'none'; }, 420);
+
+    } catch (e) {
+      errEl.textContent = '❌ เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'เข้าสู่ระบบ →';
+    }
+  }
+</script>
 
 </html>

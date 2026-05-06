@@ -64,6 +64,7 @@ function wizNext(step) {
   if (step === 2) {
     var desc = ge('tDesc').value.trim();
     if (!desc) { showToast('กรุณากรอกรายละเอียด', true); return; }
+    if (_aiAnalyzing) { showToast('⏳ กรุณารอ AI วิเคราะห์ความเร่งด่วนให้เสร็จก่อน', true); return; }
   }
   if (step === 3) {
     if (!ge('tLat').value || !ge('tLng').value) {
@@ -112,7 +113,7 @@ function wizBuildSummary() {
   var imgHtml = '';
   if (_citizenImages.length) {
     imgHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">';
-    _citizenImages.forEach(function(img) {
+    _citizenImages.forEach(function (img) {
       imgHtml += '<img src="' + img.dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"/>';
     });
     imgHtml += '</div>';
@@ -160,6 +161,23 @@ function getSelectedCat() {
 
 /* ── AI Urgency Suggestion ──────────────────────────── */
 var _urgTimer = null;
+var _aiAnalyzing = false; // true ขณะ AI กำลังวิเคราะห์ → block ปุ่มถัดไป
+
+function _setNextBtn2State(analyzing) {
+  var btn = ge('wizNextBtn2');
+  if (!btn) return;
+  if (analyzing) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = '⏳ กำลังวิเคราะห์...';
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.textContent = 'ถัดไป →';
+  }
+}
 function aiSuggestUrgency() {
   var desc = ge('tDesc').value.trim();
   if (desc.length < 5) {
@@ -170,10 +188,15 @@ function aiSuggestUrgency() {
     ge('urgAiBox').style.background = '#f8fafc';
     ge('urgAiBox').style.borderColor = '#cbd5e0';
     hideE('urgErr');
+    // ถ้าพิมพ์น้อยกว่า 5 ตัวอักษร ยกเลิกสถานะ analyzing ด้วย
+    _aiAnalyzing = false;
+    _setNextBtn2State(false);
     return;
   }
-  // debounce 900ms
+  // debounce 900ms — ทันทีที่พิมพ์ให้ lock ปุ่มถัดไปไว้ก่อน
   clearTimeout(_urgTimer);
+  _aiAnalyzing = true;
+  _setNextBtn2State(true);
   ge('urgAiIcon').textContent = '⏳';
   ge('urgAiLabel').textContent = 'AI กำลังวิเคราะห์...';
   ge('urgAiSub').textContent = 'สักครู่...';
@@ -204,6 +227,10 @@ function aiSuggestUrgency() {
       ge('urgAiIcon').textContent = '⚠️';
       ge('urgAiLabel').textContent = 'ไม่สามารถวิเคราะห์ได้';
       ge('urgAiSub').textContent = 'กรุณาตรวจสอบการเชื่อมต่อ';
+    } finally {
+      // ไม่ว่าจะสำเร็จหรือเกิด error ก็ unlock ปุ่มถัดไปเสมอ
+      _aiAnalyzing = false;
+      _setNextBtn2State(false);
     }
   }, 900);
 }
@@ -271,16 +298,16 @@ function captureGPS() {
 /* ── Shared location result preview ────────────────── */
 function _updateGpsResult(lat, lng, address, acc) {
   var delta = 0.005;
-  var bbox = (parseFloat(lng)-delta)+','+(parseFloat(lat)-delta)+','+(parseFloat(lng)+delta)+','+(parseFloat(lat)+delta);
-  var mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+lat+'%2C'+lng;
-  var accHtml = acc ? '<span style="font-size:10px;color:#2d6a4f">±'+acc+'m</span>' : '';
+  var bbox = (parseFloat(lng) - delta) + ',' + (parseFloat(lat) - delta) + ',' + (parseFloat(lng) + delta) + ',' + (parseFloat(lat) + delta);
+  var mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lng;
+  var accHtml = acc ? '<span style="font-size:10px;color:#2d6a4f">±' + acc + 'm</span>' : '';
   ge('gpsResult').innerHTML =
     '<div style="font-weight:700;margin-bottom:4px;font-size:12px">✅ ตำแหน่งที่เลือก</div>' +
-    '<div style="font-size:12px;color:#166534;margin-bottom:6px;line-height:1.4">📍 '+(address || lat+', '+lng)+'</div>' +
-    '<iframe src="'+mapUrl+'" style="width:100%;height:160px;border:none;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>' +
+    '<div style="font-size:12px;color:#166534;margin-bottom:6px;line-height:1.4">📍 ' + (address || lat + ', ' + lng) + '</div>' +
+    '<iframe src="' + mapUrl + '" style="width:100%;height:160px;border:none;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
     accHtml +
-    '<a href="https://www.google.com/maps?q='+lat+','+lng+'" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600;margin-left:auto">🗺️ Google Maps</a>' +
+    '<a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" style="font-size:11px;color:#2b6cb0;text-decoration:none;font-weight:600;margin-left:auto">🗺️ Google Maps</a>' +
     '</div>';
   ge('gpsResult').style.display = 'block';
 }
@@ -291,7 +318,7 @@ var _locActiveTab = 'gps';
 function switchLocTab(tab) {
   _locActiveTab = tab;
   var tabs = ['Gps', 'Search'];
-  tabs.forEach(function(t) {
+  tabs.forEach(function (t) {
     var btn = ge('locTab' + t);
     var panel = ge('locPanel' + t);
     var isActive = t.toLowerCase() === tab;
@@ -309,38 +336,38 @@ function debounceLocSearch() {
   var resBox = ge('locSearchResults');
   if (q.length < 2) { resBox.style.display = 'none'; return; }
   ge('locSearchSpinner').style.display = 'block';
-  _locSearchTimer = setTimeout(function() { _doLocSearch(q); }, 700);
+  _locSearchTimer = setTimeout(function () { _doLocSearch(q); }, 700);
 }
 
 function _doLocSearch(q) {
-  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=6&accept-language=th', {
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=6&accept-language=th', {
     headers: { 'Accept': 'application/json' }
   })
-  .then(function(r) { return r.json(); })
-  .then(function(results) {
-    ge('locSearchSpinner').style.display = 'none';
-    var box = ge('locSearchResults');
-    if (!results.length) {
-      box.innerHTML = '<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">🔍 ไม่พบสถานที่</div>';
+    .then(function (r) { return r.json(); })
+    .then(function (results) {
+      ge('locSearchSpinner').style.display = 'none';
+      var box = ge('locSearchResults');
+      if (!results.length) {
+        box.innerHTML = '<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">🔍 ไม่พบสถานที่</div>';
+        box.style.display = 'block';
+        return;
+      }
+      var h = '';
+      results.forEach(function (r) {
+        var parts = (r.display_name || '').split(',');
+        var main = parts.slice(0, 2).join(',').trim();
+        var sub = parts.slice(2, 5).join(',').trim();
+        // encode for onclick attribute safely
+        var dn = (r.display_name || '').replace(/\\/g, '\\\\').replace(/'/g, '&#39;');
+        h += '<div class="loc-search-item" onclick="selectLocResult(' + r.lat + ',' + r.lon + ',\'' + dn + '\')">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--navy)">' + escapeHTML(main) + '</div>' +
+          (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + escapeHTML(sub) + '</div>' : '') +
+          '</div>';
+      });
+      box.innerHTML = h;
       box.style.display = 'block';
-      return;
-    }
-    var h = '';
-    results.forEach(function(r) {
-      var parts = (r.display_name || '').split(',');
-      var main = parts.slice(0,2).join(',').trim();
-      var sub = parts.slice(2,5).join(',').trim();
-      // encode for onclick attribute safely
-      var dn = (r.display_name || '').replace(/\\/g,'\\\\').replace(/'/g,'&#39;');
-      h += '<div class="loc-search-item" onclick="selectLocResult('+r.lat+','+r.lon+',\''+dn+'\')">'+
-        '<div style="font-size:13px;font-weight:700;color:var(--navy)">'+escapeHTML(main)+'</div>'+
-        (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+escapeHTML(sub)+'</div>' : '')+
-        '</div>';
-    });
-    box.innerHTML = h;
-    box.style.display = 'block';
-  })
-  .catch(function() { ge('locSearchSpinner').style.display = 'none'; });
+    })
+    .catch(function () { ge('locSearchSpinner').style.display = 'none'; });
 }
 
 function selectLocResult(lat, lng, displayName) {
@@ -349,7 +376,7 @@ function selectLocResult(lat, lng, displayName) {
   _gpsAddress = displayName;
   ge('locSearchResults').style.display = 'none';
   var inp = ge('locSearchInput');
-  if (inp) inp.value = displayName.split(',').slice(0,2).join(',').trim();
+  if (inp) inp.value = displayName.split(',').slice(0, 2).join(',').trim();
   _updateGpsResult(parseFloat(lat).toFixed(6), parseFloat(lng).toFixed(6), displayName, null);
   showToast('✅ เลือกตำแหน่งแล้ว');
 }
@@ -381,7 +408,7 @@ async function submitTicket() {
     fd.append('description', desc);
     fd.append('lat', lat);
     fd.append('lng', lng);
-    _citizenImages.forEach(function(img) {
+    _citizenImages.forEach(function (img) {
       fd.append('images', img.file);
     });
     var res = await fetch('/api/tickets', { method: 'POST', body: fd });
@@ -428,6 +455,9 @@ async function submitTicket() {
       wizUpdateProgress(1);
       // Re-enable submit button for next submission
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ส่งเรื่องร้องเรียน'; }
+      // Reset AI analyzing state + next button for step 2
+      _aiAnalyzing = false;
+      _setNextBtn2State(false);
       // ── Scroll กลับขึ้นไปที่ยอด wizard ────────────────
       var prog = ge('stepProgress');
       if (prog) prog.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -450,15 +480,15 @@ function _renderCitizenImgs() {
 
   if (_citizenImages.length > 0) {
     var html = '';
-    _citizenImages.forEach(function(img, idx) {
+    _citizenImages.forEach(function (img, idx) {
       var flexBasis = _citizenImages.length === 1 ? '100%' : 'calc(50% - 4px)';
       var maxH = _citizenImages.length === 1 ? '220px' : '150px';
-      html += '<div style="position:relative;flex:1 1 '+flexBasis+';min-width:100px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">';
-      html += '<img src="'+img.dataUrl+'" style="width:100%;height:'+maxH+';object-fit:cover;display:block" />';
-      html += '<button type="button" onclick="removeCitizenImg('+idx+')" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>';
+      html += '<div style="position:relative;flex:1 1 ' + flexBasis + ';min-width:100px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">';
+      html += '<img src="' + img.dataUrl + '" style="width:100%;height:' + maxH + ';object-fit:cover;display:block" />';
+      html += '<button type="button" onclick="removeCitizenImg(' + idx + ')" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>';
       html += '</div>';
     });
-    
+
     pw.innerHTML = html;
     pw.style.display = 'flex';
     if (ci) { ci.innerHTML = 'แนบแล้ว <b>' + _citizenImages.length + '/5</b> รูป'; ci.style.display = 'block'; }
@@ -742,7 +772,7 @@ function cgToggle(ticketId) {
       h += '<img src="' + t.citizenImages[0] + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" />';
     } else {
       h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:12px">';
-      t.citizenImages.forEach(function(imgUrl) {
+      t.citizenImages.forEach(function (imgUrl) {
         h += '<img src="' + imgUrl + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" style="margin:0;height:80px;object-fit:cover" />';
       });
       h += '</div>';

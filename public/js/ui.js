@@ -450,8 +450,9 @@ function openDrawer() {
   // ── Hide change password for LINE-only accounts ──
   var cpBtn = ge('drawerChPw');
   if (cpBtn) {
-    var isLineOnly = (CU.email || '').indexOf('line_') === 0;
-    cpBtn.style.display = isLineOnly ? 'none' : 'flex';
+    // ซ่อนปุ่มเปลี่ยนรหัสผ่านถ้า: (1) สร้างผ่าน LINE (email ขึ้นต้น line_) หรือ (2) createdViaLine = true
+    var isLineOnly = (CU.createdViaLine === true) || ((CU.email || '').indexOf('line_') === 0);
+    cpBtn.style.display = isLineOnly ? 'none' : '';
   }
 
   // ── แสดงปุ่ม unlink LINE เฉพาะ admin ──
