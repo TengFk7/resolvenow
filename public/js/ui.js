@@ -499,6 +499,12 @@ if (typeof io !== 'undefined') {
     console.log('[Socket] Connected — switching to event-driven mode');
     // FIX-#3: เริ่ม heartbeat ทันที เมื่อ connect สำเร็จ
     if (typeof startHeartbeat === 'function') startHeartbeat(socket);
+    // ── Join DM room based on role ──
+    if (window.CU) {
+      socket.emit('dm_join', { role: window.CU.role, userId: window.CU.id || window.CU._id });
+      // Poll admin DM unread on connect
+      if (window.CU.role === 'admin' && typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
+    }
   });
   socket.on('disconnect', function () {
     _socketConnected = false;
@@ -533,6 +539,11 @@ if (typeof io !== 'undefined') {
     if (_chatTicketId && data.ticketId === _chatTicketId) {
       _appendComment(data.comment, true);
     }
+  });
+
+  // ── Direct Message real-time ──
+  socket.on('dm_message', function (msg) {
+    if (typeof _handleIncomingDm === 'function') _handleIncomingDm(msg);
   });
 }
 

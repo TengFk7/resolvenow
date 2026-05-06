@@ -218,6 +218,17 @@
           <h2 id="pageTitle">Dashboard</h2>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
+          <!-- DM Inbox Bell Button (Admin) -->
+          <button class="btn-ripple" id="btnAdminDm" onclick="openAdminDmInbox()"
+            style="position:relative;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#059669;padding:8px 14px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s"
+            onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'"
+            aria-label="กล่องข้อความ">
+            <div class="dm-admin-bell">
+              💬
+              <div class="dm-admin-bell-badge hidden" id="dmAdminBellBadge">0</div>
+            </div>
+            <span id="btnAdminDmLabel">ข้อความ</span>
+          </button>
           <!-- Premium Report Button -->
           <button class="btn-report btn-ripple" onclick="openReportModal()" id="btnReportTopbar">
             <span class="btn-report-icon">📥</span> ดาวน์โหลดรายงาน
@@ -791,6 +802,89 @@
 
     </div><!-- /nwrap -->
   </div><!-- /normalApp -->
+
+  <!-- ── DIRECT MESSAGE: Premium FAB Button (Citizen only) ──────── -->
+  <div class="dm-cloud-fab" id="dmCloudFab" onclick="openDirectChat()" role="button" aria-label="ติดต่อสอบถาม Admin" tabindex="0">
+    <!-- Glow ring -->
+    <div class="dm-fab-ring"></div>
+    <!-- Main circle button -->
+    <div class="dm-fab-circle">
+      <!-- Modern chat bubble SVG icon -->
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="white" opacity="0.95"/>
+        <circle cx="8" cy="11" r="1.2" fill="#059669"/>
+        <circle cx="12" cy="11" r="1.2" fill="#059669"/>
+        <circle cx="16" cy="11" r="1.2" fill="#059669"/>
+      </svg>
+      <!-- Unread badge -->
+      <div class="dm-cloud-badge hidden" id="dmCloudBadge">0</div>
+    </div>
+    <!-- Floating label pill -->
+    <div class="dm-fab-label">💬 ติดต่อ Admin</div>
+  </div>
+
+  <!-- ── DIRECT MESSAGE: Citizen Chat Modal ───────────────────── -->
+  <div class="dm-modal-overlay" id="mDirectChat" onclick="closeDirectChat()">
+    <div class="dm-modal-sheet" onclick="event.stopPropagation()">
+      <div class="dm-modal-header">
+        <div class="dm-modal-header-icon">💬</div>
+        <div class="dm-modal-header-title">
+          <h4>ติดต่อสอบถาม Admin</h4>
+          <p>👨‍💼 ทีมงาน Admin พร้อมให้บริการ</p>
+        </div>
+        <button class="dm-modal-close" onclick="closeDirectChat()">✕</button>
+      </div>
+      <div class="dm-messages" id="dmMessages">
+        <div class="dm-empty">💬 ยังไม่มีข้อความ — เริ่มพิมพ์เพื่อติดต่อ Admin ได้เลย!</div>
+      </div>
+      <div class="dm-footer">
+        <input class="dm-input" id="dmInput" type="text" placeholder="พิมพ์ข้อความถึง Admin..." maxlength="500"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDirectMessage()}" />
+        <button class="dm-send-btn btn-ripple" id="dmSendBtn" onclick="sendDirectMessage()" aria-label="ส่ง">
+          ➤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DIRECT MESSAGE: Admin Inbox Modal ────────────────────── -->
+  <div class="mo" id="mAdminDmInbox">
+    <div class="mb" style="max-width:520px;width:95%;padding:0;overflow:hidden">
+      <!-- Inbox List View -->
+      <div id="dmAdminInboxView">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">💬</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--navy)">กล่องข้อความจากประชาชน</div>
+              <div style="font-size:11px;color:var(--muted)" id="dmInboxSubtitle">กำลังโหลด...</div>
+            </div>
+          </div>
+          <button class="mc" onclick="closeAdminDmInbox()" style="position:static;margin:0">✕</button>
+        </div>
+        <div class="dm-admin-inbox" id="dmAdminInboxList">
+          <div class="dm-empty">⏳ กำลังโหลด...</div>
+        </div>
+      </div>
+      <!-- Thread View (hidden by default) -->
+      <div id="dmAdminThreadView" style="display:none;flex-direction:column;height:560px;max-height:80vh">
+        <div class="dm-thread-header">
+          <button class="dm-thread-back" onclick="showDmInboxList()">←</button>
+          <div class="dm-inbox-avatar" id="dmThreadAvatar" style="width:34px;height:34px;font-size:13px">?</div>
+          <div class="dm-thread-name" id="dmThreadName">ชื่อผู้ใช้</div>
+        </div>
+        <div class="dm-messages" id="dmAdminMessages" style="flex:1">
+          <div class="dm-empty">⏳ กำลังโหลด...</div>
+        </div>
+        <div class="dm-footer">
+          <input class="dm-input" id="dmAdminInput" type="text" placeholder="พิมพ์ข้อความตอบกลับ..." maxlength="500"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminDmReply()}" />
+          <button class="dm-send-btn btn-ripple" id="dmAdminSendBtn" onclick="sendAdminDmReply()" aria-label="ส่ง">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ── MODAL: Ticket Detail (citizen + tech) ─────────── -->
   <div class="mo" id="mTicketDetail" onclick="closeTD()">
@@ -1381,6 +1475,7 @@
   <script src="/js/admin.js"></script>
   <script src="/js/citizen.js"></script>
   <script src="/js/technician.js"></script>
+  <script src="/js/directChat.js"></script>
   <script src="/js/app.js"></script>
   <!-- ── UNIVERSAL SLIDE DRAWER ──────────────────────────── -->
   <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>

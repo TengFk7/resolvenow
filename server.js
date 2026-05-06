@@ -50,6 +50,18 @@ io.on('connection', (socket) => {
   socket.on('ping_heartbeat', () => {
     socket.emit('pong_heartbeat');
   });
+
+  // ── Direct Message Rooms ───────────────────────────
+  // citizen join their own room so admin can push to them
+  // admin join admin_dm room so citizen can push to admin
+  socket.on('dm_join', (data) => {
+    if (!data) return;
+    if (data.role === 'admin') {
+      socket.join('admin_dm');
+    } else if (data.role === 'citizen' && data.userId) {
+      socket.join('citizen_dm_' + data.userId);
+    }
+  });
 });
 
 // ─── Connect MongoDB → Seed → Start ─────────────────────────────
@@ -136,6 +148,7 @@ io.on('connection', (socket) => {
   app.use('/api/help-requests', require('./routes/helpRequests'));
   app.use('/api/ai', require('./routes/ai'));
   app.use('/api/categories', require('./routes/categories'));
+  app.use('/api/direct-messages', require('./routes/directMessages'));
   app.use('/api/ceo', require('./routes/ceo')); // CEO read-only dashboard API
   app.use('/api/track', require('./routes/track'));
   app.use('/auth/line', require('./routes/lineAuth'));

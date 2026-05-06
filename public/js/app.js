@@ -61,6 +61,11 @@ function clearAppIntervals() {
   if (_adminInterval) { clearInterval(_adminInterval); _adminInterval = null; }
   if (_ticketsInterval) { clearInterval(_ticketsInterval); _ticketsInterval = null; }
   if (_helpInterval) { clearInterval(_helpInterval); _helpInterval = null; }
+  // ── Hide DM cloud FAB + close DM modals on logout ──
+  if (typeof hideDmCloudFab === 'function') hideDmCloudFab();
+  var fab = ge('dmCloudFab'); if (fab) fab.style.display = 'none';
+  var dmModal = ge('mDirectChat'); if (dmModal) dmModal.classList.remove('on');
+  var adminDm = ge('mAdminDmInbox'); if (adminDm) adminDm.classList.remove('on');
 }
 
 /* ── Welcome Splash (Admin, Tech & Citizen) ──────────── */
@@ -265,6 +270,8 @@ function enterApp() {
     _adminInterval = setInterval(function () {
       if (!_socketConnected) loadAdmin();
     }, 30000);
+    // Poll admin DM unread on load
+    if (typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
 
   } else {
     ge('normalApp').style.display = 'flex';
@@ -289,6 +296,15 @@ function enterApp() {
       _helpInterval = setInterval(function () {
         if (!_socketConnected) loadHelpRequests();
       }, 30000);
+    }
+    // ── Show DM Cloud FAB for citizen + join socket DM room ──
+    if (CU.role === 'citizen' && typeof showDmCloudFab === 'function') {
+      showDmCloudFab();
+    }
+    // Join socket DM room (may reconnect after CU is ready)
+    if (typeof socket !== 'undefined' && socket && socket.connected) {
+      socket.emit('dm_join', { role: CU.role, userId: CU.id || CU._id });
+      if (CU.role === 'admin' && typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
     }
   }
 }
