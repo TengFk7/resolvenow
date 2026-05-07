@@ -13,13 +13,19 @@ var _dmUnreadCount = 0;
 /* ── Show Cloud FAB (called after citizen login) ─────── */
 function showDmCloudFab() {
   var fab = ge('dmCloudFab');
-  if (fab) fab.style.display = 'flex';
+  if (fab) {
+    fab.style.display = 'flex';
+    fab.setAttribute('data-fab-visible', '1');
+  }
   refreshDmUnreadBadge();
 }
 
 function hideDmCloudFab() {
   var fab = ge('dmCloudFab');
-  if (fab) fab.style.display = 'none';
+  if (fab) {
+    fab.style.display = 'none';
+    fab.removeAttribute('data-fab-visible');
+  }
 }
 
 /* ── Poll unread count for citizen ──────────────────── */

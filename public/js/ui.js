@@ -464,6 +464,10 @@ function openDrawer() {
   ge('drawerOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
+  // ── ซ่อน FAB ติดต่อแอดมิน ขณะ drawer เปิด ──
+  var fab = ge('dmCloudFab');
+  if (fab) fab.style.display = 'none';
+
   // ── Animate hamburger buttons → X ──
   document.querySelectorAll('.hbg-btn').forEach(function (b) { b.classList.add('active'); });
 }
@@ -475,6 +479,12 @@ function closeDrawer() {
   drawer.classList.remove('open');
   overlay.classList.remove('open');
   document.body.style.overflow = '';
+
+  // ── คืน FAB ติดต่อแอดมิน เมื่อ drawer ปิด (เฉพาะ citizen เท่านั้น) ──
+  var fab = ge('dmCloudFab');
+  if (fab && window.CU && window.CU.role === 'citizen') {
+    fab.style.display = 'flex';
+  }
 
   // ── Restore hamburger buttons ──
   document.querySelectorAll('.hbg-btn').forEach(function (b) { b.classList.remove('active'); });
