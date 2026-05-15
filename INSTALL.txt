@@ -1,0 +1,339 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📋  สารบัญ (TABLE OF CONTENTS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [1]  ความต้องการของระบบ (System Requirements)
+  [2]  บริการภายนอกที่ต้องสมัคร (External Services)
+  [3]  ขั้นตอนการติดตั้ง (Installation Steps)
+  [4]  ตั้งค่า Environment Variables (.env)
+  [5]  รันระบบ (Running the System)
+  [6]  บัญชีผู้ใช้เริ่มต้น (Default Accounts)
+  [7]  URL ที่ใช้งาน (Application URLs)
+  [8]  การ Deploy บน Render.com
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [1]  💻  ความต้องการของระบบ (System Requirements)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✔  Node.js   v18 หรือใหม่กว่า    →  https://nodejs.org/
+  ✔  npm       v9+  (มาพร้อม Node)
+  ✔  Git       (สำหรับ clone โปรเจกต์)
+  ✔  อินเทอร์เน็ต (ใช้เชื่อมต่อ MongoDB Atlas และบริการภายนอก)
+
+  ตรวจสอบเวอร์ชัน:
+  ┌─────────────────────────────────┐
+  │  node --version   → v18.x.x    │
+  │  npm  --version   → 9.x.x      │
+  └─────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [2]  🌐  บริการภายนอกที่ต้องสมัคร (External Services)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │  บริการ              │  URL สมัคร                                       │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │  MongoDB Atlas       │  https://www.mongodb.com/cloud/atlas             │
+  │  (ฐานข้อมูล Cloud)  │  → สร้าง Free Cluster (M0)                      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │  Gmail App Password  │  https://myaccount.google.com/apppasswords       │
+  │  (ส่ง OTP ทางอีเมล) │  → เปิด 2FA ก่อน แล้วสร้าง App Password        │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │  Cloudinary          │  https://cloudinary.com/                         │
+  │  (เก็บรูปภาพ)       │  → ใช้ Free Plan (25GB)                         │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │  LINE Developers     │  https://developers.line.biz/                    │
+  │  (Notify + Login)    │  → สร้าง Provider → Messaging API Channel       │
+  │                      │  → สร้าง LINE Login Channel                     │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │  LINE LIFF           │  https://developers.line.biz/console/            │
+  │  (Rating ดาว)        │  → ใน Messaging API → LIFF tab → สร้าง LIFF    │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │  Anthropic Claude    │  https://console.anthropic.com/                  │
+  │  (AI วิเคราะห์)     │  → สร้าง API Key (ฟรี $5 credit)               │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [3]  🚀  ขั้นตอนการติดตั้ง (Installation Steps)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─ STEP 1 ──────────────────────────────────────────────────────────────┐
+  │  📥  Clone โปรเจกต์                                                   │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    git clone https://github.com/TengFk7/resolvenow.git
+    cd resolvenow
+
+
+  ┌─ STEP 2 ──────────────────────────────────────────────────────────────┐
+  │  📦  ติดตั้ง Dependencies                                             │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    npm install
+
+    รอสักครู่... ระบบจะติดตั้ง packages ทั้งหมด ได้แก่:
+    • express, mongoose, socket.io
+    • bcryptjs, express-session, connect-mongo
+    • nodemailer, cloudinary, multer
+    • helmet, express-rate-limit, xss
+    • @anthropic-ai/sdk, exceljs, และอื่นๆ
+
+
+  ┌─ STEP 3 ──────────────────────────────────────────────────────────────┐
+  │  ⚙️   สร้างไฟล์ .env                                                  │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    คัดลอกไฟล์ตัวอย่าง:
+
+    Windows:   copy .env.example .env
+    Mac/Linux: cp .env.example .env
+
+    จากนั้นเปิดไฟล์ .env และแก้ไขค่าตามที่อธิบายใน [4]
+
+
+  ┌─ STEP 4 ──────────────────────────────────────────────────────────────┐
+  │  🌿  ตั้งค่า MongoDB Atlas                                             │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    1. สร้าง Cluster ฟรี (M0) ที่ https://www.mongodb.com/cloud/atlas
+    2. สร้าง Database User (username + password)
+    3. เพิ่ม IP Address: 0.0.0.0/0 (Allow All) ใน Network Access
+    4. คัดลอก Connection String มาใส่ใน MONGODB_URI
+       ตัวอย่าง:
+       MONGODB_URI=mongodb+srv://myuser:mypass@cluster0.xxxxx.mongodb.net/resolvenow
+
+
+  ┌─ STEP 5 ──────────────────────────────────────────────────────────────┐
+  │  📧  ตั้งค่า Gmail สำหรับส่ง OTP                                      │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    1. ไปที่ https://myaccount.google.com/security
+    2. เปิด "2-Step Verification"
+    3. ไปที่ https://myaccount.google.com/apppasswords
+    4. สร้าง App Password → เลือก "Mail" และ "Other"
+    5. คัดลอก 16 ตัวอักษรมาใส่ MAIL_PASS
+
+
+  ┌─ STEP 6 ──────────────────────────────────────────────────────────────┐
+  │  ☁️   ตั้งค่า Cloudinary สำหรับอัปโหลดรูป                            │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    1. สมัครที่ https://cloudinary.com/ (ฟรี)
+    2. ไปที่ Dashboard → คัดลอก:
+       • Cloud Name  → CLOUDINARY_CLOUD_NAME
+       • API Key     → CLOUDINARY_API_KEY
+       • API Secret  → CLOUDINARY_API_SECRET
+
+
+  ┌─ STEP 7 ──────────────────────────────────────────────────────────────┐
+  │  💬  ตั้งค่า LINE (ไม่บังคับ แต่แนะนำ)                               │
+  └───────────────────────────────────────────────────────────────────────┘
+
+    A) LINE Messaging API (สำหรับ Push Notification):
+       1. https://developers.line.biz/ → สร้าง Messaging API Channel
+       2. Channel Management → Messaging API tab
+       3. คัดลอก Channel Access Token → LINE_CHANNEL_TOKEN
+       4. หา LINE User ID ของตัวเอง → LINE_ADMIN_USER_ID
+
+    B) LINE Login (สำหรับ Login ผ่าน LINE):
+       1. สร้าง LINE Login Channel ใหม่
+       2. คัดลอก Channel ID     → LINE_LOGIN_CLIENT_ID
+       3. คัดลอก Channel Secret  → LINE_LOGIN_CLIENT_SECRET
+       4. เพิ่ม Callback URL:
+          https://your-domain.onrender.com/auth/line/callback
+
+    C) LINE LIFF (สำหรับ Rating ดาว):
+       1. ใน Messaging API Channel → LIFF tab
+       2. สร้าง LIFF ใหม่:
+          • Size: Compact
+          • Endpoint URL: https://your-domain.onrender.com/liff-rating
+          • Scopes: profile
+       3. คัดลอก LIFF ID → LINE_LIFF_ID
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [4]  🔑  ตั้งค่า Environment Variables (.env)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  เปิดไฟล์ .env และแก้ไขค่าดังนี้:
+
+  ┌───────────────────────────────────────────────────────────────────────┐
+  │  # ฐานข้อมูล                                                          │
+  │  MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/resolvenow   │
+  │                                                                       │
+  │  # Session (ใส่ข้อความสุ่มยาวๆ ห้ามเปิดเผย)                         │
+  │  SESSION_SECRET=my-super-secret-random-string-2024                    │
+  │                                                                       │
+  │  # อีเมล OTP                                                          │
+  │  MAIL_USER=your@gmail.com                                             │
+  │  MAIL_PASS=xxxx xxxx xxxx xxxx   ← Gmail App Password 16 ตัว         │
+  │                                                                       │
+  │  # LINE Messaging API                                                 │
+  │  LINE_CHANNEL_TOKEN=lOIBePr...                                        │
+  │  LINE_ADMIN_USER_ID=U23f8ef...                                        │
+  │                                                                       │
+  │  # LINE Login OAuth2                                                  │
+  │  LINE_LOGIN_CLIENT_ID=2009559224                                      │
+  │  LINE_LOGIN_CLIENT_SECRET=1700c11d...                                 │
+  │  LINE_LOGIN_CALLBACK_URL=https://your-domain.onrender.com/auth/line/callback │
+  │                                                                       │
+  │  # LINE LIFF                                                          │
+  │  LINE_LIFF_ID=1234567890-xxxxxxxx                                     │
+  │                                                                       │
+  │  # Cloudinary                                                         │
+  │  CLOUDINARY_CLOUD_NAME=my-cloud-name                                  │
+  │  CLOUDINARY_API_KEY=532996767357286                                   │
+  │  CLOUDINARY_API_SECRET=1VR78AFU...                                    │
+  │                                                                       │
+  │  # Anthropic Claude AI                                                │
+  │  ANTHROPIC_API_KEY=sk-ant-api03-...                                   │
+  │                                                                       │
+  │  # URL ของ App (เปลี่ยนเป็น domain จริงตอน deploy)                   │
+  │  BASE_URL=http://localhost:3000                                        │
+  │  PORT=3000                                                            │
+  └───────────────────────────────────────────────────────────────────────┘
+
+  ⚠️  หมายเหตุ:
+     • ห้าม commit ไฟล์ .env ขึ้น GitHub เด็ดขาด!
+     • ตรวจสอบว่า .gitignore มี ".env" อยู่แล้ว
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [5]  ▶️   รันระบบ (Running the System)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  🔧  Development Mode (แนะนำสำหรับพัฒนา):
+  ────────────────────────────────────────
+    npm run dev
+
+    → ใช้ nodemon (รีสตาร์ทอัตโนมัติเมื่อแก้ไขไฟล์)
+    → เข้าใช้งาน: http://localhost:3000
+
+
+  🚀  Production Mode:
+  ────────────────────
+    npm start
+
+    → ใช้ node server.js โดยตรง
+
+
+  ✅  สัญญาณว่าระบบพร้อมใช้งาน:
+  ────────────────────────────────
+    เมื่อ terminal แสดงข้อความประมาณนี้:
+
+    [Server]   ✅ ResolveNow running on port 3000
+    [Database] ✅ MongoDB connected
+    [Seed]     ✅ Seed complete
+    [SLA Job]  ✅ SLA checker started
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [6]  👤  บัญชีผู้ใช้เริ่มต้น (Default Accounts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ระบบจะสร้างบัญชีเริ่มต้นอัตโนมัติเมื่อ boot ครั้งแรก:
+
+  ┌────────────────┬──────────────────────────────┬────────────┬──────────────────┐
+  │  บทบาท        │  อีเมล                        │  รหัสผ่าน  │  ชื่อ            │
+  ├────────────────┼──────────────────────────────┼────────────┼──────────────────┤
+  │  👑 Admin      │  admin@resolvenow.th          │  admin1234 │  Admin Dispatcher│
+  ├────────────────┼──────────────────────────────┼────────────┼──────────────────┤
+  │  🔧 Tech 1     │  tech1@resolvenow.th          │  tech1234  │  วิชัย โยธา      │
+  │  🔧 Tech 2     │  tech2@resolvenow.th          │  tech1234  │  มานะ ประปา      │
+  │  🔧 Tech 3     │  tech3@resolvenow.th          │  tech1234  │  สมชาย ไฟฟ้า    │
+  │  🔧 Tech 4     │  tech4@resolvenow.th          │  tech1234  │  สุรัตน์ สุขา   │
+  │  🔧 Tech 5     │  tech5@resolvenow.th          │  tech1234  │  บุญมี ปราบ      │
+  │  🔧 Tech 6     │  tech6@resolvenow.th          │  tech1234  │  สมศรี ป่าไม้   │
+  │  🔧 Tech 7     │  tech7@resolvenow.th          │  tech1234  │  อนันต์ กู้ภัย  │
+  └────────────────┴──────────────────────────────┴────────────┴──────────────────┘
+
+  รหัสลบ Ticket ทั้งหมด (Admin):  admin1234
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [7]  🔗  URL ที่ใช้งาน (Application URLs)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌──────────────────────────────────────┬───────────────────────────────────┐
+  │  URL                                 │  คำอธิบาย                         │
+  ├──────────────────────────────────────┼───────────────────────────────────┤
+  │  http://localhost:3000               │  หน้าหลัก (SPA — Login / App)    │
+  │  http://localhost:3000/track         │  ตรวจสอบสถานะ Ticket (สาธารณะ)   │
+  │  http://localhost:3000/liff-rating   │  หน้าให้คะแนน LINE LIFF           │
+  └──────────────────────────────────────┴───────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [8]  ☁️   การ Deploy บน Render.com
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─ STEP 1 ──────────────────────────────────────────────────────────────┐
+  │  Push โค้ดขึ้น GitHub                                                 │
+  └───────────────────────────────────────────────────────────────────────┘
+    git add .
+    git commit -m "ready for deploy"
+    git push origin main
+
+
+  ┌─ STEP 2 ──────────────────────────────────────────────────────────────┐
+  │  สร้าง Web Service บน Render                                          │
+  └───────────────────────────────────────────────────────────────────────┘
+    1. ไปที่ https://dashboard.render.com/
+    2. New → Web Service
+    3. เชื่อม GitHub Repository
+    4. ตั้งค่า:
+       • Build Command:  npm install
+       • Start Command:  npm start
+       • Environment:    Node
+
+
+  ┌─ STEP 3 ──────────────────────────────────────────────────────────────┐
+  │  ใส่ Environment Variables บน Render                                  │
+  └───────────────────────────────────────────────────────────────────────┘
+    ไปที่ Environment tab → เพิ่มทุกค่าจากไฟล์ .env
+    (อย่าลืมเปลี่ยน BASE_URL เป็น URL ของ Render จริงๆ)
+
+
+  ┌─ STEP 4 ──────────────────────────────────────────────────────────────┐
+  │  Deploy!                                                               │
+  └───────────────────────────────────────────────────────────────────────┘
+    กด "Create Web Service" → รอ Deploy เสร็จ (~2-5 นาที)
+    ระบบจะได้ URL เช่น: https://resolvenow-xxxx.onrender.com
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🛠️   การแก้ปัญหาเบื้องต้น (Troubleshooting)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ❌  ปัญหา: เชื่อมต่อ MongoDB ไม่ได้
+      ✅  แก้: ตรวจสอบ MONGODB_URI และ Network Access ใน Atlas (0.0.0.0/0)
+
+  ❌  ปัญหา: ส่งอีเมล OTP ไม่ได้
+      ✅  แก้: ตรวจสอบ MAIL_USER, MAIL_PASS และเปิด 2FA ก่อนสร้าง App Password
+
+  ❌  ปัญหา: อัปโหลดรูปไม่ได้
+      ✅  แก้: ตรวจสอบ CLOUDINARY_CLOUD_NAME, API_KEY, API_SECRET
+
+  ❌  ปัญหา: LINE Login ไม่ทำงาน
+      ✅  แก้: ตรวจสอบ Callback URL ใน LINE Developer Console
+               และตรวจสอบ LINE_LOGIN_CLIENT_ID, LINE_LOGIN_CLIENT_SECRET
+
+  ❌  ปัญหา: port 3000 ถูกใช้งานอยู่แล้ว
+      ✅  แก้: เปลี่ยน PORT=3001 ใน .env หรือปิด process ที่ใช้ port นั้น
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✨  Tech Stack Summary:
+      Node.js + Express • MongoDB Atlas • Socket.io • Cloudinary
+      LINE Messaging API • LINE Login • LINE LIFF • Anthropic Claude AI
+
+  📦  Version: ResolvNow v1.0
+  📅  Updated: 2026-05-15
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                       พัฒนาโดย TengFk7 — ResolvNow Team 🏙️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
