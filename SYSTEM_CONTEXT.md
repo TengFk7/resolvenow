@@ -1,4 +1,4 @@
-# ResolvNow — System Context for AI Assistants
+# ResolveNow — System Context for AI Assistants
 > อัปเดต: 2026-05-15 | Version: V16.4 (CEO UI + Direct Messages)
 
 ## ภาพรวม
@@ -31,7 +31,7 @@
 
 ## Project Structure
 ```
-ResolvNow/
+ResolveNow/
 ├── server.js              ← Entry point
 ├── package.json
 ├── .env / .env.example

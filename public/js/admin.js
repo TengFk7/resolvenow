@@ -218,7 +218,7 @@ function renderQueue(tks, techs) {
     h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
     h += '<td>' + (t.citizenImage ? '<img src="' + escapeHTML(t.citizenImage) + '" onclick="viewImg(this.src,\'รูปผู้แจ้ง\')" class="img-thumb"/>' : '<span style="color:var(--muted);font-size:12px">—</span>') + '</td>';
     h += '<td style="min-width:160px"><div style="font-size:10px;font-weight:700;color:var(--blue2);margin-bottom:5px">🤖 AI RECOMMEND</div>';
-    h += '<select id="tsel_' + t.ticketId + '" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:11px;font-family:Prompt,sans-serif;outline:none;background:#fff">' + opts + '</select></td>';
+    h += '<select id="tsel_' + t.ticketId + '" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:11px;font-family:Prompt,sans-serif;outline:none;background:var(--card-bg)">' + opts + '</select></td>';
     h += '<td><div style="display:flex;gap:5px;flex-direction:column;align-items:center">';
     h += '<button class="abt abt-blue btn-ripple" data-id="' + t.ticketId + '" onclick="approveTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✓ Approve</button>';
     h += '<button class="abt abt-red btn-ripple" data-id="' + t.ticketId + '" onclick="rejectTicket(this)" style="padding:6px 12px;font-size:11px;white-space:nowrap">✕ Reject</button>';
@@ -494,7 +494,7 @@ function renderAllQueue(tks, filter) {
       imgCell = imgThumb(t.citizenImage, 'รูปผู้แจ้ง');
     }
     h += '<td>' + imgCell + '</td>';
-    h += '<td><select data-id="' + t.ticketId + '" onchange="adminChSt(this)" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:9px;font-family:Prompt,sans-serif;outline:none;background:#fff">';
+    h += '<td><select data-id="' + t.ticketId + '" onchange="adminChSt(this)" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:9px;font-family:Prompt,sans-serif;outline:none;background:var(--card-bg)">';
     ['pending', 'assigned', 'in_progress', 'completed', 'rejected'].forEach(function (s) {
       h += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + stTH(s) + '</option>';
     });
@@ -1236,7 +1236,7 @@ function _openPdfWindow(data) {
   html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#8b5cf6">' + (counts.assigned + counts.in_progress) + '</div><div class="rpt-stat-label">กำลังดำเนินการ</div></div>';
   html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#22c55e">' + counts.completed + '</div><div class="rpt-stat-label">เสร็จสิ้น</div></div>';
   html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#ef4444">' + counts.rejected + '</div><div class="rpt-stat-label">ปฏิเสธ</div></div>';
-  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:#0f172a">' + tickets.length + '</div><div class="rpt-stat-label">รวมทั้งหมด</div></div>';
+  html += '<div class="rpt-stat"><div class="rpt-stat-num" style="color:var(--text)">' + tickets.length + '</div><div class="rpt-stat-label">รวมทั้งหมด</div></div>';
   html += '</div>';
 
   // Pie chart placeholder — will be drawn via canvas
@@ -1390,36 +1390,36 @@ function _openPdfWindow(data) {
 /* ── PDF Styles ─────────────────────────────────────────── */
 function _getPdfStyles() {
   return '*{margin:0;padding:0;box-sizing:border-box}' +
-    'body{font-family:"Prompt",sans-serif;color:#0f172a;background:#fff;padding:20px 28px;font-size:12px;line-height:1.6}' +
+    'body{font-family:"Prompt",sans-serif;color:var(--text);background:var(--card-bg);padding:20px 28px;font-size:12px;line-height:1.6}' +
     '.rpt-page{margin-bottom:32px}' +
     '.rpt-header{text-align:center;margin-bottom:28px;padding-bottom:20px}' +
-    '.rpt-logo{font-family:"Inter","Prompt",sans-serif;font-size:38px;font-weight:800;color:#0f172a;letter-spacing:-1px;margin-bottom:6px}' +
+    '.rpt-logo{font-family:"Inter","Prompt",sans-serif;font-size:38px;font-weight:800;color:var(--text);letter-spacing:-1px;margin-bottom:6px}' +
     '.rpt-logo span{background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}' +
-    '.rpt-title{font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:6px}' +
+    '.rpt-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}' +
     '.rpt-subtitle{font-size:12px;color:#64748b;margin-bottom:16px}' +
     '.rpt-line{height:3px;background:linear-gradient(90deg,#2563eb,#f59e0b,#22c55e);border-radius:4px}' +
-    '.rpt-section-title{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px;padding:4px 12px;border-left:3px solid #2563eb}' +
+    '.rpt-section-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;padding:4px 12px;border-left:3px solid #2563eb}' +
     '.rpt-stats{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}' +
-    '.rpt-stat{text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 20px;min-width:100px}' +
+    '.rpt-stat{text-align:center;background:var(--surface-alt);border:1px solid #e2e8f0;border-radius:12px;padding:14px 20px;min-width:100px}' +
     '.rpt-stat-num{font-size:28px;font-weight:800;font-family:"Inter",sans-serif;line-height:1}' +
     '.rpt-stat-label{font-size:11px;color:#64748b;margin-top:4px;font-weight:600}' +
     '.rpt-pie-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}' +
-    '.rpt-leg{display:flex;align-items:center;gap:6px;font-size:12px;color:#334155;font-weight:600}' +
+    '.rpt-leg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);font-weight:600}' +
     '.rpt-dot{width:10px;height:10px;border-radius:50%;display:inline-block}' +
     /* ── Case Cards ── */
     '.rpt-cards{display:flex;flex-direction:column;gap:14px}' +
-    '.rpt-card{border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;page-break-inside:avoid;break-inside:avoid;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}' +
+    '.rpt-card{border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;page-break-inside:avoid;break-inside:avoid;background:var(--card-bg);box-shadow:0 1px 4px rgba(0,0,0,.06)}' +
     '.rpt-card-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px}' +
-    '.rpt-card-id{font-family:"Inter",sans-serif;font-size:13px;font-weight:800;color:#0f172a;letter-spacing:.5px}' +
+    '.rpt-card-id{font-family:"Inter",sans-serif;font-size:13px;font-weight:800;color:var(--text);letter-spacing:.5px}' +
     '.rpt-card-badge{padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.3px}' +
     '.rpt-card-body{display:flex;gap:16px;padding:12px 14px 14px;align-items:flex-start}' +
     '.rpt-card-info{flex:1;min-width:0}' +
     '.rpt-card-row{display:flex;gap:8px;margin-bottom:6px;font-size:11px;line-height:1.5}' +
     '.rpt-card-key{color:#64748b;font-weight:600;flex-shrink:0;min-width:130px}' +
-    '.rpt-card-val{color:#0f172a;font-weight:500;flex:1}' +
-    '.rpt-card-desc .rpt-card-val{color:#334155;font-style:italic}' +
+    '.rpt-card-val{color:var(--text);font-weight:500;flex:1}' +
+    '.rpt-card-desc .rpt-card-val{color:var(--text);font-style:italic}' +
     '.rpt-stars{color:#f59e0b;font-weight:700;font-family:"Inter",sans-serif;letter-spacing:1px}' +
-    '.rpt-card-reject{margin-top:8px;background:#fff1f1;border:1px solid #fecaca;border-radius:6px;padding:6px 10px;font-size:11px;color:#b91c1c}' +
+    '.rpt-card-reject{margin-top:8px;background:var(--card-bg)1f1;border:1px solid #fecaca;border-radius:6px;padding:6px 10px;font-size:11px;color:#b91c1c}' +
     '.rpt-card-imgs{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}' +
     '.rpt-img-wrap{text-align:center}' +
     '.rpt-img-card{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;display:block}' +

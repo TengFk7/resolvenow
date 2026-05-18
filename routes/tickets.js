@@ -76,7 +76,7 @@ async function reverseGeocode(lat, lng) {
     const https = require('https');
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=th&zoom=17`;
     return await new Promise((resolve) => {
-      https.get(url, { headers: { 'User-Agent': 'ResolvNow/1.0' } }, (res) => {
+      https.get(url, { headers: { 'User-Agent': 'ResolveNow/1.0' } }, (res) => {
         let data = '';
         res.on('data', c => (data += c));
         res.on('end', () => {

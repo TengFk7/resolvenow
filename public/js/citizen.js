@@ -574,7 +574,7 @@ async function openCameraCapture() {
       msg = 'กล้องถูกแอปอื่นใช้งานอยู่ กรุณาปิดแอปอื่นแล้วลองใหม่';
     }
     errBox.innerHTML = '⚠️ ' + msg + '<br><small style="opacity:.7">' + err.name + '</small><br><br>' +
-      '<button onclick="closeCameraCapture()" style="background:#fff;color:#000;border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:700">ปิด</button>';
+      '<button onclick="closeCameraCapture()" style="background:var(--card-bg);color:var(--text);border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:700">ปิด</button>';
     errBox.style.display = 'block';
   }
 }
@@ -633,7 +633,7 @@ function takeCameraPhoto() {
 
   // Flash effect
   var flash = document.createElement('div');
-  flash.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;opacity:.8;pointer-events:none;transition:opacity .3s';
+  flash.style.cssText = 'position:fixed;inset:0;background:var(--card-bg);z-index:9999;opacity:.8;pointer-events:none;transition:opacity .3s';
   document.body.appendChild(flash);
   setTimeout(function () { flash.style.opacity = '0'; setTimeout(function () { flash.remove(); }, 300); }, 50);
 

@@ -277,7 +277,7 @@ io.on('connection', (socket) => {
   );
 
   // ─── Start ───────────────────────────────────────────────────
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   server.listen(PORT, () => {
     console.log('='.repeat(40));
     console.log(`  ResolveNow: http://localhost:${PORT}`);
