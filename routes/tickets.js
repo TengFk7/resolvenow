@@ -617,7 +617,8 @@ router.put('/:id/rating', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'คะแนนต้องอยู่ระหว่าง 1-5' });
 
     ticket.rating = stars;
-    ticket.ratingReason = (stars < 3 && reason) ? reason.trim() : null;
+    // XSS-FIX: Sanitize ratingReason using xss()
+    ticket.ratingReason = (stars < 3 && reason && typeof reason === 'string') ? xss(reason.trim()) : null;
     ticket.ratedAt = new Date().toLocaleString('th-TH');
     await ticket.save();
 
@@ -711,20 +712,25 @@ router.get('/search', async (req, res) => {
     const caller = req.session.userId ? await User.findById(req.session.userId) : null;
     const { q, status: st, category: cat } = req.query;
 
-    if (!caller && (!q || !q.trim())) return res.json([]);
+    // FIX NoSQL Injection & TypeError
+    const searchQ = typeof q === 'string' ? q : '';
+    const searchSt = typeof st === 'string' ? st : '';
+    const searchCat = typeof cat === 'string' ? cat : '';
+
+    if (!caller && (!searchQ || !searchQ.trim())) return res.json([]);
 
     let query = {};
     if (caller && caller.role === 'citizen') query.citizenId = caller._id;
     else if (caller && caller.role === 'technician') {
       query.$or = [{ category: caller.specialty }, { assignedTo: caller._id }];
     }
-    if (st && st !== 'all') query.status = st;
-    if (cat && cat !== 'all') query.category = cat;
+    if (searchSt && searchSt !== 'all') query.status = searchSt;
+    if (searchCat && searchCat !== 'all') query.category = searchCat;
 
     let tickets = await Ticket.find(query).sort({ createdAt: -1 });
 
-    if (q && q.trim()) {
-      const kw = q.trim().toLowerCase();
+    if (searchQ && searchQ.trim()) {
+      const kw = searchQ.trim().toLowerCase();
       tickets = tickets.filter(t =>
         (t.ticketId || '').toLowerCase().includes(kw) ||
         (t.description || '').toLowerCase().includes(kw) ||
@@ -738,7 +744,8 @@ router.get('/search', async (req, res) => {
     if (!caller) {
       tickets = tickets.map(t => ({
         ticketId: t.ticketId, category: t.category,
-        description: t.description, location: t.location,
+        // PRIVACY-FIX: Mask description and location for unauthenticated users
+        description: 'ปกปิดข้อมูลเพื่อความเป็นส่วนตัว', location: 'ปกปิดข้อมูลเพื่อความเป็นส่วนตัว',
         status: t.status, urgency: t.urgency,
         assignedName: t.assignedName || null,
         rating: t.rating || null, createdAt: t.createdAt,
@@ -803,9 +810,20 @@ router.delete('/', requireAuth, async (req, res) => {
 // GET /api/tickets/:id/comments
 router.get('/:id/comments', requireAuth, async (req, res) => {
   try {
-    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('chatExpiresAt status');
+    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select('chatExpiresAt status citizenId assignedTo');
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    const caller = await User.findById(req.session.userId);
+    // IDOR Protection: เช็คสิทธิ์การเข้าถึง Chat
+    if (caller && caller.role === 'citizen' && ticket.citizenId.toString() !== caller._id.toString()) {
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์ดูแชทของ Ticket นี้' });
+    }
+    if (caller && caller.role === 'technician' && ticket.assignedTo && ticket.assignedTo.toString() !== caller._id.toString()) {
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์ดูแชทของ Ticket ที่ไม่ได้มอบหมายให้คุณ' });
+    }
+
     // ถ้า chat หมดอายุแล้ว ให้คืน array เปล่า
-    if (ticket && ticket.chatExpiresAt && new Date() > ticket.chatExpiresAt) {
+    if (ticket.chatExpiresAt && new Date() > ticket.chatExpiresAt) {
       return res.json([]);
     }
     const comments = await Comment.find({ ticketId: req.params.id }).sort({ createdAt: 1 });

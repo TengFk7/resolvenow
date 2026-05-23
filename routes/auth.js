@@ -205,6 +205,8 @@ router.post('/change-password', requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword)
       return res.status(400).json({ error: 'ข้อมูลไม่ครบ' });
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string')
+      return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
     if (newPassword.length < 6)
       return res.status(400).json({ error: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัว' });
 
@@ -245,6 +247,8 @@ router.post('/link-line', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+    if (typeof email !== 'string' || typeof password !== 'string')
+      return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(401).json({ error: 'ไม่พบ Email นี้ในระบบ' });
@@ -363,6 +367,8 @@ router.post('/register-line', async (req, res) => {
       return res.status(400).json({ error: 'กรุณากรอก Email' });
     if (!password || password.length < 6)
       return res.status(400).json({ error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' });
+    if (typeof firstName !== 'string' || typeof email !== 'string' || typeof password !== 'string')
+      return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
     const emailLower = email.toLowerCase().trim();
 
