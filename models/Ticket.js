@@ -43,4 +43,12 @@ const ticketSchema = new mongoose.Schema({
   toJSON: { virtuals: true },
 });
 
+// ─── Indexes สำหรับ Query ที่ใช้บ่อย ──────────────────────────────
+ticketSchema.index({ citizenId: 1, createdAt: -1 });        // GET tickets ของ citizen
+ticketSchema.index({ assignedTo: 1, status: 1 });           // GET tickets ของช่าง
+ticketSchema.index({ category: 1, status: 1 });             // filter by category + status
+ticketSchema.index({ status: 1, createdAt: -1 });           // admin list + ceo dashboard
+ticketSchema.index({ slaBreached: 1, status: 1 });          // slaJob breach query
+ticketSchema.index({ chatExpiresAt: 1 }, { sparse: true }); // chat cleanup job
+
 module.exports = mongoose.model('Ticket', ticketSchema);

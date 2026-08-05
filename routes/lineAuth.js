@@ -2,6 +2,7 @@
 // LINE Login OAuth 2.0 flow
 const express = require('express');
 const https = require('https');
+const crypto = require('crypto');
 const router = express.Router();
 const User = require('../models/User');
 
@@ -43,7 +44,8 @@ function httpsGet(hostname, path, token) {
 // GET /auth/line → redirect to LINE Login
 router.get('/', (req, res) => {
   if (!CLIENT_ID) return res.status(500).send('LINE_LOGIN_CLIENT_ID ไม่ได้ตั้งค่า');
-  const state = Math.random().toString(36).slice(2, 12);
+  // SECURITY: ใช้ crypto.randomBytes แทน Math.random() เพื่อ entropy สูงกว่า
+  const state = crypto.randomBytes(16).toString('hex');
   req.session.lineState = state;
   const url = 'https://access.line.me/oauth2/v2.1/authorize?' + new URLSearchParams({
     response_type: 'code', client_id: CLIENT_ID,

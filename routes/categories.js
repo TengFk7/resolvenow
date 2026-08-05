@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const xss = require('xss');
 const Category = require('../models/Category');
 const User = require('../models/User');
 const Ticket = require('../models/Ticket');
@@ -58,9 +59,9 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     if (exists) return res.status(400).json({ error: 'หมวดหมู่นี้มีอยู่แล้ว' });
 
     const cat = await new Category({
-      name: name.trim(),
-      label: label.trim(),
-      icon: icon.trim(),
+      name: xss(name.trim()),
+      label: xss(label.trim()),
+      icon: xss(icon.trim()),
       isDefault: false
     }).save();
 
@@ -76,8 +77,8 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     const cat = await Category.findById(req.params.id);
     if (!cat) return res.status(404).json({ error: 'ไม่พบหมวดหมู่' });
 
-    if (label) cat.label = label.trim();
-    if (icon) cat.icon = icon.trim();
+    if (label) cat.label = xss(label.trim());
+    if (icon) cat.icon = xss(icon.trim());
     await cat.save();
 
     res.json(cat);
@@ -98,9 +99,9 @@ router.put('/:id/technicians', requireAuth, requireAdmin, async (req, res) => {
     const validTechs = await User.find({ _id: { $in: technicianIds }, role: 'technician' });
     cat.technicianIds = validTechs.map(t => t._id);
 
-    // Also update each technician's specialty to match this category
+    // Only set primary specialty if technician does not have one assigned yet
     for (const tech of validTechs) {
-      if (tech.specialty !== cat.name) {
+      if (!tech.specialty) {
         tech.specialty = cat.name;
         await tech.save();
       }
@@ -113,7 +114,7 @@ router.put('/:id/technicians', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /api/categories/:id ──────────────────────────────────
-// Admin — ลบหมวดหมู่ (ป้องกันถ้ามี ticket ค้าง)
+// Admin — ลบหมวดหมู่ (ย้าย Ticket เดิมไปหมวดหมู่ค่าเริ่มต้น 'Road')
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const cat = await Category.findById(req.params.id);
@@ -129,6 +130,12 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
         error: `ไม่สามารถลบได้ — ยังมี ${activeTickets} เรื่องร้องเรียนที่ยังไม่เสร็จ`,
         activeTickets
       });
+    }
+
+    // Re-assign all existing tickets under this category to the system default category
+    const defaultCat = await Category.findOne({ isDefault: true });
+    if (defaultCat && defaultCat.name !== cat.name) {
+      await Ticket.updateMany({ category: cat.name }, { category: defaultCat.name });
     }
 
     await Category.findByIdAndDelete(req.params.id);

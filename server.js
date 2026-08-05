@@ -36,6 +36,7 @@ const { Server } = require('socket.io');       // socket.io requirement
 const connectDB = require('./config/db');
 const { seedDB } = require('./config/seed');
 const { startSlaJob } = require('./config/slaJob');
+const User = require('./models/User');
 
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Render/Heroku)
@@ -44,6 +45,36 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 // Make io globally accessible to routers
 app.set('io', io);
+
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  console.error('FATAL ERROR: SESSION_SECRET is not defined in production.');
+  process.exit(1);
+}
+
+const sessionStore = MongoStore.create({
+  mongoUrl: process.env.MONGODB_URI,
+  dbName: 'resolvenow',
+  ttl: 7 * 24 * 60 * 60,
+  touchAfter: 24 * 3600,
+});
+sessionStore.on('error', function (err) {
+  console.warn('[Session Store] non-critical error:', err.message);
+});
+
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'resolvenow-secret-2024',
+  resave: false,
+  saveUninitialized: true,
+  store: sessionStore,
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  }
+});
+
+io.engine.use(sessionMiddleware);
 
 // FIX-#3 Heartbeat: ตอบ ping_heartbeat ด้วย pong_heartbeat ยืนยัน connection ยังมีชีวิต
 io.on('connection', (socket) => {
@@ -54,12 +85,25 @@ io.on('connection', (socket) => {
   // ── Direct Message Rooms ───────────────────────────
   // citizen join their own room so admin can push to them
   // admin join admin_dm room so citizen can push to admin
-  socket.on('dm_join', (data) => {
-    if (!data) return;
-    if (data.role === 'admin') {
-      socket.join('admin_dm');
-    } else if (data.role === 'citizen' && data.userId) {
-      socket.join('citizen_dm_' + data.userId);
+  socket.on('dm_join', async (data) => {
+    const sessionUserId = socket.request.session?.userId;
+    if (!sessionUserId) return;
+
+    if (data && data.userId && data.userId !== sessionUserId) {
+      console.warn('[Socket] Security Alert: IDOR attempt on dm_join by user', sessionUserId);
+      return;
+    }
+
+    try {
+      const user = await User.findById(sessionUserId).select('role').lean();
+      if (!user) return;
+      if (user.role === 'admin') {
+        socket.join('admin_dm');
+      } else if (user.role === 'citizen') {
+        socket.join('citizen_dm_' + sessionUserId);
+      }
+    } catch (e) {
+      console.warn('[Socket] dm_join DB lookup failed:', e.message);
     }
   });
 });
@@ -82,29 +126,7 @@ io.on('connection', (socket) => {
   app.use(express.static(path.join(__dirname, 'public')));
   // ใช้ mongoose connection ที่มีอยู่แล้ว (ไม่ต้อง connect ใหม่)
   const mongoose = require('mongoose');
-  const sessionStore = MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    dbName: 'resolvenow',
-    ttl: 7 * 24 * 60 * 60,
-    touchAfter: 24 * 3600, // lazy session update — only update once per 24h to reduce writes
-  });
-  // Suppress "Unable to find the session to touch" errors (stale cookies)
-  sessionStore.on('error', function (err) {
-    console.warn('[Session Store] non-critical error:', err.message);
-  });
-
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'resolvenow-secret-2024',
-    resave: false,
-    saveUninitialized: true,   // ต้อง true: ให้ session ที่มีแค่ lineLinkPending (ยังไม่ login) ถูก save ลง MongoDB
-    store: sessionStore,
-    cookie: {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: 'lax',    // lax: ส่ง cookie กับ GET redirect (LINE callback) ได้
-      secure: process.env.NODE_ENV === 'production'
-    }
-  }));
+  app.use(sessionMiddleware);
 
   // ─── Rate Limiting ────────────────────────────────────────────
   const authLimiter = rateLimit({
@@ -235,7 +257,7 @@ io.on('connection', (socket) => {
     res.send(DADIC_PAGE());
   });
 
-  app.post('/Datadic', async (req, res) => {
+  app.post('/Datadic', authLimiter, async (req, res) => {
     const { email, password } = req.body || {};
     if (!email || !password) {
       return res.send(DADIC_PAGE('กรุณากรอกอีเมลและรหัสผ่าน'));

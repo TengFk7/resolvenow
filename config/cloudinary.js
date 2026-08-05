@@ -85,8 +85,16 @@ async function purgeTicketImages(tickets) {
       const pid = extractPublicId(t[field]);
       if (pid) publicIds.push(pid);
     }
+    // citizenImages[] — multiple upload images from citizen
     if (t.citizenImages) {
       for (const imgUrl of t.citizenImages) {
+        const pid = extractPublicId(imgUrl);
+        if (pid) publicIds.push(pid);
+      }
+    }
+    // afterImages[] — multiple after-repair images from technician
+    if (t.afterImages) {
+      for (const imgUrl of t.afterImages) {
         const pid = extractPublicId(imgUrl);
         if (pid) publicIds.push(pid);
       }

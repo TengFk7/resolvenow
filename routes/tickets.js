@@ -5,28 +5,17 @@ const path = require('path');
 const fs = require('fs');
 const { Parser } = require('json2csv');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Ticket = require('../models/Ticket');
+const Category = require('../models/Category');
 const Counter = require('../models/Counter');
 const Comment = require('../models/Comment');
 const { STATUSES } = require('../data/store');
 const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, notifyRejected, notifyFollowers, notifyRatingThanks } = require('../config/lineNotify');
 const { upload: cloudinaryUpload, isCloudinaryConfigured, cloudinary, purgeTicketImages } = require('../config/cloudinary');
 
-// ─── SLA Deadline Helper ─────────────────────────────────────────
-const SLA_RULES = {
-  urgent:  { assignHours: 2,  completeHours: 8  },
-  medium:  { assignHours: 8,  completeHours: 48 },
-  normal:  { assignHours: 24, completeHours: 72 }
-};
-function calcSlaDeadlines(urgency) {
-  const rule = SLA_RULES[urgency] || SLA_RULES.normal;
-  const now = new Date();
-  return {
-    slaAssignDeadline:   new Date(now.getTime() + rule.assignHours * 3600000),
-    slaCompleteDeadline: new Date(now.getTime() + rule.completeHours * 3600000)
-  };
-}
+const { calcSlaDeadlines, checkIsSlaBreached } = require('../utils/slaHelper');
 
 // ─── Middleware & Helpers ──────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -51,7 +40,14 @@ const localStorage = multer.diskStorage({
     cb(null, Date.now() + '-' + Math.random().toString(36).slice(2, 8) + ext);
   }
 });
-const localUpload = multer({ storage: localStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const fileFilter = (req, file, cb) => {
+  if (ALLOWED_EXTS[file.mimetype]) {
+    cb(null, true);
+  } else {
+    cb(new Error('ประเภทไฟล์ไม่ได้รับอนุญาต'), false);
+  }
+};
+const localUpload = multer({ storage: localStorage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter });
 const upload = isCloudinaryConfigured() ? cloudinaryUpload : localUpload;
 
 function getFileUrl(req) {
@@ -313,15 +309,10 @@ router.get('/', requireAuth, async (req, res) => {
     };
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
 
-    // SLA breach evaluation — in-memory only (DB update handled by slaJob.js background job)
-    const now = new Date();
+    // SLA breach evaluation — use central helper
     for (const t of tickets) {
       if (t.slaBreached) continue;
-      if (t.status === 'pending' && t.slaAssignDeadline && now > t.slaAssignDeadline) {
-        t.slaBreached = true;
-      } else if (['assigned', 'in_progress'].includes(t.status) && t.slaCompleteDeadline && now > t.slaCompleteDeadline) {
-        t.slaBreached = true;
-      }
+      t.slaBreached = checkIsSlaBreached(t);
     }
 
     res.json(tickets.map(t => formatTicket(t, user._id)));
@@ -337,6 +328,12 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่งอย่างน้อย 1 รูป' });
+
+    // Validate category exists
+    const categoryExists = await Category.findOne({ name: category });
+    if (!categoryExists) {
+      return res.status(400).json({ error: 'หมวดหมู่ไม่ถูกต้อง' });
+    }
 
     // XSS-FIX: sanitize user-supplied text before storing
     const description = xss(rawDescription.trim());
@@ -383,8 +380,9 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     // ROLLBACK-FIX: ถ้า DB save ล้มเหลว ให้ลบรูปที่ upload ขึ้น Cloudinary ไปแล้วออก
     if (req.files && isCloudinaryConfigured()) {
       for (const file of req.files) {
-        if (file.filename) {
-          cloudinary.uploader.destroy(file.filename).catch(err =>
+        const publicId = file.filename || file.public_id;
+        if (publicId) {
+          cloudinary.uploader.destroy(publicId).catch(err =>
             console.warn('[Cloudinary] rollback destroy failed:', err?.message)
           );
         }
@@ -465,12 +463,8 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       await ticket.save();
     }
 
-    // SLA breach check
-    if (status === 'assigned' && ticket.slaAssignDeadline && new Date() > ticket.slaAssignDeadline) {
-      ticket.slaBreached = true;
-      await ticket.save();
-    }
-    if (status === 'completed' && ticket.slaCompleteDeadline && new Date() > ticket.slaCompleteDeadline) {
+    // SLA breach check — use central helper
+    if (!ticket.slaBreached && checkIsSlaBreached(ticket)) {
       ticket.slaBreached = true;
       await ticket.save();
     }
@@ -521,6 +515,10 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
     ticket.assignedTo = tech._id;
     ticket.assignedName = tech.firstName + ' ' + tech.lastName;
     ticket.status = 'assigned';
+    // SLA breach check — mark if already past assign deadline
+    if (!ticket.slaBreached && checkIsSlaBreached(ticket)) {
+      ticket.slaBreached = true;
+    }
     await ticket.save();
 
     notifyAssigned(formatTicket(ticket)).catch(e => console.error('[LINE] notifyAssigned error:', e));
@@ -786,10 +784,18 @@ router.delete('/', requireAuth, async (req, res) => {
     if (!caller || caller.role !== 'admin')
       return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้น' });
 
-    // PASSWORD-FIX: server-side password check (ไม่ hardcode ที่ frontend แล้ว)
+    // PASSWORD-FIX: server-side password check (ไม่ hardcode สำรอง 'admin1234')
     const { password } = req.body;
-    const expected = process.env.ADMIN_DELETE_PASSWORD || 'admin1234';
-    if (!password || password !== expected)
+    if (!password)
+      return res.status(400).json({ error: 'กรุณากรอกรหัสผ่าน' });
+
+    if (!process.env.ADMIN_DELETE_PASSWORD) {
+      return res.status(403).json({ error: 'ระบบไม่อนุญาตให้ลบข้อมูลทั้งหมดเนื่องจากไม่ได้ตั้งรหัสผ่านสำหรับลบข้อมูลไว้' });
+    }
+
+    let isPasswordValid = (password === process.env.ADMIN_DELETE_PASSWORD);
+
+    if (!isPasswordValid)
       return res.status(403).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
 
     // CLOUDINARY-FIX: ดึงรูปทั้งหมดก่อนลบ แล้วค่อย purge

@@ -3,31 +3,21 @@ const router = express.Router();
 const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 const Category = require('../models/Category');
+const { checkIsSlaBreached } = require('../utils/slaHelper');
 
 // GET /api/ceo/tickets - ดึง tickets ทั้งหมดแบบ read-only สำหรับ dashboard
 router.get('/tickets', async (req, res) => {
   try {
     const tickets = await Ticket.find().sort({ createdAt: -1 });
 
-    // ประเมิน SLA จำลอง
-    const now = new Date();
     const formattedTickets = tickets.map(t => {
-      let slaBreached = t.slaBreached;
-      if (!slaBreached) {
-        if (t.status === 'pending' && t.slaAssignDeadline && now > t.slaAssignDeadline) {
-          slaBreached = true;
-        } else if (['assigned', 'in_progress'].includes(t.status) && t.slaCompleteDeadline && now > t.slaCompleteDeadline) {
-          slaBreached = true;
-        }
-      }
-
       return {
         ticketId: t.ticketId,
         category: t.category,
         location: t.location,
         urgency: t.urgency,
         status: t.status,
-        slaBreached: slaBreached,
+        slaBreached: checkIsSlaBreached(t),
         createdAt: t.createdAt,
         updatedAt: t.updatedAt
       };

@@ -14,7 +14,17 @@ function requireAuth(req, res, next) {
 // GET /api/help-requests
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const list = await HelpRequest.find().sort({ createdAt: -1 });
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'ไม่พบผู้ใช้' });
+
+    let query = {};
+    if (user.role === 'citizen') {
+      // citizen เห็นเฉพาะ help requests ที่ตัวเองสร้าง
+      query.citizenId = user._id;
+    }
+    // technician และ admin เห็นทั้งหมด
+
+    const list = await HelpRequest.find(query).sort({ createdAt: -1 });
     res.json(list);
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
@@ -99,6 +109,8 @@ router.put('/:id/accept', requireAuth, async (req, res) => {
 router.put('/:id/cancel', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'ไม่พบผู้ใช้' });
+
     const help = await HelpRequest.findOne({ helpId: req.params.id });
     if (!help) return res.status(404).json({ error: 'ไม่พบคำขอ' });
     if (help.requesterId?.toString() !== user._id.toString())

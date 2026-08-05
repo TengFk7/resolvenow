@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt  = require('bcryptjs');
+const xss     = require('xss');
 const router  = express.Router();
 const User    = require('../models/User');
 const Ticket  = require('../models/Ticket');
@@ -72,11 +73,12 @@ router.post('/send-otp', async (req, res) => {
 
     const otp   = generateOtp();
     const token = generateToken();
-    // SECURITY-FIX: Hash password before storing in RAM so a memory dump can't expose plaintext
-    const hashedPw = await bcrypt.hash(password, 10);
+    const safeFirstName = xss(firstName.trim());
+    const safeLastName = xss(lastName.trim());
+
     otpStore.set(token, {
       otp, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0,
-      userData: { firstName, lastName, email, password: hashedPw, alreadyHashed: true }
+      userData: { firstName: safeFirstName, lastName: safeLastName, email, password: password, alreadyHashed: false }
     });
 
     await sendOtpEmail(email, otp, firstName);
@@ -393,15 +395,21 @@ router.post('/register-line', async (req, res) => {
       });
     }
 
-    // สร้าง OTP และเก็บข้อมูลไว้
+    // สร้าง OTP และเก็บข้อมูลไว้ (รวม lineProfile เพื่อรองรับกรณี session หลุด)
     const otp   = generateOtp();
     const token = generateToken();
-    // SECURITY-FIX: Hash password before storing in RAM
-    const hashedPwLine = await bcrypt.hash(password, 10);
+    const safeFirstName = xss(firstName.trim());
+    const safeLastName = lastName ? xss(lastName.trim()) : '-';
+
     otpStore.set(token, {
       otp, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0,
-      userData: { firstName: firstName.trim(), lastName: (lastName || '').trim() || '-', email: emailLower, password: hashedPwLine, alreadyHashed: true },
-      isLineRegister: true  // flag ว่าเป็น LINE registration
+      userData: { firstName: safeFirstName, lastName: safeLastName, email: emailLower, password: password, alreadyHashed: false },
+      isLineRegister: true,  // flag ว่าเป็น LINE registration
+      lineProfile: {
+        lineUserId: pending.lineUserId,
+        lineDisplayName: pending.lineDisplayName || null,
+        lineAvatar: pending.lineAvatar || null
+      }
     });
 
     await sendOtpEmail(emailLower, otp, firstName.trim());
@@ -418,16 +426,16 @@ router.post('/register-line', async (req, res) => {
 router.post('/verify-line-otp', async (req, res) => {
   try {
     const { token, otp } = req.body;
-    const pending = req.session.lineLinkPending;
-
-    if (!pending || !pending.lineUserId)
-      return res.status(400).json({ error: 'ไม่พบข้อมูล LINE session กรุณา login ด้วย LINE ใหม่อีกครั้ง' });
-
     const entry = otpStore.get(token);
+
     if (!entry) return res.status(400).json({ error: 'OTP หมดอายุ กรุณาขอใหม่' });
     if (Date.now() > entry.expiresAt) { otpStore.delete(token); return res.status(400).json({ error: 'OTP หมดอายุ กรุณาขอใหม่' }); }
     if (entry.attempts >= 5) { otpStore.delete(token); return res.status(400).json({ error: 'กรอก OTP ผิดเกินกำหนด กรุณาขอใหม่' }); }
     if (entry.otp !== otp) { entry.attempts++; return res.status(400).json({ error: 'รหัส OTP ไม่ถูกต้อง (เหลือ ' + (5 - entry.attempts) + ' ครั้ง)' }); }
+
+    const pending = req.session.lineLinkPending || entry.lineProfile;
+    if (!pending || !pending.lineUserId)
+      return res.status(400).json({ error: 'ไม่พบข้อมูล LINE session กรุณา login ด้วย LINE ใหม่อีกครั้ง' });
 
     // OTP ถูกต้อง — สร้างบัญชี
     const { firstName, lastName, email, password, alreadyHashed } = entry.userData;

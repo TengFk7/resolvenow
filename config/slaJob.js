@@ -1,22 +1,23 @@
-// ─── SLA Breach Background Job ───────────────────────────────────
-// ตรวจ SLA breach ทุก 5 นาที และ bulk-update DB
-// แยกออกจาก GET /api/tickets เพื่อไม่ให้ write operation ปนกับ read path
-// ─────────────────────────────────────────────────────────────────
-
 const Ticket  = require('../models/Ticket');
 const Comment = require('../models/Comment');
+const { SLA_RULES } = require('../utils/slaHelper');
 
 // ── SLA Breach Check ─────────────────────────────────────────────
 async function runSlaCheck() {
   const now = new Date();
+
+  // Build MongoDB $or conditions dynamically from SLA_RULES
+  // pending tickets that exceeded assignDeadline are always caught by:
+  // { status: 'pending', slaAssignDeadline: { $lt: now } }
+  // assigned/in_progress tickets caught by:
+  // { status: { $in: ['assigned','in_progress'] }, slaCompleteDeadline: { $lt: now } }
+  // (hours from SLA_RULES are already baked into DB deadlines at ticket creation)
   const result = await Ticket.updateMany(
     {
-      slaBreached: { $ne: true },  // ยังไม่ถูก mark
+      slaBreached: { $ne: true },
       $or: [
-        // pending นานเกิน assignDeadline
-        { status: 'pending', slaAssignDeadline: { $lt: now } },
-        // assigned/in_progress นานเกิน completeDeadline
-        { status: { $in: ['assigned', 'in_progress'] }, slaCompleteDeadline: { $lt: now } }
+        { status: 'pending',                              slaAssignDeadline:   { $lt: now } },
+        { status: { $in: ['assigned', 'in_progress'] },  slaCompleteDeadline: { $lt: now } }
       ]
     },
     { $set: { slaBreached: true } }
