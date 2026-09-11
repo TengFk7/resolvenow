@@ -671,7 +671,7 @@
       <div class="sub">ระบบรับแจ้งเรื่องร้องเรียน - อธิบายโครงสร้างฐานข้อมูล</div>
       <div class="cover-meta">7
         <div class="cover-meta-item"><strong>Database</strong>MongoDB Atlas (Mongoose 9)</div>
-        <div class="cover-meta-item"><strong>Collections</strong>6 collections</div>
+        <div class="cover-meta-item"><strong>Collections</strong>7 collections</div>
         <div class="cover-meta-item"><strong>เวอร์ชัน</strong>v1.0 (15/04/2026)</div>
         <div class="cover-meta-item"><strong>Stack</strong>Node.js + Express 4</div>
         <div class="cover-meta-item"><strong>Deploy on</strong>Render.com</div>
@@ -706,6 +706,11 @@
           <div class="idx-col">comments</div>
           <div class="idx-desc">ข้อความแชทในตั๋วร้องเรียน</div>
           <div class="idx-count">6 fields</div>
+        </div>
+        <div class="index-item">
+          <div class="idx-col">directmessages</div>
+          <div class="idx-desc">ข้อความตรง (DM) ระหว่างประชาชนกับ Admin</div>
+          <div class="idx-count">7 fields</div>
         </div>
         <div class="index-item">
           <div class="idx-col">counters</div>
@@ -1652,10 +1657,127 @@
     <div class="divider"></div>
 
     <!-- ══════════════════════════════════════════════════════════════
-       6. COLLECTION: counters
+       6. COLLECTION: directmessages
        ══════════════════════════════════════════════════════════════ -->
     <div class="section-title">
       <div class="num">6</div>
+      <h2>Collection: directmessages <span>ข้อความตรงระหว่างประชาชนกับ Admin</span></h2>
+      <div class="collection-badge">directmessages</div>
+    </div>
+    <div class="col-desc">
+      เก็บข้อความ Direct Message (DM) ระหว่างประชาชน (citizen) กับผู้ดูแลระบบ (admin) โดยตรง
+      แต่ละ document ผูกกับ <code>citizenId</code> ซึ่งระบุ conversation (1 citizen = 1 thread)
+      มี index บน <code>citizenId + createdAt</code> สำหรับ query เร็ว
+    </div>
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>ชื่อฟิลด์ Field Name</th>
+          <th>ประเภทข้อมูล Type</th>
+          <th>ขนาด Length</th>
+          <th>คีย์ Key</th>
+          <th>คำอธิบาย Description</th>
+          <th>ข้อจำกัด Constraint</th>
+          <th>บังคับ Required</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="fname">_id</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-pk">PK</span></td>
+          <td>รหัสเอกสารหลัก MongoDB สร้างอัตโนมัติ</td>
+          <td>ไม่ซ้ำในระบบ (unique, auto-gen)</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">senderId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span></td>
+          <td>อ้างอิง users._id ของผู้ส่งข้อความ (citizen หรือ admin)</td>
+          <td>ref: User, ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">senderName</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ชื่อผู้ส่งข้อความ บันทึกไว้แสดงผลโดยไม่ต้อง JOIN</td>
+          <td>ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">senderRole</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>บทบาทของผู้ส่งข้อความ ใช้แยกทิศทางของข้อความใน UI</td>
+          <td>
+            <ul class="enum-list">
+              <li>citizen</li>
+              <li>admin</li>
+            </ul>
+          </td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenId</td>
+          <td class="ftype">ObjectId</td>
+          <td class="flen">24</td>
+          <td class="fkey"><span class="badge badge-fk">FK</span> <span class="badge badge-idx">IDX</span></td>
+          <td>อ้างอิง users._id ของประชาชนใน conversation นี้ ใช้เป็น key หลักของ thread</td>
+          <td>ref: User, ห้ามว่าง; compound index {citizenId, createdAt}</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">message</td>
+          <td class="ftype">String</td>
+          <td class="flen">500</td>
+          <td class="fkey">—</td>
+          <td>เนื้อหาข้อความ DM ผ่าน XSS sanitize ก่อนบันทึก</td>
+          <td>ห้ามว่าง, maxlength: 500 ตัวอักษร</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">isRead</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระบุว่าผู้รับอ่านข้อความนี้แล้วหรือยัง ใช้แสดง badge "ยังไม่ได้อ่าน" บน UI</td>
+          <td>true = อ่านแล้ว; false = ยังไม่ได้อ่าน (default)</td>
+          <td class="req-no">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">createdAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่ส่งข้อความ (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
+          <td class="fname">updatedAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่อัปเดตล่าสุด (Mongoose timestamps)</td>
+          <td>ISO 8601 format, อัตโนมัติ</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       7. COLLECTION: counters
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="section-title">
+      <div class="num">7</div>
       <h2>Collection: counters <span>ตัวนับ ID อัตโนมัติ</span></h2>
       <div class="collection-badge">counters</div>
     </div>
@@ -1748,7 +1870,7 @@
     <div class="footer">
       <strong>ResolveNow Data Dictionary</strong> — ระบบรับแจ้งเรื่องร้องเรียน<br />
       MongoDB Atlas · Mongoose 9 · Node.js + Express 4 · Deploy on: Render.com<br />
-      จัดทำ: 15/04/2569 | ครอบคลุม 6 collections, 70+ fields
+      จัดทำ: 15/04/2569 | อัปเดต: 27/08/2569 | ครอบคลุม 7 collections, 80+ fields
     </div>
 
   </div><!-- /page -->

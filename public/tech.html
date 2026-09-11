@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ResolveNow — ระบบงานช่างและเจ้าหน้าที่ปฏิบัติการ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/animations.css" />
+  <style>
+    /* Technician Portal Theme */
+    :root {
+      --tech-blue: #3b82f6;
+      --tech-cyan: #06b6d4;
+    }
+    .tech-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 80;
+    }
+    .tech-shell {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+  </style>
+</head>
+
+<body style="background:var(--bg)">
+
+  <!-- ────────────────────────────────────────────── TECH AUTH ────────────────────────────────────────────── -->
+  <div class="aw" id="techAuthPage" style="display:flex">
+    <!-- Hero Panel (desktop) -->
+    <div class="auth-hero">
+      <div id="techOrbLayer" class="auth-orb-layer"></div>
+      <div class="auth-hero-content">
+        <h1 class="logo-anim" style="font-size:52px;letter-spacing:-1.5px;"><span
+            class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></h1>
+      </div>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="ac">
+      <div class="al">
+        <h1 class="logo-anim" style="text-align:center;">🔧 <span class="resolve-shimmer">Resolve</span><span
+            class="now-gold">Now</span></h1>
+        <p>ระบบงานช่าง</p>
+      </div>
+
+      <div class="ebox" id="techAuthErr"></div>
+
+      <form onsubmit="event.preventDefault(); doTechLogin();">
+        <div class="fg">
+          <label for="tEmail">อีเมล</label>
+          <input type="email" id="tEmail" placeholder="example@gmail.com" required
+            maxlength="60" autocorrect="off" autocapitalize="none" spellcheck="false" autofocus />
+        </div>
+        <div class="fg">
+          <label for="tPass">รหัสผ่าน</label>
+          <input type="password" id="tPass" placeholder="รหัสผ่าน" required
+            maxlength="40" autocorrect="off" autocomplete="current-password" autocapitalize="off" spellcheck="false"
+            lang="en" />
+        </div>
+        <div class="rem">
+          <input type="checkbox" id="tRem" />
+          <label for="tRem">จำการเข้าสู่ระบบไว้</label>
+        </div>
+        <button type="submit" class="btnp btn-ripple" id="btnTechSubmit">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+
+      <!-- Back to citizen portal link -->
+      <div style="margin-top:24px;padding-top:16px;border-top:1px dashed var(--border);text-align:center;font-size:12px">
+        <a href="/" style="color:var(--muted);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:color .2s" onmouseover="this.style.color='var(--blue2)'" onmouseout="this.style.color='var(--muted)'">
+          ← กลับสู่หน้าหลักประชาชน
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ────────────────────────────────────────────── TECH WORKSPACE ────────────────────────────────────────────── -->
+  <div id="techApp" style="display:none;min-height:100vh;flex-direction:column">
+    <!-- Topbar -->
+    <header class="tech-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="nlogo logo-anim" style="font-size:18px;margin:0">
+          🛠️ <span>Resolve<span class="now-gold">Now</span> <span style="font-size:12px;color:var(--blue2);font-weight:700;margin-left:4px">TECH</span></span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px">
+        <!-- Tech User Profile Info -->
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(37,99,235,.07);padding:5px 12px 5px 6px;border-radius:24px;border:1px solid rgba(37,99,235,.15)">
+          <div id="tAv" class="nav2" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff">🔧</div>
+          <div>
+            <div id="tName" style="font-size:12.5px;font-weight:700;color:var(--navy);line-height:1.2">—</div>
+            <div id="tDeptBadge" style="font-size:10.5px;color:var(--blue2);font-weight:600">—</div>
+          </div>
+        </div>
+
+        <button class="btn-ripple" onclick="doTechLogout()"
+          style="display:flex;align-items:center;gap:5px;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:7px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s"
+          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+          <span>🚪</span> ออกจากระบบ
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="tech-shell">
+      <!-- Technician Section -->
+      <div id="secTech">
+        <!-- Welcome banner & stats will be injected by renderTech() -->
+
+        <!-- Help Requests Banner -->
+        <div id="helpBanner" class="help-banner" style="display:none">
+          <div class="help-banner-head">
+            <div style="font-size:14px;font-weight:700;color:#92400e">📌 คำขอความช่วยเหลือจากเพื่อนช่าง</div>
+            <span class="help-badge" id="helpCount">0</span>
+          </div>
+          <div id="helpList"></div>
+        </div>
+
+        <!-- My Tasks Card -->
+        <div class="ncard" style="margin-top:14px" id="myTechCard">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <h2 style="margin:0;font-size:18px">🔧 งานของฉัน</h2>
+              <div class="live-badge"><div class="live-dot"></div>Real-time</div>
+            </div>
+
+            <!-- Priority Filter -->
+            <div class="cg-select" id="tcPriorityFilter" data-value="all">
+              <button class="cg-select-trigger" onclick="cgDropToggle('tcPriorityFilter')">
+                <span class="cg-select-label">🗂️ ทั้งหมด</span>
+                <span class="cg-select-arrow">▾</span>
+              </button>
+              <div class="cg-select-panel">
+                <div class="cg-select-opt selected" data-value="all"
+                  onclick="cgDropPick('tcPriorityFilter','all','🗂️ ทั้งหมด',tcApplyFilter)">🗂️ ทั้งหมด</div>
+                <div class="cg-select-opt" data-value="urgent"
+                  onclick="cgDropPick('tcPriorityFilter','urgent','⚡ ด่วนมาก',tcApplyFilter)">⚡ ด่วนมาก</div>
+                <div class="cg-select-opt" data-value="medium"
+                  onclick="cgDropPick('tcPriorityFilter','medium','⏰ ด่วน',tcApplyFilter)">⏰ ด่วน</div>
+                <div class="cg-select-opt" data-value="normal"
+                  onclick="cgDropPick('tcPriorityFilter','normal','🔵 ปกติ',tcApplyFilter)">🔵 ปกติ</div>
+                <div class="cg-select-opt" data-value="completed"
+                  onclick="cgDropPick('tcPriorityFilter','completed','✅ เสร็จสิ้น',tcApplyFilter)">✅ เสร็จสิ้น</div>
+                <div class="cg-select-opt" data-value="rejected"
+                  onclick="cgDropPick('tcPriorityFilter','rejected','❌ ปฏิเสธ',tcApplyFilter)">❌ ปฏิเสธ</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="techCards">
+            <div class="empty">กำลังโหลดงาน...</div>
+          </div>
+        </div>
+      </div><!-- /secTech -->
+    </main>
+  </div><!-- /techApp -->
+
+
+  <!-- ────────────────────────────────────────────── MODALS ────────────────────────────────────────────── -->
+
+  <!-- MODAL: Ticket Detail -->
+  <div class="mo" id="mTicketDetail" onclick="closeTD()">
+    <div class="td-modal-card" onclick="event.stopPropagation()">
+      <div class="td-modal-header">
+        <div class="td-modal-title" id="tdModalTitle">📋 รายละเอียดงาน</div>
+        <button class="td-modal-close" onclick="closeTD()">✕</button>
+      </div>
+      <div class="td-modal-body" id="tdModalBody"></div>
+      <div class="td-modal-footer" id="tdModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Technician Reject Reason (BUG-003) -->
+  <div class="mo" id="mTechReject">
+    <div class="mb" style="max-width:400px">
+      <button class="mc" onclick="closeTechRejectModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">❌</div>
+        <h3 style="margin:0 0 4px;font-size:17px;color:var(--navy)">ปฏิเสธงาน</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="techRejectLabel">กรุณาระบุเหตุผล</p>
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px">เหตุผล <span
+            style="color:var(--r)">*</span></label>
+        <textarea id="techRejectReason" placeholder="เช่น ไม่ใช่แผนกที่รับผิดชอบ, อุปกรณ์ไม่พร้อม..." rows="3"
+          style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box;resize:vertical"></textarea>
+      </div>
+      <div class="ebox" id="techRejectErr" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeTechRejectModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">ยกเลิก</button>
+        <button onclick="confirmTechReject()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">❌ ปฏิเสธงาน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Request Help -->
+  <div class="mo" id="mHelp">
+    <div class="mb">
+      <button class="mc" onclick="ge('mHelp').classList.remove('on')">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:6px">🤝</div>
+        <h3 style="margin:0 0 4px;font-size:18px">ขอความช่วยเหลือจากเพื่อนช่าง</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="helpTicketInfo"></p>
+      </div>
+      <div class="fg">
+        <label>แผนกที่ต้องการขอความช่วยเหลือ</label>
+        <select id="helpTargetDept"
+          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;font-family:'Prompt',sans-serif;background:#fff">
+          <option value="">— ทุกแผนก —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>รายละเอียดที่ต้องการความช่วยเหลือ <span style="color:var(--r)">*</span></label>
+        <textarea id="helpMsg" placeholder="ระบุเหตุผล เช่น ต้องใช้อุปกรณ์ตัดกิ่งไม้เพิ่ม, ต้องใช้ช่างไฟฟ้าช่วยตัดไฟ..."
+          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;font-family:'Prompt',sans-serif;resize:none;height:80px;background:#fafafa"></textarea>
+      </div>
+      <div class="ebox" id="helpErr"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button onclick="ge('mHelp').classList.remove('on')"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitHelpRequest()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(245,158,11,.35)">📨 ส่งคำขอ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ticket Chat -->
+  <div class="mo" id="mTicketChat">
+    <div class="mb chat-modal">
+      <button class="mc" onclick="closeTicketChat()">✕</button>
+      <div class="chat-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:20px;position:relative;">
+            💬
+            <div class="chat-online-dot"
+              style="position:absolute;bottom:0;right:-2px;width:8px;height:8px;border:1px solid #0f172a"></div>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:15px;color:#fff">แชท — <span id="chatTicketLabel"></span></h3>
+            <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7)">สนทนาระหว่างช่างและผู้แจ้งเรื่อง</p>
+          </div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty">💬 ยังไม่มีข้อความ — เริ่มสนทนาเลย!</div>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" id="chatInput" placeholder="พิมพ์ข้อความ..." maxlength="500"
+          onkeydown="if(event.key==='Enter')sendComment()" />
+        <button onclick="sendComment()" class="chat-send-btn btn-ripple" id="chatSendBtn">📤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: View Image -->
+  <div class="mo" id="mImg" onclick="closeMImg()">
+    <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
+      <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
+      <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.4)"
+        src="" alt="" />
+      <p style="color:rgba(255,255,255,.5);font-size:12px;margin-top:10px">คลิกพื้นหลังเพื่อปิด</p>
+    </div>
+  </div>
+
+  <!-- Hidden file input for tech uploads -->
+  <input type="file" id="techFile" accept="image/*" style="display:none" />
+  
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/technician.js"></script>
+  <script src="/js/tech-portal.js"></script>
+
+  <script>
+    // ── Auth Hero Orb Background & Sparkles ───────────────────
+    (function initTechOrbs() {
+      const layer = document.getElementById('techOrbLayer');
+      if (!layer) return;
+
+      const orbConfigs = [
+        { type: 'blue', w: 420, h: 380, l: 8, t: -10, dur: 28, delay: 0, blur: 80, tx1: '50px', ty1: '70px', tx2: '100px', ty2: '25px', tx3: '25px', ty3: '95px' },
+        { type: 'teal', w: 300, h: 300, l: 58, t: 50, dur: 32, delay: 7, blur: 70, tx1: '-70px', ty1: '-55px', tx2: '-35px', ty2: '-110px', tx3: '-85px', ty3: '-28px' },
+        { type: 'blue', w: 380, h: 360, l: 60, t: -8, dur: 30, delay: 4, blur: 75, tx1: '-60px', ty1: '80px', tx2: '-110px', ty2: '35px', tx3: '-45px', ty3: '110px' },
+        { type: 'gold', w: 260, h: 240, l: -5, t: 55, dur: 26, delay: 11, blur: 65, tx1: '80px', ty1: '-45px', tx2: '55px', ty2: '-100px', tx3: '100px', ty3: '-18px' },
+        { type: 'teal', w: 200, h: 180, l: 75, t: 68, dur: 20, delay: 2, blur: 50, tx1: '-55px', ty1: '-70px', tx2: '-90px', ty2: '-28px', tx3: '-35px', ty3: '-90px' },
+        { type: 'blue', w: 160, h: 160, l: 20, t: 35, dur: 22, delay: 16, blur: 45, tx1: '60px', ty1: '55px', tx2: '35px', ty2: '90px', tx3: '80px', ty3: '18px' },
+      ];
+
+      orbConfigs.forEach(cfg => {
+        const el = document.createElement('div');
+        el.className = `auth-orb auth-orb-${cfg.type}`;
+        el.style.cssText = [
+          `width:${cfg.w}px`, `height:${cfg.h}px`,
+          `left:${cfg.l}%`, `top:${cfg.t}%`,
+          `--orb-dur:${cfg.dur}s`, `--orb-delay:${cfg.delay}s`,
+          `--orb-blur:${cfg.blur}px`,
+          `--tx1:${cfg.tx1}`, `--ty1:${cfg.ty1}`,
+          `--tx2:${cfg.tx2}`, `--ty2:${cfg.ty2}`,
+          `--tx3:${cfg.tx3}`, `--ty3:${cfg.ty3}`,
+        ].join(';');
+        layer.appendChild(el);
+      });
+
+      // Blue & Teal sparkles
+      [[6, 30, 10, 4.8, 1.2], [7, 50, 50, 3.9, 2.0], [5, 70, 80, 5.2, 0.7],
+      [8, 15, 65, 4.1, 3.3], [6, 82, 42, 3.7, 1.5], [8, 55, 25, 4.0, 0.5]].forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'auth-sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`, `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle,rgba(147,197,253,.9) 0%,rgba(96,165,250,.4) 60%,transparent 100%)`,
+          `box-shadow:0 0 ${sz * 2}px ${sz}px rgba(96,165,250,.3)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+
+      // Gold sparkles
+      [[8, 10, 20, 3.5, 0], [5, 25, 45, 4.2, 0.8], [7, 62, 88, 4.0, 0.3]].forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'auth-sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`, `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle,rgba(251,191,36,.95) 0%,rgba(245,158,11,.4) 60%,transparent 100%)`,
+          `box-shadow:0 0 ${sz * 2}px ${sz}px rgba(251,191,36,.35)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+    })();
+
+    // Smooth Entrance Animation
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        var card = document.querySelector('.ac');
+        var heroContent = document.querySelector('.auth-hero-content');
+        if (heroContent) heroContent.classList.add('hero-enter');
+        if (card) card.classList.add('card-enter');
+      }, 50);
+    });
+  </script>
+</body>
+
+</html>

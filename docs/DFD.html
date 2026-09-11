@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResolveNow - DFD Diagram</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            width: 100%;
+            max-width: 1400px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--text-primary);
+            font-size: 28px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Data Flow Diagram - ResolveNow</h2>
+
+        <!-- Mermaid Diagram Content -->
+        <pre class="mermaid">
+graph TD
+    %% ==========================================
+    %% External Entities
+    %% ==========================================
+    Citizen["ประชาชน (Citizen)"]
+    Tech["ช่าง (Technician)"]
+    Admin["ผู้ดูแลระบบ (Admin)"]
+    ExtServices["ระบบภายนอก<br>(LINE/Email/Cloudinary)"]
+
+    %% ==========================================
+    %% System Boundary
+    %% ==========================================
+    subgraph ResolveNow System
+        P1(("1.0<br>จัดการผู้ใช้และยืนยันตัวตน"))
+        P2(("2.0<br>จัดการการร้องเรียน"))
+        P3(("3.0<br>จัดการหมวดหมู่และช่าง"))
+        P4(("4.0<br>การสื่อสารและมีส่วนร่วม"))
+        P5(("5.0<br>ระบบรายงานแจ้งเตือน"))
+        
+        D1[("D1: Users")]
+        D2[("D2: Tickets")]
+        D3[("D3: Categories")]
+        D4[("D4: Comments")]
+        D5[("D5: Help Requests")]
+    end
+
+    %% ==========================================
+    %% Data Flows
+    %% ==========================================
+    Citizen -- สมัครสมาชิก/Login --> P1
+    Tech -- ข้อมูล Login --> P1
+    Admin -- ข้อมูล Login --> P1
+    P1 -- ส่งข้อมูล/OTP --> ExtServices
+    ExtServices -- คืนค่า Auth --> P1
+    P1 -- บันทึก/ตรวจสอบ --> D1
+    D1 -- คืนค่าสิทธิ์ --> P1
+    P1 -- สถานะ Login --> Citizen
+    P1 -- สถานะ Login --> Tech
+    P1 -- สถานะ Login --> Admin
+
+    Citizen -- แจ้งเรื่อง/รูป/พิกัด --> P2
+    P2 -- บันทึก Ticket --> D2
+    D2 -- ข้อมูลงาน --> P2
+    P2 -- แจ้งสถานะ/รหัสติดตาม --> Citizen
+    Tech -- อัปเดตสถานะ/รูป --> P2
+    Admin -- มอบหมายงาน --> P2
+    P2 -- ร้องขอความช่วยเหลือ --> D5
+    D5 -- ข้อมูลคำขอ --> P2
+
+    Admin -- เพิ่ม/แก้หมวดหมู่ --> P3
+    Admin -- ผูกช่างกับหมวดหมู่ --> P3
+    P3 -- บันทึกข้อมูล --> D3
+    P3 -- อัปเดตทักษะช่าง --> D1
+    D3 -- หมวดหมู่ --> P2
+
+    Citizen -- คอมเมนต์/โหวต/ติดตาม --> P4
+    Tech -- คอมเมนต์ --> P4
+    P4 -- บันทึกข้อมูล --> D4
+    P4 -- อัปเดตคะแนน/ผู้ติดตาม --> D2
+    D4 -- ประวัติแชท --> P4
+    P4 -- แสดงแชท --> Citizen
+
+    D2 -- ข้อมูลงาน/สถิติ --> P5
+    D1 -- ข้อมูลผู้ใช้ --> P5
+    P5 -- Dashboard/รายงาน --> Admin
+    P5 -- แผนที่ Heatmap --> Citizen
+    P5 -- แจ้งเตือนสถานะ --> ExtServices
+        </pre>
+    </div>
+
+    <!-- Mermaid Library Script -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                fontFamily: 'Sarabun',
+                primaryColor: '#f8fafc',
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#94a3b8',
+                lineColor: '#64748b',
+                secondaryColor: '#e0f2fe',
+                tertiaryColor: '#ffffff',
+                clusterBkg: '#f1f5f9',
+                clusterBorder: '#cbd5e1',
+                nodeBorder: '#94a3b8',
+                mainBkg: '#ffffff',
+            },
+            flowchart: {
+                curve: 'basis',
+                nodeSpacing: 50,
+                rankSpacing: 50,
+                useMaxWidth: false
+            }
+        });
+    </script>
+</body>
+
+</html>

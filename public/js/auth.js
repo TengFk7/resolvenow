@@ -183,9 +183,22 @@ async function doLogin() {
   var email = ge('lEmail').value.trim(), pass = ge('lPass').value;
   if (!email || !pass) return showE('authErr', 'กรุณากรอกข้อมูลให้ครบ');
   try {
-    var res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: pass, remember: ge('rem').checked }) });
+    var res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: pass, remember: ge('rem').checked, portal: 'citizen' })
+    });
     var data = await res.json();
-    if (!res.ok) return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+    if (!res.ok) {
+      if (data.redirectUrl) {
+        showE('authErr', data.error);
+        setTimeout(function () {
+          window.location.href = data.redirectUrl;
+        }, 1500);
+        return;
+      }
+      return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+    }
     CU = data.user;
     sessionStorage.setItem('rn_logged_in', '1'); // mark: ยังอยู่ใน session
     enterApp();

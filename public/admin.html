@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ResolveNow — ระบบบริหารจัดการสำหรับผู้ดูแลระบบ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/animations.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    /* Admin Portal Theme */
+    :root {
+      --admin-gold: #f59e0b;
+      --admin-gold-glow: rgba(245, 158, 11, 0.4);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ────────────────────────────────────────────── ADMIN AUTH ────────────────────────────────────────────── -->
+  <div class="aw" id="adminAuthPage" style="display:flex">
+    <!-- Hero Panel (desktop) -->
+    <div class="auth-hero">
+      <div id="authOrbLayer" class="auth-orb-layer"></div>
+      <div class="auth-hero-content">
+        <h1 class="logo-anim" style="font-size:52px;letter-spacing:-1.5px;"><span
+            class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></h1>
+      </div>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="ac">
+      <div class="al">
+        <h1 class="logo-anim" style="text-align:center;">👑 <span class="resolve-shimmer">Resolve</span><span
+            class="now-gold">Now</span></h1>
+        <p>ระบบผู้ดูแลระบบ</p>
+      </div>
+
+      <div class="ebox" id="adminAuthErr"></div>
+
+      <form onsubmit="event.preventDefault(); doAdminLogin();">
+        <div class="fg">
+          <label for="aEmail">อีเมล</label>
+          <input type="email" id="aEmail" placeholder="example@gmail.com" required
+            maxlength="60" autocorrect="off" autocapitalize="none" spellcheck="false" autofocus />
+        </div>
+        <div class="fg">
+          <label for="aPass">รหัสผ่าน</label>
+          <input type="password" id="aPass" placeholder="รหัสผ่าน" required
+            maxlength="40" autocorrect="off" autocomplete="current-password" autocapitalize="off" spellcheck="false"
+            lang="en" />
+        </div>
+        <div class="rem">
+          <input type="checkbox" id="aRem" />
+          <label for="aRem">จำการเข้าสู่ระบบไว้</label>
+        </div>
+        <button type="submit" class="btnp btn-ripple" id="btnAdminSubmit">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+
+      <!-- Back to citizen portal link -->
+      <div style="margin-top:24px;padding-top:16px;border-top:1px dashed var(--border);text-align:center;font-size:12px">
+        <a href="/" style="color:var(--muted);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:color .2s" onmouseover="this.style.color='var(--blue2)'" onmouseout="this.style.color='var(--muted)'">
+          ← กลับสู่หน้าหลักประชาชน
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ────────────────────────────────────────────── ADMIN APP ────────────────────────────────────────────── -->
+  <div id="adminApp" style="display:none">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-logo" style="display: flex; justify-content: center; padding: 28px 0;">
+        <h1 class="logo-anim"
+          style="display: flex; justify-content: center; align-items: center; gap: 6px; margin: 0; cursor: default;">
+          <span style="font-size: 20px;">🏛️</span>
+          <span>Resolve<span class="now-gold">Now</span></span>
+        </h1>
+      </div>
+      <div class="sb-nav">
+        <div class="sb-item on" id="nav-dashboard" onclick="showPage('dashboard')">
+          <span class="sb-icon">📊</span> Dashboard
+        </div>
+        <div class="sb-item" id="nav-queue" onclick="showPage('queue')">
+          <span class="sb-icon">📋</span> รายการทั้งหมด
+        </div>
+        <div class="sb-item" id="nav-techs" onclick="showPage('techs')">
+          <span class="sb-icon">🔧</span> สถานะทีมช่าง
+        </div>
+        <div class="sb-item" id="nav-categories" onclick="showPage('categories')">
+          <span class="sb-icon">📂</span> หมวดหมู่
+        </div>
+        <div class="sb-item" id="nav-dm" onclick="openAdminDmInbox()">
+          <span class="sb-icon">💬</span> ข้อความประชาชน
+        </div>
+      </div>
+
+      <div style="margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.08)">
+        <a href="/ceo" target="_blank" style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6);text-decoration:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:6px;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='none'">
+          <span>📈</span> แดชบอร์ด CEO ↗
+        </a>
+        <a href="/" target="_blank" style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6);text-decoration:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:8px;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='none'">
+          <span>🏛️</span> มุมมองประชาชน ↗
+        </a>
+        <button onclick="doAdminLogout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(239,68,68,.25)'" onmouseout="this.style.background='rgba(239,68,68,.12)'">
+          <span>🚪</span> ออกจากระบบ
+        </button>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">
+          <h2 id="pageTitle">Dashboard</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <!-- DM Inbox Bell Button (Admin) -->
+          <button class="btn-ripple" id="btnAdminDm" onclick="openAdminDmInbox()"
+            style="position:relative;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#059669;padding:8px 14px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s"
+            onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'"
+            aria-label="กล่องข้อความ">
+            <div class="dm-admin-bell">
+              💬
+              <div class="dm-admin-bell-badge hidden" id="dmAdminBellBadge">0</div>
+            </div>
+            <span id="btnAdminDmLabel">ข้อความ</span>
+          </button>
+          <!-- Premium Report Button -->
+          <button class="btn-report btn-ripple" onclick="openReportModal()" id="btnReportTopbar">
+            <span class="btn-report-icon">📥</span> ดาวน์โหลดรายงาน
+          </button>
+          <!-- Admin User Badge -->
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,.05);padding:4px 12px 4px 6px;border-radius:24px;border:1px solid rgba(15,23,42,.1)">
+            <div id="adminAv" class="nav2" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff">A</div>
+            <div id="adminName" style="font-size:12.5px;font-weight:700;color:var(--navy)">Admin</div>
+          </div>
+          <button class="hbg-btn hbg-light btn-ripple" onclick="openDrawer()" aria-label="เมนู">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+          <div class="scard red scard-clickable" onclick="filterAndGoQueue('urgent')" title="ดูงานด่วนมาก">
+            <div class="slabel">งานด่วนมาก</div>
+            <div class="sval" id="sUrgent">0</div>
+          </div>
+          <div class="scard or scard-clickable" onclick="filterAndGoQueue('medium')" title="ดูงานด่วน">
+            <div class="slabel">งานด่วน</div>
+            <div class="sval" id="sMed">0</div>
+          </div>
+          <div class="scard blue scard-clickable" onclick="filterAndGoQueue('normal')" title="ดูงานปกติ">
+            <div class="slabel">งานปกติ</div>
+            <div class="sval" id="sNorm">0</div>
+          </div>
+          <div class="scard sla-card scard-clickable" id="slaStatCard" onclick="filterAndGoQueue('sla')"
+            title="ดูงานล่าช้า">
+            <div class="slabel">⏰ งานล่าช้า</div>
+            <div class="sval sla-val" id="sSLA">0</div>
+          </div>
+          <div class="scard green scard-clickable" onclick="filterAndGoQueue('completed')" title="ดูงานที่เสร็จสิ้น">
+            <div class="slabel">✅ งานสำเร็จ</div>
+            <div class="sval" id="sDone" style="color:#16a34a">0</div>
+          </div>
+          <div class="scard gray">
+            <div class="slabel">ช่างพร้อมรับงาน</div>
+            <div class="sval" id="sTR" style="color:var(--g)">0</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sTT"></div>
+          </div>
+          <div class="scard white scard-clickable" onclick="filterAndGoQueue('all')" title="ดูงานทั้งหมดวันนี้">
+            <div class="slabel">ยอดวันนี้</div>
+            <div class="sval" id="sTD" style="color:var(--blue2)">0</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="pageDashboard" class="page-enter">
+          <div class="dash-grid">
+            <div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>📋 SMART QUEUE — รอการอนุมัติ</h3>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <button class="btn-ripple" onclick="toggleMap()" id="btnToggleMap"
+                      style="background:#f1f5f9;color:var(--navy);border:1px solid #cbd5e1;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗺️
+                      แผนที่</button>
+                    <div class="live-badge">
+                      <div class="live-dot"></div>Real-time
+                    </div>
+                  </div>
+                </div>
+                <div id="queueTableContainer" style="overflow-x:auto" class="queue-desktop-table">
+                  <table class="queue-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>ผู้แจ้ง</th>
+                        <th>ประเภท</th>
+                        <th>รายละเอียด</th>
+                        <th>Priority</th>
+                        <th>SLA</th>
+                        <th>รูปภาพ</th>
+                        <th>🤖 Assign ช่าง</th>
+                        <th>จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody id="queueBody">
+                      <tr>
+                        <td colspan="9" class="empty">กำลังโหลด...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <!-- Mobile card list -->
+                <div id="queueMobList" class="queue-mob-list" style="display:none;padding:12px">
+                  <div class="empty" style="text-align:center;padding:24px;color:var(--muted)">กำลังโหลด...</div>
+                </div>
+                <div id="queueMapContainer"
+                  style="display:none;width:100%;height:350px;border-radius:8px;border:1px solid #e2e8f0;z-index:1;">
+                </div>
+              </div>
+            </div>
+            <div class="right-col">
+              <div class="panel ov-panel">
+                <div class="ov-panel-head">
+                  <div class="ov-panel-title">📊 ภาพรวมงาน</div>
+                </div>
+                <div class="pie-wrap">
+                  <div class="ov-donut-wrap">
+                    <svg id="pieChart" viewBox="0 0 160 160" width="160" height="160">
+                      <circle class="ov-donut-bg" cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9"
+                        stroke-width="22" />
+                      <circle id="ov-seg-done" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gDone)"
+                        stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0"
+                        transform="rotate(-90 80 80)" />
+                      <circle id="ov-seg-inpg" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gInpg)"
+                        stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0"
+                        transform="rotate(-90 80 80)" />
+                      <circle id="ov-seg-pend" class="ov-seg" cx="80" cy="80" r="58" fill="none" stroke="url(#gPend)"
+                        stroke-width="22" stroke-linecap="round" stroke-dasharray="0 365" stroke-dashoffset="0"
+                        transform="rotate(-90 80 80)" />
+                      <defs>
+                        <linearGradient id="gDone" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#22c55e" />
+                          <stop offset="100%" stop-color="#4ade80" />
+                        </linearGradient>
+                        <linearGradient id="gInpg" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#8b5cf6" />
+                          <stop offset="100%" stop-color="#a78bfa" />
+                        </linearGradient>
+                        <linearGradient id="gPend" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#f59e0b" />
+                          <stop offset="100%" stop-color="#fbbf24" />
+                        </linearGradient>
+                      </defs>
+                      <text id="ov-center-num" x="80" y="76" text-anchor="middle" dominant-baseline="middle"
+                        font-size="26" font-weight="800" font-family="Inter,sans-serif" fill="#0f172a">0</text>
+                      <text x="80" y="96" text-anchor="middle" dominant-baseline="middle" font-size="9"
+                        font-weight="600" font-family="Prompt,sans-serif" fill="#94a3b8" letter-spacing="1">TOTAL</text>
+                    </svg>
+                  </div>
+                  <div class="ov-legend" id="pieLegend"></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>🔧 สถานะช่าง</h3>
+                  <span style="font-size:11px;font-weight:700;color:var(--g)">LIVE</span>
+                </div>
+                <div class="tech-list" id="techStatusList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Tickets Page -->
+        <div id="pageQueue" style="display:none">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>📋 Ticket ทั้งหมด</h3>
+              <button id="btnDeleteAll" class="btn-ripple" onclick="openDeleteAllModal()"
+                style="display:flex;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Prompt,sans-serif">
+                <span class="del-icon">🗑️</span> ลบทั้งหมด
+              </button>
+            </div>
+            <!-- Filter chip -->
+            <div id="queueFilterChip" style="display:none;padding:8px 16px 4px"></div>
+            <div style="overflow-x:auto">
+              <table class="queue-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>ผู้แจ้ง</th>
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                    <th>Priority</th>
+                    <th>สถานะ</th>
+                    <th>ช่าง</th>
+                    <th>SLA</th>
+                    <th>รูปภาพ</th>
+                    <th>อัปเดต</th>
+                    <th>วันที่</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="allBody">
+                  <tr>
+                    <td colspan="12" class="empty">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Technician Status Page -->
+        <div id="pageTechs" style="display:none">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>🔧 ทีมช่างทั้งหมด</h3>
+              <button class="btn-ripple btn-add-anim btn-add-green" onclick="openAddTechModal()">
+                <span class="btn-add-icon">👷</span> เพิ่มช่างใหม่
+              </button>
+            </div>
+            <div class="tech-full-grid" id="techFullList"></div>
+          </div>
+        </div>
+
+        <!-- Category Management Page -->
+        <div id="pageCategories" style="display:none">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>📂 หมวดหมู่เรื่องร้องเรียนทั้งหมด</h3>
+              <button class="btn-ripple btn-add-anim btn-add-blue" onclick="openAddCategoryModal()">
+                <span class="btn-add-icon">➕</span> เพิ่มหมวดใหม่
+              </button>
+            </div>
+            <div class="cat-mgmt-grid" id="catMgmtGrid">
+              <div class="empty">กำลังโหลด...</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /main -->
+
+    <!-- ── ADMIN MOBILE BOTTOM NAV ───────────────────── -->
+    <nav id="adminMobNav" class="admin-mob-nav">
+      <button class="admin-mob-btn on" id="amob-dashboard" onclick="showPage('dashboard')">
+        <span class="admin-mob-icon">📊</span>
+        <span class="admin-mob-label">Dashboard</span>
+      </button>
+      <button class="admin-mob-btn" id="amob-queue" onclick="showPage('queue')">
+        <span class="admin-mob-icon">📋</span>
+        <span class="admin-mob-label">รายการ</span>
+      </button>
+      <button class="admin-mob-btn" id="amob-techs" onclick="showPage('techs')">
+        <span class="admin-mob-icon">🔧</span>
+        <span class="admin-mob-label">ทีมช่าง</span>
+      </button>
+      <button class="admin-mob-btn" id="amob-categories" onclick="showPage('categories')">
+        <span class="admin-mob-icon">📂</span>
+        <span class="admin-mob-label">หมวดหมู่</span>
+      </button>
+    </nav>
+  </div><!-- /adminApp -->
+
+
+  <!-- ────────────────────────────────────────────── MODALS ────────────────────────────────────────────── -->
+
+  <!-- DIRECT MESSAGE: Admin Inbox Modal -->
+  <div class="mo" id="mAdminDmInbox">
+    <div class="mb" style="max-width:520px;width:95%;padding:0;overflow:hidden">
+      <!-- Inbox List View -->
+      <div id="dmAdminInboxView">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">💬</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--navy)">กล่องข้อความจากประชาชน</div>
+              <div style="font-size:11px;color:var(--muted)" id="dmInboxSubtitle">กำลังโหลด...</div>
+            </div>
+          </div>
+          <button class="mc" onclick="closeAdminDmInbox()" style="position:static;margin:0">✕</button>
+        </div>
+        <div class="dm-admin-inbox" id="dmAdminInboxList">
+          <div class="dm-empty">⏳ กำลังโหลด...</div>
+        </div>
+      </div>
+      <!-- Thread View -->
+      <div id="dmAdminThreadView" style="display:none;flex-direction:column;height:560px;max-height:80vh">
+        <div class="dm-thread-header">
+          <button class="dm-thread-back" onclick="showDmInboxList()">←</button>
+          <div class="dm-inbox-avatar" id="dmThreadAvatar" style="width:34px;height:34px;font-size:13px">?</div>
+          <div class="dm-thread-name" id="dmThreadName">ชื่อผู้ใช้</div>
+        </div>
+        <div class="dm-messages" id="dmAdminMessages" style="flex:1">
+          <div class="dm-empty">⏳ กำลังโหลด...</div>
+        </div>
+        <div class="dm-footer">
+          <input class="dm-input" id="dmAdminInput" type="text" placeholder="พิมพ์ข้อความตอบกลับ..." maxlength="500"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminDmReply()}" />
+          <button class="dm-send-btn btn-ripple" id="dmAdminSendBtn" onclick="sendAdminDmReply()"
+            aria-label="ส่ง">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ticket Detail -->
+  <div class="mo" id="mTicketDetail" onclick="closeTD()">
+    <div class="td-modal-card" onclick="event.stopPropagation()">
+      <div class="td-modal-header">
+        <div class="td-modal-title" id="tdModalTitle">📋 รายละเอียด</div>
+        <button class="td-modal-close" onclick="closeTD()">✕</button>
+      </div>
+      <div class="td-modal-body" id="tdModalBody"></div>
+      <div class="td-modal-footer" id="tdModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Change Password -->
+  <div class="mo" id="mChPw">
+    <div class="mb">
+      <button class="mc" onclick="closeChPw()">✕</button>
+      <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
+      <div class="ebox" id="chErr"></div>
+      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocorrect="off" lang="en" /></div>
+      <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Reject Confirm -->
+  <div class="mo" id="mReject">
+    <div class="mb">
+      <button class="mc" onclick="closeRejectModal()">✕</button>
+      <!-- Step 1: Confirm -->
+      <div id="mRejectStep1">
+        <div style="text-align:center;margin-bottom:18px">
+          <div style="font-size:44px;margin-bottom:10px">❌</div>
+          <h3 style="margin:0 0 6px;font-size:18px">ปฏิเสธเรื่องร้องเรียน?</h3>
+          <p style="font-size:13px;color:var(--muted);margin:0" id="mRejectTicketLabel"></p>
+        </div>
+        <p
+          style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff7ed;border-radius:10px;padding:12px;border:1px solid #fed7aa">
+          หากยืนยัน ระบบจะแจ้งผู้ร้องเรียนทาง LINE ทันที
+        </p>
+        <div style="display:flex;gap:10px">
+          <button onclick="closeRejectModal()"
+            style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">✕ ไม่ใช่</button>
+          <button onclick="goRejectStep2()"
+            style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.3)">✓ ตกลง</button>
+        </div>
+      </div>
+      <!-- Step 2: Reason -->
+      <div id="mRejectStep2" style="display:none">
+        <h3 style="margin:0 0 4px">📝 ระบุเหตุผลที่ปฏิเสธ</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 16px">ข้อความนี้จะถูกส่งไปยัง LINE ของผู้แจ้งเรื่องโดยตรง</p>
+        <div class="fg">
+          <label>เหตุผล <span style="color:var(--r)">*</span></label>
+          <textarea id="rejectReason" placeholder="เช่น ข้อมูลไม่ครบถ้วน / ไม่อยู่ในเขตรับผิดชอบ..."
+            style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;font-family:'Prompt',sans-serif;resize:none;height:90px;background:#fafafa"></textarea>
+        </div>
+        <div class="ebox" id="rejectErr"></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button onclick="goRejectStep1()"
+            style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">← ย้อนกลับ</button>
+          <button onclick="submitReject()"
+            style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.3)">📨 ส่งการปฏิเสธ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Delete Ticket Confirm -->
+  <div class="mo" id="mDelete">
+    <div class="mb">
+      <button class="mc" onclick="closeDeleteModal()">✕</button>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:44px;margin-bottom:10px">🗑️</div>
+        <h3 style="margin:0 0 6px;font-size:18px">ลบเรื่องร้องเรียน?</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="mDeleteTicketLabel"></p>
+      </div>
+      <p
+        style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff1f1;border-radius:10px;padding:12px;border:1px solid #fecaca">
+        ⚠️ การลบนี้<strong>ไม่สามารถกู้คืนได้</strong> ข้อมูล Ticket จะถูกลบออกจากฐานข้อมูลถาวร
+      </p>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeDeleteModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">✕ ยกเลิก</button>
+        <button onclick="confirmDeleteTicket()" id="btnConfirmDelete"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">🗑️ ลบถาวร</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Delete-All — Step 1 Password -->
+  <div class="mo" id="mDeleteAllPw">
+    <div class="mb">
+      <button class="mc" onclick="closeDeleteAllPw()">✕</button>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:44px;margin-bottom:10px">🔐</div>
+        <h3 style="margin:0 0 6px;font-size:18px">ยืนยันตัวตน</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0">กรุณาใส่รหัสผ่านเพื่อลบ Ticket ทั้งหมด</p>
+      </div>
+      <div class="fg">
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">รหัสผ่าน Admin <span style="color:var(--r)">*</span></label>
+        <input type="password" id="deleteAllPwInput" placeholder="ใส่รหัสผ่าน..." autocorrect="off" lang="en"
+          onkeydown="if(event.key==='Enter')submitDeleteAllPw()"
+          style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;outline:none;font-family:Prompt,sans-serif;background:#fafafa;box-sizing:border-box" />
+      </div>
+      <div class="ebox" id="deleteAllPwErr" style="margin-top:4px"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeDeleteAllPw()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitDeleteAllPw()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(99,102,241,.35)">🔓 ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Delete-All — Step 2 Final Confirm -->
+  <div class="mo" id="mDeleteAllConfirm">
+    <div class="mb">
+      <button class="mc" onclick="closeDeleteAllConfirm()">✕</button>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:44px;margin-bottom:10px">☢️</div>
+        <h3 style="margin:0 0 6px;font-size:18px;color:#b91c1c">ลบ Ticket ทั้งหมด?</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0">การกระทำนี้จะลบ Ticket <strong>ทุกรายการ</strong> ออกจากระบบ</p>
+      </div>
+      <p
+        style="font-size:13px;color:#7f1d1d;text-align:center;margin-bottom:22px;background:#fff1f1;border-radius:10px;padding:14px;border:1.5px solid #fca5a5;line-height:1.6">
+        ⚠️ <strong>คำเตือน!</strong> ข้อมูลจะถูกลบถาวรและ<strong>ไม่สามารถกู้คืนได้</strong>
+      </p>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeDeleteAllConfirm()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:700;color:var(--muted)">❌ ยกเลิก</button>
+        <button onclick="confirmDeleteAll()" id="btnConfirmDeleteAll"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#7f1d1d);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 16px rgba(239,68,68,.45)">🗑️ ลบทั้งหมด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Category -->
+  <div class="mo" id="mAddCategory">
+    <div class="mb" style="max-width:480px;width:95%">
+      <button class="mc" onclick="closeAddCategoryModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">📂</div>
+        <h3 style="margin:0 0 4px;font-size:17px">เพิ่มหมวดหมู่ใหม่</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">สร้างหมวดเรื่องร้องเรียนใหม่สำหรับประชาชน</p>
+      </div>
+      <div class="fg">
+        <label>ชื่อ Key (ภาษาอังกฤษ) <span style="color:var(--r)">*</span></label>
+        <input type="text" id="addCatName" placeholder="เช่น Flood, Noise, Parking" />
+      </div>
+      <div class="fg">
+        <label>ชื่อแสดงผล (ภาษาไทย) <span style="color:var(--r)">*</span></label>
+        <input type="text" id="addCatLabel" placeholder="เช่น น้ำท่วม, เสียงรบกวน" />
+      </div>
+      <div class="fg">
+        <label>เลือก Emoji Icon <span style="color:var(--r)">*</span></label>
+        <div class="emoji-picker-grid" id="emojiPickerGrid"></div>
+        <input type="hidden" id="addCatIcon" />
+        <div id="selectedEmojiPreview" style="margin-top:8px;font-size:13px;color:var(--muted);min-height:20px"></div>
+      </div>
+      <div class="ebox" id="addCatErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeAddCategoryModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitAddCategory()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)">➕ สร้างหมวดหมู่</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Category -->
+  <div class="mo" id="mEditCategory">
+    <div class="mb" style="max-width:480px;width:95%">
+      <button class="mc" onclick="closeEditCategoryModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px" id="editCatCurrentIcon">📂</div>
+        <h3 style="margin:0 0 4px;font-size:17px">แก้ไขหมวดหมู่</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0" id="editCatCurrentName"></p>
+      </div>
+      <div class="fg">
+        <label>ชื่อแสดงผล (ภาษาไทย)</label>
+        <input type="text" id="editCatLabel" />
+      </div>
+      <div class="fg">
+        <label>เปลี่ยน Emoji Icon</label>
+        <div class="emoji-picker-grid" id="editEmojiPickerGrid"></div>
+        <input type="hidden" id="editCatIcon" />
+      </div>
+      <div class="ebox" id="editCatErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeEditCategoryModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitEditCategory()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tech Link -->
+  <div class="mo" id="mTechLink">
+    <div class="mb" style="max-width:520px;width:95%">
+      <button class="mc" onclick="closeTechLinkModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">🔧</div>
+        <h3 style="margin:0 0 4px;font-size:17px">จัดการช่าง — <span id="techLinkCatName"></span></h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">เลือกช่างที่ต้องการผูกกับหมวดหมู่นี้</p>
+      </div>
+      <div id="techLinkList"
+        style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:14px">
+        <div class="empty" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ กำลังโหลด...</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeTechLinkModal()"
+          style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ปิด</button>
+        <button onclick="saveTechLinks()" id="btnSaveTechLinks"
+          style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.3)">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Technician -->
+  <div class="mo" id="mAddTech">
+    <div class="mb" style="max-width:460px;width:95%">
+      <button class="mc" onclick="closeAddTechModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">👷</div>
+        <h3 style="margin:0 0 4px;font-size:17px">เพิ่มช่างใหม่</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">สร้างบัญชีช่างใหม่ในระบบ</p>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>ชื่อ <span style="color:var(--r)">*</span></label><input type="text" id="addTechFname"
+            placeholder="ชื่อ" /></div>
+        <div class="fg"><label>นามสกุล</label><input type="text" id="addTechLname" placeholder="นามสกุล" /></div>
+      </div>
+      <div class="fg"><label>อีเมล <span style="color:var(--r)">*</span></label><input type="email" id="addTechEmail"
+          placeholder="email@example.com" /></div>
+      <div class="fg"><label>รหัสผ่าน <span style="color:var(--r)">*</span></label><input type="password"
+          id="addTechPwd" placeholder="รหัสผ่าน (6+ ตัวอักษร)" /></div>
+      <div class="fg">
+        <label>แผนกเริ่มต้น</label>
+        <select id="addTechSpecialty"
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
+          <option value="">— ไม่ระบุ —</option>
+        </select>
+      </div>
+      <div class="ebox" id="addTechErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeAddTechModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitAddTech()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(34,197,94,.35)">👷 เพิ่มช่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Technician -->
+  <div class="mo" id="mEditTech">
+    <div class="mb" style="max-width:460px;width:95%">
+      <button class="mc" onclick="closeEditTechModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">✏️</div>
+        <h3 style="margin:0 0 4px;font-size:17px">แก้ไขข้อมูลช่าง</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0" id="editTechEmail"></p>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>ชื่อ</label><input type="text" id="editTechFname" /></div>
+        <div class="fg"><label>นามสกุล</label><input type="text" id="editTechLname" /></div>
+      </div>
+      <div class="fg">
+        <label>แผนก</label>
+        <select id="editTechSpecialty"
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);outline:none">
+          <option value="">— ไม่ระบุ —</option>
+        </select>
+      </div>
+      <div class="ebox" id="editTechErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeEditTechModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;color:var(--muted)">ยกเลิก</button>
+        <button onclick="submitEditTech()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:14px;cursor:pointer;font-weight:700">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Delete Category Confirm -->
+  <div class="mo" id="mDeleteCategory">
+    <div class="mb">
+      <button class="mc" onclick="closeDeleteCategoryModal()">✕</button>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:44px;margin-bottom:10px">🗑️</div>
+        <h3 style="margin:0 0 6px;font-size:18px">ลบหมวดหมู่?</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0" id="mDeleteCatLabel"></p>
+      </div>
+      <p
+        style="font-size:13px;color:var(--text);text-align:center;margin-bottom:22px;background:#fff1f1;border-radius:10px;padding:12px;border:1px solid #fecaca">
+        ⚠️ หมวดหมู่จะถูกลบถาวร หากมีเรื่องร้องเรียนค้างอยู่ระบบจะย้ายไปที่หมวดถนนอัตโนมัติ
+      </p>
+      <div class="ebox" id="deleteCatErr"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeDeleteCategoryModal()"
+          style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:14px;cursor:pointer;font-weight:600;color:var(--muted)">✕ ยกเลิก</button>
+        <button onclick="confirmDeleteCategory()" id="btnConfirmDeleteCat"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,.35)">🗑️ ลบถาวร</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Report Download -->
+  <div class="mo" id="mReport" onclick="closeReportModal()">
+    <div class="mb report-modal" onclick="event.stopPropagation()">
+      <button class="mc" onclick="closeReportModal()">✕</button>
+      <div class="report-modal-header">
+        <span class="rmh-orb rmh-orb-gold"></span>
+        <span class="rmh-orb rmh-orb-teal"></span>
+        <div class="report-modal-icon">📊</div>
+        <h3>ออกรายงานสรุปสำหรับผู้บริหาร</h3>
+      </div>
+      <div class="report-range-group">
+        <label class="report-range-label">📅 ช่วงเวลา</label>
+        <div class="report-range-options">
+          <label class="report-range-opt on" id="rngThisMonth">
+            <input type="radio" name="reportRange" value="this_month" checked />
+            <span class="report-range-radio"></span>
+            <div>
+              <div class="report-range-title">เดือนนี้</div>
+              <div class="report-range-sub" id="rngThisMonthLabel"></div>
+            </div>
+          </label>
+          <label class="report-range-opt" id="rngLastMonth">
+            <input type="radio" name="reportRange" value="last_month" />
+            <span class="report-range-radio"></span>
+            <div>
+              <div class="report-range-title">เดือนที่แล้ว</div>
+              <div class="report-range-sub" id="rngLastMonthLabel"></div>
+            </div>
+          </label>
+          <label class="report-range-opt" id="rngAll">
+            <input type="radio" name="reportRange" value="all" />
+            <span class="report-range-radio"></span>
+            <div>
+              <div class="report-range-title">ทั้งหมด</div>
+              <div class="report-range-sub">ข้อมูลทุกรายการในระบบ</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="report-btn report-btn-excel btn-ripple" onclick="downloadExcel()" id="btnReportExcel">
+          <span class="report-btn-icon">📊</span>
+          <div>
+            <div class="report-btn-title">ดาวน์โหลดเป็น Excel</div>
+            <div class="report-btn-sub">.xlsx — พร้อมทำ Pivot Table</div>
+          </div>
+        </button>
+        <button class="report-btn report-btn-pdf btn-ripple" onclick="printPDF()" id="btnReportPdf">
+          <span class="report-btn-icon">🖨️</span>
+          <div>
+            <div class="report-btn-title">พิมพ์รายงาน PDF</div>
+            <div class="report-btn-sub">เปิดหน้า Print → Save as PDF</div>
+          </div>
+        </button>
+      </div>
+      <div id="reportStatus" style="text-align:center;font-size:12px;color:var(--muted);min-height:20px;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ticket Chat -->
+  <div class="mo" id="mTicketChat">
+    <div class="mb chat-modal">
+      <button class="mc" onclick="closeTicketChat()">✕</button>
+      <div class="chat-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:20px;position:relative;">
+            💬
+            <div class="chat-online-dot"
+              style="position:absolute;bottom:0;right:-2px;width:8px;height:8px;border:1px solid #0f172a"></div>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:15px;color:#fff">แชท — <span id="chatTicketLabel"></span></h3>
+            <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7)">สนทนาในตั๋วร้องเรียน</p>
+          </div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty">💬 ยังไม่มีข้อความ — เริ่มสนทนาเลย!</div>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" id="chatInput" placeholder="พิมพ์ข้อความ..." maxlength="500"
+          onkeydown="if(event.key==='Enter')sendComment()" />
+        <button onclick="sendComment()" class="chat-send-btn btn-ripple" id="chatSendBtn">📤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: View Image -->
+  <div class="mo" id="mImg" onclick="closeMImg()">
+    <div style="max-width:600px;width:100%;text-align:center" onclick="event.stopPropagation()">
+      <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
+      <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.4)"
+        src="" alt="" />
+      <p style="color:rgba(255,255,255,.5);font-size:12px;margin-top:10px">คลิกพื้นหลังเพื่อปิด</p>
+    </div>
+  </div>
+
+  <!-- Universal Drawer (Mobile) -->
+  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+  <div id="sideDrawer" class="side-drawer">
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    <div class="drawer-user">
+      <div class="drawer-av" id="drawerAv" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff">A</div>
+      <div class="drawer-name" id="drawerName">Admin</div>
+      <div class="drawer-role" id="drawerRole">ผู้ดูแลระบบ</div>
+    </div>
+    <div class="drawer-divider"></div>
+    <nav class="drawer-menu">
+      <button class="drawer-item" id="drawerChPw" onclick="openChPw();closeDrawer()">
+        <span class="drawer-item-icon">🔒</span>
+        <span>เปลี่ยนรหัสผ่าน</span>
+      </button>
+      <a href="/ceo" class="drawer-item" target="_blank" style="text-decoration:none;color:inherit">
+        <span class="drawer-item-icon">📈</span>
+        <span>แดชบอร์ด CEO ↗</span>
+      </a>
+      <a href="/" class="drawer-item" target="_blank" style="text-decoration:none;color:inherit">
+        <span class="drawer-item-icon">🏛️</span>
+        <span>มุมมองประชาชน ↗</span>
+      </a>
+      <button class="drawer-item drawer-item-danger" onclick="doAdminLogout()">
+        <span class="drawer-item-icon">🚪</span>
+        <span>ออกจากระบบ</span>
+      </button>
+    </nav>
+    <div class="drawer-footer">ResolveNow Admin Console</div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/directChat.js"></script>
+  <script src="/js/admin-portal.js"></script>
+
+  <script>
+    // ── Auth Hero Orb Background & Sparkles ───────────────────
+    (function initAdminOrbs() {
+      const layer = document.getElementById('authOrbLayer');
+      if (!layer) return;
+
+      const orbConfigs = [
+        { type: 'gold', w: 420, h: 380, l: 8, t: -10, dur: 28, delay: 0, blur: 80, tx1: '50px', ty1: '70px', tx2: '100px', ty2: '25px', tx3: '25px', ty3: '95px' },
+        { type: 'gold', w: 300, h: 300, l: 58, t: 50, dur: 32, delay: 7, blur: 70, tx1: '-70px', ty1: '-55px', tx2: '-35px', ty2: '-110px', tx3: '-85px', ty3: '-28px' },
+        { type: 'blue', w: 380, h: 360, l: 60, t: -8, dur: 30, delay: 4, blur: 75, tx1: '-60px', ty1: '80px', tx2: '-110px', ty2: '35px', tx3: '-45px', ty3: '110px' },
+        { type: 'blue', w: 260, h: 240, l: -5, t: 55, dur: 26, delay: 11, blur: 65, tx1: '80px', ty1: '-45px', tx2: '55px', ty2: '-100px', tx3: '100px', ty3: '-18px' },
+        { type: 'teal', w: 200, h: 180, l: 75, t: 68, dur: 20, delay: 2, blur: 50, tx1: '-55px', ty1: '-70px', tx2: '-90px', ty2: '-28px', tx3: '-35px', ty3: '-90px' },
+        { type: 'teal', w: 160, h: 160, l: 20, t: 35, dur: 22, delay: 16, blur: 45, tx1: '60px', ty1: '55px', tx2: '35px', ty2: '90px', tx3: '80px', ty3: '18px' },
+      ];
+
+      orbConfigs.forEach(cfg => {
+        const el = document.createElement('div');
+        el.className = `auth-orb auth-orb-${cfg.type}`;
+        el.style.cssText = [
+          `width:${cfg.w}px`, `height:${cfg.h}px`,
+          `left:${cfg.l}%`, `top:${cfg.t}%`,
+          `--orb-dur:${cfg.dur}s`, `--orb-delay:${cfg.delay}s`,
+          `--orb-blur:${cfg.blur}px`,
+          `--tx1:${cfg.tx1}`, `--ty1:${cfg.ty1}`,
+          `--tx2:${cfg.tx2}`, `--ty2:${cfg.ty2}`,
+          `--tx3:${cfg.tx3}`, `--ty3:${cfg.ty3}`,
+        ].join(';');
+        layer.appendChild(el);
+      });
+
+      // Gold sparkles
+      [[8, 10, 20, 3.5, 0], [5, 25, 45, 4.2, 0.8], [7, 55, 15, 5.0, 1.6],
+      [6, 75, 30, 3.8, 2.4], [9, 88, 60, 4.5, 0.5], [5, 40, 72, 3.2, 1.9],
+      [6, 18, 85, 5.5, 3.1], [8, 62, 88, 4.0, 0.3]].forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'auth-sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`, `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle,rgba(251,191,36,.95) 0%,rgba(245,158,11,.4) 60%,transparent 100%)`,
+          `box-shadow:0 0 ${sz * 2}px ${sz}px rgba(251,191,36,.35)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+
+      // Blue sparkles
+      [[6, 30, 10, 4.8, 1.2], [7, 50, 50, 3.9, 2.0], [5, 70, 80, 5.2, 0.7],
+      [8, 15, 65, 4.1, 3.3], [6, 82, 42, 3.7, 1.5]].forEach(([sz, l, t, dur, delay]) => {
+        const s = document.createElement('div');
+        s.className = 'auth-sparkle';
+        s.style.cssText = [
+          `width:${sz}px`, `height:${sz}px`, `left:${l}%`, `top:${t}%`,
+          `background:radial-gradient(circle,rgba(147,197,253,.9) 0%,rgba(96,165,250,.4) 60%,transparent 100%)`,
+          `box-shadow:0 0 ${sz * 2}px ${sz}px rgba(96,165,250,.3)`,
+          `--sp-dur:${dur}s`, `--sp-delay:${delay}s`,
+        ].join(';');
+        layer.appendChild(s);
+      });
+    })();
+
+    // Smooth Entrance Animation
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        var card = document.querySelector('.ac');
+        var heroContent = document.querySelector('.auth-hero-content');
+        if (heroContent) heroContent.classList.add('hero-enter');
+        if (card) card.classList.add('card-enter');
+      }, 50);
+    });
+  </script>
+</body>
+
+</html>

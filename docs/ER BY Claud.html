@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResolvNow - Entity Relationship Diagram</title>
+    <!-- โหลดไลบรารี Mermaid.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Sarabun:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --border: #334155;
+            --accent: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 3rem 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Card Container สำหรับ Diagram */
+        .diagram-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 0 20px var(--primary-glow);
+            border: 1px solid var(--border);
+            margin-bottom: 3rem;
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        .mermaid {
+            display: inline-block;
+            margin: 0 auto;
+        }
+
+        /* อธิบายประเภทของเส้น (Legend) */
+        .legend-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .legend-title {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .legend-icon {
+            font-family: monospace;
+            font-weight: bold;
+            color: #fca5a5;
+            background: rgba(252, 165, 165, 0.1);
+            padding: 0.5rem;
+            border-radius: 4px;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Entity-Relationship Diagram</h1>
+            <p>แผนภาพโครงสร้างฐานข้อมูลแบบโยงเส้นมาตรฐาน Crow's Foot Notation (ResolvNow)</p>
+        </div>
+
+        <!-- Mermaid Diagram Render -->
+        <div class="diagram-card">
+            <div class="mermaid">
+                erDiagram
+                USER {
+                ObjectId _id PK
+                String email "Unique"
+                String password
+                Enum role "citizen, technician, admin"
+                String specialty
+                String lineUserId
+                }
+
+                TICKET {
+                ObjectId _id PK
+                String ticketId "Unique"
+                ObjectId citizenId FK "Ref: USER"
+                ObjectId assignedTo FK "Ref: USER"
+                String category
+                Enum status
+                Enum urgency
+                }
+
+                CATEGORY {
+                ObjectId _id PK
+                String name "Unique"
+                String label
+                String icon
+                Array technicianIds FK "Ref: USER"
+                }
+
+                COMMENT {
+                ObjectId _id PK
+                String ticketId FK "Ref: TICKET"
+                ObjectId userId FK "Ref: USER"
+                String message
+                }
+
+                HELP_REQUEST {
+                ObjectId _id PK
+                String helpId "Unique"
+                String ticketId FK "Ref: TICKET"
+                ObjectId requesterId FK "Ref: USER"
+                ObjectId acceptedById FK "Ref: USER"
+                Enum status
+                }
+
+                COUNTER {
+                ObjectId _id PK
+                String name
+                Number seq
+                }
+
+                %% Relationships
+                USER ||--o{ TICKET : "creates / assigned to"
+                CATEGORY ||--o{ TICKET : "categorizes"
+                TICKET ||--o{ COMMENT : "has"
+                USER ||--o{ COMMENT : "writes"
+                TICKET ||--o{ HELP_REQUEST : "generates"
+                USER ||--o{ HELP_REQUEST : "requests / accepts"
+            </div>
+        </div>
+
+        <!-- คำอธิบายเส้น (Legend) -->
+        <div class="legend-card">
+            <div class="legend-title">สัญลักษณ์เส้นความสัมพันธ์ (Crow's Foot Notation)</div>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-icon">||--||</div>
+                    <div><strong>One to One (1:1)</strong><br><small class="text-muted">หนึ่งต่อหนึ่ง</small></div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon">||--o{</div>
+                    <div><strong>One to Many (1:M)</strong><br><small class="text-muted">หนึ่งมีได้หลายอัน
+                            (และอาจไม่มีเลย o)</small></div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon">}o--o{</div>
+                    <div><strong>Many to Many (M:M)</strong><br><small class="text-muted">หลายต่อหลายอัน</small></div>
+                </div>
+            </div>
+            <p style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                * ระบบ ResolvNow มีความสัมพันธ์หลักเป็นแบบ <strong>One to Many</strong> ระหว่าง User (ผู้ใช้งาน)
+                กับเอกสารต่างๆ (Ticket, Comment, Help Request)
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid.js ด้วยธีมแบบ Dark ให้เข้ากับเว็บ
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                fontFamily: 'Inter, sans-serif',
+                primaryColor: '#2563eb',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#60a5fa',
+                secondaryColor: '#1e293b',
+                tertiaryColor: '#0f172a'
+            },
+            er: {
+                diagramPadding: 20,
+                layoutDirection: 'TB',
+                minEntityWidth: 200,
+                minEntityHeight: 75,
+                entityPadding: 15,
+                stroke: '#3b82f6',
+                fill: '#1e293b'
+            }
+        });
+    </script>
+
+</body>
+
+</html>

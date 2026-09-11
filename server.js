@@ -288,6 +288,16 @@ io.on('connection', (socket) => {
     res.sendFile(path.join(__dirname, 'public', 'executive-dashboard.html'))
   );
 
+  // ─── Admin Management Portal ──────────────────────────────────
+  app.get('/admin', (req, res) =>
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'))
+  );
+
+  // ─── Technician Operations Portal ─────────────────────────────
+  app.get(['/tech', '/technician'], (req, res) =>
+    res.sendFile(path.join(__dirname, 'public', 'tech.html'))
+  );
+
   // ─── Project Poster ──────────────────────────────────────────────
   app.get('/project', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'project-poster.html'))

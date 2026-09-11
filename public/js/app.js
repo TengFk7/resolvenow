@@ -493,7 +493,15 @@ async function loadTickets() {
       })
       .then(function (d) {
         if (!d.loggedIn) throw new Error('no session');
-        console.log('[App] LINE login session ดี → enterApp() role:', d.role);
+        console.log('[App] LINE login session ดี → role:', d.role);
+        if (d.role === 'admin') {
+          window.location.href = '/admin';
+          return;
+        }
+        if (d.role === 'technician') {
+          window.location.href = '/tech';
+          return;
+        }
         CU = d;
         sessionStorage.setItem('rn_logged_in', '1');
         enterApp(); // showWelcomeSplash จะลบ lineWaitOverlay และถือหน้าต่อ
@@ -531,7 +539,16 @@ async function loadTickets() {
     })
     .then(function (d) {
       if (!d.loggedIn) throw new Error('no session');
-      console.log('[App] session ดี → enterApp() role:', d.role);
+      console.log('[App] session ดี → role:', d.role);
+      // แยกระบบไม่ให้ปะปนกับฝั่งประชาชน
+      if (d.role === 'admin') {
+        window.location.href = '/admin';
+        return;
+      }
+      if (d.role === 'technician') {
+        window.location.href = '/tech';
+        return;
+      }
       CU = d;
       sessionStorage.setItem('rn_logged_in', '1');
       enterApp();

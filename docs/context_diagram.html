@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResolveNow - Context Diagram</title>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px;
+            overflow-x: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0277bd;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .explanation {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #0277bd;
+        }
+
+        .explanation h2 {
+            color: #0277bd;
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        ul,
+        ol {
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>ResolveNow Context Diagram</h1>
+        <p class="subtitle">แผนภาพ Context Diagram นี้แสดงการโต้ตอบระหว่าง <strong>ระบบ ResolveNow</strong> กับ
+            <strong>ผู้ใช้งาน</strong> และ <strong>ระบบภายนอก</strong><br>
+        </p>
+
+        <!-- Mermaid Diagram Content -->
+        <pre class="mermaid">
+flowchart LR
+    %% External Entities
+    Citizen["👨‍👩‍👧‍👦 ประชาชน (Citizen)"]
+    Technician["👷 ช่าง (Technician)"]
+    Admin["👨‍💻 ผู้ดูแลระบบ (Admin)"]
+    
+    %% The System
+    System(("🖥️ ระบบรับแจ้งเรื่องร้องเรียน<br>ResolveNow"))
+
+    %% Subgraph for External Services
+    subgraph ExternalServices [ระบบภายนอก]
+        direction TB
+        LineNotify["📲 LINE Notify"]
+        LineLogin["🔐 LINE Login"]
+        LineLIFF["📱 LINE LIFF"]
+        Cloudinary["☁️ Cloudinary"]
+        Email["📧 Email Service"]
+        MongoDB["🗄️ MongoDB Atlas"]
+    end
+
+    %% Interactions: Citizen
+    Citizen -- "แจ้งเรื่อง / ติดตาม / แชท" --> System
+    System -- "แสดงสถานะ / Heatmap" --> Citizen
+    Citizen -. "ให้คะแนน" .-> LineLIFF
+    LineLIFF -. "ส่งคะแนน" .-> System
+    Citizen -. "ล็อกอินด้วย LINE" .-> LineLogin
+    
+    %% Interactions: Technician
+    Technician -- "อัปโหลดรูป / เปลี่ยนสถานะ" --> System
+    System -- "แจ้งงานที่รับผิดชอบ" --> Technician
+    
+    %% Interactions: Admin
+    Admin -- "จัดการหมวดหมู่ / ดูสถิติ" --> System
+    System -- "แสดงรายงาน / Dashboard" --> Admin
+
+    %% Interactions: External Services
+    System -- "บันทึก/ดึงข้อมูล" --> MongoDB
+    MongoDB -- "ข้อมูลที่จัดเก็บ" --> System
+
+    System -- "ส่ง OTP" --> Email
+    Email -- "ส่งเมล์" --> Citizen
+
+    System -- "อัปโหลดรูป" --> Cloudinary
+    Cloudinary -- "URL" --> System
+
+    System -- "ส่งแจ้งเตือน (Push)" --> LineNotify
+    LineNotify -- "LINE Message" --> Citizen
+    LineNotify -- "LINE Message" --> Technician
+    LineNotify -- "LINE Message" --> Admin
+    
+    System -- "Verify Callback" --> LineLogin
+    LineLogin -- "User Profile Data" --> System
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px;
+    classDef system fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,font-weight:bold;
+    class System system;
+        </pre>
+
+        <!-- Explanation Section -->
+    </div>
+
+    <!-- Mermaid Library Script -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+
+</html>

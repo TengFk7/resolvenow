@@ -157,7 +157,7 @@ router.post('/register', async (req, res) => {
 // ─── POST /api/auth/login ────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
-    const { email, password, remember } = req.body;
+    const { email, password, remember, portal } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
@@ -169,6 +169,29 @@ router.post('/login', async (req, res) => {
     const pwMatch = await bcrypt.compare(password, user.password);
     console.log('[Login] password match:', pwMatch);
     if (!pwMatch) return res.status(401).json({ error: 'Password ไม่ถูกต้อง' });
+
+    // ตรวจสอบความถูกต้องตาม Portal ที่เข้าสู่ระบบ
+    if (portal === 'admin' && user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'ขออภัย หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น บัญชีของคุณไม่มีสิทธิ์เข้าถึง',
+        role: user.role
+      });
+    }
+    if (portal === 'tech' && user.role !== 'technician') {
+      return res.status(403).json({
+        error: 'ขออภัย หน้านี้สำหรับช่าง/เจ้าหน้าที่ (Technician) เท่านั้น บัญชีของคุณไม่มีสิทธิ์เข้าถึง',
+        role: user.role
+      });
+    }
+    if (portal === 'citizen' && user.role !== 'citizen') {
+      const targetUrl = user.role === 'admin' ? '/admin' : '/tech';
+      const roleName = user.role === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : 'ช่าง/เจ้าหน้าที่ (Technician)';
+      return res.status(403).json({
+        error: `บัญชีนี้เป็น${roleName} กรุณาเข้าใช้งานที่ ${targetUrl}`,
+        role: user.role,
+        redirectUrl: targetUrl
+      });
+    }
 
     req.session.userId = user._id.toString();
     req.session.role   = user.role;

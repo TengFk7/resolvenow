@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResolveNow - ER Diagram</title>
+    <style>
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 1200px;
+            overflow-x: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        /* Explanation Section Styles */
+        .explanation {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+            margin-top: 20px;
+        }
+
+        .explanation h2 {
+            color: #2980b9;
+            margin-top: 0;
+            font-size: 20px;
+            border-bottom: 1px solid #e1e8ed;
+            padding-bottom: 10px;
+        }
+
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .table-card {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e1e8ed;
+        }
+
+        .table-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .table-card p {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e8f4f8;
+            color: #2980b9;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>ER Diagram</h1>
+        <p class="subtitle">แสดงโครงสร้างและความสัมพันธ์ของฐานข้อมูล MongoDB ภายในระบบ <strong>ResolveNow</strong></p>
+
+        <!-- Mermaid Diagram Content -->
+        <pre class="mermaid">
+erDiagram
+    USER ||--o{ TICKET : "creates (Citizen)"
+    USER ||--o{ TICKET : "assigned to (Technician)"
+    USER ||--o{ COMMENT : "writes"
+    USER ||--o{ HELP_REQUEST : "requests / accepts"
+    CATEGORY ||--o{ TICKET : "categorizes"
+    CATEGORY }|--o{ USER : "has technicians (technicianIds)"
+    TICKET ||--o{ COMMENT : "has"
+    TICKET ||--o{ HELP_REQUEST : "generates"
+    TICKET }o--o{ USER : "followed by / upvoted by"
+
+    USER {
+        ObjectId _id PK
+        String firstName
+        String lastName
+        String email "UNIQUE"
+        String password
+        String role "citizen, technician, admin"
+        String specialty "For technicians (Ref Category)"
+        String lineUserId "Nullable"
+        String lineDisplayName "Nullable"
+        String avatar
+        Boolean createdViaLine
+        Date createdAt
+        Date updatedAt
+    }
+
+    TICKET {
+        ObjectId _id PK
+        String ticketId "e.g., TKT-001 (UNIQUE)"
+        ObjectId citizenId FK "Ref User"
+        String citizenName
+        String category "Ref Category name"
+        String description
+        String location
+        Number lat
+        Number lng
+        String urgency "normal, medium, urgent"
+        Number priorityScore "0-100"
+        String status "pending, assigned, in_progress, completed, rejected"
+        ObjectId assignedTo FK "Ref User (Technician)"
+        String rejectReason
+        String citizenImage "Cloudinary/Local URL"
+        String beforeImage "Cloudinary/Local URL"
+        String afterImage "Cloudinary/Local URL"
+        Number rating "1-5"
+        String ratingReason
+        Date ratedAt
+        Date slaAssignDeadline
+        Date slaCompleteDeadline
+        Boolean slaBreached
+        Array upvotes "[{userId, createdAt}]"
+        Number upvoteCount
+        Array followers "[{userId, lineUserId}]"
+        Number followerCount
+        Date chatExpiresAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    CATEGORY {
+        ObjectId _id PK
+        String name "UNIQUE (e.g., Road)"
+        String label
+        String icon
+        Array technicianIds "FK (Ref User)"
+        Boolean isDefault
+        Date createdAt
+        Date updatedAt
+    }
+
+    COMMENT {
+        ObjectId _id PK
+        String ticketId "e.g., TKT-001 (Indexed)"
+        ObjectId userId FK "Ref User"
+        String userName
+        String userRole
+        String message "Max 500 chars"
+        Date createdAt
+        Date updatedAt
+    }
+
+    HELP_REQUEST {
+        ObjectId _id PK
+        String helpId "e.g., HELP-001 (UNIQUE)"
+        ObjectId citizenId FK "Ref User"
+        String message
+        String status "open, resolved, accepted, cancelled"
+        String ticketId "e.g., TKT-001"
+        ObjectId requesterId FK "Ref User"
+        String targetDept "Category Name"
+        ObjectId acceptedById FK "Ref User"
+        Date createdAt
+        Date updatedAt
+    }
+
+    COUNTER {
+        ObjectId _id PK
+        String name "UNIQUE (ticket, help)"
+        Number seq "Auto-increment value"
+    }
+        </pre>
+
+    </div>
+
+    <!-- Mermaid Library Script -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+
+</html>
