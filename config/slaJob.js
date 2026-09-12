@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 const Ticket  = require('../models/Ticket');
 const Comment = require('../models/Comment');
 const { SLA_RULES } = require('../utils/slaHelper');

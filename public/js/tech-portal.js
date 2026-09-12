@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 /* ─────────────────────────────────────────────
    public/js/tech-portal.js — Technician Portal Controller
    • Dedicated session management for /tech

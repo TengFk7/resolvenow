@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 /* ════════════════════════════════════════════════════════
@@ -9211,3 +9216,23 @@ a {
   animation: dmBadgePop .3s cubic-bezier(.34,1.56,.64,1) both;
 }
 .dm-admin-bell-badge.hidden { display: none; }
+
+/* ── Global Copyright Footer ───────────────────────────── */
+.rn-footer {
+  text-align: center;
+  padding: 24px 16px 20px;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.3px;
+  user-select: none;
+}
+.rn-footer-auth {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border, #e2e8f0);
+  font-size: 11.5px;
+  color: var(--muted, #64748b);
+  letter-spacing: 0.2px;
+}

@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 // ─── config/mailer.js ─────────────────────────────────────────
 // ใช้ SendGrid HTTP API — ไม่ใช้ SMTP → ไม่มีปัญหา port blocking
 // ส่งผ่าน HTTPS (port 443) ปกติ — ใช้ได้บน Render ทุก tier

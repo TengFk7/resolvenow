@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 // ─── routes/ai.js ─────────────────────────────────────────────
 // POST /api/ai/urgency  — วิเคราะห์ระดับความเร่งด่วนด้วย Claude
 // รับ: { description, category }

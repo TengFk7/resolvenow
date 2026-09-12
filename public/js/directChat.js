@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 /* ─────────────────────────────────────────────────────────
    public/js/directChat.js
    Citizen Direct Chat with Admin + Admin DM Inbox

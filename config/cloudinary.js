@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 // ─── config/cloudinary.js ─────────────────────────────────────
 // อัปโหลดรูปไปยัง Cloudinary (persistent cloud storage)
 // ตั้งค่าใน .env:

@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 // ─── Override DNS + บังคับ IPv4 ก่อน require อื่นๆ ──────────────
 // Render ไม่รองรับ IPv6 outbound → ต้อง force IPv4 ทุก connection
 const _dns = require('dns');
@@ -246,7 +251,7 @@ io.on('connection', (socket) => {
       <input id="dd_pw" type="password" name="password" required placeholder="••••••••"/>
       <button type="submit">เข้าสู่ระบบ →</button>
     </form>
-    
+    <div style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px dashed rgba(255,255,255,0.15);font-size:11px;color:rgba(255,255,255,0.4);">Copyright © 2026 ResolveNow. All rights reserved.</div>
   </div>
 </body>
 </html>`;

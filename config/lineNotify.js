@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 // ─── config/lineNotify.js ─────────────────────────────────────
 // ส่งการแจ้งเตือนผ่าน LINE Messaging API (Push Message)
 // .env: LINE_CHANNEL_TOKEN, LINE_ADMIN_USER_ID, BASE_URL

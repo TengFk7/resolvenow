@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 var _gpsAddress = '';
 var _citizenImages = []; // stores array of {file, dataUrl}
 

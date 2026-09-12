@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 // ─── SLA Helper Utility ───────────────────────────────────────────
 // Centralized SLA deadline calculations and breach evaluations
 

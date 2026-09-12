@@ -1,3 +1,8 @@
+/**
+ * ResolvNow - Complaint Management System
+ * Copyright (c) 2026 ResolvNow. All rights reserved.
+ */
+
 const mongoose = require('mongoose');
 
 const ticketSchema = new mongoose.Schema({
