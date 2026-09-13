@@ -420,7 +420,7 @@ function imgThumb(url, label) {
    UNIVERSAL SLIDE DRAWER
 ══════════════════════════════════════════ */
 function openDrawer() {
-  if (typeof CU === 'undefined' || !CU) return;
+  if (typeof CU !== 'undefined' && CU) {
 
   // ── Avatar ──
   var avEl = ge('drawerAv');
@@ -464,8 +464,19 @@ function openDrawer() {
   var unlinkBtn = ge('drawerUnlinkLine');
   if (unlinkBtn) unlinkBtn.style.display = CU.role === 'admin' ? 'flex' : 'none';
 
+  }
+
+  // ── Sync active theme buttons ──
+  var curSetting = localStorage.getItem('resolvnow_theme') || 'auto';
+  document.querySelectorAll('.drawer-theme-btn').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-theme-btn') === curSetting);
+  });
+
   // ── Open ──
-  ge('sideDrawer').classList.add('open');
+  var sd = ge('sideDrawer');
+  var dO = ge('drawerOverlay');
+  if (sd) sd.classList.add('open');
+  if (dO) dO.classList.add('open');
   ge('drawerOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
@@ -835,4 +846,57 @@ function slaLabel(t) {
   }
   var s2 = formatSlaCountdown(t.slaCompleteDeadline);
   return '<span class="sla-badge ' + s2.cls + '"><span class="sla-countdown">' + s2.text + '</span></span>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   THEME CONTROLLER (Light / Dark / Auto)
+══════════════════════════════════════════════════════════ */
+function initAppTheme() {
+  var saved = localStorage.getItem('resolvnow_theme') || 'auto';
+  applyAppTheme(saved, false);
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      var currentPref = localStorage.getItem('resolvnow_theme') || 'auto';
+      if (currentPref === 'auto') {
+        applyAppTheme('auto', false);
+      }
+    });
+  }
+}
+
+function setAppTheme(theme) {
+  applyAppTheme(theme, true);
+}
+
+function applyAppTheme(theme, save) {
+  if (save) {
+    localStorage.setItem('resolvnow_theme', theme);
+  }
+
+  var isDark = false;
+  if (theme === 'dark') {
+    isDark = true;
+  } else if (theme === 'light') {
+    isDark = false;
+  } else {
+    // auto
+    isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme-setting', theme);
+
+  // Update theme buttons in drawer
+  var btns = document.querySelectorAll('.drawer-theme-btn');
+  btns.forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-theme-btn') === theme);
+  });
+}
+
+// Auto-run on DOM ready or immediate
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppTheme);
+} else {
+  initAppTheme();
 }

@@ -26,6 +26,15 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Instant Theme Preload (Zero Flicker) -->
+  <script>
+    (function () {
+      var t = localStorage.getItem('resolvnow_theme') || 'auto';
+      var isDark = t === 'dark' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme-setting', t);
+    })();
+  </script>
 </head>
 
 <body>
@@ -1497,6 +1506,24 @@
       <div class="drawer-av" id="drawerAv">?</div>
       <div class="drawer-name" id="drawerName">—</div>
       <div class="drawer-role" id="drawerRole"></div>
+    </div>
+
+    <!-- Theme Switcher Segment in Drawer -->
+    <div class="drawer-theme-box">
+      <div class="drawer-theme-label">
+        <span>🌓 ธีมการแสดงผล</span>
+      </div>
+      <div class="drawer-theme-group">
+        <button type="button" class="drawer-theme-btn" data-theme-btn="light" onclick="setAppTheme('light')">
+          <span>☀️ สว่าง</span>
+        </button>
+        <button type="button" class="drawer-theme-btn" data-theme-btn="dark" onclick="setAppTheme('dark')">
+          <span>🌙 มืด</span>
+        </button>
+        <button type="button" class="drawer-theme-btn" data-theme-btn="auto" onclick="setAppTheme('auto')">
+          <span>💻 อัตโนมัติ</span>
+        </button>
+      </div>
     </div>
 
     <div class="drawer-divider"></div>
