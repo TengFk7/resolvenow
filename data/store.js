@@ -1,5 +1,5 @@
 // ─── Constants (ยังคงใช้ต่อ) ─────────────────────────────────────
-const STATUSES = ['pending', 'assigned', 'in_progress', 'completed', 'rejected'];
+const STATUSES = ['pending', 'assigned', 'in_progress', 'completed', 'rejected', 'reopened', 'merged'];
 
 const DEPT_MAP = {
   Road:        { th: 'ถนน/ทางเท้า',         icon: '🛣️' },

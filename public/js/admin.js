@@ -500,11 +500,17 @@ function renderAllQueue(tks, filter) {
     }
     h += '<td>' + imgCell + '</td>';
     h += '<td><select data-id="' + t.ticketId + '" onchange="adminChSt(this)" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:9px;font-family:Prompt,sans-serif;outline:none;background:var(--card-bg)">';
-    ['pending', 'assigned', 'in_progress', 'completed', 'rejected'].forEach(function (s) {
+    ['pending', 'assigned', 'in_progress', 'completed', 'rejected', 'reopened', 'merged'].forEach(function (s) {
       h += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + stTH(s) + '</option>';
     });
     h += '</select></td><td style="font-size:11px;color:var(--muted);white-space:nowrap">' + fmtDate(t.createdAt) + '</td>';
-    h += '<td><div style="display:flex;gap:6px;flex-direction:column;align-items:center;padding:2px 6px"><button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')">💬</button><button class="abt abt-red btn-ripple" data-id="' + t.ticketId + '" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:6px 10px;font-size:12px">🗑️</button></div></td>';
+    var slaPauseAction = '';
+    if (t.slaPauseStatus === 'requested') {
+      slaPauseAction = '<div style="margin-top:4px;padding:3px 5px;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;font-size:10px;color:#92400e;text-align:center">⏸️ ขอพัก: "' + escapeHTML(t.slaPauseReason || '') + '"<div style="display:flex;gap:3px;margin-top:2px"><button onclick="adminApproveSlaPause(\'' + t.ticketId + '\',true)" style="background:#16a34a;color:#fff;border:none;border-radius:4px;padding:2px 5px;cursor:pointer;font-size:9.5px">✓</button><button onclick="adminApproveSlaPause(\'' + t.ticketId + '\',false)" style="background:#dc2626;color:#fff;border:none;border-radius:4px;padding:2px 5px;cursor:pointer;font-size:9.5px">✕</button></div></div>';
+    } else if (t.slaPauseStatus === 'paused') {
+      slaPauseAction = '<div style="margin-top:4px;padding:3px 5px;background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);border-radius:6px;font-size:10px;color:#b45309;text-align:center">⏸️ พักอยู่ <button onclick="adminResumeSla(\'' + t.ticketId + '\')" style="background:#2563eb;color:#fff;border:none;border-radius:4px;padding:1px 4px;cursor:pointer;font-size:9px">▶️</button></div>';
+    }
+    h += '<td><div style="display:flex;gap:5px;flex-direction:column;align-items:center;padding:2px 4px"><div style="display:flex;gap:4px"><button class="btn-chat" onclick="openTicketChat(\'' + t.ticketId + '\')">💬</button><button class="abt btn-ripple" onclick="openMergeModal(\'' + t.ticketId + '\')" title="รวมตั๋ว" style="background:#f1f5f9;color:var(--navy);padding:4px 8px;font-size:12px">🔗</button><button class="abt abt-red btn-ripple" data-id="' + t.ticketId + '" onclick="openDeleteModal(this)" title="ลบ Ticket" style="padding:4px 8px;font-size:12px">🗑️</button></div>' + slaPauseAction + '</div></td>';
     h += '</tr>';
   }
   el.innerHTML = h;

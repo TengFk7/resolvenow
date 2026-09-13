@@ -789,6 +789,15 @@ function cgToggle(ticketId) {
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">📅 วันที่</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
 
+  if (t.status === 'reopened') {
+    h += '<div class="reopen-banner">🔄 <strong>เรื่องนี้อยู่ระหว่างการตรวจสอบซ้ำ (ครั้งที่ ' + (t.reopenCount || 1) + '):</strong><br>' + escapeHTML(t.reopenReason || '—') + '</div>';
+  }
+  if (t.isMerged) {
+    h += '<div style="background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.3);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--text);margin-bottom:12px">🔗 เรื่องนี้ถูกรวมเข้ากับเคสหลัก <a href="/track?q=' + encodeURIComponent(t.mergedInto) + '" target="_blank" style="color:var(--blue2);font-weight:700">#' + escapeHTML(t.mergedInto) + '</a> เรียบร้อยแล้ว</div>';
+  }
+  if (t.slaPauseStatus === 'paused') {
+    h += '<div style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:10px;padding:10px 14px;font-size:12px;color:#b45309;margin-bottom:12px">⏸️ เวลา SLA กำลังหยุดชั่วคราว: "' + escapeHTML(t.slaPauseReason || 'ตามที่แจ้ง') + '"</div>';
+  }
   if (done && (t.beforeImage || t.afterImage)) {
     h += '<div class="cg-techwork"><div class="cg-techwork-title">&#9989; ช่างดำเนินการเสร็จแล้ว</div><div class="cg-techwork-imgs">';
     if (t.beforeImage) h += '<div class="cg-techwork-img"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" /><span>ก่อน</span></div>';
@@ -799,6 +808,9 @@ function cgToggle(ticketId) {
     h += '<img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'รูปปัญหา\')" class="cg-inprog-img"/></div>';
   }
 
+  if (done) {
+    h += '<div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border);text-align:center"><button type="button" class="btn-reopen" onclick="openReopenModal(\'' + t.ticketId + '\')">🔄 งานยังไม่เรียบร้อย? ขอให้ตรวจสอบใหม่</button></div>';
+  }
   ge('tdModalBody').innerHTML = h;
 
   // ── Footer: chat + rating buttons
@@ -1032,5 +1044,103 @@ async function submitRating() {
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '⭐ ส่งคะแนน'; }
     showE('ratingErr', 'เกิดข้อผิดพลาด');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DUPLICATE DETECTION & TICKET RE-OPEN (CITIZEN)
+══════════════════════════════════════════════════════════ */
+var _duplicateCheckTimer = null;
+async function checkNearbyDuplicates() {
+  clearTimeout(_duplicateCheckTimer);
+  var cat = getSelectedCat();
+  var lat = ge('tLat') ? ge('tLat').value : null;
+  var lng = ge('tLng') ? ge('tLng').value : null;
+  var box = ge('duplicateWarningBox');
+  if (!cat || !lat || !lng) {
+    if (box) box.style.display = 'none';
+    return;
+  }
+  _duplicateCheckTimer = setTimeout(async function () {
+    try {
+      var res = await fetch('/api/tickets/detect-duplicates?lat=' + lat + '&lng=' + lng + '&category=' + encodeURIComponent(cat) + '&radius=150');
+      if (!res.ok) return;
+      var dups = await res.json();
+      if (!box) return;
+      if (dups && dups.length > 0) {
+        var h = '<div class="duplicate-alert-header"><span>💡</span> พบเรื่องร้องเรียนประเภทเดียวกันใกล้จุดนี้ (' + dups.length + ' เคส)</div>';
+        h += '<div style="font-size:12px;color:var(--muted);line-height:1.4">มีผู้แจ้งปัญหาประเภทเดียวกันในบริเวณนี้ (~' + dups[0].distanceMeters + ' ม.) คุณสามารถกดดูเคสเดิมเพื่อติดตามได้ทันที:</div>';
+        dups.slice(0, 2).forEach(function (d) {
+          h += '<div class="duplicate-item-chip">';
+          h += '<div class="duplicate-item-info">';
+          h += '<strong style="color:var(--blue2)">#' + escapeHTML(d.ticketId) + ' (ห่าง ~' + d.distanceMeters + ' ม.)</strong>';
+          h += '<span style="color:var(--text);line-height:1.3">' + escapeHTML((d.description || '').substring(0, 55)) + '...</span>';
+          h += '<span style="font-size:10.5px;color:var(--muted)">สถานะ: ' + stTH(d.status) + ' | 👍 ' + d.upvoteCount + ' โหวต</span>';
+          h += '</div>';
+          h += '<a href="/track?q=' + encodeURIComponent(d.ticketId) + '" target="_blank" class="duplicate-item-btn" style="text-decoration:none">ดูเคส ↗</a>';
+          h += '</div>';
+        });
+        box.innerHTML = h;
+        box.style.display = 'flex';
+      } else {
+        box.style.display = 'none';
+      }
+    } catch (e) { console.warn('[Duplicate Check]', e); }
+  }, 400);
+}
+
+var _reopenTicketId = null;
+function openReopenModal(ticketId) {
+  _reopenTicketId = ticketId;
+  ge('reopenTicketLabel').textContent = 'Ticket #' + ticketId;
+  ge('reopenReasonInput').value = '';
+  ge('reopenImgsInput').value = '';
+  hideE('reopenErr');
+  ge('mReopen').classList.add('on');
+  setTimeout(function () { ge('reopenReasonInput').focus(); }, 200);
+}
+
+function closeReopenModal() {
+  ge('mReopen').classList.remove('on');
+  _reopenTicketId = null;
+}
+
+async function submitReopen() {
+  var reason = ge('reopenReasonInput').value.trim();
+  if (!reason) return showE('reopenErr', 'กรุณาระบุเหตุผลที่ขอให้ตรวจสอบใหม่');
+  hideE('reopenErr');
+
+  var btn = ge('btnSubmitReopen');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...'; }
+
+  try {
+    var fd = new FormData();
+    fd.append('reason', reason);
+    var files = ge('reopenImgsInput').files;
+    if (files) {
+      for (var i = 0; i < files.length; i++) {
+        fd.append('images', files[i]);
+      }
+    }
+
+    var res = await fetch('/api/tickets/' + _reopenTicketId + '/reopen', {
+      method: 'POST',
+      body: fd
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 ยืนยันส่งเรื่องซ้ำ'; }
+      return showE('reopenErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+
+    closeReopenModal();
+    closeTD();
+    showToast('ส่งคำขอตรวจสอบใหม่เรียบร้อยแล้ว ✅', 'success');
+    if (typeof loadTickets === 'function') loadTickets();
+  } catch (e) {
+    console.error(e);
+    showE('reopenErr', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 ยืนยันส่งเรื่องซ้ำ'; }
   }
 }

@@ -99,6 +99,19 @@ async function reverseGeocode(lat, lng) {
 }
 
 // ─── Helper: format ticket for API response ──────────────────────
+// ─── Distance Calculation (Haversine formula in meters) ─────────
+function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Radius of the earth in meters
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in meters
+}
+
 function formatTicket(t, currentUserId) {
   const obj = {
     ticketId: t.ticketId,
@@ -125,15 +138,32 @@ function formatTicket(t, currentUserId) {
     ratingReason: t.ratingReason,
     ratedAt: t.ratedAt,
     createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
     _id: t._id,
     // SLA
     slaAssignDeadline: t.slaAssignDeadline || null,
     slaCompleteDeadline: t.slaCompleteDeadline || null,
     slaBreached: t.slaBreached || false,
-    // Upvote
+    // Upvote & Follow
     upvoteCount: t.upvoteCount || 0,
-    // Follow
     followerCount: t.followerCount || 0,
+    // Merge & Duplicates
+    isMerged: t.isMerged || false,
+    mergedInto: t.mergedInto || null,
+    mergedTickets: t.mergedTickets || [],
+    // Reopen / Dispute
+    reopenCount: t.reopenCount || 0,
+    reopenReason: t.reopenReason || null,
+    reopenImages: t.reopenImages || [],
+    reopenedAt: t.reopenedAt || null,
+    // SLA Pause / Hold
+    slaPauseStatus: t.slaPauseStatus || 'none',
+    slaPauseReason: t.slaPauseReason || null,
+    slaPauseRequestedAt: t.slaPauseRequestedAt || null,
+    slaPausedAt: t.slaPausedAt || null,
+    slaTotalPausedMs: t.slaTotalPausedMs || 0,
+    // Work Order
+    workOrder: t.workOrder || null,
   };
   // Per-user flags
   if (currentUserId) {
@@ -972,6 +1002,559 @@ router.post('/:id/follow', requireAuth, async (req, res) => {
       isFollowing: action === 'followed'
     });
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ── 1. DUPLICATE TICKET DETECTION & MERGE ─────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// GET /api/tickets/detect-duplicates?lat=...&lng=...&category=...&radius=100
+router.get('/detect-duplicates', async (req, res) => {
+  try {
+    const { lat, lng, category, radius, excludeTicketId } = req.query;
+    if (!lat || !lng || !category) {
+      return res.status(400).json({ error: 'lat, lng, and category are required' });
+    }
+    const cLat = parseFloat(lat);
+    const cLng = parseFloat(lng);
+    const radMeters = parseFloat(radius) || 100;
+
+    const candidates = await Ticket.find({
+      category,
+      ticketId: { $ne: excludeTicketId },
+      status: { $in: ['pending', 'assigned', 'in_progress', 'reopened'] },
+      lat: { $ne: null },
+      lng: { $ne: null }
+    }).select('ticketId category description location lat lng status urgency citizenImage createdAt upvoteCount followerCount');
+
+    const duplicates = [];
+    for (const t of candidates) {
+      const dist = getDistanceFromLatLonInM(cLat, cLng, t.lat, t.lng);
+      if (dist <= radMeters) {
+        duplicates.push({
+          ticketId: t.ticketId,
+          category: t.category,
+          description: t.description,
+          location: t.location,
+          status: t.status,
+          urgency: t.urgency,
+          citizenImage: t.citizenImage,
+          distanceMeters: Math.round(dist),
+          upvoteCount: t.upvoteCount || 0,
+          followerCount: t.followerCount || 0,
+          createdAt: t.createdAt
+        });
+      }
+    }
+
+    duplicates.sort((a, b) => a.distanceMeters - b.distanceMeters);
+    res.json(duplicates);
+  } catch (e) {
+    console.error('[Duplicate Detection] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการตรวจสอบเรื่องซ้ำ' });
+  }
+});
+
+// POST /api/tickets/:id/merge (Admin only)
+router.post('/:id/merge', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') {
+      return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถรวมเรื่องได้' });
+    }
+
+    const { targetTicketId } = req.body;
+    if (!targetTicketId) return res.status(400).json({ error: 'กรุณาระบุรหัสตั๋วหลักที่จะรวมเข้า' });
+    if (req.params.id === targetTicketId) return res.status(400).json({ error: 'ไม่สามารถรวมตั๋วเข้ากับตัวเองได้' });
+
+    const sourceTicket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!sourceTicket) return res.status(404).json({ error: 'ไม่พบตั๋วต้นทาง' });
+
+    const targetTicket = await Ticket.findOne({ ticketId: targetTicketId });
+    if (!targetTicket) return res.status(404).json({ error: 'ไม่พบตั๋วปลายทาง' });
+
+    if (sourceTicket.isMerged) {
+      return res.status(400).json({ error: 'ตั๋วนี้ถูกรวมเรื่องไปแล้ว' });
+    }
+
+    // Combine followers
+    const targetFollowerUserIds = new Set((targetTicket.followers || []).map(f => f.userId?.toString()));
+    if (sourceTicket.citizenId && !targetFollowerUserIds.has(sourceTicket.citizenId.toString())) {
+      targetTicket.followers.push({
+        userId: sourceTicket.citizenId,
+        lineUserId: sourceTicket.citizenLineId || null
+      });
+      targetFollowerUserIds.add(sourceTicket.citizenId.toString());
+    }
+    for (const f of sourceTicket.followers || []) {
+      if (f.userId && !targetFollowerUserIds.has(f.userId.toString())) {
+        targetTicket.followers.push(f);
+        targetFollowerUserIds.add(f.userId.toString());
+      }
+    }
+    targetTicket.followerCount = targetTicket.followers.length;
+
+    // Combine upvotes
+    const targetUpvoteUserIds = new Set((targetTicket.upvotes || []).map(u => u.userId?.toString()));
+    for (const u of sourceTicket.upvotes || []) {
+      if (u.userId && !targetUpvoteUserIds.has(u.userId.toString())) {
+        targetTicket.upvotes.push(u);
+        targetUpvoteUserIds.add(u.userId.toString());
+      }
+    }
+    targetTicket.upvoteCount = targetTicket.upvotes.length;
+
+    if (!targetTicket.mergedTickets.includes(sourceTicket.ticketId)) {
+      targetTicket.mergedTickets.push(sourceTicket.ticketId);
+    }
+    await targetTicket.save();
+
+    // Mark source ticket as merged
+    sourceTicket.status = 'merged';
+    sourceTicket.isMerged = true;
+    sourceTicket.mergedInto = targetTicket.ticketId;
+    sourceTicket.rejectReason = 'รวมเรื่องเข้ากับเคสหลัก ' + targetTicket.ticketId;
+    await sourceTicket.save();
+
+    // Post comments to both
+    await new Comment({
+      ticketId: targetTicket.ticketId,
+      userId: caller._id,
+      userName: caller.firstName + ' (Admin)',
+      userRole: 'admin',
+      message: '🔗 มีการรวมเรื่องร้องเรียนเคส ' + sourceTicket.ticketId + ' เข้ามาในเคสนี้เพื่อดำเนินการร่วมกัน'
+    }).save();
+
+    await new Comment({
+      ticketId: sourceTicket.ticketId,
+      userId: caller._id,
+      userName: caller.firstName + ' (Admin)',
+      userRole: 'admin',
+      message: '🔗 เรื่องร้องเรียนนี้ถูกรวมเข้ากับเคสหลัก ' + targetTicket.ticketId + ' โดยอัตโนมัติ คุณจะได้รับการอัปเดตสถานะของเคสดังกล่าว'
+    }).save();
+
+    emitUpdate(req);
+    res.json({
+      message: 'รวมเคส ' + sourceTicket.ticketId + ' เข้ากับ ' + targetTicket.ticketId + ' สำเร็จ',
+      sourceTicket: formatTicket(sourceTicket, caller._id),
+      targetTicket: formatTicket(targetTicket, caller._id)
+    });
+  } catch (e) {
+    console.error('[Merge Ticket] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการรวมเรื่อง' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ── 2. TICKET RE-OPEN / DISPUTE FLOW ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/tickets/:id/reopen
+router.post('/:id/reopen', requireAuth, upload.array('images', 3), async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    const { reason: rawReason } = req.body;
+    if (!rawReason || !rawReason.trim()) {
+      return res.status(400).json({ error: 'กรุณาระบุเหตุผลที่ขอให้ตรวจสอบใหม่' });
+    }
+    const reason = xss(rawReason.trim());
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    if (caller.role === 'citizen' && ticket.citizenId.toString() !== caller._id.toString()) {
+      return res.status(403).json({ error: 'คุณไม่ใช่ผู้แจ้งเรื่องของ Ticket นี้' });
+    }
+
+    if (ticket.status !== 'completed') {
+      return res.status(400).json({ error: 'สามารถขอตรวจสอบใหม่ได้เฉพาะเคสที่ปิดงานแล้วเท่านั้น' });
+    }
+
+    const uploadedUrls = getFileUrls(req);
+
+    ticket.status = 'reopened';
+    ticket.reopenCount = (ticket.reopenCount || 0) + 1;
+    ticket.reopenedAt = new Date();
+    ticket.reopenReason = reason;
+    if (uploadedUrls.length > 0) {
+      ticket.reopenImages = uploadedUrls;
+    }
+    ticket.chatExpiresAt = null; // Re-open chat
+
+    // Extend completion deadline by 24 hours for investigation/rework
+    ticket.slaCompleteDeadline = new Date(Date.now() + 24 * 3600000);
+    ticket.slaBreached = false;
+    await ticket.save();
+
+    await new Comment({
+      ticketId: ticket.ticketId,
+      userId: caller._id,
+      userName: caller.firstName + ' ' + (caller.lastName || ''),
+      userRole: caller.role,
+      message: '🔄 ขอตรวจสอบใหม่ (Re-open): ' + reason
+    }).save();
+
+    emitUpdate(req);
+    res.json({ message: 'ส่งคำขอตรวจสอบใหม่สำเร็จ', ticket: formatTicket(ticket, caller._id) });
+  } catch (e) {
+    console.error('[Reopen Ticket] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการขอตรวจสอบใหม่' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ── 3. SLA PAUSE / HOLD ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/tickets/:id/sla/request-pause (Technician)
+router.post('/:id/sla/request-pause', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || (caller.role !== 'technician' && caller.role !== 'admin')) {
+      return res.status(403).json({ error: 'เฉพาะช่างผู้รับผิดชอบหรือ Admin เท่านั้น' });
+    }
+
+    const { reason: rawReason } = req.body;
+    if (!rawReason || !rawReason.trim()) {
+      return res.status(400).json({ error: 'กรุณาระบุเหตุผลในการขอพักเวลา SLA' });
+    }
+    const reason = xss(rawReason.trim());
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    if (caller.role === 'technician' && ticket.assignedTo?.toString() !== caller._id.toString()) {
+      return res.status(403).json({ error: 'คุณไม่ใช่ช่างที่รับผิดชอบ Ticket นี้' });
+    }
+
+    if (ticket.status !== 'assigned' && ticket.status !== 'in_progress' && ticket.status !== 'reopened') {
+      return res.status(400).json({ error: 'สามารถขอพักเวลาได้เฉพาะงานที่อยู่ระหว่างดำเนินการเท่านั้น' });
+    }
+
+    ticket.slaPauseStatus = 'requested';
+    ticket.slaPauseReason = reason;
+    ticket.slaPauseRequestedAt = new Date();
+    await ticket.save();
+
+    await new Comment({
+      ticketId: ticket.ticketId,
+      userId: caller._id,
+      userName: caller.firstName + ' (ช่าง)',
+      userRole: caller.role,
+      message: '⏸️ ขอหยุดเวลา SLA ชั่วคราว เนื่องจาก: ' + reason + ' (รอการอนุมัติจากผู้ดูแลระบบ)'
+    }).save();
+
+    emitUpdate(req);
+    res.json({ message: 'ส่งคำขอพักเวลา SLA แล้ว', ticket: formatTicket(ticket, caller._id) });
+  } catch (e) {
+    console.error('[SLA Request Pause] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการขอพักเวลา' });
+  }
+});
+
+// POST /api/tickets/:id/sla/approve-pause (Admin)
+router.post('/:id/sla/approve-pause', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') {
+      return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้นที่อนุมัติได้' });
+    }
+
+    const { approved } = req.body;
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    if (ticket.slaPauseStatus !== 'requested') {
+      return res.status(400).json({ error: 'Ticket นี้ไม่มีคำขอพักเวลาที่รออนุมัติ' });
+    }
+
+    if (approved) {
+      ticket.slaPauseStatus = 'paused';
+      ticket.slaPausedAt = new Date();
+      await ticket.save();
+
+      await new Comment({
+        ticketId: ticket.ticketId,
+        userId: caller._id,
+        userName: caller.firstName + ' (Admin)',
+        userRole: 'admin',
+        message: '⏸️ อนุมัติการพักเวลา SLA ชั่วคราว: "' + (ticket.slaPauseReason || 'ตามที่แจ้ง') + '"'
+      }).save();
+    } else {
+      ticket.slaPauseStatus = 'none';
+      const prevReason = ticket.slaPauseReason;
+      ticket.slaPauseReason = null;
+      await ticket.save();
+
+      await new Comment({
+        ticketId: ticket.ticketId,
+        userId: caller._id,
+        userName: caller.firstName + ' (Admin)',
+        userRole: 'admin',
+        message: '❌ ไม่อนุมัติคำขอพักเวลา SLA (เหตุผลเดิม: ' + (prevReason || '—') + ') กำหนดเวลาดำเนินต่อตามปกติ'
+      }).save();
+    }
+
+    emitUpdate(req);
+    res.json({ message: approved ? 'อนุมัติการพักเวลาสำเร็จ' : 'ปฏิเสธคำขอพักเวลาแล้ว', ticket: formatTicket(ticket, caller._id) });
+  } catch (e) {
+    console.error('[SLA Approve Pause] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// POST /api/tickets/:id/sla/resume (Technician or Admin)
+router.post('/:id/sla/resume', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || (caller.role !== 'technician' && caller.role !== 'admin')) {
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์ทำรายการนี้' });
+    }
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    if (ticket.slaPauseStatus !== 'paused') {
+      return res.status(400).json({ error: 'Ticket นี้ไม่ได้ถูกพักเวลาอยู่' });
+    }
+
+    const pausedAt = ticket.slaPausedAt || ticket.updatedAt;
+    const now = new Date();
+    const durationMs = Math.max(0, now.getTime() - new Date(pausedAt).getTime());
+
+    if (ticket.slaCompleteDeadline) {
+      ticket.slaCompleteDeadline = new Date(ticket.slaCompleteDeadline.getTime() + durationMs);
+    }
+    ticket.slaTotalPausedMs = (ticket.slaTotalPausedMs || 0) + durationMs;
+
+    ticket.slaPauseHistory.push({
+      reason: ticket.slaPauseReason,
+      requestedAt: ticket.slaPauseRequestedAt,
+      approvedAt: pausedAt,
+      resumedAt: now,
+      resumedByName: caller.firstName + ' ' + (caller.lastName || ''),
+      durationMs
+    });
+
+    const durationMins = Math.round(durationMs / 60000);
+    const durationHours = (durationMs / 3600000).toFixed(1);
+
+    ticket.slaPauseStatus = 'none';
+    ticket.slaPausedAt = null;
+    ticket.slaPauseReason = null;
+    await ticket.save();
+
+    await new Comment({
+      ticketId: ticket.ticketId,
+      userId: caller._id,
+      userName: caller.firstName + ' (' + caller.role + ')',
+      userRole: caller.role,
+      message: '▶️ สิ้นสุดการพักเวลา SLA และนับเวลาต่อ (ขยายเวลาเพิ่ม ' + (durationHours >= 1 ? durationHours + ' ชม.' : durationMins + ' นาที') + ')'
+    }).save();
+
+    emitUpdate(req);
+    res.json({ message: 'กลับมานับเวลาต่อเรียบร้อย', ticket: formatTicket(ticket, caller._id) });
+  } catch (e) {
+    console.error('[SLA Resume] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการยกเลิกพักเวลา' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ── 4. DIGITAL WORK ORDER & SIGNATURE ─────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/tickets/:id/work-order/sign
+router.post('/:id/work-order/sign', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    const { signatureData, signedByName: rawName, notes: rawNotes } = req.body;
+
+    if (!signatureData) {
+      return res.status(400).json({ error: 'กรุณาลงลายมือชื่อก่อนบันทึก' });
+    }
+    const signedByName = rawName ? xss(rawName.trim()) : (caller ? caller.firstName + ' ' + (caller.lastName || '') : 'ผู้รับมอบงาน');
+    const notes = rawNotes ? xss(rawNotes.trim()) : '';
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    ticket.workOrder = {
+      signedByName,
+      signedAt: new Date(),
+      signatureData,
+      notes
+    };
+    await ticket.save();
+
+    await new Comment({
+      ticketId: ticket.ticketId,
+      userId: caller._id,
+      userName: caller.firstName + ' (' + caller.role + ')',
+      userRole: caller.role,
+      message: '📋 ลงนามในใบงานดิจิทัลเรียบร้อย โดย: ' + signedByName
+    }).save();
+
+    emitUpdate(req);
+    res.json({ message: 'บันทึกลายเซ็นใบงานสำเร็จ', workOrder: ticket.workOrder });
+  } catch (e) {
+    console.error('[Work Order Sign] error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกลายเซ็น' });
+  }
+});
+
+// GET /api/tickets/:id/work-order (Print-ready document)
+router.get('/:id/work-order', async (req, res) => {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).send('<h2>ไม่พบข้อมูลใบงาน (Ticket not found)</h2>');
+
+    const baseUrl = (process.env.BASE_URL || '').replace(/\/$/, '');
+    const qrTargetUrl = baseUrl ? (baseUrl + '/track?q=' + encodeURIComponent(ticket.ticketId)) : ('/track?q=' + encodeURIComponent(ticket.ticketId));
+    const qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(qrTargetUrl);
+
+    const stMap = {
+      pending: 'รอดำเนินการ',
+      assigned: 'รับมอบหมายงาน',
+      in_progress: 'กำลังดำเนินการ',
+      completed: 'เสร็จสิ้นสมบูรณ์',
+      rejected: 'ปฏิเสธคำขอ',
+      reopened: 'ตีกลับตรวจสอบใหม่',
+      merged: 'รวมเข้ากับเคสอื่น'
+    };
+    const urgMap = { normal: 'ปกติ', medium: 'ด่วน', urgent: 'ด่วนที่สุด (เร่งด่วน)' };
+    const createdDate = new Date(ticket.createdAt).toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' });
+    const signedDate = ticket.workOrder?.signedAt ? new Date(ticket.workOrder.signedAt).toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' }) : '—';
+
+    const html = '<!DOCTYPE html>' +
+'<html lang="th">' +
+'<head>' +
+'  <meta charset="UTF-8" />' +
+'  <title>ใบงานปฏิบัติการและส่งมอบงาน — ' + ticket.ticketId + '</title>' +
+'  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet" />' +
+'  <style>' +
+'    @page { size: A4; margin: 12mm 15mm; }' +
+'    * { box-sizing: border-box; margin: 0; padding: 0; }' +
+'    body { font-family: "Sarabun", sans-serif; background: #f8fafc; color: #1e293b; padding: 24px; font-size: 13px; line-height: 1.5; }' +
+'    .print-container { max-width: 800px; margin: 0 auto; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 32px 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }' +
+'    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; }' +
+'    .logo-area { display: flex; align-items: center; gap: 12px; }' +
+'    .logo-icon { width: 44px; height: 44px; background: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; font-weight: bold; }' +
+'    .title-main { font-size: 18px; font-weight: 700; color: #0f172a; }' +
+'    .title-sub { font-size: 12px; color: #64748b; }' +
+'    .qr-area { text-align: center; }' +
+'    .qr-area img { width: 84px; height: 84px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px; }' +
+'    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }' +
+'    .badge-urgent { background: #fee2e2; color: #991b1b; }' +
+'    .badge-medium { background: #fef3c7; color: #92400e; }' +
+'    .badge-normal { background: #e0f2fe; color: #075985; }' +
+'    .badge-status { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }' +
+'    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }' +
+'    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; }' +
+'    .box-title { font-weight: 700; font-size: 12px; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; }' +
+'    .row { display: flex; margin-bottom: 4px; font-size: 12.5px; }' +
+'    .row-label { width: 110px; color: #64748b; font-weight: 500; flex-shrink: 0; }' +
+'    .row-val { color: #0f172a; font-weight: 600; word-break: break-word; }' +
+'    .photos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }' +
+'    .photo-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; background: #fafafa; }' +
+'    .photo-card img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; }' +
+'    .photo-label { font-size: 11px; font-weight: 600; color: #475569; margin-top: 6px; }' +
+'    .signatures-area { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; }' +
+'    .sig-box { border: 1px dashed #94a3b8; border-radius: 6px; padding: 12px; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; background: #fdfdfd; }' +
+'    .sig-img { max-height: 60px; max-width: 180px; object-fit: contain; }' +
+'    .sig-line { width: 80%; border-bottom: 1px solid #334155; margin: 8px 0 4px; }' +
+'    .print-actions { text-align: center; margin-bottom: 20px; }' +
+'    .btn-print { background: #2563eb; color: #fff; border: none; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }' +
+'    .btn-print:hover { background: #1d4ed8; }' +
+'    @media print {' +
+'      body { background: #fff; padding: 0; }' +
+'      .print-container { border: none; box-shadow: none; padding: 0; max-width: 100%; }' +
+'      .print-actions { display: none !important; }' +
+'    }' +
+'  </style>' +
+'</head>' +
+'<body>' +
+'  <div class="print-actions">' +
+'    <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / บันทึกเป็น PDF (Print Document)</button>' +
+'  </div>' +
+'  <div class="print-container">' +
+'    <div class="header">' +
+'      <div class="logo-area">' +
+'        <div class="logo-icon">RN</div>' +
+'        <div>' +
+'          <div class="title-main">ใบงานปฏิบัติการและส่งมอบงานซ่อมบำรุง</div>' +
+'          <div class="title-sub">ResolveNow Municipal Incident & Work Order Report</div>' +
+'        </div>' +
+'      </div>' +
+'      <div class="qr-area">' +
+'        <img src="' + qrImgUrl + '" alt="QR Code" />' +
+'        <div style="font-size:10px;color:#64748b;margin-top:2px;">สแกนตรวจสอบสถานะ</div>' +
+'      </div>' +
+'    </div>' +
+'    <div class="grid-2">' +
+'      <div class="box">' +
+'        <div class="box-title">ข้อมูลเคสเรื่องร้องเรียน (Ticket Details)</div>' +
+'        <div class="row"><div class="row-label">รหัสเคส:</div><div class="row-val" style="color:#2563eb;font-size:14px">' + ticket.ticketId + '</div></div>' +
+'        <div class="row"><div class="row-label">หมวดหมู่งาน:</div><div class="row-val">' + ticket.category + '</div></div>' +
+'        <div class="row"><div class="row-label">ความเร่งด่วน:</div><div class="row-val"><span class="badge badge-' + ticket.urgency + '">' + (urgMap[ticket.urgency] || ticket.urgency) + '</span></div></div>' +
+'        <div class="row"><div class="row-label">สถานะปัจจุบัน:</div><div class="row-val"><span class="badge badge-status">' + (stMap[ticket.status] || ticket.status) + '</span></div></div>' +
+'        <div class="row"><div class="row-label">วันที่รับแจ้ง:</div><div class="row-val">' + createdDate + '</div></div>' +
+'      </div>' +
+'      <div class="box">' +
+'        <div class="box-title">ข้อมูลสถานที่และเจ้าหน้าที่ (Location & Dispatch)</div>' +
+'        <div class="row"><div class="row-label">ผู้แจ้งเรื่อง:</div><div class="row-val">' + ticket.citizenName + '</div></div>' +
+'        <div class="row"><div class="row-label">สถานที่เกิดเหตุ:</div><div class="row-val">' + ticket.location + '</div></div>' +
+'        ' + (ticket.lat && ticket.lng ? ('<div class="row"><div class="row-label">พิกัด GPS:</div><div class="row-val" style="font-family:monospace">' + ticket.lat.toFixed(5) + ', ' + ticket.lng.toFixed(5) + '</div></div>') : '') +
+'        <div class="row"><div class="row-label">เจ้าหน้าที่รับงาน:</div><div class="row-val">' + (ticket.assignedName || '— ยังไม่ได้มอบหมาย —') + '</div></div>' +
+'        ' + (ticket.slaBreached ? '<div class="row"><div class="row-label">สถานะ SLA:</div><div class="row-val" style="color:#dc2626">เกินกำหนดเวลา (Breached)</div></div>' : '<div class="row"><div class="row-label">สถานะ SLA:</div><div class="row-val" style="color:#16a34a">ภายในกำหนดเวลา (On-Track)</div></div>') +
+'      </div>' +
+'    </div>' +
+'    <div class="box" style="margin-bottom:16px">' +
+'      <div class="box-title">รายละเอียดปัญหาและการแก้ไข (Description & Resolution Notes)</div>' +
+'      <div style="margin: 6px 0; font-size:12.5px; color:#334155;"><strong>รายละเอียดจากผู้แจ้ง:</strong> ' + ticket.description + '</div>' +
+'      ' + (ticket.workOrder?.notes ? ('<div style="margin: 6px 0; font-size:12.5px; color:#0f172a; padding:6px 10px; background:#eff6ff; border-radius:4px;"><strong>บันทึกผลการปฏิบัติงานของช่าง:</strong> ' + ticket.workOrder.notes + '</div>') : '') +
+'    </div>' +
+'    <div class="photos-grid">' +
+'      <div class="photo-card">' +
+'        ' + (ticket.beforeImage || ticket.citizenImage ? ('<img src="' + (ticket.beforeImage || ticket.citizenImage) + '" alt="Before" />') : '<div style="height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">ไม่มีภาพก่อนซ่อม</div>') +
+'        <div class="photo-label">📸 ภาพก่อนดำเนินการซ่อม (Before Action)</div>' +
+'      </div>' +
+'      <div class="photo-card">' +
+'        ' + (ticket.afterImage ? ('<img src="' + ticket.afterImage + '" alt="After" />') : '<div style="height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">ยังไม่มีภาพหลังซ่อม</div>') +
+'        <div class="photo-label">✨ ภาพหลังดำเนินการแล้วเสร็จ (After Action)</div>' +
+'      </div>' +
+'    </div>' +
+'    <div class="signatures-area">' +
+'      <div class="sig-box">' +
+'        <div style="font-weight:600;font-size:12px;color:#475569">เจ้าหน้าที่ผู้ปฏิบัติงาน / ช่างผู้รับผิดชอบ</div>' +
+'        <div style="height:50px;display:flex;align-items:center;justify-content:center;color:#64748b;font-style:italic;">' +
+'          ' + (ticket.assignedName ? ('(ลงชื่อ) ' + ticket.assignedName) : '(ยังไม่ได้รับงาน)') +
+'        </div>' +
+'        <div class="sig-line"></div>' +
+'        <div style="font-size:11px;color:#64748b">วันที่: ' + new Date().toLocaleDateString('th-TH') + '</div>' +
+'      </div>' +
+'      <div class="sig-box">' +
+'        <div style="font-weight:600;font-size:12px;color:#475569">ผู้ตรวจรับมอบงาน / ประชาชนผู้แจ้งเรื่อง</div>' +
+'        ' + (ticket.workOrder?.signatureData ? ('<img src="' + ticket.workOrder.signatureData + '" class="sig-img" alt="Digital Signature" />') : '<div style="height:50px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;">[ ยังไม่ได้ลงนามดิจิทัล ]</div>') +
+'        <div class="sig-line"></div>' +
+'        <div style="font-size:12px;font-weight:600;color:#0f172a">' + (ticket.workOrder?.signedByName || '(ลงชื่อผู้ตรวจรับมอบงาน)') + '</div>' +
+'        <div style="font-size:11px;color:#64748b">วันที่: ' + signedDate + '</div>' +
+'      </div>' +
+'    </div>' +
+'    <div style="margin-top:24px;text-align:center;font-size:10.5px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:10px;">' +
+'      ResolveNow Smart City Incident Dispatch System • เอกสารออกโดยระบบอัตโนมัติ • ' + new Date().toLocaleString('th-TH') +
+'    </div>' +
+'  </div>' +
+'</body>' +
+'</html>';
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    console.error('[Work Order Page] error:', e);
+    res.status(500).send('เกิดข้อผิดพลาดในการโหลดใบงาน');
+  }
 });
 
 module.exports = router;

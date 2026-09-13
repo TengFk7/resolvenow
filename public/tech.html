@@ -365,6 +365,83 @@
       }, 50);
     });
   </script>
+
+  <!-- MODAL: SLA Pause Request (Technician) -->
+  <div class="mo" id="mSlaPause">
+    <div class="mb" style="max-width:420px">
+      <button class="mc" onclick="closeSlaPauseModal()">✕</button>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:38px;margin-bottom:6px">⏸️</div>
+        <h3 style="margin:0 0 4px;font-size:18px">ขอหยุดเวลา SLA ชั่วคราว</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0" id="slaPauseTicketLabel">Ticket #</p>
+      </div>
+      <div class="fg">
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">เลือกประเภทเหตุผล</label>
+        <select id="slaPausePreset" onchange="if(this.value) ge('slaPauseReasonInput').value=this.value"
+          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;background:#fff;margin-bottom:8px">
+          <option value="">— เลือกเหตุผลด่วน —</option>
+          <option value="รออะไหล่/วัสดุสั่งผลิต">📦 รออะไหล่/วัสดุสั่งผลิต</option>
+          <option value="สภาพอากาศพายุฝนตกหนักเข้าพื้นที่ไม่ได้">⛈️ สภาพอากาศพายุฝนตกหนักเข้าพื้นที่ไม่ได้</option>
+          <option value="รอประสานงานหน่วยงานภายนอก (เช่น กฟภ./กปภ.)">🏢 รอประสานงานหน่วยงานภายนอก</option>
+          <option value="ติดปัญหาพื้นที่เอกชน/รอหนังสืออนุญาต">🔒 ติดปัญหาพื้นที่เอกชน/รอหนังสืออนุญาต</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">รายละเอียดเหตุผล <span style="color:var(--r)">*</span></label>
+        <textarea id="slaPauseReasonInput" placeholder="อธิบายรายละเอียดเหตุผลที่จำเป็นต้องหยุดเวลาชั่วคราว..." rows="3"
+          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13.5px;outline:none;font-family:'Prompt',sans-serif;background:#fafafa;resize:vertical"></textarea>
+      </div>
+      <div class="ebox" id="slaPauseErr" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button onclick="closeSlaPauseModal()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted);font-weight:600">✕ ยกเลิก</button>
+        <button onclick="submitSlaPause()" id="btnSubmitSlaPause" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13.5px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(245,158,11,.35)">⏸️ ส่งคำขอพักเวลา</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Digital Work Order & Signature -->
+  <div class="mo" id="mWorkOrder">
+    <div class="mb" style="max-width:540px;width:95%">
+      <button class="mc" onclick="closeWorkOrderModal()">✕</button>
+      <div style="display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px">
+        <div style="font-size:32px">📋</div>
+        <div>
+          <h3 style="margin:0;font-size:17px;color:var(--navy)">ใบงานและลงนามตรวจรับมอบงาน</h3>
+          <p style="margin:0;font-size:12px;color:var(--muted)" id="woTicketLabel">Ticket #</p>
+        </div>
+      </div>
+      <div id="woSummaryBox" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;margin-bottom:14px;line-height:1.5">
+      </div>
+      <div class="fg">
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">ชื่อ-นามสกุล ผู้ตรวจรับมอบงาน / ประชาชน</label>
+        <input type="text" id="woSignerName" placeholder="ชื่อ-นามสกุล ผู้เซ็นรับงาน"
+          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;background:#fff;margin-bottom:6px" />
+      </div>
+      <div class="fg">
+        <label style="font-size:12px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between">
+          <span>✍️ ลงลายมือชื่อดิจิทัล (เซ็นในกรอบด้านล่าง)</span>
+          <button type="button" onclick="clearSigCanvas()" style="background:none;border:none;color:var(--blue2);font-size:11px;cursor:pointer;font-weight:700">🗑️ ล้างลายเซ็น</button>
+        </label>
+        <div class="sig-canvas-wrap">
+          <canvas id="sigCanvas" class="sig-canvas" width="480" height="150"></canvas>
+          <div id="sigPlaceholder" class="sig-placeholder">ใช้นิ้วหรือปากกา Stylus เพื่อลงชื่อที่นี่</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">บันทึกการส่งมอบงานเพิ่มเติม</label>
+        <textarea id="woNotes" placeholder="เช่น แก้ไขเสร็จสิ้น ประชาชนทดสอบเปิดก๊อกน้ำใช้งานได้ปกติ..." rows="2"
+          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12.5px;outline:none;font-family:'Prompt',sans-serif;background:#fff;resize:none"></textarea>
+      </div>
+      <div class="ebox" id="woErr" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button type="button" onclick="saveWorkOrderSignature()" id="btnSaveSig"
+          style="flex:1;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(16,185,129,.3)">💾 บันทึกลายเซ็น</button>
+        <button type="button" onclick="openPrintWorkOrder()" id="btnPrintWO"
+          style="flex:1;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.3)">🖨️ พิมพ์ใบงาน (PDF)</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 
 </html>

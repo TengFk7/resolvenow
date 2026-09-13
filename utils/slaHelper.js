@@ -33,14 +33,18 @@ function calcSlaDeadlines(urgency) {
  */
 function checkIsSlaBreached(ticket) {
   if (!ticket) return false;
-  if (ticket.status === 'completed' || ticket.status === 'rejected') {
+  // If ticket is completed, rejected, merged, or currently paused, do not breach
+  if (ticket.status === 'completed' || ticket.status === 'rejected' || ticket.status === 'merged') {
     return !!ticket.slaBreached;
+  }
+  if (ticket.slaPauseStatus === 'paused') {
+    return false; // Time is frozen while paused
   }
   const now = new Date();
   if (ticket.status === 'pending' && ticket.slaAssignDeadline) {
     return now > new Date(ticket.slaAssignDeadline);
   }
-  if ((ticket.status === 'assigned' || ticket.status === 'in_progress') && ticket.slaCompleteDeadline) {
+  if ((ticket.status === 'assigned' || ticket.status === 'in_progress' || ticket.status === 'reopened') && ticket.slaCompleteDeadline) {
     return now > new Date(ticket.slaCompleteDeadline);
   }
   return !!ticket.slaBreached;

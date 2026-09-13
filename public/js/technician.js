@@ -218,6 +218,13 @@ function tcToggle(ticketId) {
 
   // ── Build body — same content as before, just without the wrapping div
   var h = '';
+  if (t.status === 'reopened') {
+    h += '<div class="reopen-banner" style="margin-bottom:14px">⚠️ <strong>ผู้แจ้งขอให้ตรวจสอบใหม่ (รอบที่ ' + (t.reopenCount || 1) + '):</strong><br>' + escapeHTML(t.reopenReason || '—') + '</div>';
+  }
+  if (t.slaPauseStatus === 'paused') {
+    h += '<div style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:10px;padding:10px 14px;font-size:12px;color:#b45309;margin-bottom:12px">⏸️ <strong>เวลา SLA หยุดชั่วคราว:</strong> "' + escapeHTML(t.slaPauseReason || 'ตามที่แจ้ง') + '"</div>';
+  }
+
   h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
   var mapUrl = (t.lat && t.lng)
     ? 'https://www.google.com/maps?q=' + t.lat + ',' + t.lng
@@ -330,7 +337,14 @@ function tcToggle(ticketId) {
   }
 
   ge('tdModalBody').innerHTML = h;
-  ge('tdModalFooter').innerHTML = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+  var footerBtns = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
+  footerBtns += '<button class="btn-workorder" onclick="openWorkOrderModal(\'' + t.ticketId + '\')"><span>📋</span> ใบงาน & เซ็นชื่อ</button>';
+  if (t.slaPauseStatus === 'paused') {
+    footerBtns += '<button class="btn-sla-resume" onclick="resumeSla(\'' + t.ticketId + '\')"><span>▶️</span> เดินเวลาต่อ</button>';
+  } else if (t.status === 'assigned' || t.status === 'in_progress' || t.status === 'reopened') {
+    footerBtns += '<button class="btn-sla-pause" onclick="openSlaPauseModal(\'' + t.ticketId + '\')"><span>⏸️</span> พัก SLA</button>';
+  }
+  ge('tdModalFooter').innerHTML = footerBtns;
 
   // ── ใส่/ถอด class urgent บน modal card ──
   var modalCard = ge('mTicketDetail').querySelector('.td-modal-card');

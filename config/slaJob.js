@@ -20,9 +20,10 @@ async function runSlaCheck() {
   const result = await Ticket.updateMany(
     {
       slaBreached: { $ne: true },
+      slaPauseStatus: { $ne: 'paused' },
       $or: [
-        { status: 'pending',                              slaAssignDeadline:   { $lt: now } },
-        { status: { $in: ['assigned', 'in_progress'] },  slaCompleteDeadline: { $lt: now } }
+        { status: 'pending',                                            slaAssignDeadline:   { $lt: now } },
+        { status: { $in: ['assigned', 'in_progress', 'reopened'] },     slaCompleteDeadline: { $lt: now } }
       ]
     },
     { $set: { slaBreached: true } }

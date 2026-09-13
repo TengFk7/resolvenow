@@ -17,7 +17,7 @@ const ticketSchema = new mongoose.Schema({
   lng:           { type: Number, default: null },
   urgency:       { type: String, enum: ['normal', 'medium', 'urgent'], default: 'normal' },
   priorityScore: { type: Number, default: 30 },
-  status:        { type: String, enum: ['pending', 'assigned', 'in_progress', 'completed', 'rejected'], default: 'pending' },
+  status:        { type: String, enum: ['pending', 'assigned', 'in_progress', 'completed', 'rejected', 'reopened', 'merged'], default: 'pending' },
   assignedTo:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   assignedName:  { type: String, default: null },
   rejectReason:  { type: String, default: null },
@@ -35,6 +35,40 @@ const ticketSchema = new mongoose.Schema({
   slaAssignDeadline:   { type: Date, default: null },
   slaCompleteDeadline: { type: Date, default: null },
   slaBreached:         { type: Boolean, default: false },
+  // ── SLA Pause / Hold ──
+  slaPauseStatus:      { type: String, enum: ['none', 'requested', 'paused'], default: 'none' },
+  slaPauseReason:      { type: String, default: null },
+  slaPauseRequestedAt: { type: Date, default: null },
+  slaPausedAt:         { type: Date, default: null },
+  slaTotalPausedMs:    { type: Number, default: 0 },
+  slaPauseHistory:     [{
+    reason: String,
+    requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    requestedByName: String,
+    requestedAt: Date,
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    approvedByName: String,
+    approvedAt: Date,
+    resumedAt: Date,
+    resumedByName: String,
+    durationMs: Number
+  }],
+  // ── Duplicate Detection & Merge ──
+  mergedInto:          { type: String, default: null },   // TKT-xxxxx of master ticket
+  mergedTickets:       { type: [String], default: [] },   // List of ticketIds merged into this
+  isMerged:            { type: Boolean, default: false },
+  // ── Re-open / Dispute System ──
+  reopenCount:         { type: Number, default: 0 },
+  reopenedAt:          { type: Date, default: null },
+  reopenReason:        { type: String, default: null },
+  reopenImages:        { type: [String], default: [] },
+  // ── Digital Work Order & Signature ──
+  workOrder: {
+    signedByName:  { type: String, default: null },
+    signedAt:      { type: Date, default: null },
+    signatureData: { type: String, default: null },
+    notes:         { type: String, default: null }
+  },
   // ── Upvote System ──
   upvotes:       [{ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, createdAt: { type: Date, default: Date.now } }],
   upvoteCount:   { type: Number, default: 0 },
@@ -55,5 +89,6 @@ ticketSchema.index({ category: 1, status: 1 });             // filter by categor
 ticketSchema.index({ status: 1, createdAt: -1 });           // admin list + ceo dashboard
 ticketSchema.index({ slaBreached: 1, status: 1 });          // slaJob breach query
 ticketSchema.index({ chatExpiresAt: 1 }, { sparse: true }); // chat cleanup job
+ticketSchema.index({ lat: 1, lng: 1, category: 1 });        // duplicate detection query
 
 module.exports = mongoose.model('Ticket', ticketSchema);
