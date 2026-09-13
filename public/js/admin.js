@@ -480,7 +480,7 @@ function renderAllQueue(tks, filter) {
     var t = filtered[i];
     var gpsLink = (t.lat && t.lng) ? ' <a href="https://www.google.com/maps?q=' + t.lat + ',' + t.lng + '" target="_blank" style="font-size:10px;color:var(--blue2);font-weight:600">🗺️</a>' : '';
     h += '<tr>';
-    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">' + t.ticketId + '</td>';
+    h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--blue2);cursor:pointer;text-decoration:underline" onclick="openAdminTD(\'' + t.ticketId + '\')" title="คลิกดูประวัติ Timeline และรายละเอียด">' + t.ticketId + '</td>';
     h += '<td style="font-size:12px">' + escapeHTML(t.citizenName) + '</td>';
     h += '<td>' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + '</td>';
     h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 ' + escapeHTML(t.location) + gpsLink + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">' + escapeHTML(t.description) + '</div></td>';
@@ -1453,3 +1453,58 @@ function _getPdfStyles() {
     '}';
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   FEATURE 5 & 6: Admin Ticket Detail & Timeline Modal
+   ═══════════════════════════════════════════════════════ */
+function openAdminTD(ticketId) {
+  var t = (_lastAdminTickets || []).find(function(item) { return item.ticketId === ticketId; });
+  if (!t) return;
+
+  var titleHtml = (DEPT_ICON[t.category] || '📋') + ' #' + escapeHTML(t.ticketId)
+    + ' <span class="badge ' + t.status + '" style="font-size:11px;margin-left:6px">' + stTH(t.status) + '</span>';
+  ge('tdModalTitle').innerHTML = titleHtml;
+
+  var h = '';
+  // Images
+  if (t.citizenImages && t.citizenImages.length > 0) {
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:12px">';
+    t.citizenImages.forEach(function (imgUrl) {
+      h += '<img src="' + imgUrl + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" style="margin:0;height:80px;object-fit:cover" />';
+    });
+    h += '</div>';
+  } else if (t.citizenImage) {
+    h += '<img src="' + t.citizenImage + '" onclick="viewImg(this.src,\'รูปที่แจ้ง\')" class="cg-detail-img" />';
+  }
+
+  h += '<div class="cg-detail-row"><span class="cg-dl">👤 ผู้แจ้ง</span><span class="cg-dv">' + escapeHTML(t.citizenName) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">📝 รายละเอียด</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">📍 สถานที่</span><span class="cg-dv">' + escapeHTML(t.location) + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">👷 ผู้รับผิดชอบ</span><span class="cg-dv">' + (t.assignedName ? escapeHTML(t.assignedName) : '<span style="color:var(--muted)">— ยังไม่ได้มอบหมาย —</span>') + '</span></div>';
+  h += '<div class="cg-detail-row"><span class="cg-dl">📅 วันที่แจ้ง</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
+
+  if (t.status === 'completed' && (t.beforeImage || t.afterImage)) {
+    h += '<div class="cg-techwork"><div class="cg-techwork-title">&#9989; หลักฐานการปฏิบัติงานของช่าง</div><div class="cg-techwork-imgs">';
+    if (t.beforeImage) h += '<div class="cg-techwork-img"><img src="' + t.beforeImage + '" onclick="viewImg(this.src,\'ก่อน\')" /><span>ก่อนซ่อม</span></div>';
+    if (t.afterImage) h += '<div class="cg-techwork-img"><img src="' + t.afterImage + '" onclick="viewImg(this.src,\'หลัง\')" /><span>หลังซ่อม</span></div>';
+    h += '</div></div>';
+  }
+
+  // Materials & Cost
+  if (t.materials && t.materials.length > 0 && typeof renderTicketMaterialsHtml === 'function') {
+    h += renderTicketMaterialsHtml(t.materials, t.totalRepairCost);
+  }
+
+  // Interactive Timeline History
+  if (typeof renderTicketTimelineHtml === 'function') {
+    h += renderTicketTimelineHtml(t.timeline);
+  }
+
+  ge('tdModalBody').innerHTML = h;
+
+  var footerBtns = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชท</button>';
+  footerBtns += '<a href="/api/tickets/' + t.ticketId + '/work-order" target="_blank" class="btn-workorder" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center"><span>📋</span> พิมพ์ใบงาน</a>';
+  ge('tdModalFooter').innerHTML = footerBtns;
+
+  ge('mTicketDetail').classList.add('on');
+}

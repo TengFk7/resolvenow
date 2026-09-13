@@ -112,7 +112,154 @@ function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
   return R * c; // Distance in meters
 }
 
+const STATUS_TH = {
+  pending: 'รอดำเนินการ',
+  assigned: 'รับงานแล้ว',
+  in_progress: 'กำลังดำเนินการ',
+  completed: 'เสร็จสิ้น',
+  rejected: 'ปฏิเสธ',
+  reopened: 'ขอตรวจสอบซ้ำ',
+  merged: 'รวมตั๋ว'
+};
+
+function logTicketActivity(ticket, { action, actorRole, actorId, actorName, details, oldValue, newValue, timestamp }) {
+  if (!ticket.timeline) ticket.timeline = [];
+  ticket.timeline.push({
+    action: action || 'status_changed',
+    actorRole: actorRole || 'system',
+    actorId: actorId || null,
+    actorName: actorName || 'ระบบ',
+    details: details || '',
+    oldValue: oldValue != null ? String(oldValue) : null,
+    newValue: newValue != null ? String(newValue) : null,
+    timestamp: timestamp || new Date()
+  });
+}
+
+function buildSyntheticTimeline(t) {
+  const events = [];
+  const created = t.createdAt ? new Date(t.createdAt) : new Date();
+
+  // 1. Created
+  events.push({
+    action: 'created',
+    actorRole: 'citizen',
+    actorName: t.citizenName || 'ประชาชนผู้แจ้ง',
+    details: 'แจ้งเรื่องร้องเรียนใหม่: ' + (t.category || 'ทั่วไป'),
+    oldValue: null,
+    newValue: 'pending',
+    timestamp: created
+  });
+
+  // 2. Assigned
+  if (t.assignedName || t.status !== 'pending') {
+    const assignDate = new Date(created.getTime() + 15 * 60 * 1000);
+    events.push({
+      action: 'assigned',
+      actorRole: 'admin',
+      actorName: 'ศูนย์สั่งการ (Dispatcher)',
+      details: 'มอบหมายงานให้ ' + (t.assignedName || 'เจ้าหน้าที่ผู้เชี่ยวชาญ'),
+      oldValue: 'รอดำเนินการ',
+      newValue: t.assignedName || 'ช่างผู้รับผิดชอบ',
+      timestamp: assignDate < (t.updatedAt || new Date()) ? assignDate : (t.updatedAt || created)
+    });
+  }
+
+  // 3. Before image
+  if (t.beforeImage) {
+    const beforeDate = new Date(created.getTime() + 30 * 60 * 1000);
+    events.push({
+      action: 'before_image_uploaded',
+      actorRole: 'technician',
+      actorName: t.assignedName || 'ช่างประจำแผนก',
+      details: 'อัปโหลดภาพถ่ายตรวจสอบก่อนการซ่อมบำรุง',
+      oldValue: null,
+      newValue: null,
+      timestamp: beforeDate < (t.updatedAt || new Date()) ? beforeDate : (t.updatedAt || created)
+    });
+  }
+
+  // 4. In Progress
+  if (t.status === 'in_progress' || t.status === 'completed') {
+    const inpgDate = new Date(created.getTime() + 45 * 60 * 1000);
+    events.push({
+      action: 'status_changed',
+      actorRole: 'technician',
+      actorName: t.assignedName || 'ช่างประจำแผนก',
+      details: 'เปลี่ยนสถานะเป็น กำลังดำเนินการ ลงพื้นที่เข้าปฏิบัติงาน',
+      oldValue: 'รับงานแล้ว',
+      newValue: 'กำลังดำเนินการ',
+      timestamp: inpgDate < (t.updatedAt || new Date()) ? inpgDate : (t.updatedAt || created)
+    });
+  }
+
+  // 5. Materials
+  if (t.materials && t.materials.length > 0) {
+    events.push({
+      action: 'materials_updated',
+      actorRole: 'technician',
+      actorName: t.assignedName || 'ช่างประจำแผนก',
+      details: 'บันทึกรายการวัสดุ/อุปกรณ์ ' + t.materials.length + ' รายการ (฿' + (t.totalRepairCost || 0).toLocaleString('th-TH') + ')',
+      oldValue: null,
+      newValue: '฿' + (t.totalRepairCost || 0).toLocaleString('th-TH'),
+      timestamp: t.updatedAt || created
+    });
+  }
+
+  // 6. After image
+  if (t.afterImage || (t.afterImages && t.afterImages.length)) {
+    events.push({
+      action: 'after_image_uploaded',
+      actorRole: 'technician',
+      actorName: t.assignedName || 'ช่างประจำแผนก',
+      details: 'อัปโหลดภาพถ่ายหลักฐานหลังดำเนินการแล้วเสร็จ',
+      oldValue: null,
+      newValue: null,
+      timestamp: t.updatedAt || created
+    });
+  }
+
+  // 7. Completed or Rejected
+  if (t.status === 'completed') {
+    events.push({
+      action: 'status_changed',
+      actorRole: 'technician',
+      actorName: t.assignedName || 'ช่างประจำแผนก',
+      details: 'ดำเนินการแก้ไขปัญหาเสร็จสิ้น และส่งมอบงาน',
+      oldValue: 'กำลังดำเนินการ',
+      newValue: 'เสร็จสิ้น',
+      timestamp: t.updatedAt || created
+    });
+  } else if (t.status === 'rejected') {
+    events.push({
+      action: 'status_changed',
+      actorRole: 'admin',
+      actorName: 'ศูนย์สั่งการ (Admin)',
+      details: 'ปฏิเสธเรื่องร้องเรียน' + (t.rejectReason ? ' (เหตุผล: ' + t.rejectReason + ')' : ''),
+      oldValue: 'รอดำเนินการ',
+      newValue: 'ปฏิเสธ',
+      timestamp: t.updatedAt || created
+    });
+  }
+
+  // 8. Rated
+  if (t.rating) {
+    events.push({
+      action: 'rated',
+      actorRole: 'citizen',
+      actorName: t.citizenName || 'ประชาชนผู้แจ้ง',
+      details: 'ประเมินความพึงพอใจ ' + t.rating + ' ดาว' + (t.ratingReason ? ' (' + t.ratingReason + ')' : ''),
+      oldValue: null,
+      newValue: t.rating + ' ดาว',
+      timestamp: t.ratedAt ? new Date(t.ratedAt) : (t.updatedAt || created)
+    });
+  }
+
+  return events;
+}
+
 function formatTicket(t, currentUserId) {
+  const rawTimeline = (t.timeline && t.timeline.length) ? t.timeline : buildSyntheticTimeline(t);
   const obj = {
     ticketId: t.ticketId,
     citizenId: t.citizenId,
@@ -164,6 +311,12 @@ function formatTicket(t, currentUserId) {
     slaTotalPausedMs: t.slaTotalPausedMs || 0,
     // Work Order
     workOrder: t.workOrder || null,
+    // Timeline & Activity Audit Trail
+    timeline: rawTimeline,
+    // Cost & Material Tracking
+    materials: t.materials || [],
+    totalRepairCost: t.totalRepairCost || 0,
+    repairCostNotes: t.repairCostNotes || null,
   };
   // Per-user flags
   if (currentUserId) {
@@ -220,6 +373,8 @@ router.get('/report', requireAuth, async (req, res) => {
         beforeImage: t.beforeImage || null,
         afterImage: t.afterImage || null,
         slaBreached: t.slaBreached || false,
+        totalRepairCost: t.totalRepairCost || 0,
+        materials: t.materials || [],
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
       }))
@@ -244,7 +399,6 @@ router.get('/report/excel', requireAuth, async (req, res) => {
 
     // Status translation map
     const stMap = { pending: 'รอดำเนินการ', assigned: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', rejected: 'ปฏิเสธ' };
-    // Category translation
     const catMap = { Road: 'ถนน/ทางเท้า', Water: 'ท่อแตก/น้ำ', Electricity: 'ไฟฟ้า', Garbage: 'ขยะ', Animal: 'สัตว์', Tree: 'กิ่งไม้', Hazard: 'ภัยพิบัติ' };
 
     const rows = tickets.map(t => {
@@ -270,6 +424,8 @@ router.get('/report/excel', requireAuth, async (req, res) => {
         'หมวดหมู่': catMap[t.category] || t.category,
         'ช่างที่รับผิดชอบ': t.assignedName || '—',
         'คะแนนดาว': t.rating ? t.rating + ' / 5' : '—',
+        'งบประมาณ (บาท)': Number(t.totalRepairCost || 0),
+        'วัสดุ/อุปกรณ์ที่ใช้': (t.materials && t.materials.length) ? t.materials.map(m => `${m.name} (${m.quantity} ${m.unit || 'ชิ้น'})`).join(', ') : '—',
       };
     });
 
@@ -284,6 +440,8 @@ router.get('/report/excel', requireAuth, async (req, res) => {
       { wch: 18 }, // หมวดหมู่
       { wch: 22 }, // ช่าง
       { wch: 12 }, // คะแนน
+      { wch: 16 }, // งบประมาณ (บาท)
+      { wch: 32 }, // วัสดุ/อุปกรณ์ที่ใช้
     ];
 
     const wb = XLSX.utils.book_new();
@@ -405,6 +563,16 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
       citizenImages: getFileUrls(req),
       slaAssignDeadline: sla.slaAssignDeadline,
       slaCompleteDeadline: sla.slaCompleteDeadline,
+      timeline: [{
+        action: 'created',
+        actorRole: 'citizen',
+        actorId: user._id,
+        actorName: user.firstName + ' ' + user.lastName,
+        details: 'แจ้งเรื่องร้องเรียนใหม่: ' + category,
+        oldValue: null,
+        newValue: 'pending',
+        timestamp: new Date()
+      }]
     }).save();
 
     notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
@@ -478,6 +646,8 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       }
     }
 
+    const oldStatus = ticket.status;
+
     let isInitialAssign = ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician' && !ticket.assignedTo);
 
     if (isInitialAssign) {
@@ -486,15 +656,48 @@ router.put('/:id/status', requireAuth, async (req, res) => {
         { 
           assignedTo: caller._id, 
           assignedName: caller.firstName + ' ' + caller.lastName, 
-          status: status 
+          status: status,
+          $push: {
+            timeline: {
+              action: 'assigned',
+              actorRole: caller.role,
+              actorId: caller._id,
+              actorName: caller.firstName + ' ' + caller.lastName,
+              details: 'ช่างรับงานและเตรียมลงพื้นที่',
+              oldValue: 'ยังไม่ระบุ',
+              newValue: caller.firstName + ' ' + caller.lastName,
+              timestamp: new Date()
+            }
+          }
         },
         { returnDocument: 'after' }
       );
       if (!updated) return res.status(400).json({ error: 'Ticket นี้ถูกทำรายการไปแล้ว โปรดรีเฟรชหน้าจอ' });
       Object.assign(ticket, updated);
+      if (status !== 'assigned') {
+        logTicketActivity(ticket, {
+          action: 'status_changed',
+          actorRole: caller.role,
+          actorId: caller._id,
+          actorName: caller.firstName + ' ' + caller.lastName,
+          details: 'เปลี่ยนสถานะเป็น ' + (STATUS_TH[status] || status),
+          oldValue: oldStatus,
+          newValue: status
+        });
+        await ticket.save();
+      }
     } else {
       ticket.status = status;
       if (status === 'rejected' && reason) ticket.rejectReason = reason;
+      logTicketActivity(ticket, {
+        action: 'status_changed',
+        actorRole: caller.role,
+        actorId: caller._id,
+        actorName: caller.firstName + ' ' + caller.lastName,
+        details: 'เปลี่ยนสถานะเป็น ' + (STATUS_TH[status] || status) + (reason ? ' (เหตุผล: ' + reason + ')' : ''),
+        oldValue: oldStatus,
+        newValue: status
+      });
       await ticket.save();
     }
 
@@ -547,9 +750,19 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
     const tech = await User.findOne({ _id: technicianId, role: 'technician' });
     if (!tech) return res.status(404).json({ error: 'ไม่พบช่าง' });
 
+    const oldAssignedName = ticket.assignedName || 'ยังไม่ระบุ';
     ticket.assignedTo = tech._id;
     ticket.assignedName = tech.firstName + ' ' + tech.lastName;
     ticket.status = 'assigned';
+    logTicketActivity(ticket, {
+      action: 'assigned',
+      actorRole: 'admin',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'แอดมินมอบหมายงานให้ ' + tech.firstName + ' ' + tech.lastName,
+      oldValue: oldAssignedName,
+      newValue: tech.firstName + ' ' + tech.lastName
+    });
     // SLA breach check — mark if already past assign deadline
     if (!ticket.slaBreached && checkIsSlaBreached(ticket)) {
       ticket.slaBreached = true;
@@ -624,6 +837,13 @@ router.post('/:id/upload/after', requireAuth, upload.array('image', 5), async (r
     }
     ticket.afterImages = merged;
     ticket.afterImage = merged[0] || null;   // backward compat
+    logTicketActivity(ticket, {
+      action: 'after_image_uploaded',
+      actorRole: 'technician',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'อัปโหลดภาพถ่ายหลักฐานหลังการซ่อมบำรุง (' + merged.length + ' รูป)'
+    });
     await ticket.save();
     emitUpdate(req);
     res.json({ message: 'อัปโหลดสำเร็จ', urls: merged, url: merged[0] || null });
@@ -653,6 +873,14 @@ router.put('/:id/rating', requireAuth, async (req, res) => {
     // XSS-FIX: Sanitize ratingReason using xss()
     ticket.ratingReason = (stars < 3 && reason && typeof reason === 'string') ? xss(reason.trim()) : null;
     ticket.ratedAt = new Date().toLocaleString('th-TH');
+    logTicketActivity(ticket, {
+      action: 'rated',
+      actorRole: 'citizen',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'ประเมินความพึงพอใจ ' + stars + ' ดาว' + (ticket.ratingReason ? ' (' + ticket.ratingReason + ')' : ''),
+      newValue: stars + ' ดาว'
+    });
     await ticket.save();
 
     res.json({ message: 'บันทึกคะแนนสำเร็จ', ticket: formatTicket(ticket) });
@@ -1554,6 +1782,83 @@ router.get('/:id/work-order', async (req, res) => {
   } catch (e) {
     console.error('[Work Order Page] error:', e);
     res.status(500).send('เกิดข้อผิดพลาดในการโหลดใบงาน');
+  }
+});
+
+
+// ─── POST /api/tickets/:id/materials ───────────────────────────
+// บันทึก/อัปเดตรายการวัสดุและค่าใช้จ่ายในการซ่อม (ช่างเจ้าของงาน หรือ แอดมิน)
+router.post('/:id/materials', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || (caller.role !== 'technician' && caller.role !== 'admin')) {
+      return res.status(403).json({ error: 'เฉพาะช่างหรือผู้ดูแลระบบเท่านั้น' });
+    }
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    if (caller.role === 'technician') {
+      const isOwner = ticket.assignedTo && ticket.assignedTo.toString() === caller._id.toString();
+      if (!isOwner) return res.status(403).json({ error: 'คุณไม่ใช่ช่างที่รับผิดชอบงานนี้' });
+    }
+
+    const { materials, repairCostNotes } = req.body;
+    if (!Array.isArray(materials)) {
+      return res.status(400).json({ error: 'รูปแบบรายการวัสดุไม่ถูกต้อง' });
+    }
+
+    const sanitizedMaterials = [];
+    let totalCost = 0;
+
+    for (const item of materials) {
+      const name = (item.name || '').trim();
+      if (!name) continue;
+      const quantity = Math.max(1, parseFloat(item.quantity) || 1);
+      const unit = (item.unit || 'ชิ้น').trim();
+      const unitPrice = Math.max(0, parseFloat(item.unitPrice) || 0);
+      const totalPrice = Math.round(quantity * unitPrice * 100) / 100;
+      totalCost += totalPrice;
+
+      sanitizedMaterials.push({
+        name: xss(name),
+        quantity,
+        unit: xss(unit),
+        unitPrice,
+        totalPrice,
+        addedBy: caller.firstName + ' ' + caller.lastName,
+        addedAt: new Date()
+      });
+    }
+
+    ticket.materials = sanitizedMaterials;
+    ticket.totalRepairCost = Math.round(totalCost * 100) / 100;
+    if (repairCostNotes !== undefined) {
+      ticket.repairCostNotes = xss((repairCostNotes || '').trim());
+    }
+
+    logTicketActivity(ticket, {
+      action: 'materials_updated',
+      actorRole: caller.role,
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'บันทึกรายการวัสดุ/อุปกรณ์ ' + sanitizedMaterials.length + ' รายการ งบประมาณรวม ฿' + totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+      newValue: '฿' + totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+    });
+
+    await ticket.save();
+    emitUpdate(req);
+
+    res.json({
+      message: 'บันทึกรายการวัสดุและค่าใช้จ่ายเรียบร้อยแล้ว',
+      materials: ticket.materials,
+      totalRepairCost: ticket.totalRepairCost,
+      repairCostNotes: ticket.repairCostNotes,
+      ticket: formatTicket(ticket, caller._id)
+    });
+  } catch (e) {
+    console.error('[Materials Endpoint] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกวัสดุ' });
   }
 });
 

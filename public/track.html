@@ -1192,7 +1192,100 @@
       letter-spacing: 0.3px;
       user-select: none;
     }
-  </style>
+  
+    /* ── Audit Trail & Activity Timeline (Feature 5 & 6) ── */
+    .track-audit-box {
+      margin-top: 24px;
+      padding: 16px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      text-align: left;
+    }
+    .track-audit-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      padding-bottom: 10px;
+      border-bottom: 1.5px solid #f1f5f9;
+      margin-bottom: 14px;
+    }
+    .track-tl-list {
+      position: relative;
+      padding-left: 20px;
+    }
+    .track-tl-list::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: 6px;
+      width: 2px;
+      background: linear-gradient(180deg, #3b82f6 0%, #10b981 100%);
+      border-radius: 2px;
+    }
+    .track-tl-row {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .track-tl-row:last-child {
+      margin-bottom: 0;
+    }
+    .track-tl-dot {
+      position: absolute;
+      left: -20px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2.5px solid #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    .track-tl-dot.citizen { border-color: #10b981; }
+    .track-tl-dot.technician { border-color: #f59e0b; }
+    .track-tl-dot.admin { border-color: #2563eb; }
+    .track-tl-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+    .track-tl-actor {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .track-tl-desc {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.4;
+    }
+    .track-cost-box {
+      margin-top: 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .track-cost-val {
+      font-weight: 800;
+      color: #16a34a;
+      font-size: 14px;
+    }
+</style>
 </head>
 
 <body>
@@ -1301,6 +1394,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Interactive Activity Timeline & Materials Summary (Feature 5 & 6) -->
+      <div id="trackTimelineBox"></div>
 
       <button class="btn-back" onclick="searchAgain()">🔍 ค้นหาใหม่</button>
     </div>
@@ -1455,6 +1551,9 @@
       // Timeline
       updateTimeline(data.status);
 
+      // Render Interactive Activity Timeline (Feature 5 & 6)
+      renderTrackActivityTimeline(data.timeline, data.totalRepairCost, data.materialsCount);
+
       // Show
       setTimeout(() => {
         resultCard.classList.add('show');
@@ -1462,6 +1561,57 @@
     }
 
     // ── Timeline Progress ────────────────────────────────────
+    
+    // ── Render Interactive Activity Timeline (Feature 5 & 6) ──
+    function renderTrackActivityTimeline(timeline, totalCost, materialsCount) {
+      const box = ge('trackTimelineBox');
+      if (!box) return;
+
+      if (!timeline || !Array.isArray(timeline) || timeline.length === 0) {
+        box.innerHTML = '';
+        return;
+      }
+
+      const roleIcons = {
+        citizen: '👤',
+        technician: '👷',
+        admin: '🛡️',
+        system: '⚙️'
+      };
+
+      let h = '<div class="track-audit-box">';
+      h += '<div class="track-audit-head"><span>⏳ ไทม์ไลน์การดำเนินงาน (Activity History)</span><span style="font-size:11px;font-weight:600;color:var(--muted)">' + timeline.length + ' รายการ</span></div>';
+      h += '<div class="track-tl-list">';
+
+      const sorted = timeline.slice().sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+
+      sorted.forEach(ev => {
+        const role = ev.actorRole || 'system';
+        const icon = roleIcons[role] || '📌';
+        const d = ev.timestamp ? new Date(ev.timestamp) : null;
+        const timeStr = d ? `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '—';
+
+        h += '<div class="track-tl-row">';
+        h += '<div class="track-tl-dot ' + role + '"></div>';
+        h += '<div class="track-tl-card">';
+        h += '<div class="track-tl-actor"><span>' + icon + ' ' + (ev.actorName || 'เจ้าหน้าที่') + '</span><span style="color:#64748b;font-size:10px">' + timeStr + '</span></div>';
+        h += '<div class="track-tl-desc">' + (ev.details || 'อัปเดตสถานะ') + '</div>';
+        h += '</div></div>';
+      });
+
+      h += '</div>';
+
+      if (totalCost && totalCost > 0) {
+        h += '<div class="track-cost-box">';
+        h += '<span>📦 มีการใช้วัสดุ/อุปกรณ์ (' + (materialsCount || 1) + ' รายการ)</span>';
+        h += '<span class="track-cost-val">฿' + Number(totalCost).toLocaleString('th-TH', { minimumFractionDigits: 2 }) + '</span>';
+        h += '</div>';
+      }
+
+      h += '</div>';
+      box.innerHTML = h;
+    }
+
     function updateTimeline(status) {
       const dots = [ge('tlDot0'), ge('tlDot1'), ge('tlDot2'), ge('tlDot3')];
       const labels = [ge('tlLabel0'), ge('tlLabel1'), ge('tlLabel2'), ge('tlLabel3')];

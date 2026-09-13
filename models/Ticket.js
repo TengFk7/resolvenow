@@ -75,6 +75,29 @@ const ticketSchema = new mongoose.Schema({
   // ── Follow/Subscribe System ──
   followers:     [{ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, lineUserId: { type: String, default: null } }],
   followerCount: { type: Number, default: 0 },
+  // ── Ticket Activity Audit Trail / Timeline ──
+  timeline: [{
+    action:    { type: String, required: true },
+    actorRole: { type: String, enum: ['citizen', 'technician', 'admin', 'system'], default: 'system' },
+    actorId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    actorName: { type: String, required: true },
+    details:   { type: String, default: null },
+    oldValue:  { type: String, default: null },
+    newValue:  { type: String, default: null },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  // ── Cost & Material Tracking ──
+  materials: [{
+    name:       { type: String, required: true },
+    quantity:   { type: Number, default: 1 },
+    unit:       { type: String, default: 'ชิ้น' },
+    unitPrice:  { type: Number, default: 0 },
+    totalPrice: { type: Number, default: 0 },
+    addedBy:    { type: String, default: null },
+    addedAt:    { type: Date, default: Date.now }
+  }],
+  totalRepairCost: { type: Number, default: 0 },
+  repairCostNotes: { type: String, default: null },
   // ── Chat Expiry ──
   chatExpiresAt:   { type: Date, default: null },   // set when status → completed; null = no expiry
 }, {

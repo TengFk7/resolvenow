@@ -329,6 +329,24 @@ function tcToggle(ticketId) {
       h += '<div style="margin:10px 0 12px">'
         + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บรรยายงานที่ทำ</label>'
         + '<textarea class="tech-note" placeholder="อธิบายงานที่แก้ไขแล้ว..."></textarea></div>';
+      /* ─ บันทึกวัสดุ/อุปกรณ์และงบประมาณ ─ */
+      h += '<div class="mat-section-card">'
+        + '<div class="mat-section-head">'
+        + '<div class="mat-section-title">📦 บันทึกวัสดุ/อุปกรณ์และค่าใช้จ่าย</div>'
+        + '<button type="button" class="mat-btn-add" onclick="addTechMaterialRow(\'' + t.ticketId + '\')">+ เพิ่มรายการ</button>'
+        + '</div>'
+        + '<div class="mat-table-responsive">'
+        + '<table class="mat-table" id="matTable_' + t.ticketId + '">'
+        + '<thead><tr><th>ชื่อวัสดุ/อุปกรณ์</th><th style="width:70px">จำนวน</th><th style="width:70px">หน่วย</th><th style="width:90px">ราคา/หน่วย (฿)</th><th style="width:85px;text-align:right">รวม (฿)</th><th style="width:36px"></th></tr></thead>'
+        + '<tbody id="matTbody_' + t.ticketId + '"></tbody>'
+        + '</table></div>'
+        + '<div class="mat-cost-summary-box">'
+        + '<span class="mat-cost-label">💰 ยอดงบประมาณรวม:</span>'
+        + '<span class="mat-cost-val" id="matTotalDisplay_' + t.ticketId + '">฿0.00</span>'
+        + '</div>'
+        + '<div style="text-align:right;margin-top:8px">'
+        + '<button type="button" class="btn-ripple" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer" onclick="saveTechMaterials(\'' + t.ticketId + '\')">💾 บันทึกวัสดุ</button>'
+        + '</div></div>';
       h += '<button class="btnclose"' + (afterImgs.length > 0 ? '' : ' disabled') + ' data-id="' + t.ticketId + '" onclick="completeJob(this)">📨 ยืนยันปิดเรื่องร้องเรียน</button>';
       if (afterImgs.length === 0) h += '<p style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px">กรุณาอัปโหลดรูปหลังซ่อมอย่างน้อย 1 รูป</p>';
       h += '</div>';
@@ -336,7 +354,22 @@ function tcToggle(ticketId) {
     h += '</div>';
   }
 
+  // ── Materials & Cost Summary (for completed/read-only)
+  if (isDone && t.materials && t.materials.length > 0 && typeof renderTicketMaterialsHtml === 'function') {
+    h += renderTicketMaterialsHtml(t.materials, t.totalRepairCost);
+  }
+
+  // ── Interactive Activity Timeline (Feature 5)
+  if (typeof renderTicketTimelineHtml === 'function') {
+    h += renderTicketTimelineHtml(t.timeline);
+  }
+
   ge('tdModalBody').innerHTML = h;
+
+  // Initialize dynamic materials table if in step 3
+  if (s3 === 'active' && typeof initTechMaterialsForm === 'function') {
+    initTechMaterialsForm(t.ticketId, t.materials);
+  }
   var footerBtns = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
   footerBtns += '<button class="btn-workorder" onclick="openWorkOrderModal(\'' + t.ticketId + '\')"><span>📋</span> ใบงาน & เซ็นชื่อ</button>';
   if (t.slaPauseStatus === 'paused') {
@@ -403,6 +436,11 @@ async function confirmTechReject() {
 }
 
 function completeJob(btn) {
+  if (btn.disabled || btn.hasAttribute('disabled')) return;
+  var id = btn.getAttribute('data-id');
+
+  // Auto-save any entered materials before completing
+  saveTechMaterials(id, true);
   if (btn.disabled || btn.hasAttribute('disabled')) return;
   var id = btn.getAttribute('data-id');
 
@@ -749,4 +787,105 @@ async function submitHelpRequest() {
   ge('mHelp').classList.remove('on');
   showToast('📌 ส่งคำขอช่วยเหลือแล้ว!');
   loadHelpRequests();
+}
+/* ═══════════════════════════════════════════════════════
+   FEATURE 6: Technician Materials Management
+   ═══════════════════════════════════════════════════════ */
+var _techMaterialsCache = {};
+
+function initTechMaterialsForm(ticketId, existingMaterials) {
+  var tbody = ge('matTbody_' + ticketId);
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  var items = (existingMaterials && existingMaterials.length) ? existingMaterials : [];
+  _techMaterialsCache[ticketId] = items.slice();
+
+  if (items.length === 0) {
+    addTechMaterialRow(ticketId, { name: '', quantity: 1, unit: 'ชิ้น', unitPrice: 0 });
+  } else {
+    items.forEach(function (m) {
+      addTechMaterialRow(ticketId, m);
+    });
+  }
+  recalcTechMaterialsTotal(ticketId);
+}
+
+function addTechMaterialRow(ticketId, item) {
+  var tbody = ge('matTbody_' + ticketId);
+  if (!tbody) return;
+  var itm = item || { name: '', quantity: 1, unit: 'ชิ้น', unitPrice: 0 };
+  var tr = document.createElement('tr');
+  tr.className = 'mat-data-row';
+  tr.innerHTML = [
+    '<td><input type="text" class="mat-input mat-name" placeholder="เช่น หลอดไฟ LED, ท่อ PVC" value="' + escapeHTML(itm.name || '') + '" oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
+    '<td><input type="number" min="1" class="mat-input mat-qty" value="' + (itm.quantity || 1) + '" oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
+    '<td><input type="text" class="mat-input mat-unit" placeholder="ชิ้น" value="' + escapeHTML(itm.unit || 'ชิ้น') + '" /></td>',
+    '<td><input type="number" min="0" step="0.5" class="mat-input mat-price" placeholder="0" value="' + (itm.unitPrice || 0) + '" oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
+    '<td style="text-align:right;font-weight:700" class="mat-row-total">฿0.00</td>',
+    '<td style="text-align:center"><button type="button" class="mat-btn-del" onclick="removeTechMaterialRow(this, \'' + ticketId + '\')" title="ลบรายการ">✕</button></td>'
+  ].join('');
+  tbody.appendChild(tr);
+  recalcTechMaterialsTotal(ticketId);
+}
+
+function removeTechMaterialRow(btn, ticketId) {
+  var tr = btn.closest('tr');
+  if (tr) tr.remove();
+  recalcTechMaterialsTotal(ticketId);
+}
+
+function recalcTechMaterialsTotal(ticketId) {
+  var tbody = ge('matTbody_' + ticketId);
+  if (!tbody) return 0;
+  var rows = tbody.querySelectorAll('.mat-data-row');
+  var sum = 0;
+  rows.forEach(function (r) {
+    var qty = parseFloat(r.querySelector('.mat-qty') ? r.querySelector('.mat-qty').value : 1) || 1;
+    var price = parseFloat(r.querySelector('.mat-price') ? r.querySelector('.mat-price').value : 0) || 0;
+    var total = qty * price;
+    sum += total;
+    var totalEl = r.querySelector('.mat-row-total');
+    if (totalEl) totalEl.textContent = '฿' + total.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+  });
+  var display = ge('matTotalDisplay_' + ticketId);
+  if (display) display.textContent = '฿' + sum.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+  return sum;
+}
+
+async function saveTechMaterials(ticketId, silent) {
+  var tbody = ge('matTbody_' + ticketId);
+  if (!tbody) return true;
+  var rows = tbody.querySelectorAll('.mat-data-row');
+  var materials = [];
+  rows.forEach(function (r) {
+    var name = (r.querySelector('.mat-name') ? r.querySelector('.mat-name').value : '').trim();
+    if (!name) return;
+    var quantity = Math.max(1, parseFloat(r.querySelector('.mat-qty') ? r.querySelector('.mat-qty').value : 1) || 1);
+    var unit = (r.querySelector('.mat-unit') ? r.querySelector('.mat-unit').value : 'ชิ้น').trim() || 'ชิ้น';
+    var unitPrice = Math.max(0, parseFloat(r.querySelector('.mat-price') ? r.querySelector('.mat-price').value : 0) || 0);
+    materials.push({ name: name, quantity: quantity, unit: unit, unitPrice: unitPrice });
+  });
+
+  try {
+    var res = await fetch('/api/tickets/' + ticketId + '/materials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ materials: materials })
+    });
+    if (!res.ok) {
+      if (!silent) showToast('ไม่สามารถบันทึกรายการวัสดุได้', 'error');
+      return false;
+    }
+    var data = await res.json();
+    if (!silent) showToast('บันทึกวัสดุและงบประมาณแล้ว! 📦', 'success');
+    if (window._tcTickets && window._tcTickets[ticketId]) {
+      window._tcTickets[ticketId].materials = data.materials;
+      window._tcTickets[ticketId].totalRepairCost = data.totalRepairCost;
+    }
+    return true;
+  } catch (e) {
+    console.error('Error saving materials:', e);
+    if (!silent) showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+    return false;
+  }
 }

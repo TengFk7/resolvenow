@@ -464,7 +464,7 @@
     /* ── STAT CARDS ──────────────────────────── */
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 16px;
       margin-bottom: 20px;
     }
@@ -1257,6 +1257,12 @@
           <span class="stat-delta neutral" id="sc-rate-delta">กำลังโหลด</span>
           <div class="stat-sub">ของงานทั้งหมด</div>
         </div>
+        <div class="stat-card" style="--card-accent:#059669; cursor:default">
+          <div class="stat-label">💰 งบประมาณซ่อมรวม</div>
+          <div class="stat-value" id="sc-cost" style="font-size:22px">฿0.00</div>
+          <span class="stat-delta up" id="sc-cost-delta">กำลังโหลด...</span>
+          <div class="stat-sub" id="sc-cost-sub">งบค่าวัสดุและอุปกรณ์รวม</div>
+        </div>
       </div>
 
       <!-- ── ROW 1: Line chart + Category bars ─── -->
@@ -1300,6 +1306,38 @@
           </div>
           <div class="cat-bar-list" id="catBarList">
             <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">กำลังโหลด...</div>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- ── ROW: Cost & Materials Analytics (Feature 6) ─── -->
+      <div class="chart-row r-7-3">
+        <!-- Repair Cost by Category -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">💰 งบประมาณค่าใช้จ่ายซ่อมบำรุงแยกตามหมวดหมู่</div>
+              <div class="chart-card-sub">Maintenance Cost Breakdown by Category (บาท)</div>
+            </div>
+            <span class="live-pill" id="costTotalPill">฿0.00 รวม</span>
+          </div>
+          <div style="height:220px;position:relative">
+            <canvas id="costCategoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Top Materials Used -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">📦 วัสดุ/อุปกรณ์ที่ใช้เบิกจ่ายสูงสุด</div>
+              <div class="chart-card-sub">Top 5 Materials Used</div>
+            </div>
+            <span class="chart-card-menu">···</span>
+          </div>
+          <div id="topMaterialsList" style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
+            <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px 0">กำลังโหลดข้อมูล...</div>
           </div>
         </div>
       </div>
@@ -1466,7 +1504,8 @@
       '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#f4a623', '#ef4444', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981'
     ];
 
-    let _tickets = [], _techs = [], _categories = [];
+    let _tickets = [], _techs = [], _categories = [], _costData = null;
+    let _costCategoryChart = null;
     let _lineChart = null, _radarChart = null, _donutChart = null;
 
 
@@ -1475,14 +1514,16 @@
 
     /* ── 2. Fetch all data ─────────────────────── */
     async function fetchData() {
-      const [r1, r2, r3] = await Promise.all([
+      const [r1, r2, r3, r4] = await Promise.all([
         fetch('/api/ceo/tickets'),
         fetch('/api/ceo/technicians'),
-        fetch('/api/ceo/categories')
+        fetch('/api/ceo/categories'),
+        fetch('/api/ceo/cost-overview')
       ]);
       _tickets = await r1.json();
       _techs = await r2.json();
       _categories = await r3.json();
+      try { _costData = await r4.json(); } catch(e) { _costData = null; }
 
       // Update DEPT/DEPT_ICON dynamically
       _categories.forEach(c => {
@@ -1501,6 +1542,7 @@
       renderGauge();
       renderTechStatusList();
       renderSLAOverview();
+      renderCostAnalytics();
       updatePageDate();
     }
 
@@ -1517,6 +1559,15 @@
       animNum(ge('sc-done'), done);
       animNum(ge('sc-sla'), breached);
       ge('sc-rate').textContent = rate + '%';
+
+      if (_costData) {
+        const costEl = ge('sc-cost');
+        if (costEl) costEl.textContent = '฿' + Number(_costData.totalCost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+        const deltaEl = ge('sc-cost-delta');
+        if (deltaEl) {
+          deltaEl.textContent = '฿' + Number(_costData.thisMonthCost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' เดือนนี้';
+        }
+      }
 
       ge('sc-total-delta').className = 'stat-delta up';
       ge('sc-total-delta').textContent = '⬆ ' + total + ' รายการทั้งหมด';
@@ -1817,6 +1868,86 @@
       ge('slaInProgress').textContent = inpg;
       ge('slaBreached').textContent = breached;
       ge('slaRejected').textContent = rjct;
+    }
+
+    
+    /* ── 3i. Cost & Material Analytics (Feature 6) ──────────── */
+    function renderCostAnalytics() {
+      if (!_costData) return;
+
+      const totalPill = ge('costTotalPill');
+      if (totalPill) {
+        totalPill.textContent = '฿' + Number(_costData.totalCost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' รวม';
+      }
+
+      // 1. Cost by Category Chart
+      const cats = Object.keys(_costData.costByCategory || {});
+      const labels = cats.map(c => (DEPT_ICON[c] || '📌') + ' ' + (DEPT[c] || c));
+      const dataValues = cats.map(c => _costData.costByCategory[c] || 0);
+
+      const ctx = ge('costCategoryChart');
+      if (ctx) {
+        if (_costCategoryChart) _costCategoryChart.destroy();
+        _costCategoryChart = new Chart(ctx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+            datasets: [{
+              label: 'งบประมาณ (บาท)',
+              data: dataValues.length ? dataValues : [0],
+              backgroundColor: CAT_COLORS.slice(0, Math.max(1, labels.length)),
+              borderRadius: 6,
+              maxBarThickness: 36
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    return '฿' + Number(ctx.parsed.y || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+              y: {
+                beginAtZero: true,
+                grid: { color: '#f1f5f9' },
+                ticks: {
+                  font: { size: 10 },
+                  callback: function(v) { return '฿' + v.toLocaleString('th-TH'); }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 2. Top Materials List
+      const topList = ge('topMaterialsList');
+      if (topList) {
+        const items = _costData.topMaterials || [];
+        if (!items.length) {
+          topList.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px 0">ยังไม่มีรายการเบิกจ่ายวัสดุ</div>';
+        } else {
+          topList.innerHTML = items.map((m, idx) => {
+            return `<div style="display:flex;align-items:center;justify-content:space-between;background:#fafafa;border:1px solid #f1f5f9;border-radius:10px;padding:8px 12px;font-size:12px">
+              <div>
+                <div style="font-weight:700;color:var(--text-dark)">${idx + 1}. ${escapeHTML(m.name)}</div>
+                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">จำนวนเบิก: ${m.quantity} ${escapeHTML(m.unit || 'ชิ้น')}</div>
+              </div>
+              <div style="font-weight:800;color:#059669;font-size:12.5px">
+                ฿${Number(m.totalCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+              </div>
+            </div>`;
+          }).join('');
+        }
+      }
     }
 
     /* ── Helpers ───────────────────────────────── */

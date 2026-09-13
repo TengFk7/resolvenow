@@ -811,6 +811,17 @@ function cgToggle(ticketId) {
   if (done) {
     h += '<div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border);text-align:center"><button type="button" class="btn-reopen" onclick="openReopenModal(\'' + t.ticketId + '\')">🔄 งานยังไม่เรียบร้อย? ขอให้ตรวจสอบใหม่</button></div>';
   }
+
+  // ── Materials & Cost Summary (if any)
+  if (t.materials && t.materials.length > 0 && typeof renderTicketMaterialsHtml === 'function') {
+    h += renderTicketMaterialsHtml(t.materials, t.totalRepairCost);
+  }
+
+  // ── Interactive Activity Timeline (Feature 5)
+  if (typeof renderTicketTimelineHtml === 'function') {
+    h += renderTicketTimelineHtml(t.timeline);
+  }
+
   ge('tdModalBody').innerHTML = h;
 
   // ── Footer: chat + rating buttons

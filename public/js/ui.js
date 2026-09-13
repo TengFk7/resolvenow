@@ -900,3 +900,127 @@ if (document.readyState === 'loading') {
 } else {
   initAppTheme();
 }
+
+/* ═══════════════════════════════════════════════════════
+   FEATURE 5 & 6: Interactive Timeline & Materials UI Helpers
+   ═══════════════════════════════════════════════════════ */
+function formatTimelineTime(dateStr) {
+  if (!dateStr) return '—';
+  var d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  var months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  var hours = String(d.getHours()).padStart(2, '0');
+  var mins = String(d.getMinutes()).padStart(2, '0');
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' • ' + hours + ':' + mins + ' น.';
+}
+
+function renderTicketTimelineHtml(timeline) {
+  if (!timeline || !Array.isArray(timeline) || timeline.length === 0) {
+    return '<div style="text-align:center;color:var(--muted);padding:14px;font-size:12px;">ยังไม่มีประวัติการดำเนินการ</div>';
+  }
+
+  var actionIcons = {
+    created: '📝',
+    assigned: '👷',
+    status_changed: '🔄',
+    before_image_uploaded: '📸',
+    after_image_uploaded: '✨',
+    materials_updated: '📦',
+    rated: '⭐',
+    sla_paused: '⏸️',
+    sla_resumed: '▶️',
+    reopened: '🔁'
+  };
+
+  var roleLabels = {
+    citizen: '👤 ประชาชน',
+    technician: '👷 ช่าง',
+    admin: '🛡️ แอดมิน',
+    system: '⚙️ ระบบ'
+  };
+
+  var h = '<div class="rn-timeline-container">';
+  h += '<div class="rn-timeline-title"><span>⏳ ประวัติการดำเนินการ (Audit Trail)</span><span style="font-size:11px;font-weight:600;color:var(--muted)">' + timeline.length + ' กิจกรรม</span></div>';
+  h += '<div class="rn-timeline">';
+
+  // Sort chronological ascending
+  var sorted = timeline.slice().sort(function(a, b) {
+    return new Date(a.timestamp || 0) - new Date(b.timestamp || 0);
+  });
+
+  for (var i = 0; i < sorted.length; i++) {
+    var ev = sorted[i];
+    var role = ev.actorRole || 'system';
+    var icon = actionIcons[ev.action] || '📌';
+    var roleLabel = roleLabels[role] || role;
+
+    h += '<div class="rn-tl-item">';
+    h += '<div class="rn-tl-node ' + role + '" title="' + roleLabel + '"></div>';
+    h += '<div class="rn-tl-content">';
+    h += '<div class="rn-tl-header">';
+    h += '<div class="rn-tl-actor-wrap">';
+    h += '<span class="rn-tl-actor-badge ' + role + '">' + roleLabel + '</span>';
+    h += '<span class="rn-tl-actor-name">' + icon + ' ' + escapeHTML(ev.actorName || 'ผู้ดูแลระบบ') + '</span>';
+    h += '</div>';
+    h += '<span class="rn-tl-time">' + formatTimelineTime(ev.timestamp) + '</span>';
+    h += '</div>';
+
+    if (ev.details) {
+      h += '<div class="rn-tl-desc">' + escapeHTML(ev.details) + '</div>';
+    }
+
+    if (ev.oldValue && ev.newValue && ev.oldValue !== ev.newValue) {
+      h += '<div class="rn-tl-diff">';
+      h += '<span class="rn-tl-diff-old">' + escapeHTML(ev.oldValue) + '</span>';
+      h += '<span class="rn-tl-diff-arrow">➔</span>';
+      h += '<span class="rn-tl-diff-new">' + escapeHTML(ev.newValue) + '</span>';
+      h += '</div>';
+    }
+
+    h += '</div></div>';
+  }
+
+  h += '</div></div>';
+  return h;
+}
+
+function renderTicketMaterialsHtml(materials, totalCost) {
+  if (!materials || !Array.isArray(materials) || materials.length === 0) {
+    return '';
+  }
+
+  var h = '<div class="mat-section-card">';
+  h += '<div class="mat-section-head">';
+  h += '<div class="mat-section-title">📦 รายการวัสดุและค่าใช้จ่ายในการซ่อม</div>';
+  h += '<span style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;padding:2px 8px;border-radius:12px">' + materials.length + ' รายการ</span>';
+  h += '</div>';
+
+  h += '<div class="mat-table-responsive">';
+  h += '<table class="mat-table">';
+  h += '<thead><tr><th>รายการวัสดุ/อุปกรณ์</th><th style="text-align:center">จำนวน</th><th style="text-align:right">ราคาต่อหน่วย</th><th style="text-align:right">รวม (บาท)</th></tr></thead>';
+  h += '<tbody>';
+
+  for (var i = 0; i < materials.length; i++) {
+    var m = materials[i];
+    var unitPrice = Number(m.unitPrice) || 0;
+    var totalPrice = Number(m.totalPrice) || (unitPrice * (Number(m.quantity) || 1));
+
+    h += '<tr>';
+    h += '<td><strong>' + escapeHTML(m.name) + '</strong></td>';
+    h += '<td style="text-align:center">' + (m.quantity || 1) + ' ' + escapeHTML(m.unit || 'ชิ้น') + '</td>';
+    h += '<td style="text-align:right">฿' + unitPrice.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + '</td>';
+    h += '<td style="text-align:right;font-weight:700;color:#0f172a">฿' + totalPrice.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + '</td>';
+    h += '</tr>';
+  }
+
+  h += '</tbody></table></div>';
+
+  var cost = Number(totalCost) || 0;
+  h += '<div class="mat-cost-summary-box">';
+  h += '<span class="mat-cost-label">💰 งบประมาณซ่อมบำรุงรวม</span>';
+  h += '<span class="mat-cost-val">฿' + cost.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + '</span>';
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
