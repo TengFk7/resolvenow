@@ -1,6 +1,9 @@
 # Data Dictionary - ResolvNow
+> อัปเดตล่าสุด: 2026-09-15 | Version: V17.5
 
-เอกสารนี้อธิบายรายละเอียดของแต่ละคอลเลกชัน (Collection/Table) ฟิลด์ (Field) และชนิดข้อมูล (Data Type) ที่ใช้ในฐานข้อมูล MongoDB ของระบบ ResolvNow
+เอกสารนี้อธิบายรายละเอียดของแต่ละคอลเลกชัน (Collection), ฟิลด์ (Field) และชนิดข้อมูล (Data Type) ที่ใช้ในฐานข้อมูล MongoDB ของระบบ ResolvNow ครอบคลุมทั้ง 7 Collections
+
+---
 
 ## 1. Collection: Users
 จัดเก็บข้อมูลผู้ใช้งานระบบทุกบทบาท (ประชาชน, ช่าง, แอดมิน)
@@ -8,131 +11,161 @@
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `_id` | ObjectId | Yes | รหัสผู้ใช้งาน (Primary Key) |
-| `firstName` | String | Yes | ชื่อจริง |
-| `lastName` | String | Yes | นามสกุล |
-| `email` | String | Yes | อีเมล (ต้องไม่ซ้ำกัน / Unique) |
-| `password` | String | Yes | รหัสผ่านที่ถูกเข้ารหัสด้วย bcrypt |
+| `firstName` | String | Yes | ชื่อจริงของผู้ใช้ |
+| `lastName` | String | Yes | นามสกุลของผู้ใช้ |
+| `email` | String | Yes | อีเมลสำหรับยืนยันตัวตนและแจ้งเตือน (Unique) |
+| `password` | String | Yes | รหัสผ่านที่เข้ารหัสด้วย bcrypt (10 rounds) |
 | `role` | String | Yes | บทบาท: `citizen`, `technician`, `admin` |
-| `specialty` | String | No | ความเชี่ยวชาญของช่าง อ้างอิงตาม `Category.name` |
-| `lineUserId` | String | No | รหัสผู้ใช้ LINE (สำหรับ Push Notify & Login) |
-| `lineDisplayName`| String | No | ชื่อผู้ใช้บน LINE |
-| `avatar` | String | No | URL ของรูปโปรไฟล์ |
-| `createdViaLine`| Boolean | No | `true` หากสมัคสมาชิกผ่าน LINE |
+| `specialty` | String | No | หมวดหมู่ความเชี่ยวชาญของช่าง (อ้างอิง `Category.name`) |
+| `lineUserId` | String | No | รหัสผู้ใช้ LINE UID สำหรับ Push Notification และ SSO |
+| `lineDisplayName`| String | No | ชื่อโปรไฟล์ที่แสดงบน LINE |
+| `avatar` | String | No | URL ของรูปภาพโปรไฟล์ |
+| `createdViaLine`| Boolean | No | `true` หากสมัครบัญชีใหม่ผ่าน LINE Login |
 | `createdAt` | Date | Yes | วันเวลาที่สร้างบัญชี |
-| `updatedAt` | Date | Yes | วันเวลาที่อัปเดตบัญชี |
+| `updatedAt` | Date | Yes | วันเวลาที่แก้ไขข้อมูลล่าสุด |
+
+---
 
 ## 2. Collection: Tickets
-จัดเก็บข้อมูลการแจ้งเรื่องร้องเรียน
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Yes | รหัสเอกสาร |
-| `ticketId` | String | Yes | รหัสตั๋วที่อ่านง่าย เช่น `TKT-001` (Unique) |
-| `citizenId` | ObjectId | Yes | อ้างอิงรหัสผู้แจ้ง (`User._id`) |
-| `citizenName` | String | Yes | ชื่อผู้แจ้ง (Denormalized) |
-| `citizenLineId`| String | No | LINE ID ผู้แจ้ง สำหรับแจ้งเตือนและ LIFF |
-| `category` | String | Yes | หมวดหมู่ปัญหา อ้างอิงตาม `Category.name` |
-| `description` | String | Yes | รายละเอียดปัญหาที่แจ้ง |
-| `location` | String | Yes | ที่อยู่หรือสถานที่เกิดเหตุ |
-| `lat` | Number | Yes | พิกัดละติจูด |
-| `lng` | Number | Yes | พิกัดลองจิจูด |
-| `urgency` | String | Yes | ความเร่งด่วน: `normal`, `medium`, `urgent` |
-| `priorityScore`| Number | Yes | คะแนนความสำคัญ 0-100 (มีผลกับ SLA และ UI) |
-| `status` | String | Yes | สถานะ: `pending`, `assigned`, `in_progress`, `completed`, `rejected` |
-| `assignedTo` | ObjectId | No | อ้างอิงช่างที่รับผิดชอบ (`User._id`) |
-| `assignedName` | String | No | ชื่อช่างที่รับผิดชอบ (Denormalized) |
-| `rejectReason` | String | No | เหตุผลที่ปฏิเสธงาน (ถ้า `status=rejected`) |
-| `citizenImage` | String | No | URL รูปภาพที่ประชาชนแนบมาตอนแจ้ง |
-| `beforeImage` | String | No | URL รูปภาพก่อนการแก้ไข (ช่างอัปโหลด) |
-| `afterImage` | String | No | URL รูปภาพหลังการแก้ไข (ช่างอัปโหลด) |
-| `rating` | Number | No | คะแนนประเมิน 1-5 ดาว |
-| `ratingReason` | String | No | ความคิดเห็นเพิ่มเติมในการประเมิน |
-| `ratedAt` | Date | No | เวลาที่ให้คะแนน |
-| `slaAssignDeadline`| Date | Yes | เส้นตายในการรับงาน (ขึ้นกับความเร่งด่วน) |
-| `slaCompleteDeadline`| Date| No | เส้นตายในการแก้ไขงานเสร็จ |
-| `slaBreached` | Boolean | Yes | `true` หากทำงานเกินเวลา SLA |
-| `upvotes` | Array | No | รายการผู้กดโหวต `[{userId, createdAt}]` |
-| `upvoteCount` | Number | Yes | จำนวนคนโหวต (Default: 0) |
-| `followers` | Array | No | รายการผู้ติดตาม `[{userId, lineUserId}]` |
-| `followerCount`| Number | Yes | จำนวนผู้ติดตาม (Default: 0) |
-| `chatExpiresAt`| Date | No | เวลาที่ปิดการสนทนาของตั๋วนี้ |
-| `createdAt` | Date | Yes | วันเวลาที่สร้างตั๋ว |
-| `updatedAt` | Date | Yes | วันเวลาที่อัปเดตตั๋ว |
-
-## 3. Collection: Categories
-จัดเก็บข้อมูลหมวดหมู่ของปัญหา
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Yes | รหัสหมวดหมู่ |
-| `name` | String | Yes | ชื่อภาษาอังกฤษ/คีย์หลัก (e.g. `Road`) Unique |
-| `label` | String | Yes | ชื่อแสดงผลภาษาไทย (e.g. `ถนน/ทางเท้า`) |
-| `icon` | String | Yes | ไอคอน (Emoji) |
-| `technicianIds`| Array | Yes | อาเรย์ของ `User._id` ของช่างในหมวดนี้ |
-| `isDefault` | Boolean | Yes | `true` หากเป็นหมวดหมู่พื้นฐาน (ห้ามลบ) |
-| `createdAt` | Date | Yes | วันเวลาที่สร้าง |
-| `updatedAt` | Date | Yes | วันเวลาที่อัปเดต |
-
-## 4. Collection: Comments
-จัดเก็บข้อความสนทนา (Chat) ในแต่ละการแจ้งเรื่อง
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Yes | รหัสข้อความ |
-| `ticketId` | String | Yes | รหัสตั๋วที่สนทนา เช่น `TKT-001` (Indexed) |
-| `userId` | ObjectId | Yes | รหัสผู้ส่ง (`User._id`) |
-| `userName` | String | Yes | ชื่อผู้ส่ง |
-| `userRole` | String | Yes | บทบาทของผู้ส่ง |
-| `message` | String | Yes | เนื้อหาข้อความ (สูงสุด 500 ตัวอักษร) |
-| `createdAt` | Date | Yes | วันเวลาที่ส่ง |
-| `updatedAt` | Date | Yes | วันเวลาที่แก้ไข |
-
-## 5. Collection: HelpRequests
-จัดเก็บคำขอความช่วยเหลือข้ามหมวดหมู่ของช่าง
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Yes | รหัสคำขอ |
-| `helpId` | String | Yes | รหัสคำขอที่อ่านง่าย เช่น `HELP-001` (Unique) |
-| `citizenId` | ObjectId | Yes | รหัสผู้แจ้งของตั๋วต้นทาง (`User._id`) |
-| `citizenName` | String | Yes | ชื่อผู้แจ้งของตั๋วต้นทาง |
-| `message` | String | Yes | ข้อความอธิบายเหตุผลที่ขอความช่วยเหลือ |
-| `status` | String | Yes | สถานะ: `open`, `resolved`, `accepted`, `cancelled` |
-| `ticketId` | String | Yes | รหัสตั๋วต้นทาง (`Ticket.ticketId`) |
-| `ticketCategory`| String | Yes | หมวดหมู่ตั๋วต้นทาง |
-| `ticketLocation`| String | Yes | สถานที่ของตั๋วต้นทาง |
-| `ticketDesc` | String | Yes | รายละเอียดของตั๋วต้นทาง |
-| `requesterId` | ObjectId | Yes | รหัสช่างผู้ร้องขอ (`User._id`) |
-| `requesterName`| String | Yes | ชื่อช่างผู้ร้องขอ |
-| `requesterDept`| String | Yes | หมวดหมู่ของช่างผู้ร้องขอ |
-| `targetDept` | String | Yes | หมวดหมู่เป้าหมายที่ต้องการขอความช่วยเหลือ |
-| `acceptedById` | ObjectId | No | รหัสช่างที่กดรับคำขอช่วยเหลือ |
-| `acceptedByName`| String | No | ชื่อช่างที่กดรับคำขอช่วยเหลือ |
-| `createdAt` | Date | Yes | วันเวลาที่สร้างคำขอ |
-| `updatedAt` | Date | วันเวลาที่อัปเดตคำขอ |
-
-## 6. Collection: DirectMessages
-เก็บข้อความ Direct Message (DM) ระหว่างประชาชน (citizen) กับผู้ดูแลระบบ (admin) โดยตรง
-แต่ละ document ผูกกับ `citizenId` ซึ่งระบุ conversation (1 citizen = 1 thread)
-มี compound index บน `{citizenId, createdAt}` สำหรับ query เร็ว
+จัดเก็บข้อมูลเรื่องร้องเรียน งานซ่อมบำรุง การคำนวณ SLA งบประมาณ และประวัติกิจกรรม
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `_id` | ObjectId | Yes | รหัสเอกสาร (Primary Key) |
-| `senderId` | ObjectId | Yes | อ้างอิง `User._id` ของผู้ส่งข้อความ (citizen หรือ admin) |
-| `senderName` | String | Yes | ชื่อผู้ส่งข้อความ (Denormalized) |
-| `senderRole` | String | Yes | บทบาทผู้ส่ง: `citizen`, `admin` |
-| `citizenId` | ObjectId | Yes | อ้างอิง `User._id` ของประชาชนใน conversation นี้ (Indexed) |
-| `message` | String | Yes | เนื้อหาข้อความ (สูงสุด 500 ตัวอักษร) |
-| `isRead` | Boolean | No | `false` = ยังไม่ได้อ่าน (default); `true` = อ่านแล้ว |
-| `createdAt` | Date | Yes | วันเวลาที่ส่งข้อความ |
-| `updatedAt` | Date | Yes | วันเวลาที่อัปเดต |
+| `ticketId` | String | Yes | รหัสตั๋วที่อ่านเข้าใจง่าย เช่น `TKT-00001` (Unique) |
+| `citizenId` | ObjectId | Yes | รหัสผู้แจ้ง อ้างอิงไปยัง `User._id` |
+| `citizenName` | String | Yes | ชื่อผู้แจ้ง (Denormalized) |
+| `citizenLineId`| String | No | LINE UID ของผู้แจ้งสำหรับ Push แจ้งเตือน |
+| `category` | String | Yes | หมวดหมู่ปัญหา อ้างอิงตาม `Category.name` |
+| `description` | String | Yes | รายละเอียดของปัญหา (XSS Sanitized) |
+| `location` | String | Yes | ที่อยู่หรือสถานที่เกิดเหตุจากการแปลงพิกัด |
+| `lat` | Number | No | พิกัดละติจูด |
+| `lng` | Number | No | พิกัดลองจิจูด |
+| `urgency` | String | Yes | ระดับความเร่งด่วน: `normal`, `medium`, `urgent` |
+| `priorityScore`| Number | Yes | คะแนนความสำคัญ 0-100 (คำนวณร่วมกับ SLA) |
+| `status` | String | Yes | สถานะงาน: `pending`, `assigned`, `in_progress`, `completed`, `rejected`, `reopened`, `merged` |
+| `assignedTo` | ObjectId | No | ช่างที่ได้รับมอบหมาย อ้างอิง `User._id` |
+| `assignedName` | String | No | ชื่อช่างผู้รับผิดชอบ (Denormalized) |
+| `rejectReason` | String | No | เหตุผลในการปฏิเสธงาน |
+| `citizenImage` | String | No | URL รูปภาพแรกที่ประชาชนแนบ |
+| `citizenImages`| Array[String] | No | รายการ URL รูปภาพทั้งหมดที่ประชาชนแนบ (สูงสุด 5 รูป) |
+| `beforeImage` | String | No | URL ภาพถ่ายก่อนเริ่มซ่อมบำรุง (ช่างอัปโหลด) |
+| `afterImage` | String | No | URL ภาพถ่ายแรกหลังซ่อมเสร็จ |
+| `afterImages` | Array[String] | No | รายการ URL ภาพถ่ายหลังซ่อมเสร็จทั้งหมด (สูงสุด 5 รูป) |
+| `rating` | Number | No | คะแนนความพึงพอใจ 1-5 ดาว |
+| `ratingReason` | String | No | ความคิดเห็นเพิ่มเติมในการประเมิน |
+| `ratedAt` | String | No | วันเวลาที่ทำการประเมิน |
+| `slaAssignDeadline` | Date | No | กำหนดเส้นตายการมอบหมาย/รับงาน |
+| `slaCompleteDeadline` | Date | No | กำหนดเส้นตายการทำงานเสร็จสิ้น |
+| `slaBreached` | Boolean | Yes | `true` หากการทำงานเกินกำหนดเวลา SLA |
+| `slaPauseStatus` | String | Yes | สถานะการพักเวลา SLA: `none`, `requested`, `paused` |
+| `slaPauseReason` | String | No | เหตุผลในการขอพักเวลา SLA |
+| `slaPauseRequestedAt` | Date | No | วันเวลาที่ส่งคำขอพักเวลา SLA |
+| `slaPausedAt` | Date | No | วันเวลาที่แอดมินอนุมัติให้พักเวลา |
+| `slaTotalPausedMs` | Number | Yes | ผลรวมระยะเวลาที่ถูกพักทั้งหมด (หน่วยมิลลิวินาที) |
+| `slaPauseHistory` | Array[Object] | No | ประวัติการขอพักเวลาและอนุมัติทั้งหมด |
+| `mergedInto` | String | No | รหัสตั๋วหลักกรณีถูกรวมตั๋วซ้ำซ้อน (เช่น `TKT-00001`) |
+| `mergedTickets` | Array[String] | No | รายชื่อรหัสตั๋วที่ถูกรวมเข้ามาในตั๋วนี้ |
+| `isMerged` | Boolean | Yes | `true` หากเป็นตั๋วรองที่ถูกรวมแล้ว |
+| `reopenCount` | Number | Yes | จำนวนครั้งที่ถูกยื่นเรื่องเปิดงานใหม่ |
+| `reopenedAt` | Date | No | วันเวลาที่ยื่นเรื่องเปิดงานใหม่ล่าสุด |
+| `reopenReason` | String | No | เหตุผลที่ประชาชนขอเปิดงานใหม่ |
+| `reopenImages` | Array[String] | No | ภาพถ่ายประกอบการขอเปิดงานใหม่ |
+| `workOrder` | Object | No | เอกสารใบสั่งงานและลายเซ็น: `{ signedByName, signedAt, signatureData, notes }` |
+| `timeline` | Array[Object] | No | บันทึกประวัติกิจกรรม: `{ action, actorRole, actorId, actorName, details, oldValue, newValue, timestamp }` |
+| `materials` | Array[Object] | No | รายการวัสดุ/อุปกรณ์: `{ name, quantity, unit, unitPrice, totalPrice, addedBy, addedAt }` |
+| `totalRepairCost` | Number | Yes | ค่าใช้จ่ายและงบประมาณรวมในการซ่อม (Default: 0) |
+| `repairCostNotes` | String | No | หมายเหตุประกอบการเบิกจ่ายค่าซ่อม |
+| `upvotes` | Array[Object] | No | รายการผู้กดโหวต `{ userId, createdAt }` |
+| `upvoteCount` | Number | Yes | จำนวนผู้กดโหวต (Default: 0) |
+| `followers` | Array[Object] | No | รายการผู้ติดตาม `{ userId, lineUserId }` |
+| `followerCount` | Number | Yes | จำนวนผู้ติดตาม (Default: 0) |
+| `chatExpiresAt` | Date | No | วันเวลาปิดห้องสนทนาของตั๋ว (24 ชม. หลังตั๋ว completed) |
+| `createdAt` | Date | Yes | วันเวลาที่สร้างตั๋ว |
+| `updatedAt` | Date | Yes | วันเวลาที่อัปเดตตั๋ว |
 
-## 7. Collection: Counters
-ใช้สำหรับการรันหมายเลขอัตโนมัติ (Auto-increment)
+---
+
+## 3. Collection: Categories
+จัดเก็บหมวดหมู่ปัญหาและช่างที่สังกัดในแต่ละหมวดหมู่
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `_id` | ObjectId | Yes | รหัสตัวนับ |
-| `name` | String | Yes | ชื่อของตัวนับ (e.g. `ticket`, `help`) Unique |
-| `seq` | Number | Yes | ลำดับปัจจุบัน (เริ่มต้น 0) |
+| `_id` | ObjectId | Yes | รหัสหมวดหมู่ (Primary Key) |
+| `name` | String | Yes | คีย์หลักภาษาอังกฤษ (e.g. `Road`, `Water`) Unique |
+| `label` | String | Yes | ป้ายกำกับภาษาไทย (e.g. `ถนน/ทางเท้า`) |
+| `icon` | String | Yes | ไอคอนประจำหมวด (Emoji) |
+| `technicianIds`| Array[ObjectId] | Yes | รายชื่อ `User._id` ของช่างที่สังกัดในหมวดหมู่นี้ |
+| `isDefault` | Boolean | Yes | `true` หากเป็น 7 หมวดหมู่มาตรฐานของระบบ (ห้ามลบ) |
+| `createdAt` | Date | Yes | วันเวลาที่สร้าง |
+| `updatedAt` | Date | Yes | วันเวลาที่แก้ไข |
+
+---
+
+## 4. Collection: Comments
+จัดเก็บข้อความสนทนาในตั๋วแต่ละใบ (Ticket Comments) มีอายุสิ้นสุด 24 ชม. หลังตั๋ว completed
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Yes | รหัสข้อความ (Primary Key) |
+| `ticketId` | String | Yes | รหัสตั๋วที่สนทนา เช่น `TKT-00001` (Indexed) |
+| `userId` | ObjectId | Yes | รหัสผู้ส่ง อ้างอิง `User._id` |
+| `userName` | String | Yes | ชื่อผู้ส่งข้อความ |
+| `userRole` | String | Yes | บทบาทของผู้ส่ง (`citizen`, `technician`, `admin`) |
+| `message` | String | Yes | เนื้อหาข้อความ (สูงสุด 500 ตัวอักษร, XSS Sanitized) |
+| `createdAt` | Date | Yes | วันเวลาที่ส่งข้อความ |
+| `updatedAt` | Date | Yes | วันเวลาที่แก้ไขข้อความ |
+
+---
+
+## 5. Collection: DirectMessages
+จัดเก็บข้อความสนทนาตรงระหว่าง ประชาชน และ ผู้ดูแลระบบ (1 Citizen = 1 Thread)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Yes | รหัสข้อความ (Primary Key) |
+| `senderId` | ObjectId | Yes | รหัสผู้ส่ง อ้างอิง `User._id` |
+| `senderName` | String | Yes | ชื่อผู้ส่งข้อความ |
+| `senderRole` | String | Yes | บทบาทผู้ส่ง: `citizen` หรือ `admin` |
+| `citizenId` | ObjectId | Yes | รหัสประชาชนเจ้าของ Thread สนทนา (Indexed) |
+| `message` | String | Yes | ข้อความสนทนา (สูงสุด 500 ตัวอักษร, XSS Sanitized) |
+| `isRead` | Boolean | Yes | สถานะการเปิดอ่านข้อความ (Default: false) |
+| `createdAt` | Date | Yes | วันเวลาที่ส่ง |
+| `updatedAt` | Date | Yes | วันเวลาที่อัปเดต |
+
+---
+
+## 6. Collection: HelpRequests
+จัดเก็บคำขอความช่วยเหลือข้ามฝ่ายช่าง (Cross-department Help Requests)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Yes | รหัสคำขอ (Primary Key) |
+| `helpId` | String | Yes | รหัสคำขอที่อ่านเข้าใจง่าย เช่น `HELP-001` (Unique) |
+| `citizenId` | ObjectId | No | รหัสประชาชนเจ้าของตั๋ว |
+| `citizenName` | String | No | ชื่อประชาชนเจ้าของตั๋ว |
+| `message` | String | Yes | รายละเอียดปัญหาที่ต้องการความช่วยเหลือ |
+| `status` | String | Yes | สถานะ: `open`, `resolved`, `accepted`, `cancelled` |
+| `ticketId` | String | Yes | รหัสตั๋วต้นทางที่ต้องการความช่วยเหลือ |
+| `ticketCategory`| String | No | หมวดหมู่ของตั๋วต้นทาง |
+| `ticketLocation`| String | No | พิกัด/สถานที่เกิดเหตุของตั๋ว |
+| `ticketDesc` | String | No | รายละเอียดของตั๋วต้นทาง |
+| `requesterId` | ObjectId | Yes | รหัสช่างผู้ส่งคำขอ อ้างอิง `User._id` |
+| `requesterName`| String | Yes | ชื่อช่างผู้ส่งคำขอ |
+| `requesterDept`| String | Yes | แผนกของช่างผู้ส่งคำขอ |
+| `targetDept` | String | Yes | แผนกปลายทางที่ขอความช่วยเหลือ |
+| `acceptedById` | ObjectId | No | รหัสช่างผู้กดรับความช่วยเหลือ |
+| `acceptedByName`| String | No | ชื่อช่างผู้กดรับความช่วยเหลือ |
+| `createdAt` | Date | Yes | วันเวลาที่ส่งคำขอ |
+| `updatedAt` | Date | Yes | วันเวลาที่อัปเดต |
+
+---
+
+## 7. Collection: Counters
+จัดเก็บตัวนับลำดับตัวเลขถัดไป (Atomic Auto-increment) สำหรับรหัส `ticket` และ `help`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `_id` | ObjectId | Yes | รหัสเอกสาร (Primary Key) |
+| `name` | String | Yes | ชื่อตัวนับ: `ticket` หรือ `help` (Unique) |
+| `seq` | Number | Yes | ตัวเลขลำดับปัจจุบัน (เรียกใช้ผ่าน `Counter.nextSeq()`) |

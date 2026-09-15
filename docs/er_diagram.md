@@ -1,4 +1,5 @@
 # Entity-Relationship (ER) Diagram - ResolvNow
+> อัปเดตล่าสุด: 2026-09-15 | Version: V17.5
 
 เอกสารนี้แสดงโครงสร้างและความสัมพันธ์ของฐานข้อมูล (MongoDB) ภายในระบบ ResolvNow (ครอบคลุมทั้ง 7 Collections)
 
@@ -45,20 +46,39 @@ erDiagram
         Number lng
         String urgency "normal, medium, urgent"
         Number priorityScore "0-100"
-        String status "pending, assigned, in_progress, completed, rejected"
+        String status "pending, assigned, in_progress, completed, rejected, reopened, merged"
         ObjectId assignedTo FK "Ref User (Technician)"
         String assignedName
         String rejectReason
-        String citizenImage "Cloudinary/Local URL"
-        Array images "List of URLs"
-        String beforeImage "Cloudinary/Local URL"
-        String afterImage "Cloudinary/Local URL"
+        String citizenImage "Cloudinary URL"
+        Array citizenImages "List of URLs"
+        String beforeImage "Cloudinary URL"
+        String afterImage "Cloudinary URL"
+        Array afterImages "List of URLs"
         Number rating "1-5"
         String ratingReason
         String ratedAt
         Date slaAssignDeadline
         Date slaCompleteDeadline
         Boolean slaBreached
+        String slaPauseStatus "none, requested, paused"
+        String slaPauseReason
+        Date slaPauseRequestedAt
+        Date slaPausedAt
+        Number slaTotalPausedMs
+        Array slaPauseHistory
+        String mergedInto "Master ticketId"
+        Array mergedTickets
+        Boolean isMerged
+        Number reopenCount
+        Date reopenedAt
+        String reopenReason
+        Array reopenImages
+        Object workOrder "Signature & Inspector"
+        Array timeline "Audit log events"
+        Array materials "Parts & cost list"
+        Number totalRepairCost "Total repair expense"
+        String repairCostNotes
         Array upvotes "[{userId, createdAt}]"
         Number upvoteCount
         Array followers "[{userId, lineUserId}]"
@@ -109,14 +129,14 @@ erDiagram
         String citizenName
         String message
         String status "open, resolved, accepted, cancelled"
-        String ticketId "e.g., TKT-00001"
+        String ticketId
         String ticketCategory
         String ticketLocation
         String ticketDesc
         ObjectId requesterId FK "Ref User"
         String requesterName
         String requesterDept
-        String targetDept "Category Name"
+        String targetDept
         ObjectId acceptedById FK "Ref User"
         String acceptedByName
         Date createdAt
@@ -125,7 +145,7 @@ erDiagram
 
     COUNTER {
         ObjectId _id PK
-        String name "UNIQUE (ticket, help)"
-        Number seq "Auto-increment value"
+        String name "UNIQUE ('ticket', 'help')"
+        Number seq "Atomic increment"
     }
 ```
