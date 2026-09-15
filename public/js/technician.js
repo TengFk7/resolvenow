@@ -371,12 +371,6 @@ function tcToggle(ticketId) {
     initTechMaterialsForm(t.ticketId, t.materials);
   }
   var footerBtns = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชทกับผู้แจ้ง</button>';
-  footerBtns += '<button class="btn-workorder" onclick="openWorkOrderModal(\'' + t.ticketId + '\')"><span>📋</span> ใบงาน & เซ็นชื่อ</button>';
-  if (t.slaPauseStatus === 'paused') {
-    footerBtns += '<button class="btn-sla-resume" onclick="resumeSla(\'' + t.ticketId + '\')"><span>▶️</span> เดินเวลาต่อ</button>';
-  } else if (t.status === 'assigned' || t.status === 'in_progress' || t.status === 'reopened') {
-    footerBtns += '<button class="btn-sla-pause" onclick="openSlaPauseModal(\'' + t.ticketId + '\')"><span>⏸️</span> พัก SLA</button>';
-  }
   ge('tdModalFooter').innerHTML = footerBtns;
 
   // ── ใส่/ถอด class urgent บน modal card ──

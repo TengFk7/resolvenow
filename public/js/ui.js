@@ -398,10 +398,33 @@ function closeMImg() { ge('mImg').classList.remove('on'); }
 /* ── Change Password Modal ───────────────────────────── */
 function openChPw() {
   hideE('chErr');
-  ['curP', 'newP', 'conP'].forEach(function (i) { ge(i).value = ''; });
-  ge('mChPw').classList.add('on');
+  ['curP', 'newP', 'conP'].forEach(function (i) { var el = ge(i); if (el) el.value = ''; });
+  var m = ge('mChPw');
+  if (m) m.classList.add('on');
 }
-function closeChPw() { ge('mChPw').classList.remove('on'); }
+function closeChPw() { var m = ge('mChPw'); if (m) m.classList.remove('on'); }
+
+async function doChPw() {
+  hideE('chErr');
+  var curEl = ge('curP'), nwEl = ge('newP'), conEl = ge('conP');
+  var cur = curEl ? curEl.value : '', nw = nwEl ? nwEl.value : '', con = conEl ? conEl.value : '';
+  if (!cur || !nw || !con) return showE('chErr', 'กรุณากรอกข้อมูลให้ครบ');
+  if (nw !== con) return showE('chErr', 'รหัสผ่านใหม่ไม่ตรงกัน');
+  if (nw.length < 6) return showE('chErr', 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
+  try {
+    var res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: cur, newPassword: nw })
+    });
+    var data = await res.json();
+    if (!res.ok) return showE('chErr', data.error || 'เกิดข้อผิดพลาด');
+    closeChPw();
+    if (typeof showToast === 'function') showToast('เปลี่ยนรหัสผ่านสำเร็จ', 'success');
+  } catch (e) {
+    showE('chErr', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+  }
+}
 
 /* ── Mobile Bottom Nav Active State ──────────────────── */
 function mobNavSetActive(id) {
@@ -447,9 +470,16 @@ function openDrawer() {
   var roleEl = ge('drawerRole');
   if (roleEl) {
     var DEPT_LABEL = typeof DEPT !== 'undefined' ? DEPT : {};
-    if (CU.role === 'admin') roleEl.textContent = 'ผู้ดูแลระบบ';
-    else if (CU.role === 'technician') roleEl.textContent = 'ช่าง · ' + (DEPT_LABEL[CU.specialty] || '');
-    else roleEl.textContent = 'ประชาชน';
+    var DEPT_ICONS = typeof DEPT_ICON !== 'undefined' ? DEPT_ICON : {};
+    if (CU.role === 'admin') {
+      roleEl.textContent = '🛡️ ผู้ดูแลระบบ';
+    } else if (CU.role === 'technician') {
+      var icon = DEPT_ICONS[CU.specialty] || '🔧';
+      var deptName = DEPT_LABEL[CU.specialty] || CU.specialty || 'งานปฏิบัติการ';
+      roleEl.textContent = icon + ' ช่าง · ' + deptName;
+    } else {
+      roleEl.textContent = '👤 ประชาชน';
+    }
   }
 
   // ── Hide change password for LINE-only accounts ──
@@ -477,7 +507,6 @@ function openDrawer() {
   var dO = ge('drawerOverlay');
   if (sd) sd.classList.add('open');
   if (dO) dO.classList.add('open');
-  ge('drawerOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
   // ── ซ่อน FAB ติดต่อแอดมิน ขณะ drawer เปิด ──
@@ -493,7 +522,7 @@ function closeDrawer() {
   var overlay = ge('drawerOverlay');
   if (!drawer) return;
   drawer.classList.remove('open');
-  overlay.classList.remove('open');
+  if (overlay) overlay.classList.remove('open');
   document.body.style.overflow = '';
 
   // ── คืน FAB ติดต่อแอดมิน เมื่อ drawer ปิด (เฉพาะ citizen เท่านั้น) ──

@@ -290,6 +290,25 @@ function enterTechApp(showSplash) {
     dpEl.textContent = icon + ' ' + label;
   }
 
+  // Update universal drawer user profile
+  var dAv = ge('drawerAv');
+  if (dAv) {
+    if (CU.avatar) {
+      dAv.innerHTML = '<img src="' + CU.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:18px"/>';
+    } else {
+      dAv.innerHTML = '';
+      dAv.textContent = initials.toUpperCase();
+    }
+  }
+  var dNm = ge('drawerName');
+  if (dNm) dNm.textContent = (CU.firstName || '') + (CU.lastName && CU.lastName !== '-' ? ' ' + CU.lastName : '');
+  var dRole = ge('drawerRole');
+  if (dRole) {
+    var dIcon = (typeof DEPT_ICON !== 'undefined' && DEPT_ICON[CU.specialty]) ? DEPT_ICON[CU.specialty] : '🔧';
+    var dLabel = (typeof DEPT !== 'undefined' && DEPT[CU.specialty]) ? DEPT[CU.specialty] : (CU.specialty || 'งานปฏิบัติการ');
+    dRole.textContent = dIcon + ' ช่าง · ' + dLabel;
+  }
+
   // Load categories to populate dropdowns
   if (typeof loadCategories === 'function') loadCategories();
 
@@ -349,6 +368,7 @@ async function doTechLogin() {
     }
 
     CU = data.user;
+    window.CU = CU;
     sessionStorage.setItem('rn_tech_logged_in', '1');
     enterTechApp(true);
 
@@ -360,12 +380,14 @@ async function doTechLogin() {
 
 /* ── Technician Logout Action ────────────────────────── */
 async function doTechLogout() {
+  if (typeof closeDrawer === 'function') closeDrawer();
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
   } catch (e) { }
 
   sessionStorage.removeItem('rn_tech_logged_in');
   CU = null;
+  window.CU = null;
 
   if (_ticketsInterval) { clearInterval(_ticketsInterval); _ticketsInterval = null; }
   if (_helpInterval) { clearInterval(_helpInterval); _helpInterval = null; }
@@ -396,6 +418,7 @@ async function doTechLogout() {
     .then(function (d) {
       if (d.loggedIn && d.role === 'technician') {
         CU = d;
+        window.CU = CU;
         sessionStorage.setItem('rn_tech_logged_in', '1');
         var gate = ge('techGateModal');
         if (gate) gate.style.display = 'none';

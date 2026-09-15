@@ -1460,6 +1460,24 @@ router.post('/:id/sla/request-pause', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'สามารถขอพักเวลาได้เฉพาะงานที่อยู่ระหว่างดำเนินการเท่านั้น' });
     }
 
+    if (caller.role === 'admin') {
+      ticket.slaPauseStatus = 'paused';
+      ticket.slaPauseReason = reason;
+      ticket.slaPausedAt = new Date();
+      await ticket.save();
+
+      await new Comment({
+        ticketId: ticket.ticketId,
+        userId: caller._id,
+        userName: caller.firstName + ' (Admin)',
+        userRole: 'admin',
+        message: '⏸️ ผู้ดูแลระบบสั่งหยุดเวลา SLA ชั่วคราว เนื่องจาก: ' + reason
+      }).save();
+
+      emitUpdate(req);
+      return res.json({ message: 'สั่งพักเวลา SLA สำเร็จ', ticket: formatTicket(ticket, caller._id) });
+    }
+
     ticket.slaPauseStatus = 'requested';
     ticket.slaPauseReason = reason;
     ticket.slaPauseRequestedAt = new Date();

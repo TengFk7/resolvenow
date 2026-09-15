@@ -12,6 +12,15 @@
     rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/animations.css" />
+  <!-- Instant Theme Preload (Zero Flicker) -->
+  <script>
+    (function () {
+      var t = localStorage.getItem('resolvnow_theme') || 'auto';
+      var isDark = t === 'dark' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme-setting', t);
+    })();
+  </script>
   <style>
     /* Technician Portal Theme */
     :root {
@@ -22,23 +31,86 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 20px;
-      background: rgba(255, 255, 255, 0.92);
+      padding: 12px 20px;
+      background: var(--glass2, rgba(255, 255, 255, 0.92));
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 80;
+      transition: background .3s ease, border-color .3s ease;
     }
     .tech-shell {
       max-width: 900px;
       margin: 0 auto;
       padding: 16px;
     }
+    .tech-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--navy);
+      cursor: default;
+      user-select: none;
+    }
+    .tech-logo .resolve-shimmer {
+      background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 25%, #818cf8 50%, #3b82f6 75%, #1e3a8a 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: resolveShimmer 4s linear infinite;
+      display: inline-block;
+      font-weight: 800;
+    }
+    [data-theme="dark"] .tech-logo .resolve-shimmer {
+      background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 25%, #c7d2fe 50%, #93c5fd 75%, #60a5fa 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .tech-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.1);
+      padding: 2px 7px;
+      border-radius: 6px;
+      margin-left: 6px;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      display: inline-block;
+      vertical-align: middle;
+    }
+    [data-theme="dark"] .tech-tag {
+      color: #60a5fa;
+      background: rgba(96, 165, 250, 0.15);
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+    @media (max-width: 640px) {
+      .tech-topbar {
+        padding: 10px 14px;
+      }
+      .btn-tech-logout {
+        display: none !important;
+      }
+      .tech-user-badge div:last-child {
+        display: none;
+      }
+      .tech-user-badge {
+        padding: 2px !important;
+        background: transparent !important;
+        border: none !important;
+      }
+    }
   </style>
 </head>
 
-<body style="background:var(--bg)">
+<body>
 
   <!-- ────────────────────────────────────────────── TECH SECURITY GATE MODAL ────────────────────────────────────────────── -->
   <div id="techGateModal" class="portal-gate-overlay tech-gate-theme" style="display:flex">
@@ -141,25 +213,16 @@
     <!-- Topbar -->
     <header class="tech-topbar">
       <div style="display:flex;align-items:center;gap:12px">
-        <div class="nlogo logo-anim" style="font-size:18px;margin:0">
-          🛠️ <span>Resolve<span class="now-gold">Now</span> <span style="font-size:12px;color:var(--blue2);font-weight:700;margin-left:4px">TECH</span></span>
+        <div class="tech-logo logo-anim" style="cursor:default">
+          <span style="font-size:20px">🛠️</span>
+          <span><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span><span class="tech-tag">TECH</span></span>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:12px">
-        <!-- Tech User Profile Info -->
-        <div style="display:flex;align-items:center;gap:8px;background:rgba(37,99,235,.07);padding:5px 12px 5px 6px;border-radius:24px;border:1px solid rgba(37,99,235,.15)">
-          <div id="tAv" class="nav2" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff">🔧</div>
-          <div>
-            <div id="tName" style="font-size:12.5px;font-weight:700;color:var(--navy);line-height:1.2">—</div>
-            <div id="tDeptBadge" style="font-size:10.5px;color:var(--blue2);font-weight:600">—</div>
-          </div>
-        </div>
-
-        <button class="btn-ripple" onclick="doTechLogout()"
-          style="display:flex;align-items:center;gap:5px;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:7px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s"
-          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-          <span>🚪</span> ออกจากระบบ
+      <div style="display:flex;align-items:center;gap:10px">
+        <!-- Hamburger Button (☰) -->
+        <button class="hbg-btn hbg-light btn-ripple" onclick="openDrawer()" aria-label="เมนู" title="เมนูหลัก">
+          <span></span><span></span><span></span>
         </button>
       </div>
     </header>
@@ -409,79 +472,59 @@
     });
   </script>
 
-  <!-- MODAL: SLA Pause Request (Technician) -->
-  <div class="mo" id="mSlaPause">
-    <div class="mb" style="max-width:420px">
-      <button class="mc" onclick="closeSlaPauseModal()">✕</button>
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:38px;margin-bottom:6px">⏸️</div>
-        <h3 style="margin:0 0 4px;font-size:18px">ขอหยุดเวลา SLA ชั่วคราว</h3>
-        <p style="font-size:12px;color:var(--muted);margin:0" id="slaPauseTicketLabel">Ticket #</p>
+  <!-- Universal Drawer (Mobile & Quick Navigation) -->
+  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+  <div id="sideDrawer" class="side-drawer">
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    <div class="drawer-user">
+      <div class="drawer-av" id="drawerAv" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff">🔧</div>
+      <div class="drawer-name" id="drawerName">Technician</div>
+      <div class="drawer-role" id="drawerRole">ช่างปฏิบัติการ</div>
+    </div>
+    <div class="drawer-divider"></div>
+
+    <!-- Theme Switcher Segment in Drawer -->
+    <div class="drawer-theme-box">
+      <div class="drawer-theme-label">
+        <span>🌓 ธีมการแสดงผล</span>
       </div>
-      <div class="fg">
-        <label style="font-size:12px;font-weight:700;color:var(--navy)">เลือกประเภทเหตุผล</label>
-        <select id="slaPausePreset" onchange="if(this.value) ge('slaPauseReasonInput').value=this.value"
-          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;background:#fff;margin-bottom:8px">
-          <option value="">— เลือกเหตุผลด่วน —</option>
-          <option value="รออะไหล่/วัสดุสั่งผลิต">📦 รออะไหล่/วัสดุสั่งผลิต</option>
-          <option value="สภาพอากาศพายุฝนตกหนักเข้าพื้นที่ไม่ได้">⛈️ สภาพอากาศพายุฝนตกหนักเข้าพื้นที่ไม่ได้</option>
-          <option value="รอประสานงานหน่วยงานภายนอก (เช่น กฟภ./กปภ.)">🏢 รอประสานงานหน่วยงานภายนอก</option>
-          <option value="ติดปัญหาพื้นที่เอกชน/รอหนังสืออนุญาต">🔒 ติดปัญหาพื้นที่เอกชน/รอหนังสืออนุญาต</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label style="font-size:12px;font-weight:700;color:var(--navy)">รายละเอียดเหตุผล <span style="color:var(--r)">*</span></label>
-        <textarea id="slaPauseReasonInput" placeholder="อธิบายรายละเอียดเหตุผลที่จำเป็นต้องหยุดเวลาชั่วคราว..." rows="3"
-          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13.5px;outline:none;font-family:'Prompt',sans-serif;background:#fafafa;resize:vertical"></textarea>
-      </div>
-      <div class="ebox" id="slaPauseErr" style="margin-bottom:10px"></div>
-      <div style="display:flex;gap:10px;margin-top:8px">
-        <button onclick="closeSlaPauseModal()" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted);font-weight:600">✕ ยกเลิก</button>
-        <button onclick="submitSlaPause()" id="btnSubmitSlaPause" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13.5px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(245,158,11,.35)">⏸️ ส่งคำขอพักเวลา</button>
+      <div class="drawer-theme-group">
+        <button type="button" class="drawer-theme-btn" data-theme-btn="light" onclick="setAppTheme('light')">
+          <span>☀️ สว่าง</span>
+        </button>
+        <button type="button" class="drawer-theme-btn" data-theme-btn="dark" onclick="setAppTheme('dark')">
+          <span>🌙 มืด</span>
+        </button>
+        <button type="button" class="drawer-theme-btn" data-theme-btn="auto" onclick="setAppTheme('auto')">
+          <span>💻 อัตโนมัติ</span>
+        </button>
       </div>
     </div>
+
+    <div class="drawer-divider"></div>
+    <nav class="drawer-menu">
+      <button class="drawer-item" id="drawerChPw" onclick="openChPw();closeDrawer()">
+        <span class="drawer-item-icon">🔒</span>
+        <span>เปลี่ยนรหัสผ่าน</span>
+      </button>
+      <button class="drawer-item drawer-item-danger" onclick="closeDrawer();doTechLogout()">
+        <span class="drawer-item-icon">🚪</span>
+        <span>ออกจากระบบ</span>
+      </button>
+    </nav>
+    <div class="drawer-footer">ResolveNow Technician Console</div>
   </div>
 
-  <!-- MODAL: Digital Work Order & Signature -->
-  <div class="mo" id="mWorkOrder">
-    <div class="mb" style="max-width:540px;width:95%">
-      <button class="mc" onclick="closeWorkOrderModal()">✕</button>
-      <div style="display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px">
-        <div style="font-size:32px">📋</div>
-        <div>
-          <h3 style="margin:0;font-size:17px;color:var(--navy)">ใบงานและลงนามตรวจรับมอบงาน</h3>
-          <p style="margin:0;font-size:12px;color:var(--muted)" id="woTicketLabel">Ticket #</p>
-        </div>
-      </div>
-      <div id="woSummaryBox" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;margin-bottom:14px;line-height:1.5">
-      </div>
-      <div class="fg">
-        <label style="font-size:12px;font-weight:700;color:var(--navy)">ชื่อ-นามสกุล ผู้ตรวจรับมอบงาน / ประชาชน</label>
-        <input type="text" id="woSignerName" placeholder="ชื่อ-นามสกุล ผู้เซ็นรับงาน"
-          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;background:#fff;margin-bottom:6px" />
-      </div>
-      <div class="fg">
-        <label style="font-size:12px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between">
-          <span>✍️ ลงลายมือชื่อดิจิทัล (เซ็นในกรอบด้านล่าง)</span>
-          <button type="button" onclick="clearSigCanvas()" style="background:none;border:none;color:var(--blue2);font-size:11px;cursor:pointer;font-weight:700">🗑️ ล้างลายเซ็น</button>
-        </label>
-        <div class="sig-canvas-wrap">
-          <canvas id="sigCanvas" class="sig-canvas" width="480" height="150"></canvas>
-          <div id="sigPlaceholder" class="sig-placeholder">ใช้นิ้วหรือปากกา Stylus เพื่อลงชื่อที่นี่</div>
-        </div>
-      </div>
-      <div class="fg" style="margin-top:10px">
-        <label style="font-size:12px;font-weight:700;color:var(--navy)">บันทึกการส่งมอบงานเพิ่มเติม</label>
-        <textarea id="woNotes" placeholder="เช่น แก้ไขเสร็จสิ้น ประชาชนทดสอบเปิดก๊อกน้ำใช้งานได้ปกติ..." rows="2"
-          style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12.5px;outline:none;font-family:'Prompt',sans-serif;background:#fff;resize:none"></textarea>
-      </div>
-      <div class="ebox" id="woErr" style="margin-bottom:10px"></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button type="button" onclick="saveWorkOrderSignature()" id="btnSaveSig"
-          style="flex:1;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(16,185,129,.3)">💾 บันทึกลายเซ็น</button>
-        <button type="button" onclick="openPrintWorkOrder()" id="btnPrintWO"
-          style="flex:1;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.3)">🖨️ พิมพ์ใบงาน (PDF)</button>
-      </div>
+  <!-- MODAL: Change Password -->
+  <div class="mo" id="mChPw">
+    <div class="mb">
+      <button class="mc" onclick="closeChPw()">✕</button>
+      <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
+      <div class="ebox" id="chErr"></div>
+      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocorrect="off" lang="en" /></div>
+      <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
     </div>
   </div>
 

@@ -1503,8 +1503,277 @@ function openAdminTD(ticketId) {
   ge('tdModalBody').innerHTML = h;
 
   var footerBtns = '<button class="btn-chat cg-chat-btn" onclick="openTicketChat(\'' + t.ticketId + '\')"><span>💬</span> แชท</button>';
-  footerBtns += '<a href="/api/tickets/' + t.ticketId + '/work-order" target="_blank" class="btn-workorder" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center"><span>📋</span> พิมพ์ใบงาน</a>';
+  footerBtns += '<button class="btn-workorder" onclick="openWorkOrderModal(\'' + t.ticketId + '\')"><span>📋</span> ใบงาน & เซ็นชื่อ</button>';
+  if (t.slaPauseStatus === 'paused') {
+    footerBtns += '<button class="btn-sla-resume" onclick="adminResumeSla(\'' + t.ticketId + '\')"><span>▶️</span> เดินเวลาต่อ</button>';
+  } else if (t.status === 'assigned' || t.status === 'in_progress' || t.status === 'reopened') {
+    footerBtns += '<button class="btn-sla-pause" onclick="openSlaPauseModal(\'' + t.ticketId + '\')"><span>⏸️</span> พัก SLA</button>';
+  }
   ge('tdModalFooter').innerHTML = footerBtns;
 
   ge('mTicketDetail').classList.add('on');
+}
+
+/* ══════════════════════════════════════════════════════════
+   ADMIN: SLA PAUSE & RESUME ACTIONS
+══════════════════════════════════════════════════════════ */
+var _slaPauseTicketId = null;
+
+function openSlaPauseModal(ticketId) {
+  _slaPauseTicketId = ticketId;
+  var lbl = ge('slaPauseTicketLabel');
+  if (lbl) lbl.textContent = 'Ticket #' + ticketId;
+  var inp = ge('slaPauseReasonInput');
+  if (inp) inp.value = '';
+  var preset = ge('slaPausePreset');
+  if (preset) preset.value = '';
+  hideE('slaPauseErr');
+  var m = ge('mSlaPause');
+  if (m) m.classList.add('on');
+}
+
+function closeSlaPauseModal() {
+  var m = ge('mSlaPause');
+  if (m) m.classList.remove('on');
+  _slaPauseTicketId = null;
+}
+
+async function submitSlaPause() {
+  var reasonEl = ge('slaPauseReasonInput');
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+  if (!reason) return showE('slaPauseErr', 'กรุณาระบุรายละเอียดเหตุผลที่ต้องหยุดเวลา');
+  hideE('slaPauseErr');
+
+  var btn = ge('btnSubmitSlaPause');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
+  try {
+    var res = await fetch('/api/tickets/' + _slaPauseTicketId + '/sla/request-pause', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: reason })
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '⏸️ สั่งหยุดเวลา SLA'; }
+      return showE('slaPauseErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+    closeSlaPauseModal();
+    showToast('สั่งพักเวลา SLA เรียบร้อยแล้ว ⏸️', 'success');
+    if (typeof loadAdmin === 'function') loadAdmin();
+    if (_slaPauseTicketId && typeof openAdminTD === 'function') {
+      openAdminTD(_slaPauseTicketId);
+    }
+  } catch (e) {
+    showE('slaPauseErr', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⏸️ สั่งหยุดเวลา SLA'; }
+  }
+}
+
+async function adminResumeSla(ticketId) {
+  if (!confirm('ต้องการให้เวลา SLA เดินต่อใช่หรือไม่?')) return;
+  try {
+    var res = await fetch('/api/tickets/' + ticketId + '/sla/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    var data = await res.json();
+    if (!res.ok) return showToast(data.error || 'ไม่สามารถเริ่มเวลาต่อได้', 'error');
+    showToast('เริ่มนับเวลา SLA ต่อเรียบร้อยแล้ว ▶️', 'success');
+    if (typeof loadAdmin === 'function') loadAdmin();
+    if (typeof openAdminTD === 'function') openAdminTD(ticketId);
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+  }
+}
+
+async function adminApproveSlaPause(ticketId, approved) {
+  var actionText = approved ? 'อนุมัติการพักเวลา' : 'ปฏิเสธคำขอพักเวลา';
+  if (!confirm('ยืนยัน ' + actionText + ' สำหรับ Ticket #' + ticketId + '?')) return;
+  try {
+    var res = await fetch('/api/tickets/' + ticketId + '/sla/approve-pause', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved: approved })
+    });
+    var data = await res.json();
+    if (!res.ok) return showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+    showToast(approved ? 'อนุมัติการพักเวลาสำเร็จ ⏸️' : 'ปฏิเสธคำขอพักเวลาแล้ว', 'success');
+    if (typeof loadAdmin === 'function') loadAdmin();
+    if (typeof openAdminTD === 'function') openAdminTD(ticketId);
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ADMIN: DIGITAL WORK ORDER & SIGNATURE CANVAS
+══════════════════════════════════════════════════════════ */
+var _woTicketId = null;
+var _sigDrawing = false;
+var _sigHasPoints = false;
+
+function initSigCanvas() {
+  var cv = ge('sigCanvas');
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  function getPos(e) {
+    var rect = cv.getBoundingClientRect();
+    var scaleX = cv.width / rect.width;
+    var scaleY = cv.height / rect.height;
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  function startDraw(e) {
+    _sigDrawing = true;
+    _sigHasPoints = true;
+    var placeholder = ge('sigPlaceholder');
+    if (placeholder) placeholder.style.display = 'none';
+    var p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    if (e.cancelable && e.type.startsWith('touch')) e.preventDefault();
+  }
+
+  function drawMove(e) {
+    if (!_sigDrawing) return;
+    var p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    if (e.cancelable && e.type.startsWith('touch')) e.preventDefault();
+  }
+
+  function endDraw() {
+    _sigDrawing = false;
+  }
+
+  // Bind draw events
+  cv.onmousedown = startDraw;
+  cv.onmousemove = drawMove;
+  window.onmouseup = endDraw;
+  cv.ontouchstart = startDraw;
+  cv.ontouchmove = drawMove;
+  cv.ontouchend = endDraw;
+}
+
+function clearSigCanvas() {
+  var cv = ge('sigCanvas');
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  _sigHasPoints = false;
+  var placeholder = ge('sigPlaceholder');
+  if (placeholder) placeholder.style.display = 'flex';
+}
+
+function openWorkOrderModal(ticketId) {
+  _woTicketId = ticketId;
+  var t = (_lastAdminTickets || []).find(function (item) { return item.ticketId === ticketId; });
+  var lbl = ge('woTicketLabel');
+  if (lbl) lbl.textContent = 'Ticket #' + ticketId;
+
+  var sBox = ge('woSummaryBox');
+  if (sBox && t) {
+    sBox.innerHTML = '<strong>' + (DEPT_ICON[t.category] || '📋') + ' ' + escapeHTML(t.category) + '</strong> — ' + escapeHTML(t.location || '—') +
+      '<br><span style="color:var(--muted)">ผู้แจ้ง: ' + escapeHTML(t.citizenName || '—') + ' | ผู้รับผิดชอบ: ' + escapeHTML(t.assignedName || '—') + ' | สถานะ: ' + stTH(t.status) + '</span>' +
+      (t.description ? '<div style="margin-top:4px;color:var(--text);line-height:1.3">' + escapeHTML(t.description.substring(0, 100)) + '</div>' : '');
+  }
+
+  var nameInp = ge('woSignerName');
+  if (nameInp) nameInp.value = (t && t.workOrder && t.workOrder.signedByName) ? t.workOrder.signedByName : (t && t.citizenName ? t.citizenName : '');
+
+  var notesInp = ge('woNotes');
+  if (notesInp) notesInp.value = (t && t.workOrder && t.workOrder.notes) ? t.workOrder.notes : '';
+
+  hideE('woErr');
+  var m = ge('mWorkOrder');
+  if (m) m.classList.add('on');
+
+  setTimeout(function () {
+    initSigCanvas();
+    clearSigCanvas();
+    // If ticket already has signature, draw it
+    if (t && t.workOrder && t.workOrder.signatureData) {
+      var img = new Image();
+      img.onload = function () {
+        var cv = ge('sigCanvas');
+        if (cv) {
+          var ctx = cv.getContext('2d');
+          ctx.drawImage(img, 0, 0, cv.width, cv.height);
+          _sigHasPoints = true;
+          var placeholder = ge('sigPlaceholder');
+          if (placeholder) placeholder.style.display = 'none';
+        }
+      };
+      img.src = t.workOrder.signatureData;
+    }
+  }, 120);
+}
+
+function closeWorkOrderModal() {
+  var m = ge('mWorkOrder');
+  if (m) m.classList.remove('on');
+  _woTicketId = null;
+}
+
+function openPrintWorkOrder() {
+  if (!_woTicketId) return;
+  window.open('/api/tickets/' + _woTicketId + '/work-order', '_blank');
+}
+
+async function saveWorkOrderSignature() {
+  var cv = ge('sigCanvas');
+  if (!_sigHasPoints || !cv) {
+    return showE('woErr', 'กรุณาลงลายมือชื่อก่อนบันทึก');
+  }
+
+  var nameInp = ge('woSignerName');
+  var signerName = nameInp ? nameInp.value.trim() : '';
+  if (!signerName) {
+    return showE('woErr', 'กรุณาระบุชื่อผู้ตรวจรับมอบงาน');
+  }
+
+  var notesInp = ge('woNotes');
+  var notes = notesInp ? notesInp.value.trim() : '';
+  hideE('woErr');
+
+  var btn = ge('btnSaveSig');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
+  try {
+    var dataUrl = cv.toDataURL('image/png');
+    var res = await fetch('/api/tickets/' + _woTicketId + '/work-order/sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        signatureData: dataUrl,
+        signedByName: signerName,
+        notes: notes
+      })
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกลายเซ็น'; }
+      return showE('woErr', data.error || 'เกิดข้อผิดพลาด');
+    }
+    showToast('บันทึกลายเซ็นใบงานเรียบร้อยแล้ว ✅', 'success');
+    closeWorkOrderModal();
+    if (typeof loadAdmin === 'function') loadAdmin();
+    if (typeof openAdminTD === 'function' && _woTicketId) openAdminTD(_woTicketId);
+  } catch (e) {
+    showE('woErr', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกลายเซ็น'; }
+  }
 }
