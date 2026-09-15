@@ -195,14 +195,10 @@ async function doLogin() {
     });
     var data = await res.json();
     if (!res.ok) {
-      if (data.redirectUrl) {
-        showE('authErr', data.error);
-        setTimeout(function () {
-          window.location.href = data.redirectUrl;
-        }, 1500);
-        return;
-      }
-      return showE('authErr', data.error || 'เกิดข้อผิดพลาด');
+      return showE('authErr', data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    }
+    if (data.user && data.user.role !== 'citizen') {
+      return showE('authErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
     CU = data.user;
     sessionStorage.setItem('rn_logged_in', '1'); // mark: ยังอยู่ใน session

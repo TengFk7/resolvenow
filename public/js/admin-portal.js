@@ -195,12 +195,12 @@ async function doAdminLogin() {
 
     if (!res.ok) {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      return showE('adminAuthErr', data.error || 'การเข้าสู่ระบบไม่สำเร็จ');
+      return showE('adminAuthErr', data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
     if (data.user.role !== 'admin') {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      return showE('adminAuthErr', 'ขออภัย หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น บัญชีของคุณไม่ใช่ Admin');
+      return showE('adminAuthErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
     CU = data.user;

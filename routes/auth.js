@@ -166,36 +166,25 @@ router.post('/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
-    const emailLower = email.toLowerCase();
+    // Portal role mapping — แต่ละ Portal อนุญาตเฉพาะ role ของตัวเองเท่านั้น
+    const PORTAL_ROLE_MAP = {
+      citizen: 'citizen',
+      admin: 'admin',
+      tech: 'technician',
+      technician: 'technician'
+    };
+    const expectedRole = PORTAL_ROLE_MAP[portal];
+
+    const emailLower = email.toLowerCase().trim();
     const user = await User.findOne({ email: emailLower });
-    console.log('[Login] email:', emailLower, '→ found:', !!user);
-    if (!user) return res.status(401).json({ error: 'ไม่พบ Email นี้ในระบบ' });
+    const pwMatch = user ? await bcrypt.compare(password, user.password) : false;
 
-    const pwMatch = await bcrypt.compare(password, user.password);
-    console.log('[Login] password match:', pwMatch);
-    if (!pwMatch) return res.status(401).json({ error: 'Password ไม่ถูกต้อง' });
-
-    // ตรวจสอบความถูกต้องตาม Portal ที่เข้าสู่ระบบ
-    if (portal === 'admin' && user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'ขออภัย หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น บัญชีของคุณไม่มีสิทธิ์เข้าถึง',
-        role: user.role
-      });
-    }
-    if (portal === 'tech' && user.role !== 'technician') {
-      return res.status(403).json({
-        error: 'ขออภัย หน้านี้สำหรับช่าง/เจ้าหน้าที่ (Technician) เท่านั้น บัญชีของคุณไม่มีสิทธิ์เข้าถึง',
-        role: user.role
-      });
-    }
-    if (portal === 'citizen' && user.role !== 'citizen') {
-      const targetUrl = user.role === 'admin' ? '/admin' : '/tech';
-      const roleName = user.role === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : 'ช่าง/เจ้าหน้าที่ (Technician)';
-      return res.status(403).json({
-        error: `บัญชีนี้เป็น${roleName} กรุณาเข้าใช้งานที่ ${targetUrl}`,
-        role: user.role,
-        redirectUrl: targetUrl
-      });
+    // SECURITY & ANTI-ENUMERATION:
+    // หากไม่พบ user, รหัสผ่านผิด, ระบุ portal ผิด, หรือ role ของ user ไม่ตรงกับ portal
+    // คืนค่าเหมือนกันทุกกรณี (HTTP 401: อีเมลหรือรหัสผ่านไม่ถูกต้อง)
+    // ห้ามเปิดเผยบทบาท (role), ห้ามส่ง redirectUrl, และไม่ย้าย portal อัตโนมัติ
+    if (!user || !pwMatch || !expectedRole || user.role !== expectedRole) {
+      return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     req.session.userId = user._id.toString();
@@ -280,10 +269,11 @@ router.post('/link-line', async (req, res) => {
     if (typeof email !== 'string' || typeof password !== 'string')
       return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(401).json({ error: 'ไม่พบ Email นี้ในระบบ' });
-    if (!await bcrypt.compare(password, user.password))
-      return res.status(401).json({ error: 'Password ไม่ถูกต้อง' });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const pwMatch = user ? await bcrypt.compare(password, user.password) : false;
+    if (!user || !pwMatch || user.role !== 'citizen') {
+      return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+    }
     if (user.lineUserId)
       return res.status(400).json({ error: 'บัญชีนี้เชื่อมกับ LINE อื่นไปแล้ว' });
 

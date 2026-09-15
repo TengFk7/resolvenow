@@ -234,12 +234,12 @@ async function doTechLogin() {
 
     if (!res.ok) {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      return showE('techAuthErr', data.error || 'การเข้าสู่ระบบไม่สำเร็จ');
+      return showE('techAuthErr', data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
     if (data.user.role !== 'technician') {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      return showE('techAuthErr', 'ขออภัย หน้านี้สำหรับช่างและเจ้าหน้าที่ (Technician) เท่านั้น บัญชีของคุณไม่ใช่ช่าง');
+      return showE('techAuthErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
     CU = data.user;

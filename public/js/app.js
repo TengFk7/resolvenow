@@ -499,12 +499,11 @@ async function loadTickets() {
       .then(function (d) {
         if (!d.loggedIn) throw new Error('no session');
         console.log('[App] LINE login session ดี → role:', d.role);
-        if (d.role === 'admin') {
-          window.location.href = '/admin';
-          return;
-        }
-        if (d.role === 'technician') {
-          window.location.href = '/tech';
+        if (d.role !== 'citizen') {
+          console.log('[App] LINE login role ไม่ใช่ citizen (' + d.role + ') → ไม่ย้าย portal อัตโนมัติ');
+          if (lineWaitOverlay && lineWaitOverlay.parentNode) lineWaitOverlay.parentNode.removeChild(lineWaitOverlay);
+          if (_apLogin) _apLogin.style.display = 'flex';
+          showE('authErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
           return;
         }
         CU = d;
@@ -545,13 +544,11 @@ async function loadTickets() {
     .then(function (d) {
       if (!d.loggedIn) throw new Error('no session');
       console.log('[App] session ดี → role:', d.role);
-      // แยกระบบไม่ให้ปะปนกับฝั่งประชาชน
-      if (d.role === 'admin') {
-        window.location.href = '/admin';
-        return;
-      }
-      if (d.role === 'technician') {
-        window.location.href = '/tech';
+      // แยกระบบไม่ให้ปะปนกับฝั่งประชาชน (ไม่ย้าย portal อัตโนมัติ)
+      if (d.role !== 'citizen') {
+        console.log('[App] Session role เป็น ' + d.role + ' ไม่ใช่ citizen → ไม่ resume ใน portal ประชาชน');
+        sessionStorage.removeItem('rn_logged_in');
+        var ap = ge('authPage'); if (ap) ap.style.display = 'flex';
         return;
       }
       CU = d;
