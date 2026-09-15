@@ -167,8 +167,114 @@ function showTechSplash(onDone) {
   }, 2200);
 }
 
+/* ── Tech Security Gate (Passcode Protection) ────────── */
+var TECH_GATE_PASSCODE = '@Teng11421142';
+
+function toggleTechGatePassVisibility() {
+  var inp = ge('techGatePasscode');
+  var icon = ge('techGateEyeIcon');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    if (icon) icon.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if (icon) icon.textContent = '👁️';
+  }
+}
+
+function showTechGate() {
+  var gate = ge('techGateModal');
+  var card = ge('techGateCard');
+  var authPage = ge('techAuthPage');
+  var appPage = ge('techApp');
+  var inp = ge('techGatePasscode');
+  var err = ge('techGateErr');
+  var btn = ge('btnTechGateUnlock');
+
+  if (appPage) appPage.style.display = 'none';
+  if (authPage) authPage.style.display = 'none';
+  if (gate) {
+    gate.classList.remove('gate-closing');
+    gate.style.display = 'flex';
+  }
+  if (card) card.classList.remove('gate-shake');
+  if (err) err.style.display = 'none';
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+  }
+  if (inp) {
+    inp.value = '';
+    setTimeout(function () { inp.focus(); }, 80);
+  }
+}
+
+function hideTechGate() {
+  var gate = ge('techGateModal');
+  var authPage = ge('techAuthPage');
+  if (!gate) {
+    if (authPage) authPage.style.display = 'flex';
+    return;
+  }
+  gate.classList.add('gate-closing');
+  setTimeout(function () {
+    gate.style.display = 'none';
+    gate.classList.remove('gate-closing');
+    if (authPage) {
+      authPage.style.display = 'flex';
+      var card = authPage.querySelector('.ac');
+      var hero = authPage.querySelector('.auth-hero-content');
+      if (card) card.classList.add('card-enter');
+      if (hero) hero.classList.add('hero-enter');
+      var em = ge('tEmail');
+      if (em) setTimeout(function () { em.focus(); }, 100);
+    }
+  }, 320);
+}
+
+function unlockTechGate() {
+  var inp = ge('techGatePasscode');
+  var err = ge('techGateErr');
+  var card = ge('techGateCard');
+  var btn = ge('btnTechGateUnlock');
+  var val = inp ? inp.value.trim() : '';
+
+  if (val !== TECH_GATE_PASSCODE) {
+    if (err) {
+      err.style.display = 'flex';
+      var errTxt = ge('techGateErrText');
+      if (errTxt) errTxt.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
+    }
+    if (card) {
+      card.classList.remove('gate-shake');
+      void card.offsetWidth; // trigger reflow
+      card.classList.add('gate-shake');
+    }
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    return;
+  }
+
+  // Success!
+  if (err) err.style.display = 'none';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+  }
+  if (inp) inp.blur();
+
+  setTimeout(function () {
+    hideTechGate();
+  }, 250);
+}
+
 /* ── Enter Technician Application ────────────────────── */
 function enterTechApp(showSplash) {
+  var gate = ge('techGateModal');
+  if (gate) gate.style.display = 'none';
   var authPage = ge('techAuthPage');
   var appPage = ge('techApp');
   if (authPage) authPage.style.display = 'none';
@@ -269,20 +375,15 @@ async function doTechLogout() {
     socket = null;
   }
 
-  // Return to tech login
+  // Return to tech login - protected by security gate
   var appPage = ge('techApp');
-  var authPage = ge('techAuthPage');
   if (appPage) appPage.style.display = 'none';
-  if (authPage) authPage.style.display = 'flex';
-
-  var card = document.querySelector('.ac');
-  var heroContent = document.querySelector('.auth-hero-content');
-  if (heroContent) heroContent.classList.add('hero-enter');
-  if (card) card.classList.add('card-enter');
 
   var btn = ge('btnTechSubmit'); if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
   var pwInp = ge('tPass'); if (pwInp) pwInp.value = '';
   showToast('ออกจากระบบเรียบร้อยแล้ว', 'success');
+
+  showTechGate();
 }
 
 /* ── Session Check on Load ───────────────────────────── */
@@ -296,14 +397,15 @@ async function doTechLogout() {
       if (d.loggedIn && d.role === 'technician') {
         CU = d;
         sessionStorage.setItem('rn_tech_logged_in', '1');
+        var gate = ge('techGateModal');
+        if (gate) gate.style.display = 'none';
         enterTechApp(false);
       } else {
-        var ap = ge('techAuthPage'); if (ap) ap.style.display = 'flex';
-        var ta = ge('techApp'); if (ta) ta.style.display = 'none';
+        // Not logged in or not a tech -> show security gate!
+        showTechGate();
       }
     })
     .catch(function () {
-      var ap = ge('techAuthPage'); if (ap) ap.style.display = 'flex';
-      var ta = ge('techApp'); if (ta) ta.style.display = 'none';
+      showTechGate();
     });
 })();

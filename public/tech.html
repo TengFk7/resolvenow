@@ -40,8 +40,48 @@
 
 <body style="background:var(--bg)">
 
+  <!-- ────────────────────────────────────────────── TECH SECURITY GATE MODAL ────────────────────────────────────────────── -->
+  <div id="techGateModal" class="portal-gate-overlay tech-gate-theme" style="display:flex">
+    <div class="portal-gate-orb portal-gate-orb-1"></div>
+    <div class="portal-gate-orb portal-gate-orb-2"></div>
+    
+    <div class="portal-gate-card" id="techGateCard">
+      <div class="portal-gate-icon-wrap">
+        🛠️
+      </div>
+      <h2 class="portal-gate-title">Technician Passcode</h2>
+      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่หน้าเข้าสู่ระบบ</p>
+
+      <div class="portal-gate-err" id="techGateErr">
+        <span>⚠️</span> <span id="techGateErrText">รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง</span>
+      </div>
+
+      <form onsubmit="event.preventDefault(); unlockTechGate();">
+        <div class="portal-gate-input-box">
+          <span class="gate-input-icon">🔒</span>
+          <input type="password" id="techGatePasscode" class="portal-gate-input"
+            placeholder="ระบุรหัสผ่านเข้าถึง..." required autocomplete="off" spellcheck="false" autofocus />
+          <button type="button" class="portal-gate-toggle-eye" onclick="toggleTechGatePassVisibility()" title="แสดง/ซ่อนรหัสผ่าน">
+            <span id="techGateEyeIcon">👁️</span>
+          </button>
+        </div>
+
+        <button type="submit" class="portal-gate-btn btn-ripple" id="btnTechGateUnlock">
+          <span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>
+        </button>
+      </form>
+
+      <div class="portal-gate-footer">
+        <a href="/" class="portal-gate-back-link">
+          ← กลับสู่หน้าหลักประชาชน
+        </a>
+        <span>ResolveNow © 2026</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ────────────────────────────────────────────── TECH AUTH ────────────────────────────────────────────── -->
-  <div class="aw" id="techAuthPage" style="display:flex">
+  <div class="aw" id="techAuthPage" style="display:none">
     <!-- Hero Panel (desktop) -->
     <div class="auth-hero">
       <div id="techOrbLayer" class="auth-orb-layer"></div>
@@ -82,11 +122,14 @@
         </button>
       </form>
 
-      <!-- Back to citizen portal link -->
-      <div style="margin-top:24px;padding-top:16px;border-top:1px dashed var(--border);text-align:center;font-size:12px">
+      <!-- Back to citizen portal link & Relock -->
+      <div style="margin-top:24px;padding-top:16px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px">
         <a href="/" style="color:var(--muted);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:color .2s" onmouseover="this.style.color='var(--blue2)'" onmouseout="this.style.color='var(--muted)'">
           ← กลับสู่หน้าหลักประชาชน
         </a>
+        <button type="button" class="btn-relock-gate" onclick="showTechGate()">
+          🔒 ล็อคหน้าจอ
+        </button>
       </div>
       <div class="rn-footer-auth">Copyright © 2026 ResolveNow. All rights reserved.</div>
     </div>

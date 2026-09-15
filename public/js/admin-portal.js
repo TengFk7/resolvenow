@@ -138,8 +138,114 @@ function showAdminSplash(onDone) {
   }, 2200);
 }
 
+/* ── Admin Security Gate (Passcode Protection) ───────── */
+var ADMIN_GATE_PASSCODE = '@Teng11421142';
+
+function toggleAdminGatePassVisibility() {
+  var inp = ge('adminGatePasscode');
+  var icon = ge('adminGateEyeIcon');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    if (icon) icon.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if (icon) icon.textContent = '👁️';
+  }
+}
+
+function showAdminGate() {
+  var gate = ge('adminGateModal');
+  var card = ge('adminGateCard');
+  var authPage = ge('adminAuthPage');
+  var appPage = ge('adminApp');
+  var inp = ge('adminGatePasscode');
+  var err = ge('adminGateErr');
+  var btn = ge('btnAdminGateUnlock');
+
+  if (appPage) appPage.style.display = 'none';
+  if (authPage) authPage.style.display = 'none';
+  if (gate) {
+    gate.classList.remove('gate-closing');
+    gate.style.display = 'flex';
+  }
+  if (card) card.classList.remove('gate-shake');
+  if (err) err.style.display = 'none';
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+  }
+  if (inp) {
+    inp.value = '';
+    setTimeout(function () { inp.focus(); }, 80);
+  }
+}
+
+function hideAdminGate() {
+  var gate = ge('adminGateModal');
+  var authPage = ge('adminAuthPage');
+  if (!gate) {
+    if (authPage) authPage.style.display = 'flex';
+    return;
+  }
+  gate.classList.add('gate-closing');
+  setTimeout(function () {
+    gate.style.display = 'none';
+    gate.classList.remove('gate-closing');
+    if (authPage) {
+      authPage.style.display = 'flex';
+      var card = authPage.querySelector('.ac');
+      var hero = authPage.querySelector('.auth-hero-content');
+      if (card) card.classList.add('card-enter');
+      if (hero) hero.classList.add('hero-enter');
+      var em = ge('aEmail');
+      if (em) setTimeout(function () { em.focus(); }, 100);
+    }
+  }, 320);
+}
+
+function unlockAdminGate() {
+  var inp = ge('adminGatePasscode');
+  var err = ge('adminGateErr');
+  var card = ge('adminGateCard');
+  var btn = ge('btnAdminGateUnlock');
+  var val = inp ? inp.value.trim() : '';
+
+  if (val !== ADMIN_GATE_PASSCODE) {
+    if (err) {
+      err.style.display = 'flex';
+      var errTxt = ge('adminGateErrText');
+      if (errTxt) errTxt.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
+    }
+    if (card) {
+      card.classList.remove('gate-shake');
+      void card.offsetWidth; // trigger reflow
+      card.classList.add('gate-shake');
+    }
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    return;
+  }
+
+  // Success!
+  if (err) err.style.display = 'none';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+  }
+  if (inp) inp.blur();
+
+  setTimeout(function () {
+    hideAdminGate();
+  }, 250);
+}
+
 /* ── Enter Admin Application ─────────────────────────── */
 function enterAdminApp(showSplash) {
+  var gate = ge('adminGateModal');
+  if (gate) gate.style.display = 'none';
   var authPage = ge('adminAuthPage');
   var appPage = ge('adminApp');
   if (authPage) authPage.style.display = 'none';
@@ -230,20 +336,15 @@ async function doAdminLogout() {
   }
   if (typeof closeDrawer === 'function') closeDrawer();
 
-  // Return to admin login card
+  // Return to admin login - protected by security gate
   var appPage = ge('adminApp');
-  var authPage = ge('adminAuthPage');
   if (appPage) appPage.style.display = 'none';
-  if (authPage) authPage.style.display = 'flex';
-
-  var card = document.querySelector('.ac');
-  var heroContent = document.querySelector('.auth-hero-content');
-  if (heroContent) heroContent.classList.add('hero-enter');
-  if (card) card.classList.add('card-enter');
 
   var btn = ge('btnAdminSubmit'); if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
   var pwInp = ge('aPass'); if (pwInp) pwInp.value = '';
   showToast('ออกจากระบบเรียบร้อยแล้ว', 'success');
+
+  showAdminGate();
 }
 
 /* ── Session Check on Load ───────────────────────────── */
@@ -258,15 +359,15 @@ async function doAdminLogout() {
       if (d.loggedIn && d.role === 'admin') {
         CU = d;
         sessionStorage.setItem('rn_admin_logged_in', '1');
+        var gate = ge('adminGateModal');
+        if (gate) gate.style.display = 'none';
         enterAdminApp(false);
       } else {
-        // Not logged in or not an admin
-        var ap = ge('adminAuthPage'); if (ap) ap.style.display = 'flex';
-        var aa = ge('adminApp'); if (aa) aa.style.display = 'none';
+        // Not logged in or not an admin -> show security gate!
+        showAdminGate();
       }
     })
     .catch(function () {
-      var ap = ge('adminAuthPage'); if (ap) ap.style.display = 'flex';
-      var aa = ge('adminApp'); if (aa) aa.style.display = 'none';
+      showAdminGate();
     });
 })();
