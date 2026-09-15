@@ -1164,13 +1164,294 @@
         padding: 16px 14px 40px;
       }
     }
+
+    /* ─────────────────────────────────────────────────────────────
+       EXECUTIVE PORTAL SECURITY GATE
+       ───────────────────────────────────────────────────────────── */
+    .portal-gate-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.95) 0%, rgba(7, 12, 22, 0.98) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+    .portal-gate-overlay.gate-closing {
+      opacity: 0;
+      transform: scale(1.04);
+      pointer-events: none;
+    }
+    .portal-gate-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+    .portal-gate-orb-1 {
+      width: 380px;
+      height: 380px;
+      top: 10%;
+      left: 15%;
+      opacity: 0.35;
+      background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+    }
+    .portal-gate-orb-2 {
+      width: 320px;
+      height: 320px;
+      bottom: 10%;
+      right: 15%;
+      opacity: 0.3;
+      background: radial-gradient(circle, #f59e0b 0%, transparent 70%);
+    }
+    .portal-gate-card {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      background: rgba(30, 41, 59, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 26px;
+      padding: 38px 32px 32px;
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      text-align: center;
+      color: #fff;
+      animation: gateCardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+      z-index: 2;
+    }
+    @keyframes gateCardIn {
+      from { opacity: 0; transform: scale(0.92) translateY(18px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .portal-gate-card.gate-shake {
+      animation: gateShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+    @keyframes gateShake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(5px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+    .portal-gate-icon-wrap {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      position: relative;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.4);
+    }
+    .portal-gate-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin-bottom: 12px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .portal-gate-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+      font-family: 'Prompt', sans-serif;
+      letter-spacing: -0.3px;
+    }
+    .portal-gate-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 22px;
+      line-height: 1.5;
+      font-family: 'Prompt', sans-serif;
+    }
+    .portal-gate-input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .portal-gate-input-box .gate-input-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.4);
+      pointer-events: none;
+    }
+    .portal-gate-input {
+      width: 100%;
+      padding: 13px 44px 13px 44px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1.5px solid rgba(255, 255, 255, 0.16);
+      border-radius: 14px;
+      color: #ffffff;
+      font-size: 15px;
+      letter-spacing: 1px;
+      font-family: 'Prompt', sans-serif;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .portal-gate-input:focus {
+      border-color: #3b82f6;
+      background: rgba(15, 23, 42, 0.85);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+    }
+    .portal-gate-toggle-eye {
+      position: absolute;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .portal-gate-toggle-eye:hover {
+      color: #ffffff;
+    }
+    .portal-gate-err {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 10px;
+      padding: 9px 14px;
+      color: #fca5a5;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      font-family: 'Prompt', sans-serif;
+    }
+    .portal-gate-btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 14px;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+      font-family: 'Prompt', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35);
+    }
+    .portal-gate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.5);
+    }
+    .portal-gate-btn:active {
+      transform: translateY(0);
+    }
+    .portal-gate-footer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.45);
+    }
+    .portal-gate-back-link {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: color 0.2s;
+    }
+    .portal-gate-back-link:hover {
+      color: #ffffff;
+    }
+    .btn-lock-ceo {
+      color: #ef4444 !important;
+      border-color: rgba(239, 68, 68, 0.25) !important;
+      background: rgba(239, 68, 68, 0.05) !important;
+      transition: all 0.2s ease;
+    }
+    .btn-lock-ceo:hover {
+      background: #fef2f2 !important;
+      border-color: #ef4444 !important;
+      color: #dc2626 !important;
+    }
   </style>
 </head>
 
 <body>
 
+  <!-- ────────────────────────────────────────────── CEO EXECUTIVE SECURITY GATE MODAL ────────────────────────────────────────────── -->
+  <div id="ceoGateModal" class="portal-gate-overlay ceo-gate-theme" style="display:flex">
+    <div class="portal-gate-orb portal-gate-orb-1"></div>
+    <div class="portal-gate-orb portal-gate-orb-2"></div>
+
+    <div class="portal-gate-card" id="ceoGateCard">
+      <div class="portal-gate-icon-wrap">
+        🏛️
+      </div>
+      <div class="portal-gate-badge">
+        🏛️ EXECUTIVE PORTAL
+      </div>
+      <h2 class="portal-gate-title">Executive Passcode</h2>
+      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่แดชบอร์ดผู้บริหารระดับสูง</p>
+
+      <div class="portal-gate-err" id="ceoGateErr">
+        <span>⚠️</span> <span id="ceoGateErrText">รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง</span>
+      </div>
+
+      <form onsubmit="event.preventDefault(); unlockCeoGate();">
+        <div class="portal-gate-input-box">
+          <span class="gate-input-icon">🔒</span>
+          <input type="password" id="ceoGatePasscode" class="portal-gate-input"
+            placeholder="ระบุรหัสผ่านเข้าถึง..." required autocomplete="off" spellcheck="false" autofocus />
+          <button type="button" class="portal-gate-toggle-eye" onclick="toggleCeoGatePassVisibility()" title="แสดง/ซ่อนรหัสผ่าน">
+            <span id="ceoGateEyeIcon">👁️</span>
+          </button>
+        </div>
+
+        <button type="submit" class="portal-gate-btn" id="btnCeoGateUnlock">
+          <span>ปลดล็อคเข้าสู่แดชบอร์ด</span> <span>→</span>
+        </button>
+      </form>
+
+      <div class="portal-gate-footer">
+        <a href="/" class="portal-gate-back-link">
+          ← กลับสู่หน้าหลักประชาชน
+        </a>
+        <span>ResolveNow © 2026</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading overlay -->
-  <div id="loadingOverlay">
+  <div id="loadingOverlay" style="display:none">
     <div class="loading-content">
       <div class="loading-logo">🏛️</div>
       <div class="loading-brand logo-anim"><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span>
@@ -1202,6 +1483,9 @@
       <div class="sb-item" onclick="location.href='/track'">
         <span class="sb-item-icon">🗺️</span> ตรวจสอบ Ticket
       </div>
+      <div class="sb-item" onclick="lockCeoGate()" style="color:#f87171">
+        <span class="sb-item-icon">🔒</span> ล็อคพอร์ทัล
+      </div>
     </nav>
 
 
@@ -1216,6 +1500,7 @@
 
         <div class="tb-btns">
           <button class="tb-action-btn" onclick="refreshAll()">🔄 รีเฟรชข้อมูล</button>
+          <button class="tb-action-btn btn-lock-ceo" onclick="lockCeoGate()" title="ล็อคพอร์ทัลผู้บริหาร">🔒 ล็อคพอร์ทัล</button>
         </div>
       </div>
     </header>
@@ -1511,6 +1796,16 @@
 
 
     function ge(id) { return document.getElementById(id); }
+
+    function escapeHTML(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     /* ── 2. Fetch all data ─────────────────────── */
     async function fetchData() {
@@ -1837,10 +2132,10 @@
         const icon = DEPT_ICON[t.specialty] || '👷';
         const cap = parseInt(t.capacity || 0);
         return `<div class="tech-status-item">
-      <div class="tech-status-av">${initials}</div>
+      <div class="tech-status-av">${escapeHTML(initials)}</div>
       <div style="flex:1;min-width:0">
-        <div class="tech-status-name">${icon} ${t.name || t.firstName || '?'}</div>
-        <div class="tech-status-dept">${dept}</div>
+        <div class="tech-status-name">${icon} ${escapeHTML(t.name || t.firstName || '?')}</div>
+        <div class="tech-status-dept">${escapeHTML(dept)}</div>
         <div class="tech-bar-wrap" style="margin-top:5px">
           <div class="tech-bar-track"><div class="tech-bar-fill" style="width:${cap}%"></div></div>
         </div>
@@ -1873,7 +2168,13 @@
     
     /* ── 3i. Cost & Material Analytics (Feature 6) ──────────── */
     function renderCostAnalytics() {
-      if (!_costData) return;
+      const topList = ge('topMaterialsList');
+      if (!_costData) {
+        if (topList) {
+          topList.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px 0">ไม่พบข้อมูลงบประมาณ</div>';
+        }
+        return;
+      }
 
       const totalPill = ge('costTotalPill');
       if (totalPill) {
@@ -1881,68 +2182,75 @@
       }
 
       // 1. Cost by Category Chart
-      const cats = Object.keys(_costData.costByCategory || {});
-      const labels = cats.map(c => (DEPT_ICON[c] || '📌') + ' ' + (DEPT[c] || c));
-      const dataValues = cats.map(c => _costData.costByCategory[c] || 0);
+      try {
+        const cats = Object.keys(_costData.costByCategory || {});
+        const labels = cats.map(c => (DEPT_ICON[c] || '📌') + ' ' + (DEPT[c] || c));
+        const dataValues = cats.map(c => _costData.costByCategory[c] || 0);
 
-      const ctx = ge('costCategoryChart');
-      if (ctx) {
-        if (_costCategoryChart) _costCategoryChart.destroy();
-        _costCategoryChart = new Chart(ctx.getContext('2d'), {
-          type: 'bar',
-          data: {
-            labels: labels.length ? labels : ['ไม่มีข้อมูล'],
-            datasets: [{
-              label: 'งบประมาณ (บาท)',
-              data: dataValues.length ? dataValues : [0],
-              backgroundColor: CAT_COLORS.slice(0, Math.max(1, labels.length)),
-              borderRadius: 6,
-              maxBarThickness: 36
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: function(ctx) {
-                    return '฿' + Number(ctx.parsed.y || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+        const ctx = ge('costCategoryChart');
+        if (ctx) {
+          if (_costCategoryChart) _costCategoryChart.destroy();
+          _costCategoryChart = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+              datasets: [{
+                label: 'งบประมาณ (บาท)',
+                data: dataValues.length ? dataValues : [0],
+                backgroundColor: CAT_COLORS.slice(0, Math.max(1, labels.length)),
+                borderRadius: 6,
+                maxBarThickness: 36
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      return '฿' + Number(ctx.parsed.y || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                y: {
+                  beginAtZero: true,
+                  grid: { color: '#f1f5f9' },
+                  ticks: {
+                    font: { size: 10 },
+                    callback: function(v) { return '฿' + v.toLocaleString('th-TH'); }
                   }
                 }
               }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-              y: {
-                beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: {
-                  font: { size: 10 },
-                  callback: function(v) { return '฿' + v.toLocaleString('th-TH'); }
-                }
-              }
             }
-          }
-        });
+          });
+        }
+      } catch (err) {
+        console.error('[renderCostAnalytics] Chart error:', err);
       }
 
       // 2. Top Materials List
-      const topList = ge('topMaterialsList');
       if (topList) {
         const items = _costData.topMaterials || [];
         if (!items.length) {
           topList.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px 0">ยังไม่มีรายการเบิกจ่ายวัสดุ</div>';
         } else {
           topList.innerHTML = items.map((m, idx) => {
+            const name = escapeHTML(m.name || 'ไม่ระบุชื่อ');
+            const unit = escapeHTML(m.unit || 'ชิ้น');
+            const qty = Number(m.quantity) || 1;
+            const cost = Number(m.totalCost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
             return `<div style="display:flex;align-items:center;justify-content:space-between;background:#fafafa;border:1px solid #f1f5f9;border-radius:10px;padding:8px 12px;font-size:12px">
               <div>
-                <div style="font-weight:700;color:var(--text-dark)">${idx + 1}. ${escapeHTML(m.name)}</div>
-                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">จำนวนเบิก: ${m.quantity} ${escapeHTML(m.unit || 'ชิ้น')}</div>
+                <div style="font-weight:700;color:var(--text-dark)">${idx + 1}. ${name}</div>
+                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">จำนวนเบิก: ${qty} ${unit}</div>
               </div>
               <div style="font-weight:800;color:#059669;font-size:12.5px">
-                ฿${Number(m.totalCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                ฿${cost}
               </div>
             </div>`;
           }).join('');
@@ -1978,25 +2286,150 @@
       } catch (e) { console.error(e); }
     }
 
-    /* ── Init ──────────────────────────────────── */
-    async function init() {
-      try {
-        await fetchData();
-        renderAll();
-      } catch (e) {
-        console.error('Dashboard load error:', e);
+    /* ── CEO Security Gate (Passcode Protection) ────────── */
+    const CEO_GATE_PASSCODE = '@Teng11421142';
+
+    function toggleCeoGatePassVisibility() {
+      const inp = ge('ceoGatePasscode');
+      const icon = ge('ceoGateEyeIcon');
+      if (!inp) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        if (icon) icon.textContent = '🙈';
+      } else {
+        inp.type = 'password';
+        if (icon) icon.textContent = '👁️';
       }
-
-      // Hide loading
-      const lo = ge('loadingOverlay');
-      lo.style.opacity = '0';
-      setTimeout(() => lo.style.display = 'none', 500);
-
-      // Auto-refresh every 30s
-      setInterval(refreshAll, 30000);
     }
 
-    document.addEventListener('DOMContentLoaded', init);
+    function showCeoGate() {
+      const gate = ge('ceoGateModal');
+      const card = ge('ceoGateCard');
+      const inp = ge('ceoGatePasscode');
+      const err = ge('ceoGateErr');
+      const btn = ge('btnCeoGateUnlock');
+      const lo = ge('loadingOverlay');
+
+      if (lo) lo.style.display = 'none';
+      if (gate) {
+        gate.classList.remove('gate-closing');
+        gate.style.display = 'flex';
+      }
+      if (card) card.classList.remove('gate-shake');
+      if (err) err.style.display = 'none';
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>ปลดล็อคเข้าสู่แดชบอร์ด</span> <span>→</span>';
+      }
+      if (inp) {
+        inp.value = '';
+        setTimeout(() => { inp.focus(); }, 80);
+      }
+    }
+
+    function hideCeoGate(callback) {
+      const gate = ge('ceoGateModal');
+      if (!gate) {
+        if (typeof callback === 'function') callback();
+        return;
+      }
+      gate.classList.add('gate-closing');
+      setTimeout(() => {
+        gate.style.display = 'none';
+        gate.classList.remove('gate-closing');
+        if (typeof callback === 'function') callback();
+      }, 320);
+    }
+
+    function unlockCeoGate() {
+      const inp = ge('ceoGatePasscode');
+      const err = ge('ceoGateErr');
+      const card = ge('ceoGateCard');
+      const btn = ge('btnCeoGateUnlock');
+      const val = inp ? inp.value.trim() : '';
+
+      if (val !== CEO_GATE_PASSCODE) {
+        if (err) {
+          err.style.display = 'flex';
+          const errTxt = ge('ceoGateErrText');
+          if (errTxt) errTxt.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
+        }
+        if (card) {
+          card.classList.remove('gate-shake');
+          void card.offsetWidth; // trigger reflow
+          card.classList.add('gate-shake');
+        }
+        if (inp) {
+          inp.value = '';
+          inp.focus();
+        }
+        return;
+      }
+
+      // Success!
+      if (err) err.style.display = 'none';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+      }
+      if (inp) inp.blur();
+
+      sessionStorage.setItem('rn_ceo_gate_unlocked', '1');
+
+      setTimeout(() => {
+        hideCeoGate(() => {
+          startDashboard();
+        });
+      }, 250);
+    }
+
+    function lockCeoGate() {
+      sessionStorage.removeItem('rn_ceo_gate_unlocked');
+      showCeoGate();
+    }
+
+    /* ── Dashboard Lifecycle ───────────────────── */
+    let _dashboardStarted = false;
+    let _refreshInterval = null;
+
+    async function startDashboard() {
+      const lo = ge('loadingOverlay');
+      if (!_dashboardStarted) {
+        _dashboardStarted = true;
+        if (lo) {
+          lo.style.display = 'flex';
+          lo.style.opacity = '1';
+        }
+        try {
+          await fetchData();
+          renderAll();
+        } catch (e) {
+          console.error('Dashboard load error:', e);
+        }
+        if (lo) {
+          lo.style.transition = 'opacity .5s ease';
+          lo.style.opacity = '0';
+          setTimeout(() => { lo.style.display = 'none'; }, 500);
+        }
+        if (!_refreshInterval) {
+          _refreshInterval = setInterval(refreshAll, 30000);
+        }
+      } else {
+        refreshAll();
+      }
+    }
+
+    function checkCeoGateSession() {
+      if (sessionStorage.getItem('rn_ceo_gate_unlocked') === '1') {
+        const gate = ge('ceoGateModal');
+        if (gate) gate.style.display = 'none';
+        startDashboard();
+      } else {
+        showCeoGate();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkCeoGateSession);
   </script>
 </body>
 

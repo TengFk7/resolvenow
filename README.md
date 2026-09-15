@@ -13,7 +13,7 @@
 | **Citizen Portal** | `/` | `public/index.html` | - | ประชาชนทั่วไป แจ้งเรื่อง ติดตาม แชท โหวต |
 | **Admin Portal** | `/admin` | `public/admin.html` | `@Teng11421142` | ผู้ดูแลระบบ จัดการคิว มอบหมายงาน อนุมัติ SLA |
 | **Technician Portal** | `/tech` หรือ `/technician` | `public/tech.html` | `@Teng11421142` | ช่างภาคสนาม รับงาน บันทึกรูป Before/After บันทึกวัสดุ |
-| **CEO Dashboard** | `/ceo` | `public/executive-dashboard.html` | - (Read-only / Masked PII) | ผู้บริหารระดับสูง สถิติ SLA กราฟงบประมาณ |
+| **CEO Dashboard** | `/ceo` | `public/executive-dashboard.html` | `@Teng11421142` | ผู้บริหารระดับสูง สถิติ SLA กราฟงบประมาณ (Masked PII) |
 | **Public Tracker** | `/track` | `public/track.html` | - (Public search) | ค้นหาและติดตามสถานะตั๋วด้วยรหัส Ticket ID |
 | **Data Dictionary** | `/Datadic` | `data_dictionary.html` | Login ด้วยสิทธิ์ Admin | พจนานุกรมข้อมูลฐานข้อมูลฉบับสมบูรณ์ |
 | **Project Poster** | `/project` | `public/project-poster.html` | - | โปสเตอร์สรุปฟีเจอร์และสถาปัตยกรรมโครงการ |
@@ -109,7 +109,7 @@ npm start
 | **Tech 7** | `tech7@resolvenow.th` | `tech1234` | อนันต์ กู้ภัย | เพลิง/ภัยพิบัติ (`Hazard`) |
 | **Citizen** | `tenginpb@gmail.com` | `123456` | Teng Teng | ประชาชนทดสอบ |
 
-> **หมายเหตุสำหรับ Portal `/admin` และ `/tech`**: ต้องกรอกรหัสผ่านปลดล็อค Gate Passcode **`@Teng11421142`** ก่อนเข้าสู่หน้าล็อกอิน
+> **หมายเหตุสำหรับ Portal `/admin`, `/tech` และ `/ceo`**: ต้องกรอกรหัสผ่านปลดล็อค Gate Passcode **`@Teng11421142`** ก่อนเข้าสู่หน้าล็อกอินหรือแดชบอร์ดผู้บริหาร
 
 ---
 

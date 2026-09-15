@@ -25,7 +25,7 @@
    - `http://localhost:3001/Datadic` : **Data Dictionary** (เข้าดูได้เฉพาะ Admin เท่านั้น)
    - `http://localhost:3001/project` : **Project Poster** (โปสเตอร์สรุปโครงการ)
 3. **Portal Security Gate Passcode**:
-   - พอร์ทัล `/admin` และ `/tech` มี Gate ป้องกันการเข้าถึงก่อนหน้า Login
+   - พอร์ทัล `/admin`, `/tech` และ `/ceo` มี Gate ป้องกันความปลอดภัย (สำหรับ `/admin` และ `/tech` ป้องกันก่อนหน้า Login, สำหรับ `/ceo` ป้องกันก่อนเข้า Executive Dashboard)
    - รหัสผ่านปลดล็อค Gate Passcode คือ: **`@Teng11421142`**
 4. **Seeded Test Accounts**:
    - **Admin**: `admin@resolvenow.th` / `admin1234`

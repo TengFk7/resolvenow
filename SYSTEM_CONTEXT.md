@@ -23,9 +23,11 @@
 
 - **Admin Security Gate (`/admin`)**: มี Modal ล็อคหน้าจอ บังคับใส่ Passcode ปลดล็อค
 - **Technician Security Gate (`/tech`)**: มี Modal ล็อคหน้าจอ บังคับใส่ Passcode ปลดล็อค
+- **CEO Executive Security Gate (`/ceo`)**: มี Modal ล็อคหน้าจอ บังคับใส่ Passcode ปลดล็อคก่อนดูแดชบอร์ด
 - **Gate Passcode กลางสำหรับทดสอบและควบคุม**: **`@Teng11421142`**
   - ควบคุมผ่านตัวแปร `ADMIN_GATE_PASSCODE` ใน `public/js/admin-portal.js`
   - ควบคุมผ่านตัวแปร `TECH_GATE_PASSCODE` ใน `public/js/tech-portal.js`
+  - ควบคุมผ่านตัวแปร `CEO_GATE_PASSCODE` ใน `public/executive-dashboard.html`
   - มีระบบตรวจจับ Animation สั่นเตือนเมื่อใส่รหัสผิด (`gate-shake`) และ Splash screen ต้อนรับเมื่อผ่านการยืนยันตัวตน
 
 ---
@@ -452,7 +454,7 @@ GEMINI_API_KEY=your-gemini-api-key
 
 1. **ห้าม Commit หรือ Push ขึ้น Git ด้วยตัวเอง**: ปฏิบัติตามนโยบายใน `AGENTS.md` อย่างเคร่งครัด
 2. **การทำงานกับ Portals แยก URL**: เมื่อมีคำสั่งปรับแต่งหน้า Admin, Tech หรือ CEO ให้ตรวจสอบว่ากำลังแก้ที่ไฟล์ Dedicated HTML/JS ที่ถูกต้อง (`admin.html` / `admin-portal.js`, `tech.html` / `tech-portal.js`, `executive-dashboard.html`) หรือแก้ไขใน Single Page ส่วนกลาง (`index.html`)
-3. **Portal Gate Passcode**: รหัสผ่านปลดล็อคเข้าหน้า Login ของ `/admin` และ `/tech` คือ `@Teng11421142`
+3. **Portal Gate Passcode**: รหัสผ่านปลดล็อคเข้าหน้า Login / Dashboard ของ `/admin`, `/tech` และ `/ceo` คือ `@Teng11421142`
 4. **SLA Calculation**: ห้ามคำนวณวันหมดอายุ SLA เองใน Route ให้เรียกใช้ `utils/slaHelper.js` เสมอ
 5. **Timeline Logging**: เมื่อมีการกระทำสำคัญต่อตั๋ว ให้เพิ่มบันทึกลงใน `ticket.timeline` ผ่านฟังก์ชัน `logTicketActivity()` เสมอเพื่อรักษา Audit Trail
 6. **XSS & Data Sanitization**: ฟิลด์ข้อความทั้งหมดต้องผ่าน `xss()` ใน Backend และ `escapeHTML()` ใน Frontend
