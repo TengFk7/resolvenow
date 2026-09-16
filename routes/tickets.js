@@ -290,7 +290,7 @@ function formatTicket(t, currentUserId) {
     // SLA
     slaAssignDeadline: t.slaAssignDeadline || null,
     slaCompleteDeadline: t.slaCompleteDeadline || null,
-    slaBreached: t.slaBreached || false,
+    slaBreached: checkIsSlaBreached(t),
     // Upvote & Follow
     upvoteCount: t.upvoteCount || 0,
     followerCount: t.followerCount || 0,
@@ -372,7 +372,7 @@ router.get('/report', requireAuth, async (req, res) => {
         citizenImages: t.citizenImages || [],
         beforeImage: t.beforeImage || null,
         afterImage: t.afterImage || null,
-        slaBreached: t.slaBreached || false,
+        slaBreached: checkIsSlaBreached(t),
         totalRepairCost: t.totalRepairCost || 0,
         materials: t.materials || [],
         createdAt: t.createdAt,

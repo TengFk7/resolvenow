@@ -105,6 +105,9 @@ router.put('/:id/accept', requireAuth, async (req, res) => {
       ticket.assignedName = user.firstName + ' ' + user.lastName;
       if (['pending', 'assigned'].includes(ticket.status)) ticket.status = 'in_progress';
       await ticket.save();
+
+      const io = req.app.get('io');
+      if (io) io.emit('ticket_updated');
     }
     res.json(help);
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }

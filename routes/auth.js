@@ -10,6 +10,7 @@ const router  = express.Router();
 const User    = require('../models/User');
 const Ticket  = require('../models/Ticket');
 const Comment = require('../models/Comment');
+const DirectMessage = require('../models/DirectMessage');
 const { otpStore } = require('../data/store');
 const { sendOtpEmail } = require('../config/mailer');
 const { cloudinary, purgeTicketImages } = require('../config/cloudinary');
@@ -152,6 +153,8 @@ router.post('/register', async (req, res) => {
 
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
+    req.session.firstName = user.firstName;
+    req.session.lastName  = user.lastName;
     res.json({ message: 'สมัครสำเร็จ', user: { id: user._id, firstName, lastName, email, role: 'citizen' } });
   } catch (e) {
     console.error('register error:', e);
@@ -189,6 +192,8 @@ router.post('/login', async (req, res) => {
 
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
+    req.session.firstName = user.firstName;
+    req.session.lastName  = user.lastName;
     if (remember) req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
 
     res.json({
@@ -292,6 +297,8 @@ router.post('/link-line', async (req, res) => {
     delete req.session.lineLinkPending;
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
+    req.session.firstName = user.firstName;
+    req.session.lastName  = user.lastName;
 
     console.log('[LINE Link] เชื่อมสำเร็จ:', user.email, '↔', lineUserId);
     res.json({
@@ -355,6 +362,8 @@ router.post('/link-line-skip', async (req, res) => {
     delete req.session.lineLinkPending;
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
+    req.session.firstName = user.firstName;
+    req.session.lastName  = user.lastName;
 
     res.json({
       message: 'เข้าสู่ระบบด้วย LINE สำเร็จ',
@@ -481,6 +490,8 @@ router.post('/verify-line-otp', async (req, res) => {
     delete req.session.lineLinkPending;
     req.session.userId = user._id.toString();
     req.session.role   = user.role;
+    req.session.firstName = user.firstName;
+    req.session.lastName  = user.lastName;
 
     console.log('[Register-LINE] สร้างบัญชีใหม่:', user.email, 'line:', user.lineUserId);
     res.json({
@@ -521,6 +532,9 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
     // CASCADE-FIX: clean up all data belonging to this user before deleting
     await Ticket.deleteMany({ citizenId: userId });         // tickets they created
     await Comment.deleteMany({ userId });                   // comments they wrote
+    await DirectMessage.deleteMany({                        // direct messages they sent or received
+      $or: [{ citizenId: userId }, { senderId: userId }]
+    });
     await Ticket.updateMany(                               // remove from other tickets' upvotes
       { 'upvotes.userId': userId },
       { $pull: { upvotes: { userId } } }
@@ -611,6 +625,12 @@ router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
     if (userIds.length > 0) {
       await Ticket.deleteMany({ citizenId: { $in: userIds } });
       await Comment.deleteMany({ userId: { $in: userIds } });
+      await DirectMessage.deleteMany({
+        $or: [
+          { citizenId: { $in: userIds } },
+          { senderId: { $in: userIds } }
+        ]
+      });
       await Ticket.updateMany(
         { 'upvotes.userId': { $in: userIds } },
         { $pull: { upvotes: { userId: { $in: userIds } } } }

@@ -8,6 +8,7 @@ const router  = express.Router();
 const bcrypt  = require('bcryptjs');
 const User    = require('../models/User');
 const Ticket  = require('../models/Ticket');
+const Category = require('../models/Category');
 
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ error: 'กรุณา Login ก่อน' });
@@ -104,10 +105,14 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'ไม่สามารถลบได้ — ช่างยังมีงานค้าง ' + activeCount + ' งาน' });
     }
 
+    await Category.updateMany(
+      { technicianIds: tech._id },
+      { $pull: { technicianIds: tech._id } }
+    );
+
     await User.findByIdAndDelete(tech._id);
     res.json({ message: 'ลบช่างสำเร็จ' });
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 module.exports = router;
-

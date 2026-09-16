@@ -69,7 +69,7 @@ sessionStore.on('error', function (err) {
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'resolvenow-secret-2024',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   store: sessionStore,
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000,

@@ -175,7 +175,16 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
     }
 
-    const senderName = [firstName, lastName].filter(Boolean).join(' ') || 'ไม่ทราบชื่อ';
+    let senderName = [firstName, lastName].filter(Boolean).join(' ');
+    if (!senderName) {
+      const u = await User.findById(userId).select('firstName lastName').lean();
+      if (u) {
+        senderName = [u.firstName, u.lastName].filter(Boolean).join(' ');
+        req.session.firstName = u.firstName;
+        req.session.lastName = u.lastName;
+      }
+    }
+    if (!senderName) senderName = (role === 'admin' ? 'เจ้าหน้าที่ศูนย์สั่งการ (Admin)' : 'ประชาชนผู้แจ้ง');
 
     const msg = await DirectMessage.create({
       senderId: userId,
