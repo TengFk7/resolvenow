@@ -229,6 +229,73 @@ runTest('Ticket model has indexes for duplicate detection, SLA, and status queri
   assert(hasSla, 'Ticket should have compound index on { slaBreached, status }');
 });
 
+// ── 7. Cognitive Thai NLP Heuristics Engine (AI Fallback) ─────────
+console.log('\n\x1b[36m[Group 7: Cognitive Thai NLP Heuristics Engine & AI Fallback]\x1b[0m');
+
+runTest('ruleBasedUrgency function is exported and functional', () => {
+  const { ruleBasedUrgency } = require('../routes/ai');
+  assert.strictEqual(typeof ruleBasedUrgency, 'function');
+});
+
+runTest('Cognitive Engine achieves 100% accuracy across all 134 few-shot dataset cases', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const { ruleBasedUrgency } = require('../routes/ai');
+
+  const aiContent = fs.readFileSync(path.join(__dirname, '../routes/ai.js'), 'utf8');
+  const lines = aiContent.split('\n');
+  const catMap = {
+    'สัตว์มีพิษ': 'Animal',
+    'ภัยพิบัติ': 'Hazard',
+    'ท่อน้ำ': 'Water',
+    'ไฟฟ้า': 'Electricity',
+    'ถนน': 'Road',
+    'ขยะ': 'Garbage',
+    'กีดขวาง': 'Tree'
+  };
+
+  const testCases = [];
+  for (const line of lines) {
+    const m = line.match(/^([^|\r\n]+)\s*\|\s*"([^"]+)"\s*→\s*(urgent|medium|normal)/);
+    if (m) {
+      testCases.push({
+        category: catMap[m[1].trim()] || m[1].trim(),
+        text: m[2].trim(),
+        expected: m[3].trim()
+      });
+    }
+  }
+
+  assert.strictEqual(testCases.length, 134, 'Should parse all 134 test cases from routes/ai.js');
+
+  let passed = 0;
+  for (const tc of testCases) {
+    const actual = ruleBasedUrgency(tc.text, tc.category);
+    if (actual === tc.expected) passed++;
+  }
+
+  assert.strictEqual(passed, 134, `Expected 134/134 passed, but got ${passed}/134`);
+});
+
+runTest('Cognitive Engine correctly handles spatial awareness & living space proximity', () => {
+  const { ruleBasedUrgency } = require('../routes/ai');
+  assert.strictEqual(ruleBasedUrgency('พบงูเห่าแผ่แม่เบี้ยอยู่ในห้องนอนเด็ก', 'Animal'), 'urgent');
+  assert.strictEqual(ruleBasedUrgency('ตัวเงินตัวทองเดินอยู่ริมคลองหลังบ้าน ไม่ได้เข้ามาในรั้ว', 'Animal'), 'normal');
+});
+
+runTest('Cognitive Engine correctly handles negation and absence of harm', () => {
+  const { ruleBasedUrgency } = require('../routes/ai');
+  assert.strictEqual(ruleBasedUrgency('มีรังแตนขนาดเล็กอยู่มุมหลังคาบ้าน ยังไม่ทำร้ายใคร', 'Animal'), 'medium');
+  assert.strictEqual(ruleBasedUrgency('ลมพัดแรงจนหลังคาสังกะสีปลิว แต่ไม่ได้ทับใคร', 'Hazard'), 'medium');
+  assert.strictEqual(ruleBasedUrgency('ฝนตกปรอยๆ ถนนลื่นเล็กน้อย ไม่ได้เกิดอุบัติเหตุ', 'Hazard'), 'normal');
+});
+
+runTest('Cognitive Engine distinguishes nuisance smoke from active fire hazard', () => {
+  const { ruleBasedUrgency } = require('../routes/ai');
+  assert.strictEqual(ruleBasedUrgency('มีคนเผาขยะในซอย ควันลอยเข้าบ้านทำให้แสบจมูกและหายใจไม่ออก', 'Hazard'), 'medium');
+  assert.strictEqual(ruleBasedUrgency('ไฟไหม้ร้านอาหารในตลาดสด ควันลามไปตึกข้างเคียงอย่างรวดเร็ว', 'Hazard'), 'urgent');
+});
+
 // ── Summary ──────────────────────────────────────────────────────
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);
