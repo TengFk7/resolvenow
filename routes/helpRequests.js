@@ -101,9 +101,23 @@ router.put('/:id/accept', requireAuth, async (req, res) => {
     // อัปเดต ticket ด้วย
     const ticket = await Ticket.findOne({ ticketId: help.ticketId });
     if (ticket) {
+      const prevAssigned = ticket.assignedName || 'ยังไม่ระบุ';
       ticket.assignedTo   = user._id;
       ticket.assignedName = user.firstName + ' ' + user.lastName;
       if (['pending', 'assigned'].includes(ticket.status)) ticket.status = 'in_progress';
+
+      if (!ticket.timeline) ticket.timeline = [];
+      ticket.timeline.push({
+        action: 'help_accepted',
+        actorRole: 'technician',
+        actorId: user._id,
+        actorName: user.firstName + ' ' + user.lastName,
+        details: 'ช่างรับคำขอความช่วยเหลือข้ามฝ่าย (' + (help.helpId || '') + ') และเข้าดูแลงานต่อ',
+        oldValue: prevAssigned,
+        newValue: user.firstName + ' ' + user.lastName,
+        timestamp: new Date()
+      });
+
       await ticket.save();
 
       const io = req.app.get('io');

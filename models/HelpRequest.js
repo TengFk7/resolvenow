@@ -27,4 +27,10 @@ const helpRequestSchema = new mongoose.Schema({
   reply:           { type: String, default: null },
 }, { timestamps: true });
 
+// ─── Indexes ──────────────────────────────────────────────────────
+helpRequestSchema.index({ status: 1 });
+helpRequestSchema.index({ requesterId: 1 });
+helpRequestSchema.index({ acceptedById: 1 });
+helpRequestSchema.index({ ticketId: 1 });
+
 module.exports = mongoose.model('HelpRequest', helpRequestSchema);

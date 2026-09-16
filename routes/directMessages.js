@@ -134,6 +134,11 @@ router.get('/admin-unread', requireAdmin, async (req, res) => {
 router.get('/:citizenId', requireAdmin, async (req, res) => {
   try {
     const { citizenId } = req.params;
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(citizenId)) {
+      return res.status(400).json({ error: 'รหัสผู้ใช้ไม่ถูกต้อง' });
+    }
+
     const messages = await DirectMessage.find({ citizenId })
       .sort({ createdAt: 1 })
       .limit(200);

@@ -13,7 +13,10 @@ const { checkIsSlaBreached } = require('../utils/slaHelper');
 // GET /api/ceo/tickets - ดึง tickets ทั้งหมดแบบ read-only สำหรับ dashboard
 router.get('/tickets', async (req, res) => {
   try {
-    const tickets = await Ticket.find().sort({ createdAt: -1 });
+    const tickets = await Ticket.find()
+      .select('ticketId category location urgency status slaBreached slaAssignDeadline slaCompleteDeadline slaPauseStatus totalRepairCost materials createdAt updatedAt')
+      .lean()
+      .sort({ createdAt: -1 });
 
     const formattedTickets = tickets.map(t => {
       return {

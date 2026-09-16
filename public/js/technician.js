@@ -446,20 +446,20 @@ async function confirmTechReject() {
 function completeJob(btn) {
   if (btn.disabled || btn.hasAttribute('disabled')) return;
   var id = btn.getAttribute('data-id');
+  if (!id) return;
+
+  btn.disabled = true;
 
   // Auto-save any entered materials before completing
   saveTechMaterials(id, true);
-  if (btn.disabled || btn.hasAttribute('disabled')) return;
-  var id = btn.getAttribute('data-id');
 
   // ── ยิง API และ animation พร้อมกัน (parallel) ──────────
-  // tryFinish() จะเรียก loadTickets() เมื่อทั้งสองเสร็จ
   var _apiDone = false;
   var _animDone = false;
 
   function tryFinish() {
     if (_apiDone && _animDone) {
-      // FIX: ปิด modal ก่อน loadTickets() เพื่อไม่ให้ guard ใน renderTech() บล็อก re-render
+      // ปิด modal ก่อน loadTickets() เพื่อไม่ให้ guard ใน renderTech() บล็อก re-render
       var modal = ge('mTicketDetail');
       if (modal) modal.classList.remove('on');
       _tcOpen = null;
@@ -467,14 +467,26 @@ function completeJob(btn) {
     }
   }
 
-  // 1) บันทึกสถานะทันที (ระหว่าง animation กำลังเล่น)
+  // 1) บันทึกสถานะ
   fetch('/api/tickets/' + id + '/status', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: 'completed' })
   })
-    .then(function () { _apiDone = true; tryFinish(); })
-    .catch(function () { _apiDone = true; tryFinish(); }); // reload แม้ error
+    .then(async function (r) {
+      if (!r.ok) {
+        var err = await r.json().catch(function () { return {}; });
+        throw new Error(err.error || 'ไม่สามารถบันทึกสถานะได้');
+      }
+      _apiDone = true;
+      tryFinish();
+    })
+    .catch(function (e) {
+      var ov = ge('techCompleteOverlay');
+      if (ov) ov.remove();
+      btn.disabled = false;
+      showToast(e.message || 'เกิดข้อผิดพลาดในการบันทึกสถานะ', true);
+    });
 
   // 2) เล่น animation — เมื่อ animation จบจึงเซ็ต animDone
   _showTechComplete(function () {

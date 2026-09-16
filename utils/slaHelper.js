@@ -33,9 +33,9 @@ function calcSlaDeadlines(urgency) {
  */
 function checkIsSlaBreached(ticket) {
   if (!ticket) return false;
-  // If ticket is completed, rejected, merged, or currently paused, do not breach
+  if (ticket.slaBreached) return true; // Once breached, remains breached
   if (ticket.status === 'completed' || ticket.status === 'rejected' || ticket.status === 'merged') {
-    return !!ticket.slaBreached;
+    return false;
   }
   if (ticket.slaPauseStatus === 'paused') {
     return false; // Time is frozen while paused
@@ -47,7 +47,7 @@ function checkIsSlaBreached(ticket) {
   if ((ticket.status === 'assigned' || ticket.status === 'in_progress' || ticket.status === 'reopened') && ticket.slaCompleteDeadline) {
     return now > new Date(ticket.slaCompleteDeadline);
   }
-  return !!ticket.slaBreached;
+  return false;
 }
 
 module.exports = {

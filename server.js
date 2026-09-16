@@ -168,6 +168,16 @@ io.on('connection', (socket) => {
   app.use('/api/help-requests', apiLimiter);
   app.use('/api/ai', apiLimiter);
 
+  // ─── Health Check Endpoint ──────────────────────────────────
+  app.get(['/health', '/api/health'], (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date(),
+      uptime: Math.floor(process.uptime()),
+      db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    });
+  });
+
   // ─── Routes ──────────────────────────────────────────────────
   app.use('/api/auth', require('./routes/auth'));
   app.use('/api/tickets', require('./routes/tickets'));
@@ -246,7 +256,7 @@ io.on('connection', (socket) => {
     ${errorMsg ? `<div class="error">⚠️ ${errorMsg}</div>` : ''}
     <form method="POST" action="/Datadic" autocomplete="on">
       <label for="dd_email">อีเมล (Email)</label>
-      <input id="dd_email" type="email" name="email" required placeholder="Emali ผู้ดูแลระบบ" autofocus/>
+      <input id="dd_email" type="email" name="email" required placeholder="Email ผู้ดูแลระบบ" autofocus/>
       <label for="dd_pw">รหัสผ่าน (Password)</label>
       <input id="dd_pw" type="password" name="password" required placeholder="••••••••"/>
       <button type="submit">เข้าสู่ระบบ →</button>
@@ -320,4 +330,36 @@ io.on('connection', (socket) => {
     console.log(`  ResolveNow: http://localhost:${PORT}`);
     console.log('='.repeat(40));
   });
+
+  // ─── Process Error & Graceful Shutdown Handling ───────────────
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Process] Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('[Process] Uncaught Exception:', err);
+  });
+
+  const gracefulShutdown = (signal) => {
+    console.log(`\n[Process] ${signal} signal received: closing HTTP server...`);
+    server.close(async () => {
+      console.log('[Process] HTTP server closed.');
+      try {
+        await mongoose.connection.close(false);
+        console.log('[Process] MongoDB connection closed cleanly.');
+      } catch (err) {
+        console.error('[Process] Error during DB close:', err.message);
+      }
+      process.exit(0);
+    });
+
+    // Force close after 10 seconds if hanging
+    setTimeout(() => {
+      console.error('[Process] Forcefully shutting down after timeout.');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 })();

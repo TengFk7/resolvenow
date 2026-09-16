@@ -77,7 +77,7 @@ async function reverseGeocode(lat, lng) {
     const https = require('https');
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=th&zoom=17`;
     return await new Promise((resolve) => {
-      https.get(url, { headers: { 'User-Agent': 'ResolveNow/1.0' } }, (res) => {
+      const req = https.get(url, { headers: { 'User-Agent': 'ResolveNow/1.0 (SmartCity App)' }, timeout: 2500 }, (res) => {
         let data = '';
         res.on('data', c => (data += c));
         res.on('end', () => {
@@ -93,7 +93,12 @@ async function reverseGeocode(lat, lng) {
             resolve(parts.length ? parts.join(', ') : json.display_name || `${lat},${lng}`);
           } catch { resolve(`${lat},${lng}`); }
         });
-      }).on('error', () => resolve(`${lat},${lng}`));
+      });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(`${lat},${lng}`);
+      });
+      req.on('error', () => resolve(`${lat},${lng}`));
     });
   } catch { return `${lat},${lng}`; }
 }
@@ -545,8 +550,11 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     for (const kw of ['flood', 'fire', 'อันตราย', 'เร่งด่วน', 'น้ำท่วม', 'ฉุกเฉิน'])
       if (desc.includes(kw)) score = Math.min(score + 10, 100);
 
-    let locationName = location;
-    if (lat && lng) locationName = await reverseGeocode(lat, lng);
+    let locationName = (location || '').trim();
+    const isRawCoord = !locationName || /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(locationName) || locationName === 'กำลังค้นหาตำแหน่ง...';
+    if (isRawCoord && lat && lng) {
+      locationName = await reverseGeocode(lat, lng);
+    }
 
     // สร้าง ticketId แบบ TKT-00001 (5 หลัก รองรับถึง 99,999 เคส)
     const seq = await Counter.nextSeq('ticket');
@@ -716,18 +724,17 @@ router.put('/:id/status', requireAuth, async (req, res) => {
         oldValue: oldStatus,
         newValue: status
       });
-      await ticket.save();
-    }
 
-    // SLA breach check — use central helper
-    if (!ticket.slaBreached && checkIsSlaBreached(ticket)) {
-      ticket.slaBreached = true;
-      await ticket.save();
-    }
+      // SLA breach check — use central helper
+      if (!ticket.slaBreached && checkIsSlaBreached(ticket)) {
+        ticket.slaBreached = true;
+      }
 
-    // Chat expiry — set 24-hour window when ticket is completed
-    if (status === 'completed' && !ticket.chatExpiresAt) {
-      ticket.chatExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      // Chat expiry — set 24-hour window when ticket is completed
+      if (status === 'completed' && !ticket.chatExpiresAt) {
+        ticket.chatExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      }
+
       await ticket.save();
     }
 
@@ -1354,6 +1361,14 @@ router.post('/:id/merge', requireAuth, async (req, res) => {
     if (!targetTicket.mergedTickets.includes(sourceTicket.ticketId)) {
       targetTicket.mergedTickets.push(sourceTicket.ticketId);
     }
+    logTicketActivity(targetTicket, {
+      action: 'ticket_merged_in',
+      actorRole: 'admin',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'รวมเคส ' + sourceTicket.ticketId + ' เข้ามาในเคสนี้เพื่อดำเนินการร่วมกัน',
+      newValue: sourceTicket.ticketId
+    });
     await targetTicket.save();
 
     // Mark source ticket as merged
@@ -1361,6 +1376,15 @@ router.post('/:id/merge', requireAuth, async (req, res) => {
     sourceTicket.isMerged = true;
     sourceTicket.mergedInto = targetTicket.ticketId;
     sourceTicket.rejectReason = 'รวมเรื่องเข้ากับเคสหลัก ' + targetTicket.ticketId;
+    logTicketActivity(sourceTicket, {
+      action: 'ticket_merged',
+      actorRole: 'admin',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'รวมเคสเข้ากับเคสหลัก ' + targetTicket.ticketId,
+      oldValue: 'pending',
+      newValue: 'merged'
+    });
     await sourceTicket.save();
 
     // Post comments to both
@@ -1482,6 +1506,14 @@ router.post('/:id/sla/request-pause', requireAuth, async (req, res) => {
       ticket.slaPauseStatus = 'paused';
       ticket.slaPauseReason = reason;
       ticket.slaPausedAt = new Date();
+      logTicketActivity(ticket, {
+        action: 'sla_paused',
+        actorRole: 'admin',
+        actorId: caller._id,
+        actorName: caller.firstName + ' ' + caller.lastName,
+        details: 'ผู้ดูแลระบบสั่งพักเวลา SLA ชั่วคราว: ' + reason,
+        newValue: 'paused'
+      });
       await ticket.save();
 
       await new Comment({
@@ -1499,6 +1531,14 @@ router.post('/:id/sla/request-pause', requireAuth, async (req, res) => {
     ticket.slaPauseStatus = 'requested';
     ticket.slaPauseReason = reason;
     ticket.slaPauseRequestedAt = new Date();
+    logTicketActivity(ticket, {
+      action: 'sla_pause_requested',
+      actorRole: 'technician',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'ช่างขอพักเวลา SLA ชั่วคราว: ' + reason,
+      newValue: 'requested'
+    });
     await ticket.save();
 
     await new Comment({
@@ -1536,6 +1576,14 @@ router.post('/:id/sla/approve-pause', requireAuth, async (req, res) => {
     if (approved) {
       ticket.slaPauseStatus = 'paused';
       ticket.slaPausedAt = new Date();
+      logTicketActivity(ticket, {
+        action: 'sla_pause_approved',
+        actorRole: 'admin',
+        actorId: caller._id,
+        actorName: caller.firstName + ' ' + caller.lastName,
+        details: 'อนุมัติการพักเวลา SLA ชั่วคราว: "' + (ticket.slaPauseReason || 'ตามที่แจ้ง') + '"',
+        newValue: 'paused'
+      });
       await ticket.save();
 
       await new Comment({
@@ -1549,6 +1597,14 @@ router.post('/:id/sla/approve-pause', requireAuth, async (req, res) => {
       ticket.slaPauseStatus = 'none';
       const prevReason = ticket.slaPauseReason;
       ticket.slaPauseReason = null;
+      logTicketActivity(ticket, {
+        action: 'sla_pause_rejected',
+        actorRole: 'admin',
+        actorId: caller._id,
+        actorName: caller.firstName + ' ' + caller.lastName,
+        details: 'ปฏิเสธคำขอพักเวลา SLA (เหตุผลเดิม: ' + (prevReason || '—') + ')',
+        newValue: 'none'
+      });
       await ticket.save();
 
       await new Comment({
@@ -1607,6 +1663,14 @@ router.post('/:id/sla/resume', requireAuth, async (req, res) => {
     ticket.slaPauseStatus = 'none';
     ticket.slaPausedAt = null;
     ticket.slaPauseReason = null;
+    logTicketActivity(ticket, {
+      action: 'sla_resumed',
+      actorRole: caller.role,
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'สิ้นสุดการพักเวลา SLA และนับเวลาต่อ (ขยายเวลาเพิ่ม ' + (durationHours >= 1 ? durationHours + ' ชม.' : durationMins + ' นาที') + ')',
+      newValue: 'running'
+    });
     await ticket.save();
 
     await new Comment({

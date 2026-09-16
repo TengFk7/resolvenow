@@ -16,5 +16,7 @@ const directMessageSchema = new mongoose.Schema({
 
 // Index for fast lookup by citizen
 directMessageSchema.index({ citizenId: 1, createdAt: 1 });
+directMessageSchema.index({ citizenId: 1, senderRole: 1, isRead: 1 });
+directMessageSchema.index({ senderRole: 1, isRead: 1 });
 
 module.exports = mongoose.model('DirectMessage', directMessageSchema);

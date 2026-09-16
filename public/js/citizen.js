@@ -409,7 +409,7 @@ async function submitTicket() {
     var fd = new FormData();
     fd.append('category', cat);
     fd.append('urgency', urg);
-    fd.append('location', lat + ',' + lng);  // GPS coordinates as location
+    fd.append('location', (_gpsAddress && _gpsAddress !== 'กำลังโหลดที่อยู่...') ? _gpsAddress : (lat + ',' + lng));
     fd.append('description', desc);
     fd.append('lat', lat);
     fd.append('lng', lng);

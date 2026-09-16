@@ -301,6 +301,10 @@ ${catCtx}
             } catch (e) { reject(e); }
           });
         });
+        reqC.setTimeout(3500, () => {
+          reqC.destroy();
+          reject(new Error('Gemini timeout (3.5s)'));
+        });
         reqC.on('error', reject);
         reqC.write(body);
         reqC.end();
@@ -346,6 +350,10 @@ ${catCtx}
               else reject('Unexpected response');
             } catch (e) { reject(e); }
           });
+        });
+        reqC.setTimeout(3500, () => {
+          reqC.destroy();
+          reject(new Error('Claude timeout (3.5s)'));
         });
         reqC.on('error', reject);
         reqC.write(body);

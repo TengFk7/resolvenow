@@ -18,4 +18,8 @@ const userSchema = new mongoose.Schema({
   createdViaLine: { type: Boolean, default: false }, // true = สร้างบัญชีผ่าน register-line
 }, { timestamps: true });
 
+// ─── Indexes ──────────────────────────────────────────────────────
+userSchema.index({ role: 1 });
+userSchema.index({ lineUserId: 1 }, { sparse: true });
+
 module.exports = mongoose.model('User', userSchema);
