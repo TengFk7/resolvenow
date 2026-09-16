@@ -169,6 +169,9 @@ function showTechSplash(onDone) {
 
 /* ── Tech Security Gate (Passcode Protection) ────────── */
 var TECH_GATE_PASSCODE = '@Teng11421142';
+var _techPendingResumeUser = null;
+var _techSessionCheckPromise = null;
+var _techGateUnlocking = false;
 
 function toggleTechGatePassVisibility() {
   var inp = ge('techGatePasscode');
@@ -191,6 +194,9 @@ function showTechGate() {
   var inp = ge('techGatePasscode');
   var err = ge('techGateErr');
   var btn = ge('btnTechGateUnlock');
+  var sub = card ? card.querySelector('.portal-gate-sub') : null;
+
+  _techGateUnlocking = false;
 
   if (appPage) appPage.style.display = 'none';
   if (authPage) authPage.style.display = 'none';
@@ -200,9 +206,18 @@ function showTechGate() {
   }
   if (card) card.classList.remove('gate-shake');
   if (err) err.style.display = 'none';
+
+  var wasLoggedIn = (sessionStorage.getItem('rn_tech_logged_in') === '1');
+  if (sub) {
+    sub.textContent = wasLoggedIn
+      ? 'กรุณากรอกรหัสผ่านความปลอดภัย เพื่อกลับเข้าสู่ระบบปฏิบัติงาน'
+      : 'กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่หน้าเข้าสู่ระบบ';
+  }
   if (btn) {
     btn.disabled = false;
-    btn.innerHTML = '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+    btn.innerHTML = wasLoggedIn
+      ? '<span>ปลดล็อคเข้าสู่ระบบปฏิบัติงาน</span> <span>→</span>'
+      : '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
   }
   if (inp) {
     inp.value = '';
@@ -233,7 +248,8 @@ function hideTechGate() {
   }, 320);
 }
 
-function unlockTechGate() {
+async function unlockTechGate() {
+  if (_techGateUnlocking) return;
   var inp = ge('techGatePasscode');
   var err = ge('techGateErr');
   var card = ge('techGateCard');
@@ -258,6 +274,8 @@ function unlockTechGate() {
     return;
   }
 
+  _techGateUnlocking = true;
+
   // Success!
   if (err) err.style.display = 'none';
   if (btn) {
@@ -266,8 +284,41 @@ function unlockTechGate() {
   }
   if (inp) inp.blur();
 
+  // If there's an ongoing session check promise, wait for it
+  if (_techSessionCheckPromise) {
+    try {
+      await _techSessionCheckPromise;
+    } catch (e) {}
+  }
+
   setTimeout(function () {
-    hideTechGate();
+    var gate = ge('techGateModal');
+    var wasLoggedIn = (sessionStorage.getItem('rn_tech_logged_in') === '1');
+
+    if (wasLoggedIn && (CU || _techPendingResumeUser)) {
+      // Refresh / Lock screen scenario: directly enter tech workspace without login!
+      if (_techPendingResumeUser) {
+        CU = _techPendingResumeUser;
+        window.CU = CU;
+        _techPendingResumeUser = null;
+      }
+      if (gate) {
+        gate.classList.add('gate-closing');
+        setTimeout(function () {
+          gate.style.display = 'none';
+          gate.classList.remove('gate-closing');
+          _techGateUnlocking = false;
+          enterTechApp(false);
+        }, 320);
+      } else {
+        _techGateUnlocking = false;
+        enterTechApp(false);
+      }
+    } else {
+      // Tab was closed & reopened, or logged out: must login anew!
+      _techGateUnlocking = false;
+      hideTechGate();
+    }
   }, 250);
 }
 
@@ -388,6 +439,7 @@ async function doTechLogout() {
   sessionStorage.removeItem('rn_tech_logged_in');
   CU = null;
   window.CU = null;
+  _techPendingResumeUser = null;
 
   if (_ticketsInterval) { clearInterval(_ticketsInterval); _ticketsInterval = null; }
   if (_helpInterval) { clearInterval(_helpInterval); _helpInterval = null; }
@@ -410,25 +462,37 @@ async function doTechLogout() {
 
 /* ── Session Check on Load ───────────────────────────── */
 (function checkTechSession() {
-  fetch('/api/auth/me')
-    .then(function (r) {
-      if (r.ok) return r.json();
-      throw new Error('No session');
-    })
-    .then(function (d) {
-      if (d.loggedIn && d.role === 'technician') {
-        CU = d;
-        window.CU = CU;
-        sessionStorage.setItem('rn_tech_logged_in', '1');
-        var gate = ge('techGateModal');
-        if (gate) gate.style.display = 'none';
-        enterTechApp(false);
-      } else {
-        // Not logged in or not a tech -> show security gate!
-        showTechGate();
-      }
-    })
-    .catch(function () {
-      showTechGate();
-    });
+  var wasLoggedIn = (sessionStorage.getItem('rn_tech_logged_in') === '1');
+
+  if (!wasLoggedIn) {
+    // 1. Fresh visit or Tab closed and reopened:
+    // User MUST enter Gate passcode AND MUST log in again!
+    // Invalidate server session to ensure full re-login
+    fetch('/api/auth/logout', { method: 'POST' }).catch(function () {});
+    CU = null;
+    window.CU = null;
+    _techPendingResumeUser = null;
+    showTechGate();
+  } else {
+    // 2. Tab was refreshed while logged in:
+    // Lock UI behind Security Gate until passcode is entered, but preserve session so no re-login is required!
+    showTechGate();
+    _techSessionCheckPromise = fetch('/api/auth/me')
+      .then(function (r) {
+        if (r.ok) return r.json();
+        throw new Error('No session');
+      })
+      .then(function (d) {
+        if (d.loggedIn && d.role === 'technician') {
+          _techPendingResumeUser = d;
+        } else {
+          _techPendingResumeUser = null;
+          sessionStorage.removeItem('rn_tech_logged_in');
+        }
+      })
+      .catch(function () {
+        _techPendingResumeUser = null;
+        sessionStorage.removeItem('rn_tech_logged_in');
+      });
+  }
 })();

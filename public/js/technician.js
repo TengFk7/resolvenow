@@ -634,6 +634,7 @@ async function apiStatusAndRefreshModal(id, status, toastMsg) {
     if (!res.ok) {
       if (res.status === 401 || (res.status === 403 && updated.error && updated.error.includes('ประชาชน'))) {
         showToast(updated.error || 'เซสชันไม่ถูกต้อง กรุณาเข้าสู่ระบบช่างใหม่อีกครั้ง', true);
+        sessionStorage.removeItem('rn_tech_logged_in');
         setTimeout(function () {
           if (typeof showTechGate === 'function') showTechGate();
         }, 1600);
