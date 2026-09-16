@@ -206,12 +206,21 @@ async function refreshAdminDmUnread() {
 
 function _updateAdminDmBellBadge(forceShow) {
   var badge = ge('dmAdminBellBadge');
-  if (!badge) return;
-  if (forceShow || _dmAdminUnread > 0) {
-    if (!forceShow) badge.textContent = _dmAdminUnread > 99 ? '99+' : _dmAdminUnread;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
+  var hbgBadge = ge('dmAdminHbgBadge');
+  if (badge) {
+    if (forceShow || _dmAdminUnread > 0) {
+      if (!forceShow) badge.textContent = _dmAdminUnread > 99 ? '99+' : _dmAdminUnread;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+  if (hbgBadge) {
+    if (forceShow || _dmAdminUnread > 0) {
+      hbgBadge.classList.remove('hidden');
+    } else {
+      hbgBadge.classList.add('hidden');
+    }
   }
 }
 

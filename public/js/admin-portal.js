@@ -254,6 +254,8 @@ function enterAdminApp(showSplash) {
   var adminInit = (CU.firstName ? CU.firstName[0] : 'A') + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
   var avEl = ge('adminAv'); if (avEl) avEl.textContent = adminInit.toUpperCase();
   var nmEl = ge('adminName'); if (nmEl) nmEl.textContent = (CU.firstName || 'Admin') + (CU.lastName ? ' ' + CU.lastName : '');
+  var davEl = ge('drawerAv'); if (davEl) davEl.textContent = adminInit.toUpperCase();
+  var dnmEl = ge('drawerName'); if (dnmEl) dnmEl.textContent = (CU.firstName || 'Admin') + (CU.lastName ? ' ' + CU.lastName : '');
 
   // Load category cache and start dashboard
   if (typeof loadCategories === 'function') loadCategories();

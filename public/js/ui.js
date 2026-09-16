@@ -311,7 +311,7 @@ function showPage(name) {
     btn.classList.toggle('on', k === name);
   });
   // Update page title
-  var titles = { dashboard: 'Smart Dispatcher Dashboard', queue: 'Ticket ทั้งหมด', techs: 'สถานะทีมช่าง', categories: 'จัดการหมวดหมู่เรื่องร้องเรียน' };
+  var titles = { dashboard: 'Dashboard', queue: 'Ticket ทั้งหมด', techs: 'สถานะทีมช่าง', categories: 'จัดการหมวดหมู่เรื่องร้องเรียน' };
   var pt = ge('pageTitle');
   if (pt && titles[name]) pt.textContent = titles[name];
   currentPage = name;

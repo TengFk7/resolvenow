@@ -497,9 +497,18 @@ router.get('/', requireAuth, async (req, res) => {
     const user = await User.findById(req.session.userId);
     let query = {};
     if (user.role === 'citizen') query = { citizenId: user._id };
-    else if (user.role === 'technician') query = {
-      $or: [{ category: user.specialty }, { assignedTo: user._id }]
-    };
+    else if (user.role === 'technician') {
+      const cats = await Category.find({
+        $or: [{ technicianIds: user._id }, { name: user.specialty }]
+      }).select('name');
+      const catNames = Array.from(new Set([user.specialty, ...cats.map(c => c.name)].filter(Boolean)));
+      query = {
+        $or: [
+          { category: { $in: catNames } },
+          { assignedTo: user._id }
+        ]
+      };
+    }
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
 
     // SLA breach evaluation — use central helper
@@ -606,23 +615,30 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
     const caller = await User.findById(req.session.userId);
-    if (caller.role === 'citizen') return res.status(403).json({ error: 'ไม่มีสิทธิ์เปลี่ยนสถานะ' });
+    if (!caller) return res.status(401).json({ error: 'ไม่พบผู้ใช้ กรุณาเข้าสู่ระบบใหม่' });
+    if (caller.role === 'citizen') {
+      return res.status(403).json({
+        error: 'ไม่มีสิทธิ์เปลี่ยนสถานะ (เซสชันปัจจุบันเป็นบัญชีประชาชน หากต้องการปฏิบัติงานในฐานะช่าง กรุณาล็อกอินผ่านพอร์ทัลช่างที่ /tech)'
+      });
+    }
 
     // BUG-014: Validate status transitions to prevent skipping workflow steps
     const TRANSITIONS = {
-      // technicians: can only move forward or reject
+      // technicians: can move forward, accept pending/reopened, or reject
       technician: {
-        pending:     ['assigned'],
-        assigned:    ['in_progress', 'rejected'],
+        pending:     ['assigned', 'in_progress'],
+        assigned:    ['in_progress', 'rejected', 'assigned'],
         in_progress: ['completed', 'rejected'],
+        reopened:    ['assigned', 'in_progress', 'rejected'],
         completed:   [],
         rejected:    []
       },
       // admin: can change to any status except backward (but allow override for corrections)
       admin: {
-        pending:     ['assigned', 'rejected'],
+        pending:     ['assigned', 'rejected', 'in_progress'],
         assigned:    ['in_progress', 'completed', 'rejected', 'pending'],
         in_progress: ['completed', 'rejected', 'assigned'],
+        reopened:    ['assigned', 'in_progress', 'pending', 'rejected'],
         completed:   ['in_progress'],   // admin can reopen
         rejected:    ['pending']        // admin can revert reject
       }
@@ -636,9 +652,10 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     }
 
     // FIX-#6 IDOR: ตรวจว่าช่างเป็นเจ้าของงานนี้จริงๆ
-    // ยกเว้น: pending → assigned (รับงานใหม่) ช่าง B ไม่สามารถแตะ ticket ที่ ช่าง A ถืออยู่แล้ว
+    // ยกเว้น: pending / reopened / ยังไม่ระบุช่าง (รับงานใหม่) ช่าง B ไม่สามารถแตะ ticket ที่ ช่าง A ถืออยู่แล้ว
     if (caller.role === 'technician') {
-      const isSelfAssign = ticket.status === 'pending' && status === 'assigned';
+      const isSelfAssign = (ticket.status === 'pending' || ticket.status === 'reopened' || !ticket.assignedTo) &&
+        (status === 'assigned' || status === 'in_progress');
       const isOwner = ticket.assignedTo &&
         ticket.assignedTo.toString() === caller._id.toString();
       if (!isSelfAssign && !isOwner) {
@@ -648,23 +665,24 @@ router.put('/:id/status', requireAuth, async (req, res) => {
 
     const oldStatus = ticket.status;
 
-    let isInitialAssign = ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician' && !ticket.assignedTo);
+    let isInitialAssign = ((status === 'assigned' || status === 'in_progress') && caller.role === 'technician' && (!ticket.assignedTo || ticket.status === 'pending' || ticket.status === 'reopened'));
 
     if (isInitialAssign) {
+      const actionText = status === 'in_progress' ? 'ช่างรับงานและลงพื้นที่เข้าปฏิบัติงาน' : 'ช่างรับงานและเตรียมลงพื้นที่';
       const updated = await Ticket.findOneAndUpdate(
-        { ticketId: req.params.id, status: ticket.status },
+        { ticketId: req.params.id },
         { 
           assignedTo: caller._id, 
           assignedName: caller.firstName + ' ' + caller.lastName, 
           status: status,
           $push: {
             timeline: {
-              action: 'assigned',
+              action: status === 'in_progress' ? 'in_progress' : 'assigned',
               actorRole: caller.role,
               actorId: caller._id,
               actorName: caller.firstName + ' ' + caller.lastName,
-              details: 'ช่างรับงานและเตรียมลงพื้นที่',
-              oldValue: 'ยังไม่ระบุ',
+              details: actionText,
+              oldValue: ticket.assignedName || 'ยังไม่ระบุ',
               newValue: caller.firstName + ' ' + caller.lastName,
               timestamp: new Date()
             }
@@ -674,7 +692,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       );
       if (!updated) return res.status(400).json({ error: 'Ticket นี้ถูกทำรายการไปแล้ว โปรดรีเฟรชหน้าจอ' });
       Object.assign(ticket, updated);
-      if (status !== 'assigned') {
+      if (status !== 'assigned' && status !== 'in_progress') {
         logTicketActivity(ticket, {
           action: 'status_changed',
           actorRole: caller.role,
@@ -794,9 +812,9 @@ router.post('/:id/upload/before', requireAuth, upload.single('image'), async (re
     if (!ticket.assignedTo || ticket.assignedTo.toString() !== caller._id.toString())
       return res.status(403).json({ error: 'คุณไม่ใช่ช่างที่รับผิดชอบงานนี้' });
 
-    // ❸ Workflow: ticket ต้องอยู่สถานะ assigned ถึงจะอัปรูปก่อนทำงานได้
-    if (ticket.status !== 'assigned')
-      return res.status(400).json({ error: 'ต้องอยู่ในสถานะ "รับงานแล้ว" จึงจะอัปโหลดรูปก่อนทำงานได้' });
+    // ❸ Workflow: ticket ต้องอยู่สถานะ assigned หรือ in_progress ถึงจะอัปรูปก่อนทำงานได้
+    if (ticket.status !== 'assigned' && ticket.status !== 'in_progress')
+      return res.status(400).json({ error: 'ต้องอยู่ในสถานะ "รับงานแล้ว" หรือ "กำลังดำเนินการ" จึงจะอัปโหลดรูปก่อนทำงานได้' });
 
     ticket.beforeImage = getFileUrl(req);
     await ticket.save();
@@ -1832,8 +1850,11 @@ router.post('/:id/materials', requireAuth, async (req, res) => {
     for (const item of materials) {
       const name = (item.name || '').trim();
       if (!name) continue;
-      const quantity = Math.max(1, parseFloat(item.quantity) || 1);
       const unit = (item.unit || 'ชิ้น').trim();
+      let quantity = Math.max(1, parseFloat(item.quantity) || 1);
+      if (unit === 'ชิ้น' && quantity > 100) {
+        quantity = 100;
+      }
       const unitPrice = Math.max(0, parseFloat(item.unitPrice) || 0);
       const totalPrice = Math.round(quantity * unitPrice * 100) / 100;
       totalCost += totalPrice;

@@ -208,8 +208,9 @@ function tcToggle(ticketId) {
   var prioBadgeTxt = bucket === 'urgent' ? '⚡ ด่วนมาก' : (bucket === 'medium' ? '⏰ ด่วน' : '🔵 ปกติ');
   if (isDone) prioBadgeTxt = t.status === 'completed' ? '✅ เสร็จสิ้น' : '❌ ปฏิเสธ';
 
-  var s1 = t.status === 'pending' ? 'active' : 'done';
-  var s2 = t.status === 'pending' ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
+  var isUnassignedOrPending = (t.status === 'pending' || t.status === 'reopened' || !t.assignedTo);
+  var s1 = isUnassignedOrPending ? 'active' : 'done';
+  var s2 = isUnassignedOrPending ? 'idle' : (t.status === 'assigned' ? 'active' : 'done');
   var s3 = t.status === 'in_progress' ? 'active' : (t.status === 'completed' ? 'done' : 'idle');
 
   // ── Modal title
@@ -266,9 +267,13 @@ function tcToggle(ticketId) {
       + '<div class="snum ' + s1 + '">' + (s1 === 'done' ? '✓' : '1') + '</div>'
       + '<div class="slbl">ข้อมูลการร้องเรียน</div>'
       + '<span class="sstat ' + s1 + '">' + (s1 === 'done' ? 'เสร็จ' : 'รอ') + '</span></div>';
-    if (t.status === 'pending')
-      h += '<div class="sbody"><p>กดรับงานเพื่อเริ่มลงพื้นที่</p>'
+    if (isUnassignedOrPending) {
+      var pText = t.status === 'reopened'
+        ? 'ผู้แจ้งขอให้ตรวจสอบใหม่ — กดรับงานเพื่อลงพื้นที่'
+        : 'กดรับงานเพื่อเริ่มลงพื้นที่';
+      h += '<div class="sbody"><p>' + pText + '</p>'
         + '<button class="btnaccept" data-id="' + t.ticketId + '" onclick="acceptJob(this)"><span class="btn-txt">🔧 รับเรื่องและลงพื้นที่</span></button></div>';
+    }
     h += '</div>';
 
     /* STEP 2 */
@@ -277,24 +282,33 @@ function tcToggle(ticketId) {
       + '<div class="slbl">ยืนยันการเข้าตรวจสอบ</div>'
       + '<span class="sstat ' + s2 + '">' + (s2 === 'done' ? 'เสร็จ' : s2 === 'active' ? 'กำลังทำ' : 'รอ') + '</span></div>';
     if (s2 === 'active') {
-      h += '<div class="sbody"><p>ถ่ายรูปสภาพก่อนซ่อม</p>';
-      if (t.beforeImage)
-        h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
-          + '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover"/>'
-          + '<div class="ilbl">✅ อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
-      else
-        h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
-          + '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
-      h += '<div style="margin-bottom:12px">'
-        + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บันทึกเพิ่มเติม</label>'
-        + '<textarea class="tech-note" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
-      h += '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px">'
-        + '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div>'
-        + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
-      h += '<div style="display:flex;gap:8px">'
-        + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="rejectJob(this)">❌ ปฏิเสธ</button>'
-        + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
-        + '</div></div>';
+      var currentUid = (window.CU && (window.CU.id || window.CU._id)) ? (window.CU.id || window.CU._id).toString() : '';
+      var isAssignedToOther = t.assignedTo && currentUid && (t.assignedTo.toString() !== currentUid);
+
+      if (isAssignedToOther) {
+        h += '<div class="sbody"><div style="background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.25);border-radius:10px;padding:12px;color:#dc2626;font-size:13px;font-weight:600">'
+          + '⚠️ งานนี้มอบหมายให้ช่าง: <strong>' + escapeHTML(t.assignedName || 'เจ้าหน้าที่ท่านอื่น') + '</strong> แล้ว'
+          + '</div></div>';
+      } else {
+        h += '<div class="sbody"><p>ถ่ายรูปสภาพก่อนซ่อม</p>';
+        if (t.beforeImage)
+          h += '<div class="islot has" style="display:block;margin-bottom:12px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
+            + '<img src="' + t.beforeImage + '" style="width:100%;height:130px;object-fit:cover"/>'
+            + '<div class="ilbl">✅ อัปโหลดแล้ว — คลิกเปลี่ยน</div></div>';
+        else
+          h += '<div class="islot" style="display:block;margin-bottom:12px;padding:20px" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)">'
+            + '<div style="font-size:28px">📷</div><div style="font-size:13px;margin-top:4px">คลิกถ่ายรูปก่อนซ่อม</div></div>';
+        h += '<div style="margin-bottom:12px">'
+          + '<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">บันทึกเพิ่มเติม</label>'
+          + '<textarea class="tech-note" placeholder="บรรยายสภาพปัญหา..."></textarea></div>';
+        h += '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px">'
+          + '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ต้องการความช่วยเหลือจากช่างแผนกอื่น?</div>'
+          + '<button class="btn-help" data-id="' + t.ticketId + '" onclick="openHelpModal(this.getAttribute(\'data-id\'))">📌 ขอความช่วยเหลือ</button></div>';
+        h += '<div style="display:flex;gap:8px">'
+          + '<button class="btnreject2" data-id="' + t.ticketId + '" onclick="rejectJob(this)">❌ ปฏิเสธ</button>'
+          + '<button class="btnconfirm" data-id="' + t.ticketId + '" onclick="startWork(this)">✅ ยืนยันเริ่มซ่อม</button>'
+          + '</div></div>';
+      }
     }
     h += '</div>';
 
@@ -337,7 +351,7 @@ function tcToggle(ticketId) {
         + '</div>'
         + '<div class="mat-table-responsive">'
         + '<table class="mat-table" id="matTable_' + t.ticketId + '">'
-        + '<thead><tr><th>ชื่อวัสดุ/อุปกรณ์</th><th style="width:70px">จำนวน</th><th style="width:70px">หน่วย</th><th style="width:90px">ราคา/หน่วย (฿)</th><th style="width:85px;text-align:right">รวม (฿)</th><th style="width:36px"></th></tr></thead>'
+        + '<thead><tr><th style="min-width:110px">ชื่อวัสดุ/อุปกรณ์</th><th style="width:62px;text-align:center">จำนวน</th><th style="width:72px;text-align:center">หน่วย</th><th style="width:82px">ราคา/หน่วย</th><th style="width:76px;text-align:right">รวม (฿)</th><th style="width:36px;text-align:center"></th></tr></thead>'
         + '<tbody id="matTbody_' + t.ticketId + '"></tbody>'
         + '</table></div>'
         + '<div class="mat-cost-summary-box">'
@@ -618,6 +632,13 @@ async function apiStatusAndRefreshModal(id, status, toastMsg) {
     });
     var updated = await res.json();
     if (!res.ok) {
+      if (res.status === 401 || (res.status === 403 && updated.error && updated.error.includes('ประชาชน'))) {
+        showToast(updated.error || 'เซสชันไม่ถูกต้อง กรุณาเข้าสู่ระบบช่างใหม่อีกครั้ง', true);
+        setTimeout(function () {
+          if (typeof showTechGate === 'function') showTechGate();
+        }, 1600);
+        return;
+      }
       showToast(updated.error || 'เกิดข้อผิดพลาด', true);
       return;
     }
@@ -807,25 +828,144 @@ function initTechMaterialsForm(ticketId, existingMaterials) {
 function addTechMaterialRow(ticketId, item) {
   var tbody = ge('matTbody_' + ticketId);
   if (!tbody) return;
+
+  // ลบข้อความ empty row ถ้ามีอยู่
+  var emptyRow = tbody.querySelector('.mat-empty-row');
+  if (emptyRow) emptyRow.remove();
+
   var itm = item || { name: '', quantity: 1, unit: 'ชิ้น', unitPrice: 0 };
+  var hasName = !!(itm.name && String(itm.name).trim().length > 0);
+  var currentUnit = itm.unit || 'ชิ้น';
+  if (currentUnit === 'เซนติเมตร') currentUnit = 'เซน';
+
+  var qty = parseFloat(itm.quantity) || 1;
+  if (currentUnit === 'ชิ้น' && qty > 100) qty = 100;
+  if (qty < 1) qty = 1;
+
   var tr = document.createElement('tr');
   tr.className = 'mat-data-row';
+
+  var nameEsc = escapeHTML(itm.name || '');
+  var unitPrice = (itm.unitPrice !== undefined && itm.unitPrice !== null) ? itm.unitPrice : 0;
+  var disabledAttr = hasName ? '' : ' disabled';
+  var disabledTitle = hasName ? '' : ' title="กรุณากรอกชื่ออุปกรณ์ก่อน"';
+  var maxAttr = (currentUnit === 'ชิ้น') ? ' max="100"' : '';
+
+  var unitSelectHtml = '<select class="mat-input mat-select mat-unit"' + disabledAttr + disabledTitle + ' onchange="handleMatUnitChange(this, \'' + ticketId + '\')">'
+    + '<option value="ชิ้น"' + (currentUnit === 'ชิ้น' ? ' selected' : '') + '>ชิ้น</option>'
+    + '<option value="เมตร"' + (currentUnit === 'เมตร' ? ' selected' : '') + '>เมตร</option>'
+    + '<option value="เซน"' + (currentUnit === 'เซน' ? ' selected' : '') + '>เซน</option>'
+    + '</select>';
+
   tr.innerHTML = [
-    '<td><input type="text" class="mat-input mat-name" placeholder="เช่น หลอดไฟ LED, ท่อ PVC" value="' + escapeHTML(itm.name || '') + '" oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
-    '<td><input type="number" min="1" class="mat-input mat-qty" value="' + (itm.quantity || 1) + '" oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
-    '<td><input type="text" class="mat-input mat-unit" placeholder="ชิ้น" value="' + escapeHTML(itm.unit || 'ชิ้น') + '" /></td>',
-    '<td><input type="number" min="0" step="0.5" class="mat-input mat-price" placeholder="0" value="' + (itm.unitPrice || 0) + '" oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
+    '<td><input type="text" class="mat-input mat-name" placeholder="เช่น หลอดไฟ LED, ท่อ PVC" value="' + nameEsc + '" oninput="handleMatNameInput(this, \'' + ticketId + '\')" /></td>',
+    '<td style="text-align:center"><input type="number" min="1"' + maxAttr + ' class="mat-input mat-qty" value="' + qty + '"' + disabledAttr + disabledTitle + ' oninput="handleMatQtyInput(this, \'' + ticketId + '\')" /></td>',
+    '<td>' + unitSelectHtml + '</td>',
+    '<td><input type="number" min="0" step="0.5" class="mat-input mat-price" placeholder="0" value="' + unitPrice + '"' + disabledAttr + disabledTitle + ' oninput="recalcTechMaterialsTotal(\'' + ticketId + '\')" /></td>',
     '<td style="text-align:right;font-weight:700" class="mat-row-total">฿0.00</td>',
-    '<td style="text-align:center"><button type="button" class="mat-btn-del" onclick="removeTechMaterialRow(this, \'' + ticketId + '\')" title="ลบรายการ">✕</button></td>'
+    '<td style="text-align:center;vertical-align:middle"><button type="button" class="mat-btn-del" onclick="removeTechMaterialRow(this, \'' + ticketId + '\')" title="ลบรายการนี้" aria-label="ลบรายการ"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></td>'
   ].join('');
+
   tbody.appendChild(tr);
+  recalcTechMaterialsTotal(ticketId);
+}
+
+function handleMatNameInput(nameInput, ticketId) {
+  var tr = nameInput.closest('tr');
+  if (!tr) return;
+  var qtyInput = tr.querySelector('.mat-qty');
+  var unitSelect = tr.querySelector('.mat-unit');
+  var priceInput = tr.querySelector('.mat-price');
+  var val = nameInput.value.trim();
+  if (val.length > 0) {
+    if (qtyInput) {
+      qtyInput.disabled = false;
+      qtyInput.removeAttribute('title');
+    }
+    if (unitSelect) {
+      unitSelect.disabled = false;
+      unitSelect.removeAttribute('title');
+    }
+    if (priceInput) {
+      priceInput.disabled = false;
+      priceInput.removeAttribute('title');
+    }
+  } else {
+    if (qtyInput) {
+      qtyInput.disabled = true;
+      qtyInput.setAttribute('title', 'กรุณากรอกชื่ออุปกรณ์ก่อน');
+    }
+    if (unitSelect) {
+      unitSelect.disabled = true;
+      unitSelect.setAttribute('title', 'กรุณากรอกชื่ออุปกรณ์ก่อน');
+    }
+    if (priceInput) {
+      priceInput.disabled = true;
+      priceInput.setAttribute('title', 'กรุณากรอกชื่ออุปกรณ์ก่อน');
+    }
+  }
+  recalcTechMaterialsTotal(ticketId);
+}
+
+function handleMatQtyInput(qtyInput, ticketId) {
+  var tr = qtyInput.closest('tr');
+  if (!tr) return;
+  var unitSelect = tr.querySelector('.mat-unit');
+  var unitVal = unitSelect ? unitSelect.value : 'ชิ้น';
+  var val = parseFloat(qtyInput.value);
+
+  if (unitVal === 'ชิ้น') {
+    if (val > 100) {
+      qtyInput.value = 100;
+      if (typeof showToast === 'function') {
+        showToast('หน่วย "ชิ้น" ระบุจำนวนได้สูงสุดไม่เกิน 100 ชิ้น', 'warning');
+      }
+    }
+  }
+  if (val < 1 && qtyInput.value !== '') {
+    qtyInput.value = 1;
+  }
+  recalcTechMaterialsTotal(ticketId);
+}
+
+function handleMatUnitChange(unitSelect, ticketId) {
+  var tr = unitSelect.closest('tr');
+  if (!tr) return;
+  var qtyInput = tr.querySelector('.mat-qty');
+  if (qtyInput) {
+    if (unitSelect.value === 'ชิ้น') {
+      qtyInput.setAttribute('max', '100');
+      var val = parseFloat(qtyInput.value) || 1;
+      if (val > 100) {
+        qtyInput.value = 100;
+        if (typeof showToast === 'function') {
+          showToast('หน่วย "ชิ้น" ระบุจำนวนได้สูงสุดไม่เกิน 100 ชิ้น', 'warning');
+        }
+      }
+    } else {
+      qtyInput.removeAttribute('max');
+    }
+  }
   recalcTechMaterialsTotal(ticketId);
 }
 
 function removeTechMaterialRow(btn, ticketId) {
   var tr = btn.closest('tr');
   if (tr) tr.remove();
+  checkMatTableEmpty(ticketId);
   recalcTechMaterialsTotal(ticketId);
+}
+
+function checkMatTableEmpty(ticketId) {
+  var tbody = ge('matTbody_' + ticketId);
+  if (!tbody) return;
+  var rows = tbody.querySelectorAll('.mat-data-row');
+  if (rows.length === 0) {
+    var tr = document.createElement('tr');
+    tr.className = 'mat-empty-row';
+    tr.innerHTML = '<td colspan="6" style="text-align:center;padding:16px;color:var(--muted);font-size:12px">ยังไม่มีรายการวัสดุ กด <b>+ เพิ่มรายการ</b> เพื่อเริ่มบันทึก</td>';
+    tbody.appendChild(tr);
+  }
 }
 
 function recalcTechMaterialsTotal(ticketId) {
@@ -854,8 +994,9 @@ async function saveTechMaterials(ticketId, silent) {
   rows.forEach(function (r) {
     var name = (r.querySelector('.mat-name') ? r.querySelector('.mat-name').value : '').trim();
     if (!name) return;
-    var quantity = Math.max(1, parseFloat(r.querySelector('.mat-qty') ? r.querySelector('.mat-qty').value : 1) || 1);
     var unit = (r.querySelector('.mat-unit') ? r.querySelector('.mat-unit').value : 'ชิ้น').trim() || 'ชิ้น';
+    var quantity = Math.max(1, parseFloat(r.querySelector('.mat-qty') ? r.querySelector('.mat-qty').value : 1) || 1);
+    if (unit === 'ชิ้น' && quantity > 100) quantity = 100;
     var unitPrice = Math.max(0, parseFloat(r.querySelector('.mat-price') ? r.querySelector('.mat-price').value : 0) || 0);
     materials.push({ name: name, quantity: quantity, unit: unit, unitPrice: unitPrice });
   });
