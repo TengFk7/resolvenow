@@ -348,6 +348,22 @@ async function unlockTechGate() {
       hideTechGate();
     }
   }, 250);
+
+  } catch (e) {
+    _techGateUnlocking = false;
+    if (btn) {
+      var wasLoggedIn = (sessionStorage.getItem('rn_tech_logged_in') === '1');
+      btn.disabled = false;
+      btn.innerHTML = wasLoggedIn
+        ? '<span>ปลดล็อคเข้าสู่ระบบปฏิบัติงาน</span> <span>→</span>'
+        : '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+    }
+    if (err) {
+      err.style.display = 'flex';
+      var errTxt = ge('techGateErrText');
+      if (errTxt) errTxt.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+    }
+  }
 }
 
 /* ── Enter Technician Application ────────────────────── */
