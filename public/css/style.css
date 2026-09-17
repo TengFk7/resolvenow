@@ -1047,7 +1047,6 @@ a {
 }
 
 #adminApp {
-  display: flex;
   min-height: 100vh;
   background: var(--surface)
 }

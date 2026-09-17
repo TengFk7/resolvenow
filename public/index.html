@@ -12,13 +12,14 @@
     rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/animations.css" />
-  <!-- ── LINE OAuth return: ซ่อน splash ทันทีก่อน paint เพื่อไม่ให้กระพริบ ── -->
+  <!-- ── LINE OAuth return: ซ่อน splash และ panels ทั้งหมดก่อน paint เพื่อป้องกันการกระพริบ ── -->
   <script>
     (function () {
       var p = new URLSearchParams(location.search);
       if (p.get('line_link') || p.get('line_login') || p.get('line_error')) {
         var s = document.createElement('style');
-        s.textContent = '#splash{display:none!important}';
+        s.id = 'linePreloadGuard';
+        s.textContent = '#splash,#adminApp,#normalApp,#authPage{display:none!important}body{background:linear-gradient(160deg,#07111f 0%,#0c1e3a 50%,#101627 100%)!important;}';
         document.head.appendChild(s);
       }
     })();
@@ -196,7 +197,7 @@
   </div>
 
   <!-- ── ADMIN APP ──────────────────────────────────────────── -->
-  <div id="adminApp">
+  <div id="adminApp" style="display:none">
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sb-logo" style="display: flex; justify-content: center; padding: 28px 0;">
@@ -491,7 +492,7 @@
 
 
   <!-- ── NORMAL APP (Citizen + Tech) ──────────────────── -->
-  <div id="normalApp">
+  <div id="normalApp" style="display:none">
     <header class="nheader">
       <!-- Hidden: used by JS/Drawer -->
       <div style="display:none">

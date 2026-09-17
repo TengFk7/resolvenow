@@ -248,22 +248,13 @@ function showWelcomeSplash(role, firstName, onDone, avatarUrl) {
 
 /* ── Enter Application ───────────────────────────────── */
 function enterApp() {
+  var guard = document.getElementById('linePreloadGuard');
+  if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
+
   ge('authPage').style.display = 'none';
   clearAppIntervals(); // BUG-001: clear any previous intervals before creating new ones
 
-  // ── แสดง Welcome Splash ก่อนสุด (ปิดหน้าจอทันที ก่อนโหลดข้อมูล) ──
-  if (CU.role === 'admin') {
-    showWelcomeSplash('admin', CU.firstName, null);
-  } else if (CU.role === 'technician') {
-    showWelcomeSplash('technician', CU.firstName, null);
-  } else if (CU.role === 'citizen') {
-    var _dn = CU.lineDisplayName || CU.firstName || 'คุณ';
-    showWelcomeSplash('citizen', _dn, null, CU.avatar || null);
-  }
-
-  // Load categories from DB to populate DEPT/DEPT_ICON dynamically
-  loadCategories();
-
+  // ── สลับ portal ทันที (ก่อน Welcome Splash แสดง) เพื่อให้มั่นใจว่า adminApp ถูกซ่อนและ normalApp พร้อม ──
   if (CU.role === 'admin') {
     ge('adminApp').style.display = 'flex';
     ge('normalApp').style.display = 'none';
@@ -312,6 +303,19 @@ function enterApp() {
       if (CU.role === 'admin' && typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
     }
   }
+
+  // Load categories from DB to populate DEPT/DEPT_ICON dynamically
+  loadCategories();
+
+  // ── แสดง Welcome Splash ก่อนสุด (ปิดหน้าจอทันที ก่อนโหลดข้อมูล) ──
+  if (CU.role === 'admin') {
+    showWelcomeSplash('admin', CU.firstName, null);
+  } else if (CU.role === 'technician') {
+    showWelcomeSplash('technician', CU.firstName, null);
+  } else if (CU.role === 'citizen') {
+    var _dn = CU.lineDisplayName || CU.firstName || 'คุณ';
+    showWelcomeSplash('citizen', _dn, null, CU.avatar || null);
+  }
 }
 
 /* ── Load Ticket Data (citizen/tech) ─────────────────── */
@@ -335,6 +339,10 @@ async function loadTickets() {
 (function () {
   var ap = ge('authPage');
   if (ap) ap.style.display = 'flex';
+  var aa = ge('adminApp');
+  if (aa) aa.style.display = 'none';
+  var na = ge('normalApp');
+  if (na) na.style.display = 'none';
 
   var params = new URLSearchParams(window.location.search);
   console.log('[App] URL params:', window.location.search);
@@ -343,6 +351,8 @@ async function loadTickets() {
   // ── ตรวจ LINE login error params ก่อน ──
   var lineErr = params.get('line_error');
   if (lineErr) {
+    var guard = document.getElementById('linePreloadGuard');
+    if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
     var msgs = {
       cancelled: 'ยกเลิกการเข้าสู่ระบบด้วย LINE',
       invalid_state: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
@@ -364,6 +374,10 @@ async function loadTickets() {
     sessionStorage.removeItem('rn_line_pending');
     sessionStorage.removeItem('rn_logged_in');
     window.history.replaceState({}, '', '/');
+
+    // ── ลบ preload guard ──
+    var guard = document.getElementById('linePreloadGuard');
+    if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
 
     // ── Force-kill splash ทันที ──
     var splashEl = document.getElementById('splash');
@@ -472,6 +486,11 @@ async function loadTickets() {
     var splashElLogin = document.getElementById('splash');
     if (splashElLogin && splashElLogin.parentNode) splashElLogin.parentNode.removeChild(splashElLogin);
 
+    // ซ่อน panels ทั้งหมดทันทีเพื่อป้องกันการกระพริบ
+    var _aaLogin = ge('adminApp'); if (_aaLogin) _aaLogin.style.display = 'none';
+    var _naLogin = ge('normalApp'); if (_naLogin) _naLogin.style.display = 'none';
+    var _apLogin = ge('authPage'); if (_apLogin) _apLogin.style.display = 'none';
+
     // ── แสดง overlay deep-navy คลุมหน้าจอทันที ── (ธีมเดียวกับ track.html)
     var lineWaitOverlay = document.createElement('div');
     lineWaitOverlay.id = 'lineWaitOverlay';
@@ -487,10 +506,6 @@ async function loadTickets() {
       + '<style>@keyframes lwOrb1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,-40px)}}@keyframes lwOrb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-70px,50px)}}</style>';
     document.body.appendChild(lineWaitOverlay);
 
-    // ซ่อน authPage ทันที (รอง overlay คลุมอยู่แล้ว)
-    var _apLogin = ge('authPage');
-    if (_apLogin) _apLogin.style.display = 'none';
-
     fetch('/api/auth/me')
       .then(function (r) {
         if (r.ok) return r.json();
@@ -501,6 +516,8 @@ async function loadTickets() {
         console.log('[App] LINE login session ดี → role:', d.role);
         if (d.role !== 'citizen') {
           console.log('[App] LINE login role ไม่ใช่ citizen (' + d.role + ') → ไม่ย้าย portal อัตโนมัติ');
+          var guard = document.getElementById('linePreloadGuard');
+          if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
           if (lineWaitOverlay && lineWaitOverlay.parentNode) lineWaitOverlay.parentNode.removeChild(lineWaitOverlay);
           if (_apLogin) _apLogin.style.display = 'flex';
           showE('authErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -512,7 +529,9 @@ async function loadTickets() {
       })
       .catch(function () {
         console.log('[App] LINE login แต่ไม่มี session → หน้า login');
-        if (lineWaitOverlay.parentNode) lineWaitOverlay.parentNode.removeChild(lineWaitOverlay);
+        var guard = document.getElementById('linePreloadGuard');
+        if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
+        if (lineWaitOverlay && lineWaitOverlay.parentNode) lineWaitOverlay.parentNode.removeChild(lineWaitOverlay);
         if (_apLogin) _apLogin.style.display = 'flex';
         showE('authErr', 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่');
       });
