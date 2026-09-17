@@ -1477,8 +1477,11 @@
       <div class="sb-item" onclick="refreshAll()">
         <span class="sb-item-icon">🔄</span> รีเฟรชข้อมูล
       </div>
+      <div class="sb-item" onclick="window.open('/api/tickets/report/executive-pdf', '_blank')" style="color:#60a5fa">
+        <span class="sb-item-icon">📄</span> รายงาน PDF ทางการ
+      </div>
       <div class="sb-item" onclick="window.print()">
-        <span class="sb-item-icon">🖨️</span> พิมพ์รายงาน
+        <span class="sb-item-icon">🖨️</span> พิมพ์หน้าจอ
       </div>
       <div class="sb-item" onclick="location.href='/track'">
         <span class="sb-item-icon">🗺️</span> ตรวจสอบ Ticket
@@ -1499,6 +1502,7 @@
       <div class="topbar-right">
 
         <div class="tb-btns">
+          <button class="tb-action-btn" onclick="window.open('/api/tickets/report/executive-pdf', '_blank')" style="background:#2563eb;color:#fff;border-color:#1d4ed8;font-weight:700">📄 รายงาน PDF ทางการ</button>
           <button class="tb-action-btn" onclick="refreshAll()">🔄 รีเฟรชข้อมูล</button>
           <button class="tb-action-btn btn-lock-ceo" onclick="lockCeoGate()" title="ล็อคพอร์ทัลผู้บริหาร">🔒 ล็อคพอร์ทัล</button>
         </div>
@@ -1623,6 +1627,36 @@
           </div>
           <div id="topMaterialsList" style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
             <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px 0">กำลังโหลดข้อมูล...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ROW: District & Subdistrict Boundary Analytics ─── -->
+      <div class="chart-row r-7-3" style="margin-top:20px">
+        <!-- District Comparison Chart -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">📍 การจำแนกสถิติเชิงพื้นที่ & งบประมาณแยกตามเขต/แขวง</div>
+              <div class="chart-card-sub">District & Zone Analytics: เปรียบเทียบเรื่องร้องเรียน (เคส) vs งบประมาณที่ใช้ (บาท)</div>
+            </div>
+            <span class="live-pill" id="districtTopPill" style="background:#eff6ff;color:#2563eb;border-color:#bfdbfe">กำลังประมวลผล...</span>
+          </div>
+          <div style="height:260px;position:relative">
+            <canvas id="districtComparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- District Summary Table Card -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-card-title">🏛️ ตารางสรุปสถิติตามเขต/แขวง</div>
+              <div class="chart-card-sub">Resource Allocation Breakdown</div>
+            </div>
+          </div>
+          <div id="districtTableWrap" style="max-height:260px;overflow-y:auto;padding-right:4px">
+            <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:30px 0">กำลังโหลดข้อมูลพื้นที่...</div>
           </div>
         </div>
       </div>
@@ -1789,11 +1823,9 @@
       '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#f4a623', '#ef4444', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981'
     ];
 
-    let _tickets = [], _techs = [], _categories = [], _costData = null;
-    let _costCategoryChart = null;
+    let _tickets = [], _techs = [], _categories = [], _costData = null, _districtData = null;
+    let _costCategoryChart = null, _districtChart = null;
     let _lineChart = null, _radarChart = null, _donutChart = null;
-
-
 
     function ge(id) { return document.getElementById(id); }
 
@@ -1809,16 +1841,18 @@
 
     /* ── 2. Fetch all data ─────────────────────── */
     async function fetchData() {
-      const [r1, r2, r3, r4] = await Promise.all([
+      const [r1, r2, r3, r4, r5] = await Promise.all([
         fetch('/api/ceo/tickets'),
         fetch('/api/ceo/technicians'),
         fetch('/api/ceo/categories'),
-        fetch('/api/ceo/cost-overview')
+        fetch('/api/ceo/cost-overview'),
+        fetch('/api/ceo/district-analytics')
       ]);
       _tickets = await r1.json();
       _techs = await r2.json();
       _categories = await r3.json();
       try { _costData = await r4.json(); } catch(e) { _costData = null; }
+      try { _districtData = await r5.json(); } catch(e) { _districtData = null; }
 
       // Update DEPT/DEPT_ICON dynamically
       _categories.forEach(c => {
@@ -1838,6 +1872,7 @@
       renderTechStatusList();
       renderSLAOverview();
       renderCostAnalytics();
+      renderDistrictAnalytics();
       updatePageDate();
     }
 
@@ -2258,6 +2293,124 @@
       }
     }
 
+    /* ── 3j. District & Subdistrict Boundary Analytics ──────── */
+    function renderDistrictAnalytics() {
+      if (!_districtData || !_districtData.districts) return;
+      const districts = _districtData.districts || [];
+      const summary = _districtData.summary || {};
+
+      const pill = ge('districtTopPill');
+      if (pill) {
+        pill.textContent = `งบรวม ฿${Number(summary.totalBudget || 0).toLocaleString('th-TH')} (${summary.totalDistricts || 0} เขต)`;
+      }
+
+      // Chart: Dual axis comparison (Tickets count vs Total Cost)
+      try {
+        const topDistricts = districts.slice(0, 8);
+        const labels = topDistricts.map(d => d.name);
+        const ticketCounts = topDistricts.map(d => d.ticketCount);
+        const costs = topDistricts.map(d => d.totalCost);
+
+        const ctx = ge('districtComparisonChart');
+        if (ctx) {
+          if (_districtChart) _districtChart.destroy();
+          _districtChart = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+              datasets: [
+                {
+                  label: 'เรื่องร้องเรียน (เคส)',
+                  data: ticketCounts.length ? ticketCounts : [0],
+                  backgroundColor: '#3b82f6',
+                  borderRadius: 6,
+                  yAxisID: 'yTickets',
+                  maxBarThickness: 28
+                },
+                {
+                  label: 'งบประมาณที่ใช้ (บาท)',
+                  data: costs.length ? costs : [0],
+                  backgroundColor: '#10b981',
+                  borderRadius: 6,
+                  yAxisID: 'yCost',
+                  maxBarThickness: 28
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                  labels: { font: { size: 11 } }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      if (ctx.datasetIndex === 1) {
+                        return ' งบประมาณ: ฿' + Number(ctx.parsed.y || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                      }
+                      return ' เรื่องร้องเรียน: ' + ctx.parsed.y + ' เคส';
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                yTickets: {
+                  type: 'linear',
+                  position: 'left',
+                  beginAtZero: true,
+                  grid: { color: '#f1f5f9' },
+                  ticks: { font: { size: 10 }, stepSize: 1 },
+                  title: { display: true, text: 'จำนวนเคส', font: { size: 10 } }
+                },
+                yCost: {
+                  type: 'linear',
+                  position: 'right',
+                  beginAtZero: true,
+                  grid: { display: false },
+                  ticks: {
+                    font: { size: 10 },
+                    callback: function(v) { return '฿' + v.toLocaleString('th-TH'); }
+                  },
+                  title: { display: true, text: 'งบประมาณ (บาท)', font: { size: 10 } }
+                }
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error('[renderDistrictAnalytics] Chart error:', err);
+      }
+
+      // District Table Breakdown
+      const tableWrap = ge('districtTableWrap');
+      if (tableWrap) {
+        if (!districts.length) {
+          tableWrap.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:30px 0">ไม่มีข้อมูลสถิติเชิงพื้นที่</div>';
+        } else {
+          tableWrap.innerHTML = districts.map((d, i) => {
+            return `<div style="display:flex;align-items:center;justify-content:space-between;background:#fafafa;border:1px solid #f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:11.5px">
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  ${i + 1}. ${escapeHTML(d.name)}
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:2px">
+                  ${d.ticketCount} เคส · สำเร็จ ${d.resolutionRate}% · ปัญหาหลัก: ${escapeHTML(d.topCategory)}
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;margin-left:10px">
+                <div style="font-weight:800;color:#059669;font-size:12px">฿${Number(d.totalCost || 0).toLocaleString('th-TH')}</div>
+                <div style="font-size:9.5px;color:#3b82f6;margin-top:1px">${d.completedCount} / ${d.ticketCount} เสร็จ</div>
+              </div>
+            </div>`;
+          }).join('');
+        }
+      }
+    }
+
     /* ── Helpers ───────────────────────────────── */
     function animNum(el, target) {
       if (!el) return;
@@ -2286,9 +2439,7 @@
       } catch (e) { console.error(e); }
     }
 
-    /* ── CEO Security Gate (Passcode Protection) ────────── */
-    const CEO_GATE_PASSCODE = '@Teng11421142';
-
+    /* ── CEO Security Gate (Server-Verified Passcode Protection) ── */
     function toggleCeoGatePassVisibility() {
       const inp = ge('ceoGatePasscode');
       const icon = ge('ceoGateEyeIcon');
@@ -2341,49 +2492,94 @@
       }, 320);
     }
 
-    function unlockCeoGate() {
+    async function unlockCeoGate() {
       const inp = ge('ceoGatePasscode');
       const err = ge('ceoGateErr');
       const card = ge('ceoGateCard');
       const btn = ge('btnCeoGateUnlock');
       const val = inp ? inp.value.trim() : '';
 
-      if (val !== CEO_GATE_PASSCODE) {
+      if (!val) {
         if (err) {
           err.style.display = 'flex';
           const errTxt = ge('ceoGateErrText');
-          if (errTxt) errTxt.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
-        }
-        if (card) {
-          card.classList.remove('gate-shake');
-          void card.offsetWidth; // trigger reflow
-          card.classList.add('gate-shake');
-        }
-        if (inp) {
-          inp.value = '';
-          inp.focus();
+          if (errTxt) errTxt.textContent = 'กรุณากรอกรหัสผ่านความปลอดภัย';
         }
         return;
       }
 
-      // Success!
-      if (err) err.style.display = 'none';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+        btn.innerHTML = '<span>⏳ กำลังตรวจสอบรหัสผ่าน...</span>';
       }
-      if (inp) inp.blur();
 
-      sessionStorage.setItem('rn_ceo_gate_unlocked', '1');
-
-      setTimeout(() => {
-        hideCeoGate(() => {
-          startDashboard();
+      try {
+        const res = await fetch('/api/auth/gate-verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portal: 'ceo', passcode: val })
         });
-      }, 250);
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>ปลดล็อคเข้าสู่แดชบอร์ด</span> <span>→</span>';
+          }
+          if (err) {
+            err.style.display = 'flex';
+            const errTxt = ge('ceoGateErrText');
+            if (errTxt) errTxt.textContent = data.error || 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
+          }
+          if (card) {
+            card.classList.remove('gate-shake');
+            void card.offsetWidth; // trigger reflow
+            card.classList.add('gate-shake');
+          }
+          if (inp) {
+            inp.value = '';
+            inp.focus();
+          }
+          return;
+        }
+
+        // Success!
+        if (err) err.style.display = 'none';
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+        }
+        if (inp) inp.blur();
+
+        sessionStorage.setItem('rn_ceo_gate_unlocked', '1');
+
+        setTimeout(() => {
+          hideCeoGate(() => {
+            startDashboard();
+          });
+        }, 250);
+
+      } catch (e) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>ปลดล็อคเข้าสู่แดชบอร์ด</span> <span>→</span>';
+        }
+        if (err) {
+          err.style.display = 'flex';
+          const errTxt = ge('ceoGateErrText');
+          if (errTxt) errTxt.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        }
+      }
     }
 
-    function lockCeoGate() {
+    async function lockCeoGate() {
+      try {
+        await fetch('/api/auth/gate-lock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portal: 'ceo' })
+        });
+      } catch (e) {}
       sessionStorage.removeItem('rn_ceo_gate_unlocked');
       showCeoGate();
     }
@@ -2419,12 +2615,20 @@
       }
     }
 
-    function checkCeoGateSession() {
-      if (sessionStorage.getItem('rn_ceo_gate_unlocked') === '1') {
-        const gate = ge('ceoGateModal');
-        if (gate) gate.style.display = 'none';
-        startDashboard();
-      } else {
+    async function checkCeoGateSession() {
+      try {
+        const res = await fetch('/api/auth/gate-status?portal=ceo');
+        const data = await res.json();
+        if (data.unlocked) {
+          const gate = ge('ceoGateModal');
+          if (gate) gate.style.display = 'none';
+          sessionStorage.setItem('rn_ceo_gate_unlocked', '1');
+          startDashboard();
+        } else {
+          sessionStorage.removeItem('rn_ceo_gate_unlocked');
+          showCeoGate();
+        }
+      } catch (e) {
         showCeoGate();
       }
     }

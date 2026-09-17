@@ -13,6 +13,8 @@ const ticketSchema = new mongoose.Schema({
   category:      { type: String, required: true },
   description:   { type: String, required: true },
   location:      { type: String, required: true },
+  district:      { type: String, default: null, index: true },
+  subdistrict:   { type: String, default: null },
   lat:           { type: Number, default: null },
   lng:           { type: Number, default: null },
   urgency:       { type: String, enum: ['normal', 'medium', 'urgent'], default: 'normal' },

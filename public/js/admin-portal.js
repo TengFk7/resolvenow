@@ -139,8 +139,6 @@ function showAdminSplash(onDone) {
 }
 
 /* ── Admin Security Gate (Passcode Protection) ───────── */
-var ADMIN_GATE_PASSCODE = '@Teng11421142';
-
 function toggleAdminGatePassVisibility() {
   var inp = ge('adminGatePasscode');
   var icon = ge('adminGateEyeIcon');
@@ -204,42 +202,80 @@ function hideAdminGate() {
   }, 320);
 }
 
-function unlockAdminGate() {
+async function unlockAdminGate() {
   var inp = ge('adminGatePasscode');
   var err = ge('adminGateErr');
   var card = ge('adminGateCard');
   var btn = ge('btnAdminGateUnlock');
   var val = inp ? inp.value.trim() : '';
 
-  if (val !== ADMIN_GATE_PASSCODE) {
+  if (!val) {
     if (err) {
       err.style.display = 'flex';
       var errTxt = ge('adminGateErrText');
-      if (errTxt) errTxt.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
-    }
-    if (card) {
-      card.classList.remove('gate-shake');
-      void card.offsetWidth; // trigger reflow
-      card.classList.add('gate-shake');
-    }
-    if (inp) {
-      inp.value = '';
-      inp.focus();
+      if (errTxt) errTxt.textContent = 'กรุณากรอกรหัสผ่านความปลอดภัย';
     }
     return;
   }
 
-  // Success!
-  if (err) err.style.display = 'none';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+    btn.innerHTML = '<span>⏳ กำลังตรวจสอบรหัสผ่าน...</span>';
   }
-  if (inp) inp.blur();
 
-  setTimeout(function () {
-    hideAdminGate();
-  }, 250);
+  try {
+    var res = await fetch('/api/auth/gate-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portal: 'admin', passcode: val })
+    });
+    var data = await res.json();
+
+    if (!res.ok) {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+      }
+      if (err) {
+        err.style.display = 'flex';
+        var errTxt = ge('adminGateErrText');
+        if (errTxt) errTxt.textContent = data.error || 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
+      }
+      if (card) {
+        card.classList.remove('gate-shake');
+        void card.offsetWidth; // trigger reflow
+        card.classList.add('gate-shake');
+      }
+      if (inp) {
+        inp.value = '';
+        inp.focus();
+      }
+      return;
+    }
+
+    // Success!
+    if (err) err.style.display = 'none';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+    }
+    if (inp) inp.blur();
+
+    setTimeout(function () {
+      hideAdminGate();
+    }, 250);
+
+  } catch (e) {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+    }
+    if (err) {
+      err.style.display = 'flex';
+      var errTxt = ge('adminGateErrText');
+      if (errTxt) errTxt.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+    }
+  }
 }
 
 /* ── Enter Admin Application ─────────────────────────── */
@@ -325,6 +361,11 @@ async function doAdminLogin() {
 async function doAdminLogout() {
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/gate-lock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portal: 'admin' })
+    });
   } catch (e) { }
 
   sessionStorage.removeItem('rn_admin_logged_in');
@@ -365,8 +406,19 @@ async function doAdminLogout() {
         if (gate) gate.style.display = 'none';
         enterAdminApp(false);
       } else {
-        // Not logged in or not an admin -> show security gate!
-        showAdminGate();
+        // Check if gate was previously unlocked on server
+        fetch('/api/auth/gate-status?portal=admin')
+          .then(function (gr) { return gr.json(); })
+          .then(function (gData) {
+            if (gData.unlocked) {
+              hideAdminGate();
+            } else {
+              showAdminGate();
+            }
+          })
+          .catch(function () {
+            showAdminGate();
+          });
       }
     })
     .catch(function () {

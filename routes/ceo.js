@@ -10,11 +10,75 @@ const User = require('../models/User');
 const Category = require('../models/Category');
 const { checkIsSlaBreached } = require('../utils/slaHelper');
 
+// ─── Middleware: ป้องกันการเข้าถึง Dashboard ผู้บริหาร ──────────────
+function requireCeoAccess(req, res, next) {
+  // อนุญาตถ้า Login เป็น Admin อยู่แล้ว หรือ ปลดล็อค CEO Security Gate ผ่านแล้ว
+  if (req.session?.role === 'admin' || req.session?.gateUnlocked?.ceo) {
+    return next();
+  }
+  return res.status(403).json({
+    error: 'กรุณาปลดล็อค Security Gate ก่อนเข้าถึงข้อมูลผู้บริหาร',
+    gateRequired: true
+  });
+}
+
+// นำ Middleware มาคุ้มครองทุก endpoint ภายใต้ /api/ceo/*
+router.use(requireCeoAccess);
+
+// ─── รายชื่อเขตและฟังก์ชันวิเคราะห์สกัดชื่อเขต/แขวง ──────────────────
+const KNOWN_DISTRICTS = [
+  'พระนคร', 'ดุสิต', 'หนองจอก', 'บางรัก', 'บางเขน', 'บางกะปิ', 'ปทุมวัน', 'ป้อมปราบศัตรูพ่าย',
+  'พระโขนง', 'มีนบุรี', 'ลาดกระบัง', 'ยานนาวา', 'สัมพันธวงศ์', 'พญาไท', 'ธนบุรี', 'บางกอกใหญ่',
+  'ห้วยขวาง', 'คลองสาน', 'ตลิ่งชัน', 'บางกอกน้อย', 'บางขุนเทียน', 'ภาษีเจริญ', 'หนองแขม', 'ราษฎร์บูรณะ',
+  'บางพลัด', 'ดินแดง', 'บึงกุ่ม', 'สาทร', 'บางซื่อ', 'จตุจักร', 'บางคอแหลม', 'ประเวศ', 'คลองเตย',
+  'สวนหลวง', 'จอมทอง', 'ดอนเมือง', 'ราชเทวี', 'ลาดพร้าว', 'วัฒนา', 'บางแค', 'หลักสี่', 'สายไหม',
+  'คันนายาว', 'สะพานสูง', 'วังทองหลาง', 'คลองสามวา', 'บางนา', 'ทวีวัฒนา', 'ทุ่งครุ', 'บางบอน',
+  'เมือง', 'เมืองนนทบุรี', 'ปากเกร็ด', 'บางบัวทอง', 'บางใหญ่', 'เมืองชลบุรี', 'บางละมุง', 'ศรีราชา',
+  'เมืองเชียงใหม่', 'แม่ริม', 'หางดง', 'สันทราย', 'เมืองขอนแก่น', 'เมืองภูเก็ต', 'กะทู้', 'ถลาง'
+];
+
+function extractDistrict(ticket) {
+  if (ticket.district && String(ticket.district).trim()) {
+    return String(ticket.district).trim();
+  }
+  const loc = (ticket.location || '').trim();
+  if (!loc) return 'พื้นที่ทั่วไป (ไม่ระบุเขต)';
+
+  // 1. ตรวจคำว่า "เขต..." หรือ "อำเภอ..."
+  const districtMatch = loc.match(/(?:เขต|อำเภอ|อ\.)\s*([ก-๙a-zA-Z0-9]+)/);
+  if (districtMatch && districtMatch[1]) {
+    return 'เขต' + districtMatch[1].replace(/^(เขต|อำเภอ|อ\.)/, '');
+  }
+
+  // 2. ตรวจคำว่า "แขวง..." หรือ "ตำบล..."
+  const subdistrictMatch = loc.match(/(?:แขวง|ตำบล|ต\.)\s*([ก-๙a-zA-Z0-9]+)/);
+  if (subdistrictMatch && subdistrictMatch[1]) {
+    return 'แขวง' + subdistrictMatch[1].replace(/^(แขวง|ตำบล|ต\.)/, '');
+  }
+
+  // 3. ค้นหาชื่อเขตที่ตรงกับฐานข้อมูล KNOWN_DISTRICTS
+  for (const dist of KNOWN_DISTRICTS) {
+    if (loc.includes(dist)) {
+      return 'เขต' + dist.replace(/^(เขต|อำเภอ)/, '');
+    }
+  }
+
+  // 4. ตัดตามเครื่องหมายจุลภาค/ทับ
+  const parts = loc.split(/[,/·-]/).map(p => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    return parts[parts.length > 2 ? 1 : 0];
+  }
+
+  // 5. หากข้อความสั้น ใช้ข้อความเดิม
+  if (loc.length <= 25) return loc;
+  return 'โซนใจกลางเมือง (ส่วนกลาง)';
+}
+
 // GET /api/ceo/tickets - ดึง tickets ทั้งหมดแบบ read-only สำหรับ dashboard
 router.get('/tickets', async (req, res) => {
   try {
     const tickets = await Ticket.find()
-      .select('ticketId category location urgency status slaBreached slaAssignDeadline slaCompleteDeadline slaPauseStatus totalRepairCost materials createdAt updatedAt')
+      .select('ticketId category location district subdistrict urgency status slaBreached slaAssignDeadline slaCompleteDeadline slaPauseStatus totalRepairCost materials createdAt updatedAt')
       .lean()
       .sort({ createdAt: -1 });
 
@@ -23,6 +87,7 @@ router.get('/tickets', async (req, res) => {
         ticketId: t.ticketId,
         category: t.category,
         location: t.location,
+        district: extractDistrict(t),
         urgency: t.urgency,
         status: t.status,
         slaBreached: checkIsSlaBreached(t),
@@ -108,6 +173,101 @@ router.get('/cost-overview', async (req, res) => {
   } catch (e) {
     console.error('[CEO Cost Overview] Error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในการโหลดงบประมาณ' });
+  }
+});
+
+// ─── GET /api/ceo/district-analytics ──────────────────────────────
+// สรุปสถิติเชิงพื้นที่แยกตามเขต/แขวง เปรียบเทียบกับงบประมาณซ่อมบำรุง
+router.get('/district-analytics', async (req, res) => {
+  try {
+    const tickets = await Ticket.find()
+      .select('ticketId category location district subdistrict status totalRepairCost slaBreached createdAt updatedAt')
+      .lean();
+
+    const districtMap = {};
+
+    tickets.forEach(t => {
+      const dist = extractDistrict(t);
+      if (!districtMap[dist]) {
+        districtMap[dist] = {
+          name: dist,
+          ticketCount: 0,
+          totalCost: 0,
+          completedCount: 0,
+          inProgressCount: 0,
+          pendingCount: 0,
+          breachedCount: 0,
+          categoryMap: {}
+        };
+      }
+
+      const d = districtMap[dist];
+      d.ticketCount += 1;
+      d.totalCost += Number(t.totalRepairCost) || 0;
+
+      if (t.status === 'completed') {
+        d.completedCount += 1;
+      } else if (t.status === 'in_progress' || t.status === 'assigned') {
+        d.inProgressCount += 1;
+      } else if (t.status === 'pending' || t.status === 'reopened') {
+        d.pendingCount += 1;
+      }
+
+      if (checkIsSlaBreached(t)) {
+        d.breachedCount += 1;
+      }
+
+      const cat = t.category || 'ทั่วไป';
+      d.categoryMap[cat] = (d.categoryMap[cat] || 0) + 1;
+    });
+
+    const districts = Object.values(districtMap).map(d => {
+      let topCat = '—';
+      let topCatCount = 0;
+      for (const [cat, count] of Object.entries(d.categoryMap)) {
+        if (count > topCatCount) {
+          topCat = cat;
+          topCatCount = count;
+        }
+      }
+      const resolutionRate = d.ticketCount > 0 ? Math.round((d.completedCount / d.ticketCount) * 100) : 0;
+      return {
+        name: d.name,
+        ticketCount: d.ticketCount,
+        totalCost: Math.round(d.totalCost * 100) / 100,
+        completedCount: d.completedCount,
+        inProgressCount: d.inProgressCount,
+        pendingCount: d.pendingCount,
+        breachedCount: d.breachedCount,
+        resolutionRate,
+        topCategory: topCat,
+        topCategoryCount: topCatCount
+      };
+    });
+
+    // เรียงตามงบประมาณที่ใช้ไปมากที่สุด ถ้าเท่ากันเรียงตามจำนวนตั๋ว
+    districts.sort((a, b) => b.totalCost - a.totalCost || b.ticketCount - a.ticketCount);
+
+    const totalTicketsAll = tickets.length;
+    const totalCostAll = districts.reduce((sum, d) => sum + d.totalCost, 0);
+
+    const highestCostDistrict = districts.length ? districts[0].name : '—';
+    const mostReported = [...districts].sort((a, b) => b.ticketCount - a.ticketCount);
+    const mostReportedDistrict = mostReported.length ? mostReported[0].name : '—';
+
+    res.json({
+      districts,
+      summary: {
+        totalDistricts: districts.length,
+        totalTickets: totalTicketsAll,
+        totalBudget: Math.round(totalCostAll * 100) / 100,
+        highestCostDistrict,
+        mostReportedDistrict
+      }
+    });
+  } catch (e) {
+    console.error('[CEO District Analytics] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการคำนวณสถิติเชิงพื้นที่' });
   }
 });
 

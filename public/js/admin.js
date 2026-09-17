@@ -70,6 +70,7 @@ async function loadAdmin() {
     renderQueue(pendTks, techs);
 
     // Sub-pages
+    if (currentPage === 'dashboard') loadAdminDistrictAnalytics();
     if (currentPage === 'queue') renderAllQueue(tks, _queueFilter);
     if (currentPage === 'techs') renderTechFull(techs);
     if (currentPage === 'categories') renderCategories();
@@ -1203,6 +1204,12 @@ async function printPDF() {
   btn.disabled = false;
 }
 
+/* ── Open Official Executive PDF Report ──────────────────── */
+function openExecutivePdfReport() {
+  var range = _getSelectedRange();
+  window.open('/api/tickets/report/executive-pdf?range=' + encodeURIComponent(range), '_blank');
+}
+
 /* ── Build PDF Report Window ────────────────────────────── */
 function _openPdfWindow(data) {
   var tickets = data.tickets || [];
@@ -1777,3 +1784,88 @@ async function saveWorkOrderSignature() {
     if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกลายเซ็น'; }
   }
 }
+
+/* ── District & Subdistrict Boundary Analytics (Feature 3) ── */
+async function loadAdminDistrictAnalytics() {
+  var container = ge('adminDistrictAnalyticsContainer');
+  if (!container) return;
+
+  try {
+    var res = await fetch('/api/tickets/district-analytics');
+    if (!res.ok) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px 0">ไม่สามารถโหลดข้อมูลสถิติเชิงพื้นที่ได้</div>';
+      return;
+    }
+    var data = await res.json();
+    var districts = data.districts || [];
+    var summary = data.summary || {};
+
+    if (!districts.length) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px 0">ยังไม่มีข้อมูลสถิติเชิงพื้นที่</div>';
+      return;
+    }
+
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px">';
+    html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px">';
+    html += '<div style="font-size:11px;color:var(--muted);font-weight:600">จำนวนเขตทั้งหมด</div>';
+    html += '<div style="font-size:22px;font-weight:800;color:var(--navy);margin-top:2px">' + (summary.totalDistricts || 0) + ' <span style="font-size:12px;font-weight:500;color:var(--muted)">เขต</span></div>';
+    html += '</div>';
+
+    html += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px">';
+    html += '<div style="font-size:11px;color:#166534;font-weight:600">งบประมาณซ่อมบำรุงรวม</div>';
+    html += '<div style="font-size:22px;font-weight:800;color:#15803d;margin-top:2px">฿' + Number(summary.totalBudget || 0).toLocaleString('th-TH') + '</div>';
+    html += '</div>';
+
+    html += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px">';
+    html += '<div style="font-size:11px;color:#1e40af;font-weight:600">เรื่องร้องเรียนทั้งหมด</div>';
+    html += '<div style="font-size:22px;font-weight:800;color:#1d4ed8;margin-top:2px">' + (summary.totalTickets || 0) + ' <span style="font-size:12px;font-weight:500;color:var(--muted)">เคส</span></div>';
+    html += '</div>';
+
+    html += '<div style="background:#fefce8;border:1px solid #fef08a;border-radius:12px;padding:12px 16px">';
+    html += '<div style="font-size:11px;color:#854d0e;font-weight:600">อัตราเฉลี่ยสำเร็จ</div>';
+    html += '<div style="font-size:22px;font-weight:800;color:#a16207;margin-top:2px">' + (summary.avgResolutionRate || 0) + '%</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // Table view
+    html += '<div style="overflow-x:auto">';
+    html += '<table class="queue-table" style="font-size:12.5px;width:100%">';
+    html += '<thead><tr>';
+    html += '<th style="min-width:140px">ชื่อเขต / แขวง</th>';
+    html += '<th style="text-align:center;width:90px">เรื่องร้องเรียน</th>';
+    html += '<th style="text-align:center;width:90px">เสร็จสิ้น</th>';
+    html += '<th style="min-width:160px">อัตราความสำเร็จ (%)</th>';
+    html += '<th style="text-align:right;width:130px">งบประมาณที่ใช้จริง</th>';
+    html += '<th style="min-width:130px">ปัญหาหลักในพื้นที่</th>';
+    html += '</tr></thead><tbody>';
+
+    districts.forEach(function (d) {
+      var safeName = escapeHTML(d.name || 'ไม่ระบุ');
+      var safeTop = escapeHTML(d.topCategory || '-');
+      var rate = Number(d.resolutionRate || 0);
+      var cost = Number(d.totalCost || 0).toLocaleString('th-TH');
+      html += '<tr>';
+      html += '<td style="font-weight:700;color:var(--navy)">📍 ' + safeName + '</td>';
+      html += '<td style="text-align:center;font-weight:700">' + d.ticketCount + '</td>';
+      html += '<td style="text-align:center;color:#16a34a;font-weight:700">' + d.completedCount + '</td>';
+      html += '<td>';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<div style="flex:1;background:#e2e8f0;border-radius:99px;height:7px;overflow:hidden">';
+      html += '<div style="width:' + rate + '%;background:linear-gradient(90deg,#3b82f6,#10b981);height:100%;border-radius:99px"></div>';
+      html += '</div>';
+      html += '<span style="font-size:11px;font-weight:700;min-width:34px;color:var(--navy)">' + rate + '%</span>';
+      html += '</div>';
+      html += '</td>';
+      html += '<td style="text-align:right;font-weight:800;color:#059669">฿' + cost + '</td>';
+      html += '<td><span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#f1f5f9;font-size:11.5px;color:var(--navy);border:1px solid #e2e8f0">' + safeTop + '</span></td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('[loadAdminDistrictAnalytics] error:', err);
+    container.innerHTML = '<div style="text-align:center;color:#ef4444;padding:20px 0">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+  }
+}
+

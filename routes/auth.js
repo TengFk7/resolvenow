@@ -56,6 +56,51 @@ function checkOtpRateLimit(req, email) {
   return null; // ผ่าน
 }
 
+// ─── Security Gate Rate Limiter (in-memory) ──────────────────────
+const gateRateLimit = new Map();
+const GATE_WINDOW_MS = 15 * 60 * 1000; // 15 นาที
+const GATE_MAX_FAILURES = 10;          // สูงสุด 10 ครั้งที่ใส่ผิดต่อ 15 นาที
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of gateRateLimit.entries()) {
+    if (now > v.resetAt) gateRateLimit.delete(k);
+  }
+}, 10 * 60 * 1000);
+
+function checkGateRateLimit(req, portal) {
+  const ip = req.ip || (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const key = ip + '|' + (portal || 'all');
+  const now = Date.now();
+  let entry = gateRateLimit.get(key);
+  if (!entry || now > entry.resetAt) {
+    return null; // ผ่าน
+  }
+  if (entry.count >= GATE_MAX_FAILURES) {
+    const waitMin = Math.ceil((entry.resetAt - now) / 60000);
+    return `ใส่รหัสผ่านผิดบ่อยเกินไป กรุณารอ ${waitMin} นาทีแล้วลองใหม่`;
+  }
+  return null;
+}
+
+function recordGateFailure(req, portal) {
+  const ip = req.ip || (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const key = ip + '|' + (portal || 'all');
+  const now = Date.now();
+  let entry = gateRateLimit.get(key);
+  if (!entry || now > entry.resetAt) {
+    gateRateLimit.set(key, { count: 1, resetAt: now + GATE_WINDOW_MS });
+  } else {
+    entry.count++;
+  }
+}
+
+function clearGateFailures(req, portal) {
+  const ip = req.ip || (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const key = ip + '|' + (portal || 'all');
+  gateRateLimit.delete(key);
+}
+
 // ─── POST /api/auth/send-otp ────────────────────────────────────
 router.post('/send-otp', async (req, res) => {
   try {
@@ -243,6 +288,84 @@ router.post('/change-password', requireAuth, async (req, res) => {
     await user.save();
     res.json({ message: 'เปลี่ยนรหัสผ่านสำเร็จ' });
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
+});
+
+// ─── POST /api/auth/gate-verify ──────────────────────────────────
+// ตรวจสอบ Security Gate Passcode ฝั่ง Server พร้อม Rate Limiting
+router.post('/gate-verify', (req, res) => {
+  try {
+    const { portal, passcode } = req.body;
+    const normalizedPortal = (portal || 'general').toLowerCase().trim();
+
+    if (!passcode || typeof passcode !== 'string') {
+      return res.status(400).json({ error: 'กรุณากรอกรหัสผ่านความปลอดภัย (Passcode)' });
+    }
+
+    // Rate Limit Check
+    const rlErr = checkGateRateLimit(req, normalizedPortal);
+    if (rlErr) {
+      return res.status(429).json({ error: rlErr });
+    }
+
+    const VALID_PASSCODES = {
+      admin: process.env.ADMIN_GATE_PASSCODE || process.env.PORTAL_GATE_PASSCODE || '@Teng11421142',
+      tech: process.env.TECH_GATE_PASSCODE || process.env.PORTAL_GATE_PASSCODE || '@Teng11421142',
+      technician: process.env.TECH_GATE_PASSCODE || process.env.PORTAL_GATE_PASSCODE || '@Teng11421142',
+      ceo: process.env.CEO_GATE_PASSCODE || process.env.PORTAL_GATE_PASSCODE || '@Teng11421142',
+      general: process.env.PORTAL_GATE_PASSCODE || '@Teng11421142'
+    };
+
+    const targetPasscode = VALID_PASSCODES[normalizedPortal] || VALID_PASSCODES.general;
+
+    if (passcode.trim() !== targetPasscode) {
+      recordGateFailure(req, normalizedPortal);
+      return res.status(401).json({ error: 'รหัสผ่านความปลอดภัยไม่ถูกต้อง' });
+    }
+
+    // Success! Clear failures and record in session
+    clearGateFailures(req, normalizedPortal);
+    if (!req.session.gateUnlocked) {
+      req.session.gateUnlocked = {};
+    }
+    req.session.gateUnlocked[normalizedPortal] = true;
+    if (normalizedPortal === 'tech' || normalizedPortal === 'technician') {
+      req.session.gateUnlocked.tech = true;
+      req.session.gateUnlocked.technician = true;
+    }
+
+    return res.json({
+      success: true,
+      message: 'ปลดล็อค Security Gate สำเร็จ',
+      portal: normalizedPortal
+    });
+  } catch (e) {
+    console.error('[gate-verify] error:', e);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการตรวจสอบ Security Gate' });
+  }
+});
+
+// ─── GET /api/auth/gate-status ───────────────────────────────────
+// ตรวจสอบสถานะการปลดล็อค Gate ในเซสชันปัจจุบัน
+router.get('/gate-status', (req, res) => {
+  const portal = (req.query.portal || 'general').toLowerCase().trim();
+  const isUnlocked = Boolean(
+    req.session?.gateUnlocked?.[portal] ||
+    (portal === 'admin' && req.session?.role === 'admin') ||
+    ((portal === 'tech' || portal === 'technician') && req.session?.role === 'technician')
+  );
+  res.json({ portal, unlocked: isUnlocked });
+});
+
+// ─── POST /api/auth/gate-lock ────────────────────────────────────
+// สั่งล็อค Gate ของ Portal ที่ระบุใน Session
+router.post('/gate-lock', (req, res) => {
+  const portal = (req.body?.portal || req.query?.portal || 'all').toLowerCase().trim();
+  if (portal === 'all') {
+    delete req.session.gateUnlocked;
+  } else if (req.session.gateUnlocked) {
+    delete req.session.gateUnlocked[portal];
+  }
+  res.json({ message: 'ล็อคหน้าต่างความปลอดภัยแล้ว', portal });
 });
 
 // ─── Helpers ใหม่ ─────────────────────────────────────────────

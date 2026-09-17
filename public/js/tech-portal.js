@@ -168,7 +168,6 @@ function showTechSplash(onDone) {
 }
 
 /* ── Tech Security Gate (Passcode Protection) ────────── */
-var TECH_GATE_PASSCODE = '@Teng11421142';
 var _techPendingResumeUser = null;
 var _techSessionCheckPromise = null;
 var _techGateUnlocking = false;
@@ -256,33 +255,62 @@ async function unlockTechGate() {
   var btn = ge('btnTechGateUnlock');
   var val = inp ? inp.value.trim() : '';
 
-  if (val !== TECH_GATE_PASSCODE) {
+  if (!val) {
     if (err) {
       err.style.display = 'flex';
       var errTxt = ge('techGateErrText');
-      if (errTxt) errTxt.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
-    }
-    if (card) {
-      card.classList.remove('gate-shake');
-      void card.offsetWidth; // trigger reflow
-      card.classList.add('gate-shake');
-    }
-    if (inp) {
-      inp.value = '';
-      inp.focus();
+      if (errTxt) errTxt.textContent = 'กรุณากรอกรหัสผ่านความปลอดภัย';
     }
     return;
   }
 
-  _techGateUnlocking = true;
-
-  // Success!
-  if (err) err.style.display = 'none';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+    btn.innerHTML = '<span>⏳ กำลังตรวจสอบรหัสผ่าน...</span>';
   }
-  if (inp) inp.blur();
+
+  try {
+    var res = await fetch('/api/auth/gate-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portal: 'tech', passcode: val })
+    });
+    var data = await res.json();
+
+    if (!res.ok) {
+      if (btn) {
+        var wasLoggedIn = (sessionStorage.getItem('rn_tech_logged_in') === '1');
+        btn.disabled = false;
+        btn.innerHTML = wasLoggedIn
+          ? '<span>ปลดล็อคเข้าสู่ระบบปฏิบัติงาน</span> <span>→</span>'
+          : '<span>ปลดล็อคเข้าสู่ระบบ</span> <span>→</span>';
+      }
+      if (err) {
+        err.style.display = 'flex';
+        var errTxt = ge('techGateErrText');
+        if (errTxt) errTxt.textContent = data.error || 'รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง';
+      }
+      if (card) {
+        card.classList.remove('gate-shake');
+        void card.offsetWidth; // trigger reflow
+        card.classList.add('gate-shake');
+      }
+      if (inp) {
+        inp.value = '';
+        inp.focus();
+      }
+      return;
+    }
+
+    _techGateUnlocking = true;
+
+    // Success!
+    if (err) err.style.display = 'none';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+    }
+    if (inp) inp.blur();
 
   // If there's an ongoing session check promise, wait for it
   if (_techSessionCheckPromise) {
@@ -434,6 +462,11 @@ async function doTechLogout() {
   if (typeof closeDrawer === 'function') closeDrawer();
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/gate-lock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portal: 'tech' })
+    });
   } catch (e) { }
 
   sessionStorage.removeItem('rn_tech_logged_in');

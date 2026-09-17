@@ -348,6 +348,648 @@ function getDateRange(range) {
   return { start: null, end: null, label: 'ทั้งหมด' };
 }
 
+// ─── District Extraction Helper ──────────────────────────────────
+const KNOWN_DISTRICTS = [
+  'พระนคร', 'ดุสิต', 'หนองจอก', 'บางรัก', 'บางเขน', 'บางกะปิ', 'ปทุมวัน', 'ป้อมปราบศัตรูพ่าย',
+  'พระโขนง', 'มีนบุรี', 'ลาดกระบัง', 'ยานนาวา', 'สัมพันธวงศ์', 'พญาไท', 'ธนบุรี', 'บางกอกใหญ่',
+  'ห้วยขวาง', 'คลองสาน', 'ตลิ่งชัน', 'บางกอกน้อย', 'บางขุนเทียน', 'ภาษีเจริญ', 'หนองแขม', 'ราษฎร์บูรณะ',
+  'บางพลัด', 'ดินแดง', 'บึงกุ่ม', 'สาทร', 'บางซื่อ', 'จตุจักร', 'บางคอแหลม', 'ประเวศ', 'คลองเตย',
+  'สวนหลวง', 'จอมทอง', 'ดอนเมือง', 'ราชเทวี', 'ลาดพร้าว', 'วัฒนา', 'บางแค', 'หลักสี่', 'สายไหม',
+  'คันนายาว', 'สะพานสูง', 'วังทองหลาง', 'คลองสามวา', 'บางนา', 'ทวีวัฒนา', 'ทุ่งครุ', 'บางบอน',
+  'เมือง', 'เมืองนนทบุรี', 'ปากเกร็ด', 'บางบัวทอง', 'บางใหญ่', 'เมืองชลบุรี', 'บางละมุง', 'ศรีราชา',
+  'เมืองเชียงใหม่', 'แม่ริม', 'หางดง', 'สันทราย', 'เมืองขอนแก่น', 'เมืองภูเก็ต', 'กะทู้', 'ถลาง'
+];
+
+function extractDistrict(ticket) {
+  if (ticket.district && String(ticket.district).trim()) {
+    return String(ticket.district).trim();
+  }
+  const loc = (ticket.location || '').trim();
+  if (!loc) return 'พื้นที่ทั่วไป (ไม่ระบุเขต)';
+
+  const districtMatch = loc.match(/(?:เขต|อำเภอ|อ\.)\s*([ก-๙a-zA-Z0-9]+)/);
+  if (districtMatch && districtMatch[1]) {
+    return 'เขต' + districtMatch[1].replace(/^(เขต|อำเภอ|อ\.)/, '');
+  }
+
+  const subdistrictMatch = loc.match(/(?:แขวง|ตำบล|ต\.)\s*([ก-๙a-zA-Z0-9]+)/);
+  if (subdistrictMatch && subdistrictMatch[1]) {
+    return 'แขวง' + subdistrictMatch[1].replace(/^(แขวง|ตำบล|ต\.)/, '');
+  }
+
+  for (const dist of KNOWN_DISTRICTS) {
+    if (loc.includes(dist)) {
+      return 'เขต' + dist.replace(/^(เขต|อำเภอ)/, '');
+    }
+  }
+
+  const parts = loc.split(/[,/·-]/).map(p => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    return parts[parts.length > 2 ? 1 : 0];
+  }
+
+  if (loc.length <= 25) return loc;
+  return 'โซนใจกลางเมือง (ส่วนกลาง)';
+}
+
+// ─── GET /api/tickets/district-analytics ──────────────────────────
+router.get('/district-analytics', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || (caller.role !== 'admin' && caller.role !== 'technician')) {
+      return res.status(403).json({ error: 'เฉพาะเจ้าหน้าที่และผู้ดูแลระบบ' });
+    }
+
+    const tickets = await Ticket.find()
+      .select('ticketId category location district subdistrict status totalRepairCost slaBreached createdAt updatedAt')
+      .lean();
+
+    const districtMap = {};
+
+    tickets.forEach(t => {
+      const dist = extractDistrict(t);
+      if (!districtMap[dist]) {
+        districtMap[dist] = {
+          name: dist,
+          ticketCount: 0,
+          totalCost: 0,
+          completedCount: 0,
+          inProgressCount: 0,
+          pendingCount: 0,
+          breachedCount: 0,
+          categoryMap: {}
+        };
+      }
+
+      const d = districtMap[dist];
+      d.ticketCount += 1;
+      d.totalCost += Number(t.totalRepairCost) || 0;
+
+      if (t.status === 'completed') {
+        d.completedCount += 1;
+      } else if (t.status === 'in_progress' || t.status === 'assigned') {
+        d.inProgressCount += 1;
+      } else if (t.status === 'pending' || t.status === 'reopened') {
+        d.pendingCount += 1;
+      }
+
+      if (checkIsSlaBreached(t)) {
+        d.breachedCount += 1;
+      }
+
+      const cat = t.category || 'ทั่วไป';
+      d.categoryMap[cat] = (d.categoryMap[cat] || 0) + 1;
+    });
+
+    const districts = Object.values(districtMap).map(d => {
+      let topCat = '—';
+      let topCatCount = 0;
+      for (const [cat, count] of Object.entries(d.categoryMap)) {
+        if (count > topCatCount) {
+          topCat = cat;
+          topCatCount = count;
+        }
+      }
+      const resolutionRate = d.ticketCount > 0 ? Math.round((d.completedCount / d.ticketCount) * 100) : 0;
+      return {
+        name: d.name,
+        ticketCount: d.ticketCount,
+        totalCost: Math.round(d.totalCost * 100) / 100,
+        completedCount: d.completedCount,
+        inProgressCount: d.inProgressCount,
+        pendingCount: d.pendingCount,
+        breachedCount: d.breachedCount,
+        resolutionRate,
+        topCategory: topCat
+      };
+    });
+
+    districts.sort((a, b) => b.totalCost - a.totalCost || b.ticketCount - a.ticketCount);
+
+    res.json({
+      districts,
+      summary: {
+        totalDistricts: districts.length,
+        totalTickets: tickets.length,
+        totalBudget: Math.round(districts.reduce((s, d) => s + d.totalCost, 0) * 100) / 100,
+        highestCostDistrict: districts.length ? districts[0].name : '—'
+      }
+    });
+  } catch (e) {
+    console.error('[Ticket District Analytics] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงสถิติเชิงพื้นที่' });
+  }
+});
+
+// ─── GET /api/tickets/report/executive-pdf ────────────────────────
+// หน้ารายงานสรุปทางการแบบหนังสือราชการสำหรับบันทึก/พิมพ์เป็น PDF (A4)
+router.get('/report/executive-pdf', async (req, res) => {
+  try {
+    const hasAccess = Boolean(
+      (req.session?.role === 'admin') ||
+      (req.session?.gateUnlocked?.ceo) ||
+      (req.session?.gateUnlocked?.admin)
+    );
+
+    if (!hasAccess) {
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html lang="th">
+        <head><meta charset="UTF-8"><title>การเข้าถึงถูกจำกัด</title></head>
+        <body style="font-family:sans-serif;text-align:center;padding:50px;background:#f8fafc;color:#1e293b;">
+          <h2>🔒 เอกสารลับเฉพาะสำหรับผู้บริหาร</h2>
+          <p>กรุณาเข้าสู่ระบบในฐานะ Admin หรือปลดล็อค Security Gate ก่อนเข้าดูรายงาน</p>
+          <div style="margin-top:20px;">
+            <a href="/admin" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">เข้าสู่ระบบ Admin</a>
+            <a href="/ceo" style="display:inline-block;padding:10px 18px;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;margin-left:10px;">ไปที่ CEO Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    const { range } = req.query;
+    const dr = getDateRange(range || 'this_month');
+    const query = dr.start ? { createdAt: { $gte: dr.start, $lte: dr.end } } : {};
+    const tickets = await Ticket.find(query).sort({ createdAt: -1 });
+
+    const totalCount = tickets.length;
+    let completedCount = 0;
+    let inProgressCount = 0;
+    let pendingCount = 0;
+    let rejectedCount = 0;
+    let breachedCount = 0;
+    let totalCost = 0;
+    let ratingSum = 0;
+    let ratingCount = 0;
+
+    const catMap = {};
+    const districtMap = {};
+
+    tickets.forEach(t => {
+      const cost = Number(t.totalRepairCost) || 0;
+      totalCost += cost;
+
+      if (t.status === 'completed') completedCount++;
+      else if (t.status === 'in_progress' || t.status === 'assigned') inProgressCount++;
+      else if (t.status === 'pending' || t.status === 'reopened') pendingCount++;
+      else if (t.status === 'rejected') rejectedCount++;
+
+      if (checkIsSlaBreached(t)) breachedCount++;
+
+      if (t.rating) {
+        ratingSum += t.rating;
+        ratingCount++;
+      }
+
+      const cat = t.category || 'ทั่วไป';
+      if (!catMap[cat]) catMap[cat] = { count: 0, cost: 0, completed: 0, breached: 0 };
+      catMap[cat].count++;
+      catMap[cat].cost += cost;
+      if (t.status === 'completed') catMap[cat].completed++;
+      if (checkIsSlaBreached(t)) catMap[cat].breached++;
+
+      const dist = extractDistrict(t);
+      if (!districtMap[dist]) districtMap[dist] = { count: 0, cost: 0, completed: 0, topCategory: cat };
+      districtMap[dist].count++;
+      districtMap[dist].cost += cost;
+      if (t.status === 'completed') districtMap[dist].completed++;
+    });
+
+    const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    const slaComplianceRate = totalCount > 0 ? Math.max(0, Math.round(((totalCount - breachedCount) / totalCount) * 100)) : 100;
+    const avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : '—';
+
+    // Categories sorted by cost
+    const categoriesList = Object.entries(catMap).map(([name, data]) => ({
+      name,
+      ...data,
+      costPct: totalCost > 0 ? Math.round((data.cost / totalCost) * 100) : 0
+    })).sort((a, b) => b.cost - a.cost || b.count - a.count);
+
+    // Districts sorted by cost
+    const districtsList = Object.entries(districtMap).map(([name, data]) => ({
+      name,
+      ...data,
+      completionRate: data.count > 0 ? Math.round((data.completed / data.count) * 100) : 0
+    })).sort((a, b) => b.cost - a.cost || b.count - a.count).slice(0, 8);
+
+    // Top 12 key/recent tickets
+    const highlightTickets = tickets.slice(0, 12);
+
+    const docNumber = 'RN-EXE-' + new Date().getFullYear() + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + Math.floor(1000 + Math.random() * 9000);
+    const issueDate = new Date().toLocaleDateString('th-TH', { dateStyle: 'long' });
+
+    const html = `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>รายงานสรุปผู้บริหาร — ${docNumber}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 14mm 15mm 14mm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .print-bar {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: #0a1628;
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .print-bar-title {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-action {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-action:hover { background: #1d4ed8; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      text-decoration: none;
+      margin-left: 8px;
+    }
+    .report-page {
+      max-width: 820px;
+      margin: 24px auto;
+      background: #fff;
+      padding: 36px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      border-radius: 4px;
+    }
+    .official-header {
+      text-align: center;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .emblem-svg {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 8px;
+      display: block;
+    }
+    .gov-agency {
+      font-size: 13px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .doc-main-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #0a1628;
+      margin: 4px 0 2px;
+      font-family: 'Prompt', sans-serif;
+    }
+    .doc-sub-title {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .kpi-card {
+      background: #fafafa;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .kpi-card.blue { border-color: #93c5fd; background: #eff6ff; }
+    .kpi-card.green { border-color: #86efac; background: #f0fdf4; }
+    .kpi-card.purple { border-color: #d8b4fe; background: #faf5ff; }
+    .kpi-card.amber { border-color: #fcd34d; background: #fffbeb; }
+    .kpi-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 2px;
+      font-family: 'Prompt', sans-serif;
+    }
+    .kpi-lbl {
+      font-size: 10.5px;
+      color: #475569;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .sec-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 18px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-left: 4px solid #2563eb;
+      padding-left: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    th {
+      background: #0f172a;
+      color: #fff;
+      font-weight: 600;
+      padding: 7px 10px;
+      text-align: left;
+    }
+    td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .badge-status {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+    .status-completed { background: #dcfce7; color: #15803d; }
+    .status-in_progress { background: #e0f2fe; color: #0369a1; }
+    .status-pending { background: #fef3c7; color: #b45309; }
+    .status-rejected { background: #fee2e2; color: #b91c1c; }
+    .signatures-block {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1.5px solid #cbd5e1;
+      page-break-inside: avoid;
+    }
+    .sig-col {
+      text-align: center;
+      font-size: 11.5px;
+    }
+    .sig-role {
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 35px;
+    }
+    .sig-line {
+      width: 80%;
+      margin: 0 auto 6px;
+      border-bottom: 1px solid #64748b;
+    }
+    .footer-note {
+      text-align: center;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 20px;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 8px;
+    }
+    @media print {
+      body { background: #fff; }
+      .print-bar { display: none !important; }
+      .report-page {
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        max-width: 100%;
+      }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-bar">
+    <div class="print-bar-title">
+      <span>📄 ระบบรายงานสรุปผลการปฏิบัติการ ResolveNow (Official PDF View)</span>
+    </div>
+    <div style="display:flex;align-items:center;">
+      <span style="font-size:12px;margin-right:12px;color:rgba(255,255,255,0.7);">ช่วงเวลา: <strong>${dr.label}</strong></span>
+      <a href="/api/tickets/report/executive-pdf?range=this_month" class="btn-secondary">เดือนนี้</a>
+      <a href="/api/tickets/report/executive-pdf?range=last_month" class="btn-secondary">เดือนก่อน</a>
+      <a href="/api/tickets/report/executive-pdf?range=all" class="btn-secondary">ทั้งหมด</a>
+      <button class="btn-action" style="margin-left:14px;" onclick="window.print()">
+        <span>🖨️ พิมพ์รายงาน / บันทึก PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="report-page">
+    <div class="official-header">
+      <svg class="emblem-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="46" stroke="#1e3a8a" stroke-width="4" fill="#eff6ff"/>
+        <path d="M50 14L58 38H84L63 53L71 78L50 63L29 78L37 53L16 38H42L50 14Z" fill="#d97706"/>
+        <circle cx="50" cy="50" r="16" fill="#1e3a8a"/>
+        <path d="M44 48L48 52L56 44" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="gov-agency">องค์กรปกครองส่วนท้องถิ่นอัจฉริยะ • ศูนย์บริหารจัดการเรื่องร้องเรียน ResolveNow</div>
+      <h1 class="doc-main-title">รายงานสรุปผลการดำเนินงานและงบประมาณซ่อมบำรุง</h1>
+      <div class="doc-sub-title">ResolveNow Municipal Incident & Resource Allocation Executive Report</div>
+    </div>
+
+    <div class="meta-grid">
+      <div><strong>เลขที่เอกสาร:</strong> ${docNumber}</div>
+      <div><strong>ช่วงเวลาข้อมูล:</strong> ${dr.label}</div>
+      <div><strong>วันที่ออกเอกสาร:</strong> ${issueDate}</div>
+      <div><strong>ชั้นความลับ:</strong> เอกสารราชการรายงานผู้บริหารระดับสูง</div>
+    </div>
+
+    <!-- 4 KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-lbl">เรื่องร้องเรียนทั้งหมด</div>
+        <div class="kpi-val">${totalCount.toLocaleString('th-TH')} <span style="font-size:12px;font-weight:normal">เคส</span></div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-lbl">แก้ไขเสร็จสิ้นแล้ว</div>
+        <div class="kpi-val">${completedCount.toLocaleString('th-TH')} <span style="font-size:12px;font-weight:normal">(${completionRate}%)</span></div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-lbl">SLA Compliance Rate</div>
+        <div class="kpi-val">${slaComplianceRate}% <span style="font-size:11px;font-weight:normal">ผ่านเกณฑ์</span></div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-lbl">งบประมาณซ่อมบำรุงรวม</div>
+        <div class="kpi-val">฿${Math.round(totalCost).toLocaleString('th-TH')}</div>
+      </div>
+    </div>
+
+    <!-- Section 1: Categories Breakdown -->
+    <div class="sec-title">1. สรุปผลการดำเนินงานและการใช้งบประมาณจำแนกตามหมวดหมู่</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:25%">หมวดหมู่งาน</th>
+          <th style="width:14%;text-align:center">จำนวนเรื่อง</th>
+          <th style="width:14%;text-align:center">แก้ไขเสร็จ</th>
+          <th style="width:14%;text-align:center">หลุด SLA</th>
+          <th style="width:20%;text-align:right">งบประมาณ (บาท)</th>
+          <th style="width:13%;text-align:right">สัดส่วนงบ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${categoriesList.map(c => `
+          <tr>
+            <td><strong>${c.name}</strong></td>
+            <td style="text-align:center">${c.count}</td>
+            <td style="text-align:center;color:#16a34a;font-weight:600">${c.completed}</td>
+            <td style="text-align:center;color:${c.breached > 0 ? '#dc2626' : '#64748b'};font-weight:${c.breached > 0 ? '700' : 'normal'}">${c.breached}</td>
+            <td style="text-align:right;font-weight:700">฿${Number(c.cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+            <td style="text-align:right">${c.costPct}%</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <!-- Section 2: District Breakdown -->
+    <div class="sec-title">2. การจำแนกสถิติเชิงพื้นที่ตามเขต/แขวงรับผิดชอบ (Geographic Resource Allocation)</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30%">เขต / แขวง / โซนรับผิดชอบ</th>
+          <th style="width:18%;text-align:center">เรื่องร้องเรียน</th>
+          <th style="width:18%;text-align:center">อัตราสำเร็จ (%)</th>
+          <th style="width:20%;text-align:right">งบประมาณที่ใช้ (บาท)</th>
+          <th style="width:14%;text-align:center">ปัญหาหลัก</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${districtsList.map(d => `
+          <tr>
+            <td><strong>${d.name}</strong></td>
+            <td style="text-align:center">${d.count}</td>
+            <td style="text-align:center;color:#16a34a;font-weight:600">${d.completionRate}%</td>
+            <td style="text-align:right;font-weight:700;color:#059669">฿${Number(d.cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+            <td style="text-align:center"><span style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px">${d.topCategory}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <!-- Section 3: Key Incidents -->
+    <div class="sec-title">3. รายการเรื่องร้องเรียนสำคัญและเคสปฏิบัติการล่าสุด (Key Incidents Log)</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:14%">รหัสเคส</th>
+          <th style="width:16%">หมวดหมู่</th>
+          <th style="width:24%">สถานที่เกิดเหตุ</th>
+          <th style="width:14%;text-align:center">สถานะ</th>
+          <th style="width:16%">ช่างผู้รับผิดชอบ</th>
+          <th style="width:16%;text-align:right">ค่าซ่อมบำรุง</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${highlightTickets.map(t => `
+          <tr>
+            <td style="font-weight:700;color:#2563eb">${t.ticketId}</td>
+            <td>${t.category}</td>
+            <td>${t.location.length > 28 ? t.location.slice(0, 26) + '...' : t.location}</td>
+            <td style="text-align:center">
+              <span class="badge-status status-${t.status}">
+                ${t.status === 'completed' ? 'เสร็จสิ้น' : t.status === 'in_progress' ? 'กำลังทำ' : t.status === 'assigned' ? 'รับงาน' : t.status === 'rejected' ? 'ปฏิเสธ' : 'รอดำเนินการ'}
+              </span>
+            </td>
+            <td>${t.assignedName || '—'}</td>
+            <td style="text-align:right;font-weight:600">฿${Number(t.totalRepairCost || 0).toLocaleString('th-TH')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <!-- Official Sign-off Block -->
+    <div class="signatures-block">
+      <div class="sig-col">
+        <div class="sig-role">ผู้จัดทำและรวบรวมรายงาน</div>
+        <div class="sig-line"></div>
+        <div>( เจ้าหน้าที่ศูนย์สั่งการ ResolveNow )</div>
+        <div style="font-size:10.5px;color:#64748b;margin-top:2px;">ตำแหน่ง เจ้าหน้าที่วิเคราะห์นโยบายและแผน</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">วันที่: ${issueDate}</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-role">ผู้ตรวจสอบผลการปฏิบัติงาน</div>
+        <div class="sig-line"></div>
+        <div>( ผู้อำนวยการกองช่าง / สาธารณูปโภค )</div>
+        <div style="font-size:10.5px;color:#64748b;margin-top:2px;">ตำแหน่ง ผู้อำนวยการฝ่ายบริการสาธารณะ</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">วันที่: ...... / ...... / ..........</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-role">ผู้รับทราบและอนุมัติรายงาน</div>
+        <div class="sig-line"></div>
+        <div>( ปลัดเทศบาล / นายกเทศมนตรี )</div>
+        <div style="font-size:10.5px;color:#64748b;margin-top:2px;">ตำแหน่ง ผู้บริหารสูงสุดขององค์กร</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">วันที่: ...... / ...... / ..........</div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      เอกสารฉบับนี้ออกโดยระบบบริหารจัดการเรื่องร้องเรียนอัจฉริยะ ResolveNow (Smart City Operations Platform) • จัดทำเมื่อ ${new Date().toLocaleString('th-TH')}
+    </div>
+  </div>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    console.error('[Executive PDF Report] Error:', e);
+    res.status(500).send('เกิดข้อผิดพลาดในการสร้างรายงานสรุปผู้บริหาร');
+  }
+});
+
 // ─── GET /api/tickets/report (JSON for PDF) ─────────────────────
 router.get('/report', requireAuth, async (req, res) => {
   try {
