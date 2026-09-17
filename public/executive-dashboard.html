@@ -12,6 +12,16 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      if (sessionStorage.getItem('rn_ceo_gate_unlocked') === '1') {
+        var s = document.createElement('style');
+        s.id = 'ceoPreloadStyle';
+        s.textContent = '#ceoGateModal{display:none!important}#loadingOverlay{display:flex!important;opacity:1!important}';
+        document.head.appendChild(s);
+      }
+    })();
+  </script>
   <style>
     *,
     *::before,
@@ -960,6 +970,13 @@
       color: var(--text-dark);
     }
 
+    /* ── CEO App Shell ──────── */
+    #ceoApp {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+    }
+
     /* ── Loading overlay ──── */
     #loadingOverlay {
       position: fixed;
@@ -968,7 +985,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
+      z-index: 99998;
       transition: opacity .5s ease;
     }
 
@@ -1461,9 +1478,11 @@
     </div>
   </div>
 
+  <!-- ── CEO APP WORKSPACE ───────────────────────── -->
+  <div id="ceoApp" style="display:none">
 
-  <!-- ── SIDEBAR ──────────────────────────────────── -->
-  <aside class="sidebar" id="sidebar">
+    <!-- ── SIDEBAR ──────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
     <div class="sb-logo">
       <div class="sb-logo-brand">
         <div class="sb-logo-icon">🏛️</div>
@@ -1807,6 +1826,7 @@
       <footer style="text-align: center; padding: 28px 16px 8px; font-size: 12px; color: var(--text-muted); user-select: none;">Copyright © 2026 ResolveNow. All rights reserved.</footer>
     </div><!-- /content -->
   </div><!-- /main -->
+  </div><!-- /ceoApp -->
 
   <script>
     /* ─────────────────────────────────────────────
@@ -2460,8 +2480,13 @@
       const err = ge('ceoGateErr');
       const btn = ge('btnCeoGateUnlock');
       const lo = ge('loadingOverlay');
+      const app = ge('ceoApp');
 
-      if (lo) lo.style.display = 'none';
+      if (app) app.style.display = 'none';
+      if (lo) {
+        lo.style.display = 'none';
+        lo.style.opacity = '1';
+      }
       if (gate) {
         gate.classList.remove('gate-closing');
         gate.style.display = 'flex';
@@ -2553,11 +2578,18 @@
 
         sessionStorage.setItem('rn_ceo_gate_unlocked', '1');
 
+        // แสดง loadingOverlay รองรับใต้ gate modal ทันที เพื่อไม่ให้เห็นแดชบอร์ดที่ยังไม่ได้เรนเดอร์กระตุกออกมา
+        const lo = ge('loadingOverlay');
+        if (lo) {
+          lo.style.transition = 'none';
+          lo.style.display = 'flex';
+          lo.style.opacity = '1';
+        }
+
         setTimeout(() => {
-          hideCeoGate(() => {
-            startDashboard();
-          });
-        }, 250);
+          hideCeoGate();
+          startDashboard();
+        }, 180);
 
       } catch (e) {
         if (btn) {
@@ -2581,6 +2613,11 @@
         });
       } catch (e) {}
       sessionStorage.removeItem('rn_ceo_gate_unlocked');
+      _dashboardStarted = false;
+      if (_refreshInterval) {
+        clearInterval(_refreshInterval);
+        _refreshInterval = null;
+      }
       showCeoGate();
     }
 
@@ -2590,23 +2627,39 @@
 
     async function startDashboard() {
       const lo = ge('loadingOverlay');
+      const app = ge('ceoApp');
+
       if (!_dashboardStarted) {
         _dashboardStarted = true;
         if (lo) {
           lo.style.display = 'flex';
           lo.style.opacity = '1';
         }
+
+        // โหลดข้อมูลและให้ loading animation เล่นอย่างนุ่มนวล
+        const minTimePromise = new Promise(resolve => setTimeout(resolve, 550));
+
         try {
-          await fetchData();
+          await Promise.all([fetchData(), minTimePromise]);
+          if (app) app.style.display = 'flex';
           renderAll();
         } catch (e) {
           console.error('Dashboard load error:', e);
+          if (app) app.style.display = 'flex';
         }
+
+        // ปลด preload guard style หากมี
+        const preloadStyle = document.getElementById('ceoPreloadStyle');
+        if (preloadStyle && preloadStyle.parentNode) preloadStyle.parentNode.removeChild(preloadStyle);
+
         if (lo) {
-          lo.style.transition = 'opacity .5s ease';
+          lo.style.transition = 'opacity .45s cubic-bezier(0.16, 1, 0.3, 1)';
           lo.style.opacity = '0';
-          setTimeout(() => { lo.style.display = 'none'; }, 500);
+          setTimeout(() => {
+            lo.style.display = 'none';
+          }, 450);
         }
+
         if (!_refreshInterval) {
           _refreshInterval = setInterval(refreshAll, 30000);
         }
@@ -2620,15 +2673,25 @@
         const res = await fetch('/api/auth/gate-status?portal=ceo');
         const data = await res.json();
         if (data.unlocked) {
-          const gate = ge('ceoGateModal');
-          if (gate) gate.style.display = 'none';
           sessionStorage.setItem('rn_ceo_gate_unlocked', '1');
+          const gate = ge('ceoGateModal');
+          const lo = ge('loadingOverlay');
+          if (lo) {
+            lo.style.transition = 'none';
+            lo.style.display = 'flex';
+            lo.style.opacity = '1';
+          }
+          if (gate) gate.style.display = 'none';
           startDashboard();
         } else {
           sessionStorage.removeItem('rn_ceo_gate_unlocked');
+          const preloadStyle = document.getElementById('ceoPreloadStyle');
+          if (preloadStyle && preloadStyle.parentNode) preloadStyle.parentNode.removeChild(preloadStyle);
           showCeoGate();
         }
       } catch (e) {
+        const preloadStyle = document.getElementById('ceoPreloadStyle');
+        if (preloadStyle && preloadStyle.parentNode) preloadStyle.parentNode.removeChild(preloadStyle);
         showCeoGate();
       }
     }
