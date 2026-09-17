@@ -694,7 +694,7 @@ async function doLineLinkSkip() {
 async function openUnlinkLineModal() {
   hideE('ulErr');
   var btnAll = ge('btnUnlinkAll');
-  if (btnAll) { btnAll.disabled = false; btnAll.textContent = '🗑️ ล้างทั้งหมด'; }
+  if (btnAll) { btnAll.disabled = false; btnAll.textContent = '🗑️ ลบทั้งหมด'; }
   ge('mUnlinkLine').classList.add('on');
 
   // โหลดรายการ LINE-linked users
@@ -731,7 +731,7 @@ function _renderUnlinkList(users) {
     h += '<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHTML(u.email) + '</div>';
     if (u.lineDisplayName) h += '<div style="font-size:11px;color:#06c755;font-weight:600">LINE: ' + escapeHTML(u.lineDisplayName) + '</div>';
     h += '</div>';
-    h += '<button class="ul-unlink-btn" onclick="doAdminUnlinkLine(\'' + escapeHTML(u.email) + '\')" style="flex-shrink:0;padding:6px 14px;border:1.5px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer">ล้าง</button>';
+    h += '<button class="ul-unlink-btn" onclick="doAdminUnlinkLine(\'' + escapeHTML(u.email) + '\')" style="flex-shrink:0;padding:6px 14px;border:1.5px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer">ลบ</button>';
     h += '</div>';
   });
   ge('ulList').innerHTML = h;
@@ -777,7 +777,7 @@ async function doAdminUnlinkLine(email) {
 async function doAdminUnlinkAll() {
   var btn = ge('btnUnlinkAll');
   btn.disabled = true;
-  btn.textContent = 'กำลังล้าง...';
+  btn.textContent = 'กำลังลบ...';
   hideE('ulErr');
 
   // ── Animate ทุกแถวออก cascade ──
@@ -796,7 +796,7 @@ async function doAdminUnlinkAll() {
     var data = await res.json();
     if (!res.ok) {
       btn.disabled = false;
-      btn.textContent = '🗑️ ล้างทั้งหมด';
+      btn.textContent = '🗑️ ลบทั้งหมด';
       return showE('ulErr', data.error || 'เกิดข้อผิดพลาด');
     }
     showToast('✅ ' + data.message);
@@ -804,7 +804,7 @@ async function doAdminUnlinkAll() {
     btn.disabled = true;
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = '🗑️ ล้างทั้งหมด';
+    btn.textContent = '🗑️ ลบทั้งหมด';
     showE('ulErr', 'ไม่สามารถเชื่อมต่อได้');
   }
 }

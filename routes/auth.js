@@ -684,21 +684,22 @@ router.post('/admin-unlink-line', requireAdmin, async (req, res) => {
     // DESYNC-FIX: recalculate upvoteCount and priorityScore on all affected tickets
     await Ticket.updateMany({}, [
       { $set: {
-        upvoteCount: { $size: '$upvotes' },
+        upvoteCount: { $size: { $ifNull: ['$upvotes', []] } },
         priorityScore: {
           $min: [
             100,
             { $add: [
               { $cond: [{ $eq: ['$urgency', 'urgent'] }, 90, { $cond: [{ $eq: ['$urgency', 'medium'] }, 60, 30] }] },
-              { $cond: [{ $gte: [{ $size: '$upvotes' }, 10] }, 70, { $cond: [{ $gte: [{ $size: '$upvotes' }, 5] }, 15, 0] }] }
+              { $cond: [{ $gte: [{ $size: { $ifNull: ['$upvotes', []] } }, 10] }, 70, { $cond: [{ $gte: [{ $size: { $ifNull: ['$upvotes', []] } }, 5] }, 15, 0] }] }
             ]}
           ]
         }
       }}
-    ]);
+    ], { updatePipeline: true });
     await User.deleteOne({ _id: userId });
+    const displayName = user.firstName ? (user.firstName + (user.lastName && user.lastName !== '-' ? ' ' + user.lastName : '')) : (user.name || user.email);
     console.log('[Admin] ลบ user + cascade:', user.email);
-    res.json({ message: `ลบบัญชี ${user.firstName} ${user.lastName} สำเร็จ` });
+    res.json({ message: `ลบบัญชี ${displayName} สำเร็จ` });
   } catch (e) {
     console.error('admin-unlink-line error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
@@ -780,18 +781,18 @@ router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
       // DESYNC-FIX: recalculate upvoteCount and priorityScore on all affected tickets
       await Ticket.updateMany({}, [
         { $set: {
-          upvoteCount: { $size: '$upvotes' },
+          upvoteCount: { $size: { $ifNull: ['$upvotes', []] } },
           priorityScore: {
             $min: [
               100,
               { $add: [
                 { $cond: [{ $eq: ['$urgency', 'urgent'] }, 90, { $cond: [{ $eq: ['$urgency', 'medium'] }, 60, 30] }] },
-                { $cond: [{ $gte: [{ $size: '$upvotes' }, 10] }, 70, { $cond: [{ $gte: [{ $size: '$upvotes' }, 5] }, 15, 0] }] }
+                { $cond: [{ $gte: [{ $size: { $ifNull: ['$upvotes', []] } }, 10] }, 70, { $cond: [{ $gte: [{ $size: { $ifNull: ['$upvotes', []] } }, 5] }, 15, 0] }] }
               ]}
             ]
           }
         }}
-      ]);
+      ], { updatePipeline: true });
 
     }
     console.log(`[Admin] ลบ user + cascade: ${result.deletedCount} คน`);

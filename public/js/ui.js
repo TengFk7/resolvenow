@@ -490,9 +490,12 @@ function openDrawer() {
     cpBtn.style.display = isLineOnly ? 'none' : '';
   }
 
-  // ── แสดงปุ่ม unlink LINE เฉพาะ admin ──
+  // ── แสดงปุ่ม ลบ user (unlink LINE) เฉพาะ admin ──
   var unlinkBtn = ge('drawerUnlinkLine');
-  if (unlinkBtn) unlinkBtn.style.display = CU.role === 'admin' ? 'flex' : 'none';
+  if (unlinkBtn) {
+    var isAdmin = (typeof CU !== 'undefined' && CU && CU.role === 'admin') || (typeof window !== 'undefined' && window.location.pathname.indexOf('/admin') !== -1);
+    unlinkBtn.style.display = isAdmin ? 'flex' : 'none';
+  }
 
   }
 

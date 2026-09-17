@@ -1162,14 +1162,14 @@
   </div>
 
 
-  <!-- ── MODAL: Admin Unlink LINE ──────────────────────────────── -->
+  <!-- ── MODAL: Admin Unlink LINE / ลบ user ─────────────────────── -->
   <div class="mo" id="mUnlinkLine">
     <div class="mb" style="max-width:480px;width:95%">
       <button class="mc" onclick="closeUnlinkLineModal()">✕</button>
       <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:36px;margin-bottom:8px">🔗</div>
-        <h3 style="margin:0 0 4px;font-size:17px">ล้างการเชื่อม LINE</h3>
-        <p style="font-size:12px;color:var(--muted);margin:0">สำหรับทดสอบระบบ LINE login ครั้งแรก</p>
+        <div style="font-size:36px;margin-bottom:8px">🗑️</div>
+        <h3 style="margin:0 0 4px;font-size:17px">ลบ user (ล้างการเชื่อม LINE)</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0">จัดการลบบัญชีผู้ใช้งานที่เชื่อมต่อหรือสร้างผ่าน LINE</p>
       </div>
       <!-- รายการ LINE-linked users -->
       <div id="ulList"
@@ -1180,7 +1180,7 @@
       <div style="display:flex;gap:10px">
         <button onclick="closeUnlinkLineModal()"
           style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted)">ปิด</button>
-        <button onclick="doAdminUnlinkAll()" id="btnUnlinkAll" class="btn-danger-animated">🗑️ ล้างทั้งหมด</button>
+        <button onclick="doAdminUnlinkAll()" id="btnUnlinkAll" class="btn-danger-animated">🗑️ ลบทั้งหมด</button>
       </div>
     </div>
   </div>
@@ -1536,11 +1536,11 @@
         <span class="drawer-item-icon">🔒</span>
         <span>เปลี่ยนรหัสผ่าน</span>
       </button>
-      <!-- Admin only: ล้างการเชื่อม LINE -->
+      <!-- Admin only: ลบ user (ล้างการเชื่อม LINE) -->
       <button class="drawer-item" id="drawerUnlinkLine" style="display:none"
         onclick="openUnlinkLineModal();closeDrawer()">
-        <span class="drawer-item-icon">🔗</span>
-        <span>ล้างการเชื่อม LINE (ทดสอบ)</span>
+        <span class="drawer-item-icon">🗑️</span>
+        <span>ลบ user</span>
       </button>
       <button class="drawer-item drawer-item-danger" onclick="doLogout()">
         <span class="drawer-item-icon">🚪</span>
