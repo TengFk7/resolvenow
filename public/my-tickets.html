@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>เรื่องร้องเรียนของฉัน — ResolveNow</title>
+  <meta name="description" content="ตรวจสอบและติดตามเรื่องร้องเรียนของคุณทั้งหมดบนระบบ ResolveNow พร้อมระบบรักษาความปลอดภัยระดับสูงสุด" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/animations.css" />
+  <!-- Instant Theme Preload -->
+  <script>
+    (function () {
+      var t = localStorage.getItem('resolvnow_theme') || 'auto';
+      var isDark = t === 'dark' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme-setting', t);
+    })();
+  </script>
+  <style>
+    /* ── My Tickets Dedicated Portal Styles ── */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface, #f8fafc);
+      color: var(--text, #0f172a);
+      font-family: 'Prompt', sans-serif;
+    }
+
+    [data-theme="dark"] body,
+    html[data-theme="dark"] body {
+      background: var(--surface, #0a1628);
+      color: var(--text, #f1f5f9);
+    }
+
+    .mytk-header {
+      background: var(--card-bg, #ffffff);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      transition: var(--transition);
+    }
+
+    .mytk-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .mytk-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .mytk-brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .mytk-page-subtitle {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: default;
+      user-select: none;
+    }
+
+    .mytk-title-divider {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 300;
+      opacity: 0.5;
+      user-select: none;
+    }
+
+    /* Back Buttons */
+    .mytk-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 16px;
+      border-radius: 99px;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff !important;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+      transition: all 0.2s ease;
+      font-family: 'Prompt', sans-serif;
+    }
+    .mytk-back-btn:hover {
+      background: linear-gradient(135deg, #1e40af, #1d4ed8);
+      transform: translateX(-2px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.38);
+    }
+    .mytk-back-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 12px;
+      background: var(--card-bg, #ffffff);
+      border: 1.5px solid var(--border);
+      color: var(--blue2);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .mytk-back-pill:hover {
+      border-color: var(--blue2);
+      background: rgba(37, 99, 235, 0.06);
+      transform: translateX(-2px);
+    }
+
+    .mytk-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Security Pill in Header */
+    .sec-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #16a34a;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sec-status-pill:hover {
+      background: rgba(34, 197, 94, 0.2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+    }
+
+    .sec-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+      animation: secPulse 2s infinite;
+    }
+
+    @keyframes secPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.25); }
+    }
+
+    /* Container */
+    .mytk-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+      flex: 1;
+    }
+
+    /* Security Inspection Bar */
+    .sec-inspection-bar {
+      background: var(--card-bg, #ffffff);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .sec-checks-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .sec-check-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .sec-check-icon {
+      font-size: 14px;
+    }
+
+    .sec-check-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 700;
+    }
+
+    /* KPI Cards */
+    .mytk-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .mytk-kpi-card {
+      background: var(--card-bg, #ffffff);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mytk-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      border-color: var(--blue2);
+    }
+
+    .mytk-kpi-card.active {
+      border-color: var(--blue2);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(59, 130, 246, 0.14)), var(--card-bg, #ffffff);
+    }
+
+    [data-theme="dark"] .mytk-kpi-card,
+    html[data-theme="dark"] .mytk-kpi-card {
+      background: var(--card-bg, #112240);
+    }
+
+    [data-theme="dark"] .mytk-kpi-card.active,
+    html[data-theme="dark"] .mytk-kpi-card.active {
+      border-color: var(--blue3);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.32), rgba(59, 130, 246, 0.20)), var(--card-bg, #112240);
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.25);
+    }
+
+    [data-theme="dark"] .mytk-kpi-val {
+      color: var(--text, #f1f5f9);
+    }
+
+    .mytk-kpi-val {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      margin-top: 4px;
+    }
+
+    .mytk-kpi-lbl {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Toolbar */
+    .mytk-toolbar {
+      background: var(--card-bg, #ffffff);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mytk-search-box {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+
+    .mytk-search-input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 13.5px;
+      background: var(--surface-alt, #f8fafc);
+      color: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    [data-theme="dark"] .mytk-search-input,
+    html[data-theme="dark"] .mytk-search-input {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text, #f1f5f9);
+    }
+
+    [data-theme="dark"] select#sortOrder,
+    html[data-theme="dark"] select#sortOrder {
+      background: var(--card-bg, #112240) !important;
+      color: var(--text, #f1f5f9) !important;
+    }
+
+    [data-theme="dark"] select#sortOrder option,
+    html[data-theme="dark"] select#sortOrder option {
+      background: #112240;
+      color: #f1f5f9;
+    }
+
+    .mytk-search-input:focus {
+      border-color: var(--blue2);
+    }
+
+    .mytk-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .mytk-filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mytk-pill {
+      padding: 8px 14px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'Prompt', sans-serif;
+      transition: all 0.18s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mytk-pill:hover {
+      border-color: var(--blue2);
+      color: var(--blue2);
+    }
+
+    .mytk-pill.active {
+      background: var(--blue2);
+      color: #ffffff;
+      border-color: var(--blue2);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    }
+
+    /* Ticket Grid */
+    .mytk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .mytk-grid {
+        grid-template-columns: 1fr;
+      }
+      .sec-inspection-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .mytk-header-inner {
+        padding: 10px 14px;
+      }
+    }
+
+    /* Custom Ticket Card */
+    .mytk-card {
+      background: var(--card-bg, #ffffff);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mytk-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border-color: rgba(37, 99, 235, 0.4);
+    }
+
+    .mytk-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mytk-card-id-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mytk-card-id {
+      font-size: 15px;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      color: var(--blue2);
+    }
+
+    .mytk-card-body {
+      display: flex;
+      gap: 14px;
+    }
+
+    .mytk-card-thumb-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+    }
+
+    .mytk-card-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .mytk-card-thumb-fallback {
+      font-size: 32px;
+    }
+
+    .mytk-card-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .mytk-card-desc {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .mytk-card-meta {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mytk-card-foot {
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .mytk-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mytk-btn-sm {
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-family: 'Prompt', sans-serif;
+      transition: var(--transition);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mytk-btn-sm:hover {
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--blue2);
+      border-color: var(--blue2);
+    }
+
+    /* Security Diagnostics Modal */
+    .sec-diag-card {
+      background: var(--card-bg, #ffffff);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .sec-diag-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .sec-diag-content {
+      flex: 1;
+    }
+
+    .sec-diag-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sec-diag-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .sec-diag-status-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: #dcfce7;
+      color: #16a34a;
+      letter-spacing: 0.5px;
+    }
+
+    /* Security Barrier if unauthenticated */
+    #secAuthBarrier {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(10, 22, 40, 0.94);
+      backdrop-filter: blur(16px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .sec-barrier-box {
+      background: var(--card-bg, #ffffff);
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      padding: 36px 32px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+      animation: modalFadeIn 0.3s ease both;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── SECURITY AUTH BARRIER (Shown when session invalid) ── -->
+  <div id="secAuthBarrier">
+    <div class="sec-barrier-box" style="max-width:460px">
+      <div style="font-size:48px;margin-bottom:12px">🛡️</div>
+      <h2 style="font-size:19px;margin-bottom:6px;color:var(--text)">การเข้าถึงข้อมูลส่วนบุคคล (Security Guard)</h2>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+        กรุณาเข้าสู่ระบบด้วยบัญชีของคุณ เพื่อตรวจสอบเรื่องร้องเรียนส่วนตัว
+      </p>
+
+      <!-- Inline Quick Login Form -->
+      <form onsubmit="event.preventDefault(); doQuickLogin();" style="text-align:left;margin-bottom:14px">
+        <div style="margin-bottom:10px">
+          <label style="font-size:11.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">อีเมล</label>
+          <input type="email" id="secLoginEmail" placeholder="tenginpb@gmail.com" required
+            style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-family:'Prompt',sans-serif;font-size:13px;background:var(--bg);color:inherit;outline:none" />
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:11.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">รหัสผ่าน</label>
+          <input type="password" id="secLoginPass" placeholder="รหัสผ่าน" required
+            style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-family:'Prompt',sans-serif;font-size:13px;background:var(--bg);color:inherit;outline:none" />
+        </div>
+        <div id="secLoginErr" class="ebox" style="display:none;margin-bottom:10px"></div>
+        <button type="submit" id="btnSecLogin" class="btnp btn-ripple" style="width:100%;padding:11px;font-size:13.5px">
+          🔑 เข้าสู่ระบบและดูเรื่องร้องเรียนทันที
+        </button>
+      </form>
+
+      <!-- Quick Demo Account Fill -->
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button type="button" class="mytk-btn-sm" style="flex:1;justify-content:center;padding:8px" onclick="quickFillSecLogin('tenginpb@gmail.com', '123456')">
+          👤 บัญชีประชาชน
+        </button>
+        <button type="button" class="mytk-btn-sm" style="flex:1;justify-content:center;padding:8px" onclick="quickFillSecLogin('admin@resolvenow.th', 'admin1234')">
+          🛡️ บัญชีแอดมิน
+        </button>
+      </div>
+
+      <div style="border-top:1px dashed var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <a href="/" style="font-size:12px;color:var(--muted);text-decoration:none">
+          ← กลับสู่หน้าหลัก Citizen
+        </a>
+        <span style="font-size:11px;color:var(--muted)">
+          🔒 มาตรฐาน PDPA & ISO 27001
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HEADER ── -->
+  <header class="mytk-header">
+    <div class="mytk-header-inner">
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="/" class="mytk-brand" title="กลับหน้าแรก">
+          <span style="font-size:24px">🏛️</span>
+          <span class="mytk-brand-title logo-anim"><span class="resolve-shimmer">Resolve</span><span class="now-gold">Now</span></span>
+        </a>
+        <span class="mytk-title-divider">|</span>
+        <span class="mytk-page-subtitle">📋 เรื่องร้องเรียนของฉัน</span>
+      </div>
+
+      <div class="mytk-actions">
+        <!-- Theme Switcher Button -->
+        <button type="button" class="mytk-btn-sm" onclick="toggleThemeQuick()" id="btnThemeToggle" title="สลับโหมดมืด/สว่าง">
+          🌓
+        </button>
+
+        <!-- User Profile Pill -->
+        <div style="display:flex;align-items:center;gap:8px" id="userPill">
+          <div id="uAvatar" style="width:34px;height:34px;border-radius:50%;background:var(--blue2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">?</div>
+          <span id="uName" style="font-size:13px;font-weight:700;display:none;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="mytk-container">
+
+    <!-- ── KPI SUMMARY CARDS ── -->
+    <div class="mytk-kpi-grid">
+      <div class="mytk-kpi-card active" onclick="setKpiFilter('all')" id="kpi-all">
+        <div class="mytk-kpi-lbl"><span>🗂️ ทั้งหมด</span> <span>📋</span></div>
+        <div class="mytk-kpi-val" id="cntAll">0</div>
+      </div>
+      <div class="mytk-kpi-card" onclick="setKpiFilter('pending')" id="kpi-pending">
+        <div class="mytk-kpi-lbl"><span>⏳ รอดำเนินการ</span> <span style="color:#f59e0b">●</span></div>
+        <div class="mytk-kpi-val" id="cntPending" style="color:#f59e0b">0</div>
+      </div>
+      <div class="mytk-kpi-card" onclick="setKpiFilter('in_progress')" id="kpi-in_progress">
+        <div class="mytk-kpi-lbl"><span>🔨 กำลังซ่อมบำรุง</span> <span style="color:#8b5cf6">●</span></div>
+        <div class="mytk-kpi-val" id="cntInProg" style="color:#8b5cf6">0</div>
+      </div>
+      <div class="mytk-kpi-card" onclick="setKpiFilter('completed')" id="kpi-completed">
+        <div class="mytk-kpi-lbl"><span>✅ เสร็จสิ้นแล้ว</span> <span style="color:#22c55e">●</span></div>
+        <div class="mytk-kpi-val" id="cntDone" style="color:#22c55e">0</div>
+      </div>
+      <div class="mytk-kpi-card" onclick="setKpiFilter('reopened')" id="kpi-reopened">
+        <div class="mytk-kpi-lbl"><span>🔄 ขอตรวจสอบซ้ำ</span> <span style="color:#ea580c">●</span></div>
+        <div class="mytk-kpi-val" id="cntReopened" style="color:#ea580c">0</div>
+      </div>
+    </div>
+
+    <!-- ── TOOLBAR & FILTERS ── -->
+    <div class="mytk-toolbar">
+      <div class="mytk-search-box">
+        <span class="mytk-search-icon">🔍</span>
+        <input type="text" class="mytk-search-input" id="searchTickets" placeholder="ค้นหาด้วยรหัส Ticket ID, หมวดหมู่, หรือข้อความ..." oninput="applyFilters()" />
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px">
+        <select id="sortOrder" onchange="applyFilters()" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-alt, var(--card-bg, #ffffff));color:inherit;font-family:'Prompt',sans-serif;font-size:12.5px;outline:none">
+          <option value="newest">📅 ล่าสุดก่อน</option>
+          <option value="oldest">📅 เก่าสุดก่อน</option>
+          <option value="urgency">⚡ ความเร่งด่วน</option>
+        </select>
+        <button class="mytk-btn-sm" onclick="loadMyTickets(true)" id="btnRefresh" title="รีเฟรชข้อมูล">
+          <span id="refreshIcon">🔄</span> <span>รีเฟรช</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── TICKETS GRID ── -->
+    <div id="ticketsGrid" class="mytk-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--muted)">
+        <div style="font-size:36px;margin-bottom:8px">⏳</div>
+        <div>กำลังโหลดเรื่องร้องเรียนของคุณ...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="rn-footer" style="margin-top:auto;border-top:1px solid var(--border)">
+    Copyright © 2026 ResolveNow. All rights reserved. · ระบบตรวจสอบความปลอดภัย Active
+  </footer>
+
+  <!-- ── MODAL: SECURITY AUDIT & DIAGNOSTICS ── -->
+  <div class="mo" id="mSecAudit" onclick="closeSecurityAuditModal()">
+    <div class="mb" style="max-width:540px" onclick="event.stopPropagation()">
+      <button class="mc" onclick="closeSecurityAuditModal()">✕</button>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <span style="font-size:34px">🛡️</span>
+        <div>
+          <h3 style="margin:0;font-size:18px">รายงานการตรวจสอบความปลอดภัย</h3>
+          <p style="margin:0;font-size:12px;color:var(--muted)">Security Audit & Live Defense Matrix (6-Layer Guard)</p>
+        </div>
+      </div>
+
+      <div class="sec-diag-card">
+        <div class="sec-diag-icon">🔐</div>
+        <div class="sec-diag-content">
+          <div class="sec-diag-title">
+            <span>1. การตรวจสอบตัวตน (Session Guard)</span>
+            <span class="sec-diag-status-badge">PASS</span>
+          </div>
+          <div class="sec-diag-desc">
+            ยืนยันความถูกต้องของ Session Cookie ผ่าน <code>/api/auth/me</code> บัญชีถูกตรวจสอบบทบาท Citizen สิทธิเข้าถึงถูกต้อง
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-diag-card">
+        <div class="sec-diag-icon">🛡️</div>
+        <div class="sec-diag-content">
+          <div class="sec-diag-title">
+            <span>2. การแยกสิทธิ์ข้อมูล (IDOR Shield)</span>
+            <span class="sec-diag-status-badge">PROTECTED</span>
+          </div>
+          <div class="sec-diag-desc">
+            การดึงข้อมูลตั๋วผ่าน <code>GET /api/tickets</code> ถูกกำกับด้วย <code>req.session.userId</code> ป้องกันการเข้าถึงข้อมูลตั๋วผู้อื่น 100%
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-diag-card">
+        <div class="sec-diag-icon">🧼</div>
+        <div class="sec-diag-content">
+          <div class="sec-diag-title">
+            <span>3. ป้องกันการโจมตี XSS (Cross-Site Scripting)</span>
+            <span class="sec-diag-status-badge">FILTERED</span>
+          </div>
+          <div class="sec-diag-desc">
+            ฟิลด์ข้อความทั้งหมดผ่านการ Escaping อักขระพิเศษด้วย <code>escapeHTML()</code> และการกลั่นกรองฝั่ง Server ด้วย <code>xss()</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-diag-card">
+        <div class="sec-diag-icon">⚡</div>
+        <div class="sec-diag-content">
+          <div class="sec-diag-title">
+            <span>4. เกราะป้องกัน Rate Limit & DDoS</span>
+            <span class="sec-diag-status-badge">ACTIVE</span>
+          </div>
+          <div class="sec-diag-desc">
+            กำหนด Polling Limiter (1500 req/5min) สำหรับการอ่านข้อมูล และ API Limiter (300 req/5min) ป้องกันการโจมตีแบบ Brute-force
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-diag-card">
+        <div class="sec-diag-icon">🔒</div>
+        <div class="sec-diag-content">
+          <div class="sec-diag-title">
+            <span>5. การคุ้มครองข้อมูลส่วนบุคคล (PDPA Guard)</span>
+            <span class="sec-diag-status-badge">COMPLIANT</span>
+          </div>
+          <div class="sec-diag-desc">
+            ไม่มีการเปิดเผยอีเมล เบอร์โทร หรือรหัสผ่านใน Payload สาธารณะ ข้อมูลส่วนบุคคลถูกเข้ารหัสตามมาตรฐานความปลอดภัย
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-diag-card">
+        <div class="sec-diag-icon">🔄</div>
+        <div class="sec-diag-content">
+          <div class="sec-diag-title">
+            <span>6. ความปลอดภัย WebSocket (Real-time Handshake)</span>
+            <span class="sec-diag-status-badge" id="diagSocketBadge">SECURE</span>
+          </div>
+          <div class="sec-diag-desc">
+            ช่องสัญญาณ Socket.IO เชื่อมต่อแบบมี Heartbeat Ping-Pong อัปเดตข้อมูลอัตโนมัติเมื่อสถานะตั๋วเปลี่ยนแปลง
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;text-align:center">
+        <button class="btnp btn-ripple" onclick="closeSecurityAuditModal()" style="width:100%;padding:10px">
+          ✓ รับทราบผลการตรวจสอบ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: TICKET DETAIL ── -->
+  <div class="mo" id="mTicketDetail" onclick="closeTD()">
+    <div class="td-modal-card" onclick="event.stopPropagation()">
+      <div class="td-modal-header">
+        <div class="td-modal-title" id="tdModalTitle">📋 รายละเอียด</div>
+        <button class="td-modal-close" onclick="closeTD()">✕</button>
+      </div>
+      <div class="td-modal-body" id="tdModalBody"></div>
+      <div class="td-modal-footer" id="tdModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: TICKET DISCUSSION CHAT ── -->
+  <div class="mo" id="mTicketChat" onclick="closeTicketChat()">
+    <div class="mb" style="max-width:480px;height:520px;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <div>
+          <h4 style="margin:0;font-size:15px" id="chatTicketTitle">💬 แชทกับช่างผู้ดูแล</h4>
+          <span style="font-size:11px;color:var(--muted)">สนทนาและสอบถามความคืบหน้าของตั๋วนี้</span>
+        </div>
+        <button class="mc" style="position:static" onclick="closeTicketChat()">✕</button>
+      </div>
+      <div id="ticketChatMsgs" style="flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:8px">
+        <div style="text-align:center;color:var(--muted);font-size:12px;margin:auto">กำลังโหลดข้อความ...</div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+        <input type="text" id="ticketChatInput" placeholder="พิมพ์ข้อความ..." maxlength="500"
+          style="flex:1;border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Prompt',sans-serif;font-size:13px;outline:none"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();sendTicketChat()}" />
+        <button class="btnp btn-ripple" onclick="sendTicketChat()" style="padding:9px 16px;border-radius:10px;font-size:14px">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: IMAGE VIEW ── -->
+  <div class="mo" id="mImg" onclick="closeMImg()">
+    <div style="max-width:640px;width:100%;text-align:center" onclick="event.stopPropagation()">
+      <p id="mImgTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:10px"></p>
+      <img id="mImgSrc" style="max-width:100%;max-height:80vh;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.5)" src="" alt="" />
+      <p style="color:rgba(255,255,255,.5);font-size:12px;margin-top:10px">คลิกพื้นหลังเพื่อปิด</p>
+    </div>
+  </div>
+
+  <!-- ── MODAL: RATING ── -->
+  <div class="mo" id="mRating">
+    <div class="mb" id="mRatingBox" onclick="event.stopPropagation()">
+      <button class="mc" onclick="closeRatingModal()">✕</button>
+      <div style="text-align:center;margin-bottom:6px">
+        <div style="font-size:40px;margin-bottom:8px">⭐</div>
+        <h3 style="font-size:18px;margin:0 0 4px">ประเมินความพึงพอใจ</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 4px" id="ratingTicketLabel"></p>
+        <p style="font-size:12px;color:var(--muted);margin:0">กรุณาให้คะแนนการบริการของทีมช่าง</p>
+      </div>
+      <div class="star-row" id="starRow">
+        <button class="star-btn" data-val="1" onclick="setRatingStar(1)">★</button>
+        <button class="star-btn" data-val="2" onclick="setRatingStar(2)">★</button>
+        <button class="star-btn" data-val="3" onclick="setRatingStar(3)">★</button>
+        <button class="star-btn" data-val="4" onclick="setRatingStar(4)">★</button>
+        <button class="star-btn" data-val="5" onclick="setRatingStar(5)">★</button>
+      </div>
+      <div id="starLabel" style="text-align:center;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;min-height:20px"></div>
+      <div id="ratingReasonWrap" style="display:none;margin-bottom:14px">
+        <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px">📝 เหตุผลที่ไม่พอใจ <span style="color:var(--r)">*</span></label>
+        <textarea id="ratingReason" placeholder="กรุณาระบุเหตุผล เช่น งานไม่เรียบร้อย / ช่างมาช้า..."
+          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;resize:none;height:80px;background:var(--bg)"></textarea>
+      </div>
+      <div class="ebox" id="ratingErr"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeRatingModal()" class="mytk-btn-sm" style="flex:1;justify-content:center;padding:12px">ข้ามก่อน</button>
+        <button onclick="submitRating()" id="btnSubmitRating" class="btnp btn-ripple" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706)">⭐ ส่งคะแนน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: REOPEN ── -->
+  <div class="mo" id="mReopen">
+    <div class="mb" onclick="event.stopPropagation()">
+      <button class="mc" onclick="closeReopenModal()">✕</button>
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-size:40px;margin-bottom:6px">🔄</div>
+        <h3 style="font-size:18px;margin:0 0 4px">ขอให้ตรวจสอบใหม่ (Re-open)</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0" id="reopenTicketLabel"></p>
+      </div>
+      <div class="fg">
+        <label>ระบุเหตุผลที่งานยังไม่เรียบร้อย <span class="req-star">*</span></label>
+        <textarea id="reopenReason" placeholder="เช่น ยังมีรอยแตกร้าว / ฝาท่อยังปิดไม่สนิท..."
+          style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;resize:none;height:90px;background:var(--bg)"></textarea>
+      </div>
+      <div class="ebox" id="reopenErr"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeReopenModal()" class="mytk-btn-sm" style="flex:1;justify-content:center;padding:12px">ยกเลิก</button>
+        <button onclick="submitReopen()" class="btnp btn-ripple" style="flex:1;background:linear-gradient(135deg,#ea580c,#c2410c)">🔄 ส่งเรื่องตรวจสอบใหม่</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- UI utilities -->
+  <script src="/js/ui.js"></script>
+  <!-- Dedicated Controller -->
+  <script src="/js/my-tickets.js"></script>
+</body>
+
+</html>

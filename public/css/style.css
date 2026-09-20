@@ -10822,4 +10822,57 @@ select.is-invalid,
   color: #ef4444;
 }
 
+/* ── My Tickets Quick Banner & Portal Styles ── */
+.my-tickets-portal-banner {
+  padding: 14px 18px;
+  background: var(--card-bg, #ffffff);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  transition: var(--transition);
+}
+.my-tickets-portal-banner:hover {
+  border-color: var(--blue2);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.08);
+}
+.my-tickets-quick-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(59, 130, 246, 0.14));
+  border: 1.5px solid rgba(37, 99, 235, 0.28);
+  border-radius: 99px;
+  color: var(--blue2);
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: all 0.22s ease;
+  font-family: 'Prompt', sans-serif;
+}
+.my-tickets-quick-pill:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.28);
+}
+.my-tickets-quick-pill:hover span {
+  color: #ffffff !important;
+}
+.quick-pill-arrow {
+  transition: transform 0.2s ease;
+}
+.my-tickets-quick-pill:hover .quick-pill-arrow {
+  transform: translate(2px, -2px);
+}
+[data-theme="dark"] .my-tickets-portal-banner {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .my-tickets-quick-pill {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+
 

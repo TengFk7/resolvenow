@@ -604,6 +604,22 @@ function openDrawer() {
     b.classList.toggle('active', b.getAttribute('data-theme-btn') === curSetting);
   });
 
+  // ── แสดง/ซ่อน เมนูเรื่องร้องเรียนของฉัน ใน drawer (เฉพาะ citizen) ──
+  var myTicketsBtn = ge('drawerMyTickets');
+  if (myTicketsBtn) {
+    var isCitizenUser = (typeof CU !== 'undefined' && CU && CU.role === 'citizen');
+    myTicketsBtn.style.display = isCitizenUser ? 'flex' : 'none';
+    var countBadge = ge('drawerTicketCount');
+    if (countBadge && typeof _cgAllTickets !== 'undefined' && Array.isArray(_cgAllTickets)) {
+      if (_cgAllTickets.length > 0) {
+        countBadge.textContent = _cgAllTickets.length;
+        countBadge.style.display = 'inline-block';
+      } else {
+        countBadge.style.display = 'none';
+      }
+    }
+  }
+
   // ── แสดง/ซ่อน เมนูติดต่อ Admin ใน drawer (เฉพาะ citizen) ──
   var dmBtn = ge('drawerDmChat');
   if (dmBtn) {

@@ -1,0 +1,106 @@
+%% ==============================================================================
+%% ResolveNow - System Architecture & Security Specification (.mmd)
+%% Version: V18.1 | Updated: 2026-09-20
+%% 
+%% PURPOSE:
+%% เอกสารสถาปัตยกรรมระบบ ResolveNow ฉบับ Mermaid (.mmd) สำหรับให้ AI Assistant
+%% และนักพัฒนาใช้ทำความเข้าใจโครงสร้างพอร์ทัล, ระบบความปลอดภัย, การนำทางผ่าน Drawer,
+%% และวงจรการประมวลผลข้อมูลของระบบอย่างแม่นยำและเป็นมาตรฐานเดียวกันเสมอ
+%% ==============================================================================
+
+graph TD
+    %% ──────────────────────────────────────────────────────────────────────────
+    %% 1. USER ROLES & CLIENT ENTRY POINTS
+    %% ──────────────────────────────────────────────────────────────────────────
+    subgraph Clients [ผู้ใช้งานระบบ และ ประตูทางเข้า (Client Portals)]
+        Citizen["👤 ประชาชน (Citizen)<br>• แจ้งเรื่อง 5 ขั้นตอน (Wizard)<br>• พิกัด GPS + ภาพถ่าย<br>• แชทกับแอดมิน (Direct Message)"]
+        MyTicketsPortal["📋 หน้าต่างเว็บแยกเรื่องร้องเรียน<br>URL: /my-tickets หรือ /tickets/my<br>• ระบบตรวจสอบความปลอดภัย 6 ชั้น<br>• รายการตั๋วทั้งหมด + ตัวกรองสถานะ + ค้นหา<br>• แชทกับช่าง + ประเมินดาว + ขอเปิดงานใหม่"]
+        PublicUser["🔍 ประชาชนทั่วไป (Public Tracker)<br>URL: /track<br>• ค้นหาด้วยรหัส Ticket ID<br>• ปกปิดข้อมูลส่วนบุคคลตาม PDPA"]
+        Tech["👷 ช่างภาคสนาม (Technician Portal)<br>URL: /tech หรือ /technician<br>• ผ่าน Security Gate (@Teng11421142)<br>• อัปโหลดภาพ Before/After<br>• บันทึกวัสดุ/ค่าใช้จ่าย + ลายเซ็นดิจิทัล"]
+        Admin["👨‍💻 แอดมิน (Admin Management Portal)<br>URL: /admin<br>• ผ่าน Security Gate (@Teng11421142)<br>• มอบหมายงาน + รวมตั๋วซ้ำ + อนุมัติ SLA<br>• จัดการหมวดหมู่ + เครื่องมือทดสอบอีเมล"]
+        CEO["👔 ผู้บริหาร (Executive Dashboard)<br>URL: /ceo<br>• ผ่าน Security Gate (@Teng11421142)<br>• SLA Compliance + กราฟงบประมาณ + District Analytics"]
+    end
+
+    %% ──────────────────────────────────────────────────────────────────────────
+    %% 2. HAMBURGER DRAWER NAVIGATION FLOW
+    %% ──────────────────────────────────────────────────────────────────────────
+    subgraph DrawerFlow [ระบบเมนูขีดสามขีด (Universal Slide Drawer)]
+        HbgBtn["☰ ปุ่มขีดสามขีด (Hamburger Button)<br>บน Header ทุกพอร์ทัล"]
+        Drawer["📁 Universal Slide Drawer (#sideDrawer)<br>• Avatar & Role Badge<br>• สลับโหมดธีม สว่าง / มืด / อัตโนมัติ"]
+        DrawerItemTickets["📋 เมนู 'เรื่องร้องเรียนของฉัน'<br>target='_blank' ↗<br>เปิดหน้าต่างแยก /my-tickets พร้อม Badge นับจำนวน"]
+        DrawerItemDm["💬 ติดต่อ Admin (Citizen Chat)"]
+        DrawerItemPw["🔒 เปลี่ยนรหัสผ่าน"]
+        DrawerItemLogout["🚪 ออกจากระบบ (Logout)"]
+
+        HbgBtn --> Drawer
+        Drawer --> DrawerItemTickets
+        Drawer --> DrawerItemDm
+        Drawer --> DrawerItemPw
+        Drawer --> DrawerItemLogout
+        DrawerItemTickets -. "คลิกเปิดหน้าต่างเว็บแยก" .-> MyTicketsPortal
+    end
+
+    %% ──────────────────────────────────────────────────────────────────────────
+    %% 3. 6-LAYER SECURITY CHECK ENGINE (/my-tickets)
+    %% ──────────────────────────────────────────────────────────────────────────
+    subgraph SecurityEngine [ระบบตรวจสอบความปลอดภัย 6 ชั้น (6-Layer Security Matrix)]
+        direction TB
+        L1["🔐 Layer 1: Session Auth Guard<br>GET /api/auth/me • ตรวจสอบ HttpOnly Cookie<br>หากไม่พบบัญชีจะเปิด Security Barrier ทันที"]
+        L2["🛡️ Layer 2: Role Authorization Guard<br>จำกัดสิทธิ์เฉพาะ role: 'citizen' หรือ 'admin'<br>ป้องกัน Privilege Escalation ข้ามบทบาท"]
+        L3["🔒 Layer 3: IDOR Data Isolation Shield<br>กรองตั๋วใน /api/tickets ด้วย req.session.userId<br>ประชาชนดูได้เฉพาะตั๋วที่เป็นเจ้าของ 100%"]
+        L4["🧼 Layer 4: Anti-XSS & Injection Neutralizer<br>Frontend: escapeHTML() ทุกอินพุตและคำอธิบาย<br>Backend: xss() ป้องกัน Malicious Scripts"]
+        L5["⚡ Layer 5: Rate Limiter & DDoS Guard<br>Polling Limiter (1500 req / 5 min)<br>API Limiter (300 req / 5 min) ป้องกันสแปม"]
+        L6["🔄 Layer 6: WebSocket Security Handshake<br>Socket.IO Heartbeat Ping-Pong 15s<br>อัปเดตสถานะตั๋วแบบ Real-time ข้ามพอร์ทัล"]
+
+        L1 --> L2 --> L3 --> L4 --> L5 --> L6
+    end
+
+    MyTicketsPortal --> SecurityEngine
+
+    %% ──────────────────────────────────────────────────────────────────────────
+    %% 4. BACKEND SERVICES & DATA STORES
+    %% ──────────────────────────────────────────────────────────────────────────
+    subgraph BackendCore [ResolveNow Express Core & Services (Port 3001)]
+        Server["🖥️ Express Application (server.js)<br>• IPv4 DNS Override<br>• Express Session (MongoStore/Memory)<br>• Socket.IO Server"]
+        TicketsRouter["📂 /api/tickets<br>CRUD ตั๋ว, Before/After, SLA Pause, Reopen, Materials"]
+        AuthRouter["🔑 /api/auth<br>Login, OTP, Gate Verify, Test Email"]
+        SlaEngine["⏱️ SLA Engine (slaHelper.js)<br>คำนวณ Deadlines ตามระดับ Urgency<br>ตรวจ Breach พร้อมชดเชยเวลา SLA Pause"]
+        AiEngine["🤖 Cognitive Thai NLP (5 Layers)<br>จำแนกความเร่งด่วน 134 Test Cases<br>Claude & Gemini AI Fallback"]
+    end
+
+    subgraph Storage [ฐานข้อมูลและบริการภายนอก]
+        Mongo[("🗄️ MongoDB Atlas<br>• Tickets<br>• Users<br>• Categories<br>• Comments<br>• DirectMessages")]
+        Cloudinary["☁️ Cloudinary Storage<br>จัดเก็บภาพปัญหา / Before / After"]
+        Mailer["📧 Triple-Provider Mailer<br>Gmail 465/587 • SendGrid • Resend"]
+        LineService["📲 LINE Notify & LIFF<br>แจ้งเตือน Flex Message + ประเมินผล"]
+    end
+
+    %% Routing connections
+    SecurityEngine --> Server
+    Server --> TicketsRouter
+    Server --> AuthRouter
+    TicketsRouter --> SlaEngine
+    TicketsRouter --> Mongo
+    TicketsRouter --> Cloudinary
+    AuthRouter --> Mongo
+    AuthRouter --> Mailer
+    Server --> LineService
+    TicketsRouter --> AiEngine
+
+    %% Real-time sync feedback loop
+    TicketsRouter -. "Socket.IO emit: ticket_updated" .-> MyTicketsPortal
+    TicketsRouter -. "Socket.IO emit: ticket_status_changed" .-> Tech
+    TicketsRouter -. "Socket.IO emit: ticket_assigned" .-> Admin
+
+    %% Styling
+    classDef client fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
+    classDef security fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
+    classDef server fill:#fef3c7,stroke:#d97706,stroke-width:2px;
+    classDef storage fill:#f3e8ff,stroke:#9333ea,stroke-width:2px;
+    classDef drawer fill:#fce7f3,stroke:#db2777,stroke-width:2px;
+
+    class Citizen,MyTicketsPortal,PublicUser,Tech,Admin,CEO client;
+    class L1,L2,L3,L4,L5,L6 security;
+    class Server,TicketsRouter,AuthRouter,SlaEngine,AiEngine server;
+    class Mongo,Cloudinary,Mailer,LineService storage;
+    class HbgBtn,Drawer,DrawerItemTickets,DrawerItemDm,DrawerItemPw,DrawerItemLogout drawer;

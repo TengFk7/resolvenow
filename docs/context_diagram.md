@@ -29,7 +29,8 @@ flowchart LR
 
     %% Interactions: Citizen
     Citizen -- "แจ้งเรื่อง 5 ขั้นตอน / พิกัด GPS / แชทตั๋ว / Direct Message / โหวต / Re-open" --> System
-    System -- "สถานะงานเรียลไทม์ / Heatmap / ข้อความตอบกลับ" --> Citizen
+    Citizen -- "เปิดหน้าต่างเว็บแยก /my-tickets ผ่าน Drawer (ตรวจสอบความปลอดภัย 6 ชั้น)" --> System
+    System -- "สถานะงานเรียลไทม์ / Heatmap / ข้อความตอบกลับ / รายการตั๋วส่วนตัว (IDOR Scoped)" --> Citizen
     Citizen -. "ให้คะแนนความพึงพอใจ" .-> LineLIFF
     LineLIFF -. "ส่งคะแนนประเมิน" .-> System
     Citizen -. "ล็อกอิน SSO" .-> LineLogin

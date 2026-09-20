@@ -743,37 +743,6 @@
           </div>
 
         </div><!-- /step-viewport -->
-
-        <!-- ── My Tickets ──────────────────────────────── -->
-        <div class="ncard" style="margin-top:12px" id="myTicketsCard">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
-            <h2 style="margin:0">📋 เรื่องร้องเรียนของฉัน</h2>
-            <div class="cg-select" id="cgStatusFilter" data-value="all">
-              <button class="cg-select-trigger" onclick="cgDropToggle('cgStatusFilter')">
-                <span class="cg-select-label">🗂️ ทั้งหมด</span>
-                <span class="cg-select-arrow">▾</span>
-              </button>
-              <div class="cg-select-panel">
-                <div class="cg-select-opt selected" data-value="all"
-                  onclick="cgDropPick('cgStatusFilter','all','🗂️ ทั้งหมด',cgApplyFilter)">🗂️ ทั้งหมด</div>
-                <div class="cg-select-opt" data-value="pending"
-                  onclick="cgDropPick('cgStatusFilter','pending','⏳ รอดำเนินการ',cgApplyFilter)">⏳ รอดำเนินการ</div>
-                <div class="cg-select-opt" data-value="assigned"
-                  onclick="cgDropPick('cgStatusFilter','assigned','🔧 รับงานแล้ว',cgApplyFilter)">🔧 รับงานแล้ว</div>
-                <div class="cg-select-opt" data-value="in_progress"
-                  onclick="cgDropPick('cgStatusFilter','in_progress','🔨 กำลังดำเนินการ',cgApplyFilter)">🔨
-                  กำลังดำเนินการ</div>
-                <div class="cg-select-opt" data-value="completed"
-                  onclick="cgDropPick('cgStatusFilter','completed','✅ เสร็จสิ้น',cgApplyFilter)">✅ เสร็จสิ้น</div>
-                <div class="cg-select-opt" data-value="rejected"
-                  onclick="cgDropPick('cgStatusFilter','rejected','❌ ปฏิเสธ',cgApplyFilter)">❌ ปฏิเสธ</div>
-              </div>
-            </div>
-          </div>
-          <div id="citizenCards">
-            <div class="empty">ยังไม่มีเรื่องร้องเรียน</div>
-          </div>
-        </div>
       </div><!-- /secCitizen -->
 
 
@@ -1514,6 +1483,12 @@
 
     <!-- Menu Items -->
     <nav class="drawer-menu">
+      <!-- Citizen only: เรื่องร้องเรียนของฉัน -->
+      <a href="/my-tickets" class="drawer-item" id="drawerMyTickets" style="display:none;text-decoration:none" onclick="closeDrawer()">
+        <span class="drawer-item-icon">📋</span>
+        <span style="flex:1;text-align:left">เรื่องร้องเรียนของฉัน</span>
+        <span class="cg-drawer-count" id="drawerTicketCount" style="display:none;background:var(--blue2);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px">0</span>
+      </a>
       <!-- Citizen only: ติดต่อ Admin -->
       <button class="drawer-item" id="drawerDmChat" onclick="closeDrawer(); openDirectChat();" style="display:none">
         <span class="drawer-item-icon">💬</span>

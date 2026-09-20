@@ -17,7 +17,8 @@
 
 1. **Default Port**: รันที่พอร์ต `3001` เสมอ (`http://localhost:3001`) จากคำสั่ง `npm run dev` (ห้ามเปลี่ยนพอร์ตเองเว้นแต่ได้รับคำสั่ง)
 2. **Dedicated Portals (แยกพอร์ทัลตาม URL ชัดเจน)**:
-   - `http://localhost:3001/` : **Citizen Portal** (ประชาชนแจ้งเรื่อง, ติดตาม, แผนที่ Heatmap, แชทตรง)
+   - `http://localhost:3001/` : **Citizen Portal** (ประชาชนแจ้งเรื่อง 5 ขั้นตอน, แผนที่ Heatmap, แชทตรง)
+   - `http://localhost:3001/my-tickets` หรือ `/tickets/my` : **My Tickets Dedicated Portal** (หน้าต่างเว็บแยกเรื่องร้องเรียนของฉันทั้งหมด พร้อมระบบตรวจสอบความปลอดภัย 6 ชั้น เข้าถึงจากเมนูขีดสามขีด)
    - `http://localhost:3001/admin` : **Admin Portal** (ผู้ดูแลระบบ, คิวงาน, มอบหมาย, จัดการช่าง/หมวดหมู่, Inbox, รายงาน, เครื่องมือทดสอบอีเมล)
    - `http://localhost:3001/tech` หรือ `/technician` : **Technician Portal** (ช่างปฏิบัติงาน, รับงาน, อัปโหลด Before/After, บันทึกวัสดุ/ค่าใช้จ่าย, พักเวลา SLA, ใบสั่งงานพร้อมลายเซ็นดิจิทัล)
    - `http://localhost:3001/ceo` : **CEO Dashboard** (ผู้บริหาร, สถิติ SLA, กราฟงบประมาณ, การวิเคราะห์เชิงพื้นที่ District Analytics, Masked PII)

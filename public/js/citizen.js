@@ -751,6 +751,17 @@ function renderCitizen(data) {
   window._cgTickets = {};
   data.forEach(function (t) { window._cgTickets[t.ticketId] = t; });
 
+  // Update hamburger drawer ticket count badge
+  var dBadge = ge('drawerTicketCount');
+  if (dBadge) {
+    if (data && data.length > 0) {
+      dBadge.textContent = data.length;
+      dBadge.style.display = 'inline-block';
+    } else {
+      dBadge.style.display = 'none';
+    }
+  }
+
   // Keep current filter selection if any
   var sel = ge('cgStatusFilter');
   var filter = sel ? (sel.getAttribute('data-value') || 'all') : 'all';

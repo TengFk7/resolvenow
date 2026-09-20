@@ -343,6 +343,11 @@ io.on('connection', (socket) => {
     res.sendFile(path.join(__dirname, 'public', 'project-poster.html'))
   );
 
+  // ─── Citizen My Tickets Dedicated Portal ───────────────────────
+  app.get(['/my-tickets', '/tickets/my'], (req, res) =>
+    res.sendFile(path.join(__dirname, 'public', 'my-tickets.html'))
+  );
+
   // ─── Fallback (SPA) ──────────────────────────────────────────
   app.get('*', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'index.html'))
