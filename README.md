@@ -1,6 +1,6 @@
 # 🏙️ ResolveNow (ระบบรับแจ้งเรื่องร้องเรียนและบริหารงานซ่อมบำรุงเมืองอัจฉริยะ)
 
-> **ResolveNow (V18.0)** เป็นเว็บแอปพลิเคชันรูปแบบ **Dedicated Multi-Portal Architecture** สำหรับบริหารจัดการและติดตามเรื่องร้องเรียนของเทศบาลและเมืองอัจฉริยะ (Smart City) เชื่อมต่อประชาชน ช่างผู้ปฏิบัติงาน ผู้ดูแลระบบ และผู้บริหารระดับสูงแบบเรียลไทม์ พร้อมการแจ้งเตือนผ่าน LINE, ระบบวิเคราะห์ความเร่งด่วนด้วย AI & Cognitive Thai NLP Heuristics Engine, สถาปัตยกรรมส่งอีเมล Triple-Provider Resilient Mailer, แผนที่ Heatmap และการวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบบันทึกงบประมาณ/วัสดุ, ใบสั่งงานพร้อมลายเซ็นดิจิทัล, ระบบ SLA อัตโนมัติ และชุดทดสอบความถูกต้องของระบบอัตโนมัติ (Automated Verification Test Suite)
+> **ResolveNow (V18.1)** เป็นเว็บแอปพลิเคชันรูปแบบ **Dedicated Multi-Portal Architecture** สำหรับบริหารจัดการและติดตามเรื่องร้องเรียนของเทศบาลและเมืองอัจฉริยะ (Smart City) เชื่อมต่อประชาชน ช่างผู้ปฏิบัติงาน ผู้ดูแลระบบ และผู้บริหารระดับสูงแบบเรียลไทม์ พร้อมการแจ้งเตือนผ่าน LINE, ระบบวิเคราะห์ความเร่งด่วนด้วย AI & Cognitive Thai NLP Heuristics Engine, สถาปัตยกรรมส่งอีเมล Triple-Provider Resilient Mailer, แผนที่ Heatmap และการวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบบันทึกงบประมาณ/วัสดุ, ใบสั่งงานพร้อมลายเซ็นดิจิทัล, ระบบ SLA อัตโนมัติ และชุดทดสอบความถูกต้องของระบบอัตโนมัติ (Automated Verification Test Suite)
 
 ---
 
@@ -11,6 +11,7 @@
 | พอร์ทัล | URL | หน้าเว็บ | รหัสผ่าน Gate Passcode | ผู้ใช้งานและหน้าที่หลัก |
 |---|---|---|---|---|
 | **Citizen Portal** | `/` | `public/index.html` | - | ประชาชนทั่วไป แจ้งเรื่อง 5 ขั้นตอน, ติดตาม, แชท, โหวต, ยื่น Re-open |
+| **My Tickets Portal** | `/my-tickets` หรือ `/tickets/my` | `public/my-tickets.html` | - | หน้าต่างเว็บแยกดูเรื่องร้องเรียนทั้งหมดของฉัน (ความปลอดภัย 6 ชั้น, คัดกรอง, แชท) |
 | **Admin Portal** | `/admin` | `public/admin.html` | `@Teng11421142` | ผู้ดูแลระบบ จัดการคิว มอบหมายงาน อนุมัติ SLA รวมตั๋วซ้ำ ตรวจสอบระบบอีเมล |
 | **Technician Portal** | `/tech` หรือ `/technician` | `public/tech.html` | `@Teng11421142` | ช่างภาคสนาม รับงาน บันทึกรูป Before/After บันทึกวัสดุ ขอพักเวลา SLA เซ็นใบงาน |
 | **CEO Dashboard** | `/ceo` | `public/executive-dashboard.html` | `@Teng11421142` | ผู้บริหารระดับสูง สถิติ SLA กราฟงบประมาณ การวิเคราะห์เชิงพื้นที่ (Masked PII) |
@@ -127,6 +128,7 @@ npm start
 
 - **สำหรับ AI Assistant (กฎระเบียบและคู่มือด่วน)**: [AGENTS.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/AGENTS.md)
 - **สถาปัตยกรรมระบบฉบับสมบูรณ์ (Deep-Dive Context)**: [SYSTEM_CONTEXT.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/SYSTEM_CONTEXT.md)
+- **แผนภาพสถาปัตยกรรมระบบ & ความปลอดภัย 6 ชั้น**: [docs/system_architecture.mmd](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/system_architecture.mmd)
 - **พจนานุกรมข้อมูล (Data Dictionary)**: [docs/data_dictionary.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/data_dictionary.md) หรือเปิดดูบนเว็บที่ [data_dictionary.html](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/data_dictionary.html)
 - **แบบจำลองฐานข้อมูล (ER Diagram)**: [docs/er_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/er_diagram.md)
 - **กระแสข้อมูลระบบ (DFD)**: [docs/dfd.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/dfd.md)

@@ -1,7 +1,7 @@
 # ResolvNow Context Diagram (ภาพรวมระบบ)
-> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0
+> อัปเดตล่าสุด: 2026-09-20 | Version: V18.1
 
-แผนภาพ Context Diagram นี้แสดงการโต้ตอบระหว่าง **ระบบ ResolveNow (V18.0)** กับ **ผู้ใช้งานทุกบทบาท (External Entities)** และ **ระบบภายนอกอื่นๆ**
+แผนภาพ Context Diagram นี้แสดงการโต้ตอบระหว่าง **ระบบ ResolveNow (V18.1)** กับ **ผู้ใช้งานทุกบทบาท (External Entities)** และ **ระบบภายนอกอื่นๆ**
 
 ```mermaid
 flowchart LR

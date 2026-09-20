@@ -1,17 +1,18 @@
 # ResolveNow — System Context for AI Assistants
-> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0 (Triple-Provider Mailer, Server-side Gate API, Cognitive Thai NLP Heuristics, District Analytics, Automated Verification Test Suite)
+> อัปเดตล่าสุด: 2026-09-20 | Version: V18.1 (Triple-Provider Mailer, Server-side Gate API, Cognitive Thai NLP Heuristics, District Analytics, Dedicated My-Tickets Portal, Automated Verification Test Suite)
 
 ## ภาพรวมระบบ (System Overview)
 **ResolveNow** คือระบบบริหารจัดการและติดตามเรื่องร้องเรียนอัจฉริยะ (Smart City Complaint & Work Order Management Platform) ที่ออกแบบขึ้นเพื่อยกระดับการให้บริการขององค์กรปกครองส่วนท้องถิ่นและเทศบาลยุคใหม่ เชื่อมโยง 4 บทบาทหลักอย่างไร้รอยต่อผ่านสถาปัตยกรรม **Dedicated Multi-Portal Architecture**:
 
 1. **Citizen Portal (`/`)** — ประชาชน: แจ้งเรื่องร้องเรียน 5 ขั้นตอน ระบุพิกัด GPS แม่นยำ (Reverse Geocoding), ติดตามสถานะเรียลไทม์, ตรวจสอบแผนที่ความหนาแน่นปัญหา (Heatmap), โหวต/ติดตามปัญหาทาง LINE, ยื่นเรื่องขอเปิดงานใหม่ (Re-open), และสนทนาแบบเรียลไทม์กับเจ้าหน้าที่
-2. **Admin Management Portal (`/admin`)** — ผู้ดูแลระบบ: ศูนย์บัญชาการและกระจายงาน (Dispatching Hub), บริหารจัดการคิวงาน, มอบหมายงานให้ช่างตามความเชี่ยวชาญและภาระงาน (Workload Capacity), อนุมัติการขอพักเวลา SLA, ตรวจจับและรวมตั๋วซ้ำซ้อน (Merge Tickets), กล่องข้อความกลาง (Unified DM Inbox), จัดการหมวดหมู่ไดนามิก, เครื่องมือทดสอบและวินิจฉัยระบบอีเมล (Admin Mail Diagnostics), และดาวน์โหลดรายงาน (.xlsx, .csv)
-3. **Technician Field Ops Portal (`/tech`, `/technician`)** — ช่างและเจ้าหน้าที่ภาคสนาม: หน้าปฏิบัติงานเฉพาะช่างแต่ละคน, การรับงาน, นำทางไปยังพิกัด, บันทึกภาพถ่ายก่อนและหลังการซ่อม (Before/After Photos สูงสุด 5 ภาพ), บันทึกรายการวัสดุและค่าใช้จ่ายซ่อมบำรุง (Material & Cost Tracking), ขอความช่วยเหลือข้ามแผนก (Cross-dept Help Request), ขอพักเวลา SLA เมื่อรออะไหล่ และส่งมอบงานพร้อมลายเซ็นดิจิทัล (Digital Work Order)
-4. **CEO Executive Dashboard (`/ceo`)** — ผู้บริหารระดับสูง: แดชบอร์ดสรุปสถิติผลการดำเนินงานแบบเรียลไทม์, ดัชนีชี้วัด SLA Compliance, สรุปงบประมาณและค่าใช้จ่ายในการซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Cost Breakdown), การวิเคราะห์เชิงพื้นที่และงบประมาณแยกตามเขต/แขวง (District Analytics), สินค้า/วัสดุที่มีการเบิกใช้สูงสุด 5 อันดับแรก พร้อมโหมดนำเสนอ (Presentation Mode) โดยมีการปกปิดข้อมูลส่วนบุคคล (Masked PII) เพื่อความปลอดภัยตามหลัก PDPA
-5. **Public Complaint Tracker (`/track`)** — ระบบค้นหาและติดตามสถานะสำหรับประชาชนทั่วไป: ค้นหาด้วยรหัส Ticket ID เพื่อดูขั้นตอนการดำเนินงานโดยไม่ต้องล็อกอิน (Masked PII)
-6. **Data Dictionary (`/Datadic`)** — พจนานุกรมข้อมูลระบบ: เอกสารจำลองฐานข้อมูลที่ต้องยืนยันตัวตนด้วยบัญชี Admin
-7. **Project Poster (`/project`)** — หน้าโปสเตอร์ดิจิทัลนำเสนอโครงการระดับผู้บริหาร
-8. **Health Check API (`/health`, `/api/health`)** — ตรวจสอบ Uptime และความพร้อมของฐานข้อมูล MongoDB
+2. **My Tickets Dedicated Portal (`/my-tickets`, `/tickets/my`)** — หน้าต่างเว็บแยกเรื่องร้องเรียนของฉัน: ตรวจสอบความปลอดภัย 6 ชั้น (Session, Role, IDOR Isolation, XSS Neutralizer, Rate Limiter, Socket Handshake), แสดงรายการตั๋วทั้งหมดของผู้ใช้แบบเรียลไทม์, ตัวกรองสถานะ, ค้นหา, แชทกับช่าง และประเมินดาว
+3. **Admin Management Portal (`/admin`)** — ผู้ดูแลระบบ: ศูนย์บัญชาการและกระจายงาน (Dispatching Hub), บริหารจัดการคิวงาน, มอบหมายงานให้ช่างตามความเชี่ยวชาญและภาระงาน (Workload Capacity), อนุมัติการขอพักเวลา SLA, ตรวจจับและรวมตั๋วซ้ำซ้อน (Merge Tickets), กล่องข้อความกลาง (Unified DM Inbox), จัดการหมวดหมู่ไดนามิก, เครื่องมือทดสอบและวินิจฉัยระบบอีเมล (Admin Mail Diagnostics), และดาวน์โหลดรายงาน (.xlsx, .csv)
+4. **Technician Field Ops Portal (`/tech`, `/technician`)** — ช่างและเจ้าหน้าที่ภาคสนาม: หน้าปฏิบัติงานเฉพาะช่างแต่ละคน, การรับงาน, นำทางไปยังพิกัด, บันทึกภาพถ่ายก่อนและหลังการซ่อม (Before/After Photos สูงสุด 5 ภาพ), บันทึกรายการวัสดุและค่าใช้จ่ายซ่อมบำรุง (Material & Cost Tracking), ขอความช่วยเหลือข้ามแผนก (Cross-dept Help Request), ขอพักเวลา SLA เมื่อรออะไหล่ และส่งมอบงานพร้อมลายเซ็นดิจิทัล (Digital Work Order)
+5. **CEO Executive Dashboard (`/ceo`)** — ผู้บริหารระดับสูง: แดชบอร์ดสรุปสถิติผลการดำเนินงานแบบเรียลไทม์, ดัชนีชี้วัด SLA Compliance, สรุปงบประมาณและค่าใช้จ่ายในการซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Cost Breakdown), การวิเคราะห์เชิงพื้นที่และงบประมาณแยกตามเขต/แขวง (District Analytics), สินค้า/วัสดุที่มีการเบิกใช้สูงสุด 5 อันดับแรก พร้อมโหมดนำเสนอ (Presentation Mode) โดยมีการปกปิดข้อมูลส่วนบุคคล (Masked PII) เพื่อความปลอดภัยตามหลัก PDPA
+6. **Public Complaint Tracker (`/track`)** — ระบบค้นหาและติดตามสถานะสำหรับประชาชนทั่วไป: ค้นหาด้วยรหัส Ticket ID เพื่อดูขั้นตอนการดำเนินงานโดยไม่ต้องล็อกอิน (Masked PII)
+7. **Data Dictionary (`/Datadic`)** — พจนานุกรมข้อมูลระบบ: เอกสารจำลองฐานข้อมูลที่ต้องยืนยันตัวตนด้วยบัญชี Admin
+8. **Project Poster (`/project`)** — หน้าโปสเตอร์ดิจิทัลนำเสนอโครงการระดับผู้บริหาร
+9. **Health Check API (`/health`, `/api/health`)** — ตรวจสอบ Uptime และความพร้อมของฐานข้อมูล MongoDB
 
 - **Production URL**: https://resolvenow-hlv5.onrender.com
 - **GitHub Repository**: https://github.com/TengFk7/resolvenow
@@ -102,14 +103,16 @@ ResolveNow/
 │   ├── runTests.js               ← Automated Test Runner (26 Unit & Integration Tests)
 │   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อการทดสอบ
 │
-├── docs/                         ← เอกสารเชิงวิศวกรรมซอฟต์แวร์
+├── docs/                         ← เอกสารเชิงวิศวกรรมซอฟต์แวร์ และ สถาปัตยกรรม
 │   ├── context_diagram.md        ← System Context Diagram (Mermaid)
 │   ├── data_dictionary.md        ← พจนานุกรมข้อมูล (Markdown 7 Collections)
 │   ├── dfd.md                    ← Data Flow Diagram Level 0 & Level 1 (Mermaid)
-│   └── er_diagram.md             ← Entity-Relationship Diagram (Mermaid)
+│   ├── er_diagram.md             ← Entity-Relationship Diagram (Mermaid)
+│   └── system_architecture.mmd   ← System Architecture & 6-Layer Security Specification (.mmd)
 │
 └── public/
     ├── index.html                ← Citizen Portal Single-Page Application (~88KB)
+    ├── my-tickets.html           ← Dedicated My Tickets Portal (หน้าต่างเว็บแยกเรื่องร้องเรียนของฉัน)
     ├── admin.html                ← Dedicated Admin Management Portal (พร้อมเครื่องมือ Test Email)
     ├── tech.html                 ← Dedicated Technician Operations Portal (พร้อมเซ็นใบงาน & พักเวลา SLA)
     ├── executive-dashboard.html  ← CEO Executive Dashboard (สถิติ, งบประมาณ, District Analytics, Presentation Mode)
@@ -124,6 +127,7 @@ ResolveNow/
     │   ├── ui.js                 ← UI Helpers, Toast, escapeHTML, Dynamic categories, Leaflet Heatmap
     │   ├── auth.js               ← Citizen Login, Register, OTP, LINE link flow
     │   ├── citizen.js            ← Logic ประชาชน, แบบฟอร์ม 5 ขั้นตอน, GPS, ให้คะแนน, Re-open
+    │   ├── my-tickets.js         ← Controller หน้า /my-tickets (ระบบตรวจสอบความปลอดภัย 6 ชั้น)
     │   ├── technician.js         ← Logic ช่าง, ภาพ Before/After, บันทึกวัสดุและค่าใช้จ่าย, เซ็นใบงาน
     │   ├── admin.js              ← Logic แอดมิน, กราฟ Donut, คิวมอบหมายงาน, จัดการหมวด, ทดสอบอีเมล
     │   ├── admin-portal.js       ← Controller หน้า /admin, Server-side Gate verification, Welcome Splash
@@ -503,8 +507,11 @@ GEMINI_API_KEY=your-gemini-api-key
 
 ## ข้อพึงระวังและข้อควรจำสำหรับ AI (Critical Notes for AI Assistants)
 
-1. **ห้าม Commit หรือ Push ขึ้น Git ด้วยตัวเอง**: ปฏิบัติตามนโยบายใน `AGENTS.md` อย่างเคร่งครัด
-2. **การทำงานกับ Portals แยก URL**: เมื่อมีคำสั่งปรับแต่งหน้า Admin, Tech หรือ CEO ให้ตรวจสอบว่ากำลังแก้ที่ไฟล์ Dedicated HTML/JS ที่ถูกต้อง (`admin.html` / `admin-portal.js`, `tech.html` / `tech-portal.js`, `executive-dashboard.html`) หรือแก้ไขใน Single Page ส่วนกลาง (`index.html`)
+1. **ห้าม Commit หรือ Push ขึ้น Git ด้วยตัวเองโดยเด็ดขาด & กฎการอัปเดตเอกสาร .md (Documentation Auto-Sync Rule)**:
+   - ปฏิบัติตามนโยบายใน `AGENTS.md` อย่างเคร่งครัด
+   - ทุกครั้งที่ตรวจเช็คสถานะ Git (`git status`) หรือประวัติ Git ระหว่างการทำงาน หากพบว่าเพิ่งมีงานถูก push ขึ้น Git ให้ทำการอัปเดตไฟล์เอกสาร `.md` ที่เกี่ยวข้อง (เช่น `AGENTS.md`, `SYSTEM_CONTEXT.md`, `README.md`, โฟลเดอร์ `docs/`) ให้มีข้อมูลโครงสร้างและสถาปัตยกรรมตรงกับงานล่าสุดเสมอ
+   - **ห้าม** push หรือ commit ไฟล์ `.md` เหล่านี้ขึ้น Git ด้วยตัวเองโดยเด็ดขาด ให้คงสภาพไว้เฉพาะใน Local Workspace เท่านั้น
+2. **การทำงานกับ Portals แยก URL**: เมื่อมีคำสั่งปรับแต่งหน้า Admin, Tech, CEO หรือ My Tickets ให้ตรวจสอบว่ากำลังแก้ที่ไฟล์ Dedicated HTML/JS ที่ถูกต้อง (`admin.html` / `admin-portal.js`, `tech.html` / `tech-portal.js`, `executive-dashboard.html`, `my-tickets.html` / `my-tickets.js`) หรือแก้ไขใน Single Page ส่วนกลาง (`index.html`)
 3. **Portal Gate Passcode**: รหัสผ่านปลดล็อคเข้าหน้า Login / Dashboard ของ `/admin`, `/tech` และ `/ceo` คือ `@Teng11421142`
 4. **SLA Calculation**: ห้ามคำนวณวันหมดอายุ SLA เองใน Route ให้เรียกใช้ `utils/slaHelper.js` เสมอ
 5. **Timeline Logging**: เมื่อมีการกระทำสำคัญต่อตั๋ว ให้เพิ่มบันทึกลงใน `ticket.timeline` ผ่านฟังก์ชัน `logTicketActivity()` เสมอเพื่อรักษา Audit Trail

@@ -1,15 +1,18 @@
 # Workspace Rules & Instructions
 
-## Git Operations Policy (Strict Rule)
+## Git Operations Policy & Documentation Maintenance (Strict Rule)
 - **ห้าม push หรือ upload โค้ดขึ้น Git ด้วยตัวเองโดยเด็ดขาด** (Never perform `git push`, `git commit`, or auto-upload to remote repositories on your own).
 - การทำงานกับ Git (เช่น `git commit`, `git push`) จะทำได้ก็ต่อเมื่อผู้ใช้มีคำสั่งสั่งการชัดเจนเท่านั้น
 - รักษาสถานะ code ให้อยู่เฉพาะ local workspace เว้นแต่จะได้รับคำสั่งยืนยันจากผู้ใช้
+- **กฎการอัปเดตไฟล์เอกสาร .md เมื่อมีการอัปเดตโค้ดขึ้น Git (Documentation Auto-Sync Rule)**:
+  - ทุกครั้งที่ตรวจเช็คสถานะ Git (`git status` หรือ `git log`) ระหว่างการทำงาน หากพบว่ามีงานหรือ commit ใหม่ที่เพิ่งถูกอัปโหลด (`git push`) ขึ้น Git ไป ให้ทำการตรวจสอบและอัปเดตไฟล์เอกสาร `.md` ที่เกี่ยวข้องทันที (เช่น `AGENTS.md`, `SYSTEM_CONTEXT.md`, `README.md`, และเอกสารในโฟลเดอร์ `docs/`) เพื่อให้สอดคล้องกับฟีเจอร์ โครงสร้างไฟล์ และสถาปัตยกรรมล่าสุดของระบบ
+  - **ข้อห้ามเด็ดขาด**: ห้ามทำ `git add`, `git commit` หรือ `git push` ไฟล์ `.md` เหล่านี้ขึ้น Git ด้วยตัวเองโดยเด็ดขาด! ให้ทำการแก้ไขและคงสภาพไฟล์ไว้เฉพาะในเครื่อง Local Workspace เท่านั้น เว้นแต่ผู้ใช้จะมีคำสั่งชัดเจนให้ push ขึ้น Git
 
 ---
 
 # ResolveNow — AI Assistant Quick Architecture & Reference Guide
 
-> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-18 | Version: V18.0)
+> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-20 | Version: V18.1)
 
 ---
 
@@ -84,8 +87,16 @@ ResolveNow/
 │   ├── runTests.js               ← Automated Test Runner (26 Unit & Integration Tests)
 │   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อการทดสอบ
 │
+├── docs/                         ← เอกสารเชิงวิศวกรรมซอฟต์แวร์ และ Architecture
+│   ├── context_diagram.md        ← System Context Diagram (Mermaid)
+│   ├── data_dictionary.md        ← พจนานุกรมข้อมูล (Markdown 7 Collections)
+│   ├── dfd.md                    ← Data Flow Diagram Level 0 & Level 1 (Mermaid)
+│   ├── er_diagram.md             ← Entity-Relationship Diagram (Mermaid)
+│   └── system_architecture.mmd   ← System Architecture & 6-Layer Security Specification
+│
 └── public/
     ├── index.html                ← Citizen Portal SPA (หน้าแรก)
+    ├── my-tickets.html           ← My Tickets Dedicated Portal (หน้าต่างเว็บแยกเรื่องร้องเรียนของฉัน)
     ├── admin.html                ← Admin Portal (เฉพาะแอดมิน พร้อมเครื่องมือ Email Test)
     ├── tech.html                 ← Technician Portal (เฉพาะช่าง)
     ├── executive-dashboard.html  ← CEO Dashboard (ผู้บริหาร พร้อม District Analytics & Presentation Mode)
@@ -99,6 +110,7 @@ ResolveNow/
         ├── ui.js                 ← Utility functions, escapeHTML, Toast, Dynamic Depts, Heatmap
         ├── auth.js               ← Login/Register/OTP flow
         ├── citizen.js            ← Logic ประชาชน (ส่งตั๋ว, GPS, ประเมินดาว, Reopen)
+        ├── my-tickets.js         ← Controller หน้า /my-tickets (ระบบตรวจสอบความปลอดภัย 6 ชั้น)
         ├── technician.js         ← Logic ช่าง (จัดการงาน, อัปรูป Before/After, บันทึกวัสดุ, พักเวลา SLA, เซ็นใบงาน)
         ├── admin.js              ← Logic แอดมิน (มอบหมายงาน, กราฟ, จัดการหมวด, รวมตั๋ว, ตรวจสอบเมล)
         ├── admin-portal.js       ← Session controller & Gate unlock ของ /admin

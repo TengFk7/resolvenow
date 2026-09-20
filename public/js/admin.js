@@ -40,7 +40,44 @@ async function loadAdmin() {
     animateNum(ge('sTR'), rdy);
     animateNum(ge('sDone'), done);
     ge('sTT').textContent = '/ ' + techs.length;
-    animateNum(ge('sTD'), tks.length);
+
+    // ยอดวันนี้: นับเฉพาะเรื่องร้องเรียนที่แจ้งเข้ามาในวันนี้จริง ๆ (ตั้งแต่ 00:00:00 น. ของวันนี้)
+    var now = new Date();
+    var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var endOfToday = startOfToday + 86400000;
+    var todayTks = tks.filter(function (t) {
+      if (!t.createdAt) return false;
+      var tTime = new Date(t.createdAt).getTime();
+      return tTime >= startOfToday && tTime < endOfToday;
+    });
+
+    animateNum(ge('sTD'), todayTks.length);
+    var tdSub = ge('sTDSub');
+    if (tdSub) {
+      var thDate = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+      tdSub.textContent = 'ประจำวันที่ ' + thDate;
+    }
+
+    animateNum(ge('sLatest'), tks.length);
+
+    var latestSub = ge('sLatestSub');
+    if (latestSub) {
+      if (tks.length > 0) {
+        var sortedByTime = tks.slice().sort(function (a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); });
+        var latestTkt = sortedByTime[0];
+        if (latestTkt && latestTkt.createdAt) {
+          var diffMin = Math.round((new Date() - new Date(latestTkt.createdAt)) / 60000);
+          if (diffMin < 1) latestSub.textContent = 'เมื่อสักครู่';
+          else if (diffMin < 60) latestSub.textContent = diffMin + ' นาทีที่แล้ว';
+          else if (diffMin < 1440) latestSub.textContent = Math.floor(diffMin / 60) + ' ชม. ที่แล้ว';
+          else latestSub.textContent = 'เคสล่าสุด ' + (latestTkt.ticketId || '');
+        } else {
+          latestSub.textContent = 'ล่าสุด → ช้ากว่า';
+        }
+      } else {
+        latestSub.textContent = 'ไม่มีงาน';
+      }
+    }
 
     // SLA breached count
     var slaCount = tks.filter(function (t) {
@@ -82,9 +119,21 @@ async function loadAdmin() {
 }
 
 /* ── Stat Card Filter → Queue Page ──────────────────── */
+var _dateSortOrder = 'desc'; // 'desc' (latest first) | 'asc' (oldest first)
 function filterAndGoQueue(filter) {
   _queueFilter = filter || 'all';
+  if (filter === 'latest') _dateSortOrder = 'desc';
   showPage('queue');
+}
+
+function toggleQueueDateSort() {
+  if (_queueFilter !== 'latest') {
+    _queueFilter = 'latest';
+    _dateSortOrder = 'desc';
+  } else {
+    _dateSortOrder = _dateSortOrder === 'desc' ? 'asc' : 'desc';
+  }
+  renderAllQueue(_lastAdminTickets, _queueFilter);
 }
 
 /* ── Donut Chart (SVG) ───────────────────────────────── */
@@ -451,15 +500,30 @@ function renderAllQueue(tks, filter) {
   } else if (filter === 'completed') {
     filtered = tks.filter(function (t) { return t.status === 'completed'; });
     filterLabel = '✅ งานสำเร็จแล้ว';
+  } else if (filter === 'today') {
+    var now = new Date();
+    var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var endOfToday = startOfToday + 86400000;
+    filtered = tks.filter(function (t) {
+      if (!t.createdAt) return false;
+      var tTime = new Date(t.createdAt).getTime();
+      return tTime >= startOfToday && tTime < endOfToday;
+    });
+    filterLabel = '📅 งานของวันนี้ (' + now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ')';
+  } else if (filter === 'latest') {
+    filtered = tks.slice();
+    filterLabel = _dateSortOrder === 'desc'
+      ? '🕒 งานล่าสุด (เรียงจากล่าสุด → ช้ากว่า/เก่าสุด)'
+      : '🕒 งานตามวันที่ (เรียงจากเก่าสุด → ล่าสุด)';
   }
 
   // ── Filter chip above table ──
   var chipEl = ge('queueFilterChip');
   if (chipEl) {
     if (filterLabel) {
-      var chipColor = filter === 'completed' ? '#f0fdf4' : '#fff0f0';
-      var chipBorder = filter === 'completed' ? '#86efac' : '#fca5a5';
-      var chipText = filter === 'completed' ? '#15803d' : '#b91c1c';
+      var chipColor = filter === 'completed' ? '#f0fdf4' : ((filter === 'latest' || filter === 'today') ? '#f0f9ff' : '#fff0f0');
+      var chipBorder = filter === 'completed' ? '#86efac' : ((filter === 'latest' || filter === 'today') ? '#7dd3fc' : '#fca5a5');
+      var chipText = filter === 'completed' ? '#15803d' : ((filter === 'latest' || filter === 'today') ? '#0369a1' : '#b91c1c');
       chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + chipColor + ';border:1.5px solid ' + chipBorder + ';border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:' + chipText + '">' +
         filterLabel +
         '<button onclick="clearQueueFilter()" style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:' + chipText + ';padding:0;margin-left:2px" title="ล้างตัวกรอง">✕</button>' +
@@ -471,13 +535,37 @@ function renderAllQueue(tks, filter) {
     }
   }
 
+  // Update header sort indicator
+  var sortIconEl = ge('queueDateSortIcon');
+  if (sortIconEl) {
+    if (filter === 'latest' || filter === 'today') {
+      sortIconEl.textContent = _dateSortOrder === 'desc' ? ' ↓ (ล่าสุด)' : ' ↑ (เก่าสุด)';
+      sortIconEl.style.color = '#0284c7';
+      sortIconEl.style.fontWeight = '700';
+    } else {
+      sortIconEl.textContent = ' ↕';
+      sortIconEl.style.color = 'var(--muted)';
+      sortIconEl.style.fontWeight = 'normal';
+    }
+  }
+
   if (!filtered.length) {
-    el.innerHTML = '<tr><td colspan="11" class="empty">' + (filterLabel ? (filter === 'completed' ? '🎉 ยังไม่มีงานที่สำเร็จ' : '✅ ไม่มีงานในหมวดนี้') : 'ยังไม่มี Ticket') + '</td></tr>';
+    var emptyMsg = 'ยังไม่มี Ticket';
+    if (filter === 'completed') emptyMsg = '🎉 ยังไม่มีงานที่สำเร็จ';
+    else if (filter === 'today') emptyMsg = '📅 ยังไม่มี Ticket ที่แจ้งเข้ามาในวันนี้';
+    else if (filterLabel) emptyMsg = '✅ ไม่มีงานในหมวดนี้';
+    el.innerHTML = '<tr><td colspan="12" class="empty">' + emptyMsg + '</td></tr>';
     return;
   }
-  // completed: เรียงตามเวลาอัปเดตล่าสุดก่อน; อื่นๆ เรียงตาม priority
+  // completed: เรียงตามเวลาอัปเดตล่าสุดก่อน; latest/today: เรียงตาม createdAt; อื่นๆ เรียงตาม priority
   if (filter === 'completed') {
     filtered.sort(function (a, b) { return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt); });
+  } else if (filter === 'latest' || filter === 'today') {
+    filtered.sort(function (a, b) {
+      var da = new Date(a.createdAt || 0).getTime();
+      var db = new Date(b.createdAt || 0).getTime();
+      return _dateSortOrder === 'desc' ? db - da : da - db;
+    });
   } else {
     filtered.sort(function (a, b) { return b.priorityScore - a.priorityScore; });
   }
@@ -524,6 +612,7 @@ function renderAllQueue(tks, filter) {
 
 function clearQueueFilter() {
   _queueFilter = 'all';
+  _dateSortOrder = 'desc';
   renderAllQueue(_lastAdminTickets, 'all');
 }
 

@@ -1402,6 +1402,10 @@ select.is-invalid,
   background: linear-gradient(90deg, #16a34a, #4ade80)
 }
 
+.scard.cyan::before {
+  background: linear-gradient(90deg, #0284c7, #38bdf8)
+}
+
 
 .slabel {
   font-size: 11px;

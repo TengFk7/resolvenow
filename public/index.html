@@ -286,9 +286,15 @@
             <div class="sval" id="sTR" style="color:var(--g)">0</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sTT"></div>
           </div>
-          <div class="scard white scard-clickable" onclick="filterAndGoQueue('all')" title="ดูงานทั้งหมดวันนี้">
+          <div class="scard cyan scard-clickable" onclick="filterAndGoQueue('latest')" title="ดูงานล่าสุด (เรียงจากล่าสุดไปช้ากว่า/เก่าสุด)">
+            <div class="slabel">🕒 งานล่าสุด</div>
+            <div class="sval" id="sLatest" style="color:#0284c7">0</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sLatestSub">ล่าสุด → ช้ากว่า</div>
+          </div>
+          <div class="scard white scard-clickable" onclick="filterAndGoQueue('today')" title="ดูเฉพาะงานที่แจ้งเข้ามาในวันนี้">
             <div class="slabel">ยอดวันนี้</div>
             <div class="sval" id="sTD" style="color:var(--blue2)">0</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sTDSub">แจ้งวันนี้</div>
           </div>
         </div>
 
@@ -419,7 +425,7 @@
                     <th>SLA</th>
                     <th>รูปภาพ</th>
                     <th>อัปเดต</th>
-                    <th>วันที่</th>
+                    <th style="cursor:pointer;user-select:none" onclick="toggleQueueDateSort()" title="คลิกเพื่อสลับเรียงตามวันที่ (ล่าสุด ↔ ช้ากว่า/เก่าสุด)">วันที่ <span id="queueDateSortIcon" style="font-size:11px;color:var(--muted)">↕</span></th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
