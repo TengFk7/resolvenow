@@ -1,7 +1,7 @@
 # Data Dictionary - ResolvNow
-> อัปเดตล่าสุด: 2026-09-15 | Version: V17.5
+> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0
 
-เอกสารนี้อธิบายรายละเอียดของแต่ละคอลเลกชัน (Collection), ฟิลด์ (Field) และชนิดข้อมูล (Data Type) ที่ใช้ในฐานข้อมูล MongoDB ของระบบ ResolvNow ครอบคลุมทั้ง 7 Collections
+เอกสารนี้อธิบายรายละเอียดของแต่ละคอลเลกชัน (Collection), ฟิลด์ (Field), ชนิดข้อมูล (Data Type) และดัชนี (Indexes) ที่ใช้ในฐานข้อมูล MongoDB ของระบบ ResolvNow ครอบคลุมทั้ง 7 Collections
 
 ---
 
@@ -13,7 +13,7 @@
 | `_id` | ObjectId | Yes | รหัสผู้ใช้งาน (Primary Key) |
 | `firstName` | String | Yes | ชื่อจริงของผู้ใช้ |
 | `lastName` | String | Yes | นามสกุลของผู้ใช้ |
-| `email` | String | Yes | อีเมลสำหรับยืนยันตัวตนและแจ้งเตือน (Unique) |
+| `email` | String | Yes | อีเมลสำหรับยืนยันตัวตนและแจ้งเตือน (Unique, Lowercase) |
 | `password` | String | Yes | รหัสผ่านที่เข้ารหัสด้วย bcrypt (10 rounds) |
 | `role` | String | Yes | บทบาท: `citizen`, `technician`, `admin` |
 | `specialty` | String | No | หมวดหมู่ความเชี่ยวชาญของช่าง (อ้างอิง `Category.name`) |
@@ -24,10 +24,15 @@
 | `createdAt` | Date | Yes | วันเวลาที่สร้างบัญชี |
 | `updatedAt` | Date | Yes | วันเวลาที่แก้ไขข้อมูลล่าสุด |
 
+**Indexes ของ Users**:
+- `{ email: 1 }` (Unique)
+- `{ role: 1 }`
+- `{ lineUserId: 1 }` (Sparse)
+
 ---
 
 ## 2. Collection: Tickets
-จัดเก็บข้อมูลเรื่องร้องเรียน งานซ่อมบำรุง การคำนวณ SLA งบประมาณ และประวัติกิจกรรม
+จัดเก็บข้อมูลเรื่องร้องเรียน งานซ่อมบำรุง การคำนวณ SLA งบประมาณ ข้อมูลเชิงพื้นที่ และประวัติกิจกรรม
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -38,11 +43,13 @@
 | `citizenLineId`| String | No | LINE UID ของผู้แจ้งสำหรับ Push แจ้งเตือน |
 | `category` | String | Yes | หมวดหมู่ปัญหา อ้างอิงตาม `Category.name` |
 | `description` | String | Yes | รายละเอียดของปัญหา (XSS Sanitized) |
-| `location` | String | Yes | ที่อยู่หรือสถานที่เกิดเหตุจากการแปลงพิกัด |
+| `location` | String | Yes | ที่อยู่หรือสถานที่เกิดเหตุจากการแปลงพิกัด (Reverse Geocoding) |
+| `district` | String | No | เขตหรืออำเภอของสถานที่เกิดเหตุ (สกัดอัตโนมัติ, Indexed) |
+| `subdistrict` | String | No | แขวงหรือตำบลของสถานที่เกิดเหตุ |
 | `lat` | Number | No | พิกัดละติจูด |
 | `lng` | Number | No | พิกัดลองจิจูด |
 | `urgency` | String | Yes | ระดับความเร่งด่วน: `normal`, `medium`, `urgent` |
-| `priorityScore`| Number | Yes | คะแนนความสำคัญ 0-100 (คำนวณร่วมกับ SLA) |
+| `priorityScore`| Number | Yes | คะแนนความสำคัญ 0-100 (คำนวณร่วมกับ SLA และยอดโหวต) |
 | `status` | String | Yes | สถานะงาน: `pending`, `assigned`, `in_progress`, `completed`, `rejected`, `reopened`, `merged` |
 | `assignedTo` | ObjectId | No | ช่างที่ได้รับมอบหมาย อ้างอิง `User._id` |
 | `assignedName` | String | No | ชื่อช่างผู้รับผิดชอบ (Denormalized) |
@@ -84,6 +91,17 @@
 | `createdAt` | Date | Yes | วันเวลาที่สร้างตั๋ว |
 | `updatedAt` | Date | Yes | วันเวลาที่อัปเดตตั๋ว |
 
+**Indexes ของ Tickets**:
+- `{ ticketId: 1 }` (Unique)
+- `{ citizenId: 1, createdAt: -1 }` (ค้นหาตั๋วของประชาชน)
+- `{ assignedTo: 1, status: 1 }` (ค้นหาตั๋วของช่าง)
+- `{ category: 1, status: 1 }` (กรองตั๋วตามหมวดหมู่และสถานะ)
+- `{ status: 1, createdAt: -1 }` (คิวงาน Admin และ CEO Dashboard)
+- `{ slaBreached: 1, status: 1 }` (คิวงานตรวจสอบ SLA Breach)
+- `{ chatExpiresAt: 1 }` (Sparse index ล้างแชทหมดอายุ)
+- `{ lat: 1, lng: 1, category: 1 }` (ค้นหาตั๋วซ้ำซ้อนบริเวณใกล้เคียง)
+- `{ district: 1 }` (การสรุปสถิติเชิงพื้นที่)
+
 ---
 
 ## 3. Collection: Categories
@@ -99,6 +117,9 @@
 | `isDefault` | Boolean | Yes | `true` หากเป็น 7 หมวดหมู่มาตรฐานของระบบ (ห้ามลบ) |
 | `createdAt` | Date | Yes | วันเวลาที่สร้าง |
 | `updatedAt` | Date | Yes | วันเวลาที่แก้ไข |
+
+**Indexes ของ Categories**:
+- `{ name: 1 }` (Unique)
 
 ---
 
@@ -116,6 +137,9 @@
 | `createdAt` | Date | Yes | วันเวลาที่ส่งข้อความ |
 | `updatedAt` | Date | Yes | วันเวลาที่แก้ไขข้อความ |
 
+**Indexes ของ Comments**:
+- `{ ticketId: 1 }`
+
 ---
 
 ## 5. Collection: DirectMessages
@@ -132,6 +156,11 @@
 | `isRead` | Boolean | Yes | สถานะการเปิดอ่านข้อความ (Default: false) |
 | `createdAt` | Date | Yes | วันเวลาที่ส่ง |
 | `updatedAt` | Date | Yes | วันเวลาที่อัปเดต |
+
+**Indexes ของ DirectMessages**:
+- `{ citizenId: 1, createdAt: 1 }`
+- `{ citizenId: 1, senderRole: 1, isRead: 1 }`
+- `{ senderRole: 1, isRead: 1 }`
 
 ---
 
@@ -159,6 +188,13 @@
 | `createdAt` | Date | Yes | วันเวลาที่ส่งคำขอ |
 | `updatedAt` | Date | Yes | วันเวลาที่อัปเดต |
 
+**Indexes ของ HelpRequests**:
+- `{ helpId: 1 }` (Unique)
+- `{ status: 1 }`
+- `{ requesterId: 1 }`
+- `{ acceptedById: 1 }`
+- `{ ticketId: 1 }`
+
 ---
 
 ## 7. Collection: Counters
@@ -169,3 +205,6 @@
 | `_id` | ObjectId | Yes | รหัสเอกสาร (Primary Key) |
 | `name` | String | Yes | ชื่อตัวนับ: `ticket` หรือ `help` (Unique) |
 | `seq` | Number | Yes | ตัวเลขลำดับปัจจุบัน (เรียกใช้ผ่าน `Counter.nextSeq()`) |
+
+**Indexes ของ Counters**:
+- `{ name: 1 }` (Unique)

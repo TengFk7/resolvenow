@@ -256,6 +256,8 @@ async function unlockTechGate() {
   var val = inp ? inp.value.trim() : '';
 
   if (!val) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(inp);
+    if (inp) inp.focus();
     if (err) {
       err.style.display = 'flex';
       var errTxt = ge('techGateErrText');
@@ -433,12 +435,17 @@ function enterTechApp(showSplash) {
 /* ── Technician Login Action ─────────────────────────── */
 async function doTechLogin() {
   hideE('techAuthErr');
-  var email = ge('tEmail').value.trim();
-  var pass = ge('tPass').value;
+  var emEl = ge('tEmail'), pwEl = ge('tPass');
+  var email = emEl ? emEl.value.trim() : '', pass = pwEl ? pwEl.value : '';
   var remember = ge('tRem') ? ge('tRem').checked : false;
 
-  if (!email || !pass) {
-    return showE('techAuthErr', 'กรุณากรอกอีเมลและรหัสผ่าน');
+  var hasErr = false;
+  if (!email) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(emEl); hasErr = true; }
+  if (!pass) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(pwEl); hasErr = true; }
+  if (hasErr) {
+    if (!email && emEl) emEl.focus();
+    else if (!pass && pwEl) pwEl.focus();
+    return showE('techAuthErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน');
   }
 
   var btn = ge('btnTechSubmit');

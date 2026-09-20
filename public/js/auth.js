@@ -185,8 +185,16 @@ function _updateTimerDisplay(sec) {
 /* ── Login ───────────────────────────────────────────────── */
 async function doLogin() {
   hideE('authErr');
-  var email = ge('lEmail').value.trim(), pass = ge('lPass').value;
-  if (!email || !pass) return showE('authErr', 'กรุณากรอกข้อมูลให้ครบ');
+  var emEl = ge('lEmail'), pwEl = ge('lPass');
+  var email = emEl ? emEl.value.trim() : '', pass = pwEl ? pwEl.value : '';
+  var hasErr = false;
+  if (!email) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(emEl); hasErr = true; }
+  if (!pass) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(pwEl); hasErr = true; }
+  if (hasErr) {
+    if (!email && emEl) emEl.focus();
+    else if (!pass && pwEl) pwEl.focus();
+    return showE('authErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน');
+  }
   try {
     var res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -196,6 +204,18 @@ async function doLogin() {
     var data = await res.json();
     if (!res.ok) {
       return showE('authErr', data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    }
+    if (data.user && data.user.role === 'admin') {
+      sessionStorage.setItem('rn_admin_logged_in', '1');
+      sessionStorage.setItem('rn_admin_gate_unlocked', '1');
+      window.location.href = '/admin';
+      return;
+    }
+    if (data.user && data.user.role === 'technician') {
+      sessionStorage.setItem('rn_tech_logged_in', '1');
+      sessionStorage.setItem('rn_tech_gate_unlocked', '1');
+      window.location.href = '/tech';
+      return;
     }
     if (data.user && data.user.role !== 'citizen') {
       return showE('authErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -408,9 +428,22 @@ async function doLogout() {
 /* ── Change Password ─────────────────────────────────────── */
 async function doChPw() {
   hideE('chErr');
-  var cur = ge('curP').value, nw = ge('newP').value, con = ge('conP').value;
-  if (!cur || !nw || !con) return showE('chErr', 'กรุณากรอกข้อมูลให้ครบ');
-  if (nw !== con) return showE('chErr', 'รหัสผ่านใหม่ไม่ตรงกัน');
+  var curEl = ge('curP'), nwEl = ge('newP'), conEl = ge('conP');
+  var cur = curEl ? curEl.value : '', nw = nwEl ? nwEl.value : '', con = conEl ? conEl.value : '';
+  var hasErr = false;
+  if (!cur) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(curEl); hasErr = true; }
+  if (!nw) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(nwEl); hasErr = true; }
+  if (!con) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(conEl); hasErr = true; }
+  if (hasErr) {
+    if (!cur && curEl) curEl.focus();
+    else if (!nw && nwEl) nwEl.focus();
+    else if (!con && conEl) conEl.focus();
+    return showE('chErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน');
+  }
+  if (nw !== con) {
+    if (typeof rnMarkInvalid === 'function') { rnMarkInvalid(nwEl); rnMarkInvalid(conEl); }
+    return showE('chErr', 'รหัสผ่านใหม่ไม่ตรงกัน');
+  }
   try {
     var res = await fetch('/api/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: cur, newPassword: nw }) });
     var data = await res.json();
@@ -467,17 +500,34 @@ var _llFormData = null; // เก็บข้อมูลไว้สำหร�
 
 async function doLineLinkRegister() {
   hideE('llErr');
-  var firstName = (ge('llFirst') ? ge('llFirst').value.trim() : '');
+  var fnEl = ge('llFirst'), emEl = ge('llEmail'), p1El = ge('llPass'), p2El = ge('llPass2');
+  var firstName = fnEl ? fnEl.value.trim() : '';
   var lastName  = (ge('llLast')  ? ge('llLast').value.trim()  : '');
-  var email     = (ge('llEmail') ? ge('llEmail').value.trim() : '');
-  var pass      = (ge('llPass')  ? ge('llPass').value         : '');
-  var pass2     = (ge('llPass2') ? ge('llPass2').value        : '');
+  var email     = emEl ? emEl.value.trim() : '';
+  var pass      = p1El ? p1El.value         : '';
+  var pass2     = p2El ? p2El.value        : '';
 
-  if (!firstName) return showE('llErr', 'กรุณากรอกชื่อ');
-  if (!email)     return showE('llErr', 'กรุณากรอก Email');
-  if (!pass)      return showE('llErr', 'กรุณากรอกรหัสผ่าน');
-  if (pass.length < 6) return showE('llErr', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
-  if (pass !== pass2) return showE('llErr', 'รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่');
+  var hasErr = false;
+  if (!firstName) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(fnEl); hasErr = true; }
+  if (!email)     { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(emEl); hasErr = true; }
+  if (!pass)      { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(p1El); hasErr = true; }
+  if (!pass2)     { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(p2El); hasErr = true; }
+
+  if (hasErr) {
+    if (!firstName && fnEl) fnEl.focus();
+    else if (!email && emEl) emEl.focus();
+    else if (!pass && p1El) p1El.focus();
+    else if (!pass2 && p2El) p2El.focus();
+    return showE('llErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน');
+  }
+  if (pass.length < 6) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(p1El);
+    return showE('llErr', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+  }
+  if (pass !== pass2) {
+    if (typeof rnMarkInvalid === 'function') { rnMarkInvalid(p1El); rnMarkInvalid(p2El); }
+    return showE('llErr', 'รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่');
+  }
 
   var btn = ge('btnLineLink');
   if (btn) { btn.disabled = true; btn.textContent = '📧 กำลังส่ง OTP...'; }

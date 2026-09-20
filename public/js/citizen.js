@@ -63,21 +63,59 @@ function wizGoTo(from, to) {
 function wizNext(step) {
   // Validation per step
   if (step === 1) {
-    if (!getSelectedCat()) { ge('catErr').classList.add('on'); return; }
+    if (!getSelectedCat()) {
+      var catGrid = ge('catGrid');
+      if (catGrid) {
+        catGrid.classList.add('is-invalid');
+        catGrid.style.border = '1.5px solid var(--r, #ef4444)';
+        catGrid.style.borderRadius = '12px';
+        catGrid.style.padding = '8px';
+      }
+      ge('catErr').classList.add('on');
+      return;
+    }
+    var catGrid = ge('catGrid');
+    if (catGrid) {
+      catGrid.classList.remove('is-invalid');
+      catGrid.style.border = '';
+      catGrid.style.padding = '';
+    }
     hideE('catErr');
   }
   if (step === 2) {
-    var desc = ge('tDesc').value.trim();
-    if (!desc) { showToast('กรุณากรอกรายละเอียด', true); return; }
+    var descEl = ge('tDesc');
+    var desc = descEl ? descEl.value.trim() : '';
+    if (!desc) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+      if (descEl) descEl.focus();
+      if (typeof showCenterPopup === 'function') {
+        showCenterPopup('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', 2300, 'ℹ️');
+      } else {
+        showToast('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', true);
+      }
+      return;
+    }
     if (_aiAnalyzing) { showToast('⏳ กรุณารอ AI วิเคราะห์ความเร่งด่วนให้เสร็จก่อน', true); return; }
   }
   if (step === 3) {
     if (!ge('tLat').value || !ge('tLng').value) {
-      showToast('กรุณาระบุตำแหน่ง GPS ก่อน', true); return;
+      var gpsBtn = ge('btnGps');
+      var locInput = ge('locSearchInput');
+      if (typeof rnMarkInvalid === 'function') {
+        if (gpsBtn) rnMarkInvalid(gpsBtn);
+        if (locInput) rnMarkInvalid(locInput);
+      }
+      showToast('กรุณาระบุตำแหน่งสถานที่ก่อน', true);
+      return;
     }
   }
   if (step === 4) {
-    if (_citizenImages.length === 0) { showToast('กรุณาแนบรูปภาพก่อน', true); return; }
+    if (_citizenImages.length === 0) {
+      var pickerBtns = ge('cImgPickerBtns');
+      if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
+      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true);
+      return;
+    }
   }
   if (step < TOTAL_STEPS) wizGoTo(step, step + 1);
 }
@@ -157,6 +195,12 @@ function sumRowRaw(icon, label, rawHtml) {
 function toggleCat(el) {
   document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
   el.classList.add('on');
+  var catGrid = ge('catGrid');
+  if (catGrid) {
+    catGrid.classList.remove('is-invalid');
+    catGrid.style.border = '';
+    catGrid.style.padding = '';
+  }
   hideE('catErr');
 }
 function getSelectedCat() {
@@ -390,15 +434,50 @@ function selectLocResult(lat, lng, displayName) {
 async function submitTicket() {
   var cat = getSelectedCat();
   var urg = ge('tUrg').value;
-  var desc = ge('tDesc').value.trim();
+  var descEl = ge('tDesc');
+  var desc = descEl ? descEl.value.trim() : '';
   var lat = ge('tLat').value;
   var lng = ge('tLng').value;
   var ok = true;
-  if (!cat) { ge('catErr').classList.add('on'); ok = false; } else hideE('catErr');
+  if (!cat) {
+    var catGrid = ge('catGrid');
+    if (catGrid) {
+      catGrid.classList.add('is-invalid');
+      catGrid.style.border = '1.5px solid var(--r, #ef4444)';
+      catGrid.style.borderRadius = '12px';
+    }
+    ge('catErr').classList.add('on');
+    ok = false;
+  } else {
+    var catGrid = ge('catGrid');
+    if (catGrid) { catGrid.classList.remove('is-invalid'); catGrid.style.border = ''; }
+    hideE('catErr');
+  }
   if (!urg) { urg = 'normal'; ge('tUrg').value = 'normal'; } else hideE('urgErr');
-  if (!lat || !lng) { showToast('กรุณาระบุตำแหน่ง GPS ก่อนส่ง', true); ok = false; }
-  if (!desc) { showToast('กรุณากรอกรายละเอียด', true); ok = false; }
-  if (_citizenImages.length === 0) { showToast('กรุณาแนบรูปภาพก่อนส่ง', true); ok = false; }
+  if (!desc) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+    if (typeof showCenterPopup === 'function') {
+      showCenterPopup('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', 2300, 'ℹ️');
+    } else {
+      showToast('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', true);
+    }
+    ok = false;
+  }
+  if (!lat || !lng) {
+    var gpsBtn = ge('btnGps'), locInput = ge('locSearchInput');
+    if (typeof rnMarkInvalid === 'function') {
+      if (gpsBtn) rnMarkInvalid(gpsBtn);
+      if (locInput) rnMarkInvalid(locInput);
+    }
+    showToast('กรุณาระบุตำแหน่ง GPS ก่อนส่ง', true);
+    ok = false;
+  }
+  if (_citizenImages.length === 0) {
+    var pickerBtns = ge('cImgPickerBtns');
+    if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
+    showToast('กรุณาแนบรูปภาพก่อนส่ง', true);
+    ok = false;
+  }
   if (!ok) return;
 
   // ── Disable submit button to prevent double-submit ────
@@ -1029,10 +1108,19 @@ function setRatingStar(val) {
 }
 
 async function submitRating() {
-  if (!_ratingVal) return showE('ratingErr', 'กรุณาเลือกคะแนนก่อน');
+  if (!_ratingVal) {
+    var starRow = ge('starRow');
+    if (starRow && typeof rnMarkInvalid === 'function') rnMarkInvalid(starRow);
+    return showE('ratingErr', 'กรุณาเลือกคะแนนดาวก่อน');
+  }
   if (_ratingVal < 3) {
-    var reason = ge('ratingReason') ? ge('ratingReason').value.trim() : '';
-    if (!reason) return showE('ratingErr', 'กรุณาระบุเหตุผลที่ไม่พอใจ');
+    var reasonEl = ge('ratingReason');
+    var reason = reasonEl ? reasonEl.value.trim() : '';
+    if (!reason) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(reasonEl);
+      if (reasonEl) reasonEl.focus();
+      return showE('ratingErr', 'กรุณาระบุเหตุผลที่ไม่พอใจในช่องที่มี *');
+    }
   }
   var btn = ge('btnSubmitRating');
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
@@ -1117,8 +1205,13 @@ function closeReopenModal() {
 }
 
 async function submitReopen() {
-  var reason = ge('reopenReasonInput').value.trim();
-  if (!reason) return showE('reopenErr', 'กรุณาระบุเหตุผลที่ขอให้ตรวจสอบใหม่');
+  var reasonEl = ge('reopenReasonInput');
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+  if (!reason) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(reasonEl);
+    if (reasonEl) reasonEl.focus();
+    return showE('reopenErr', 'กรุณาระบุเหตุผลที่ขอให้ตรวจสอบใหม่ในช่องที่มี *');
+  }
   hideE('reopenErr');
 
   var btn = ge('btnSubmitReopen');

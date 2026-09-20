@@ -210,6 +210,8 @@ async function unlockAdminGate() {
   var val = inp ? inp.value.trim() : '';
 
   if (!val) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(inp);
+    if (inp) inp.focus();
     if (err) {
       err.style.display = 'flex';
       var errTxt = ge('adminGateErrText');
@@ -318,12 +320,17 @@ function enterAdminApp(showSplash) {
 /* ── Admin Login Action ──────────────────────────────── */
 async function doAdminLogin() {
   hideE('adminAuthErr');
-  var email = ge('aEmail').value.trim();
-  var pass = ge('aPass').value;
+  var emEl = ge('aEmail'), pwEl = ge('aPass');
+  var email = emEl ? emEl.value.trim() : '', pass = pwEl ? pwEl.value : '';
   var remember = ge('aRem') ? ge('aRem').checked : false;
 
-  if (!email || !pass) {
-    return showE('adminAuthErr', 'กรุณากรอกอีเมลและรหัสผ่าน');
+  var hasErr = false;
+  if (!email) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(emEl); hasErr = true; }
+  if (!pass) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(pwEl); hasErr = true; }
+  if (hasErr) {
+    if (!email && emEl) emEl.focus();
+    else if (!pass && pwEl) pwEl.focus();
+    return showE('adminAuthErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน');
   }
 
   var btn = ge('btnAdminSubmit');
@@ -344,6 +351,15 @@ async function doAdminLogin() {
 
     if (data.user.role !== 'admin') {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+      if (data.user.role === 'citizen') {
+        return showE('adminAuthErr', 'บัญชีนี้เป็นบัญชีประชาชน (Citizen) ไม่สามารถเข้าสู่ระบบผู้ดูแลระบบได้ กรุณาใช้ admin@resolvenow.th');
+      }
+      if (data.user.role === 'technician') {
+        sessionStorage.setItem('rn_tech_logged_in', '1');
+        sessionStorage.setItem('rn_tech_gate_unlocked', '1');
+        window.location.href = '/tech';
+        return;
+      }
       return showE('adminAuthErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 

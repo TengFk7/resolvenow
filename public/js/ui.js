@@ -337,8 +337,13 @@ function animateNum(el, target) {
 var _toastTimer;
 function showToast(msg, type) {
   // type: 'success' | 'error' | 'warning' | default
+  // Delegate required-fields warning to center popup modal
+  if (typeof msg === 'string' && msg.indexOf('กรุณากรอกรายละเอียดในช่องที่มี *') !== -1) {
+    return showCenterPopup(msg, 2300, 'ℹ️');
+  }
   // FIX-2.1a: escape msg ก่อนใส่ innerHTML (ป้องกัน XSS จาก error messages)
   var t = ge('toast');
+  if (!t) return;
   var icons = { success: '✅', error: '❌', warning: '⚠️' };
   var icon = icons[type] || 'ℹ️';
   t.innerHTML = '<span style="font-size:16px">' + icon + '</span><span>' + escapeHTML(String(msg)) + '</span>';
@@ -348,6 +353,100 @@ function showToast(msg, type) {
     t.classList.add('hide');
     setTimeout(function () { t.className = 'toast'; }, 350);
   }, 3200);
+}
+
+/* ── Center Popup Alert Notification (Modal Toast / 2.3s Auto Dismiss) ──── */
+var _centerPopupTimer = null;
+var _centerPopupDismissTimer = null;
+
+function showCenterPopup(msg, duration, icon, title) {
+  var d = (typeof duration === 'number' && duration > 0) ? duration : 2300;
+  var ic = icon || 'ℹ️';
+  var tText = title || 'แจ้งเตือนข้อมูลจำเป็น';
+  var safeMsg = escapeHTML(String(msg || ''));
+
+  var overlay = document.getElementById('rnCenterPopupOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'rnCenterPopupOverlay';
+    overlay.className = 'rn-center-popup-overlay';
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-live', 'assertive');
+    overlay.innerHTML = 
+      '<div class="rn-center-popup-card" id="rnCenterPopupCard">' +
+        '<div class="rn-center-popup-icon-wrap" id="rnCenterPopupIcon">' + ic + '</div>' +
+        '<div class="rn-center-popup-body">' +
+          '<div class="rn-center-popup-tag" id="rnCenterPopupTag">' + escapeHTML(tText) + '</div>' +
+          '<div class="rn-center-popup-text" id="rnCenterPopupText">' + safeMsg + '</div>' +
+        '</div>' +
+        '<button type="button" class="rn-center-popup-close" id="rnCenterPopupClose" aria-label="ปิด">✕</button>' +
+        '<div class="rn-center-popup-progress">' +
+          '<div class="rn-center-popup-progress-bar" id="rnCenterPopupBar"></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function () {
+      dismissCenterPopup();
+    });
+
+    var closeBtn = document.getElementById('rnCenterPopupClose');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dismissCenterPopup();
+      });
+    }
+  } else {
+    var iconEl = document.getElementById('rnCenterPopupIcon');
+    if (iconEl) iconEl.innerHTML = ic;
+    var tagEl = document.getElementById('rnCenterPopupTag');
+    if (tagEl) tagEl.textContent = tText;
+    var textEl = document.getElementById('rnCenterPopupText');
+    if (textEl) textEl.innerHTML = safeMsg;
+  }
+
+  if (_centerPopupTimer) clearTimeout(_centerPopupTimer);
+  if (_centerPopupDismissTimer) clearTimeout(_centerPopupDismissTimer);
+
+  overlay.classList.remove('closing');
+  overlay.classList.add('active');
+
+  var cardEl = document.getElementById('rnCenterPopupCard');
+  if (cardEl) {
+    cardEl.classList.remove('pulse');
+    void cardEl.offsetWidth; // force reflow
+    cardEl.classList.add('pulse');
+  }
+
+  var bar = document.getElementById('rnCenterPopupBar');
+  if (bar) {
+    bar.style.transition = 'none';
+    bar.style.transform = 'scaleX(1)';
+    void bar.offsetWidth; // force reflow
+    bar.style.transition = 'transform ' + d + 'ms linear';
+    bar.style.transform = 'scaleX(0)';
+  }
+
+  _centerPopupTimer = setTimeout(function () {
+    dismissCenterPopup();
+  }, d);
+}
+
+function dismissCenterPopup() {
+  if (_centerPopupTimer) {
+    clearTimeout(_centerPopupTimer);
+    _centerPopupTimer = null;
+  }
+  var overlay = document.getElementById('rnCenterPopupOverlay');
+  if (!overlay || !overlay.classList.contains('active')) return;
+
+  overlay.classList.add('closing');
+  if (_centerPopupDismissTimer) clearTimeout(_centerPopupDismissTimer);
+  _centerPopupDismissTimer = setTimeout(function () {
+    overlay.classList.remove('active');
+    overlay.classList.remove('closing');
+  }, 220);
 }
 
 /* ── Inline Error Box ────────────────────────────────── */
@@ -505,6 +604,13 @@ function openDrawer() {
     b.classList.toggle('active', b.getAttribute('data-theme-btn') === curSetting);
   });
 
+  // ── แสดง/ซ่อน เมนูติดต่อ Admin ใน drawer (เฉพาะ citizen) ──
+  var dmBtn = ge('drawerDmChat');
+  if (dmBtn) {
+    var isCitizen = (typeof CU !== 'undefined' && CU && CU.role === 'citizen');
+    dmBtn.style.display = isCitizen ? 'flex' : 'none';
+  }
+
   // ── Open ──
   var sd = ge('sideDrawer');
   var dO = ge('drawerOverlay');
@@ -512,7 +618,7 @@ function openDrawer() {
   if (dO) dO.classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // ── ซ่อน FAB ติดต่อแอดมิน ขณะ drawer เปิด ──
+  // ── ซ่อน FAB ติดต่อแอดมิน ขณะ drawer เปิด (ถาวร) ──
   var fab = ge('dmCloudFab');
   if (fab) fab.style.display = 'none';
 
@@ -528,11 +634,9 @@ function closeDrawer() {
   if (overlay) overlay.classList.remove('open');
   document.body.style.overflow = '';
 
-  // ── คืน FAB ติดต่อแอดมิน เมื่อ drawer ปิด (เฉพาะ citizen เท่านั้น) ──
+  // ── ป้องกันไม่ให้ FAB ลอยกลับขึ้นมา ──
   var fab = ge('dmCloudFab');
-  if (fab && window.CU && window.CU.role === 'citizen') {
-    fab.style.display = 'flex';
-  }
+  if (fab) fab.style.display = 'none';
 
   // ── Restore hamburger buttons ──
   document.querySelectorAll('.hbg-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -745,8 +849,12 @@ function _appendComment(c, animated) {
 async function sendComment() {
   if (!_chatTicketId) return;
   var input = ge('chatInput');
-  var msg = input.value.trim();
-  if (!msg) return;
+  var msg = input ? input.value.trim() : '';
+  if (!msg) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(input);
+    if (input) input.focus();
+    return;
+  }
   input.value = '';
 
   var btn = ge('chatSendBtn');
@@ -1055,4 +1163,62 @@ function renderTicketMaterialsHtml(materials, totalCost) {
 
   h += '</div>';
   return h;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REQUIRED FIELD VALIDATION & ERROR VISUAL HIGHLIGHT ENGINE
+   ═══════════════════════════════════════════════════════════ */
+
+function rnMarkInvalid(elOrId, customMsg) {
+  var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (!el) return null;
+  el.classList.add('is-invalid');
+
+  // Trigger shake animation reflow
+  try {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = 'fieldShake 0.35s ease-in-out';
+  } catch (err) {}
+
+  var clearFn = function () {
+    el.classList.remove('is-invalid');
+    el.style.animation = '';
+    el.removeEventListener('input', clearFn);
+    el.removeEventListener('change', clearFn);
+  };
+  el.addEventListener('input', clearFn);
+  el.addEventListener('change', clearFn);
+
+  return el;
+}
+
+function rnClearInvalid(elOrId) {
+  var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (!el) return;
+  el.classList.remove('is-invalid');
+  el.style.animation = '';
+}
+
+// Global auto-clear for any input/select/textarea with .is-invalid and auto-dismiss center popup
+if (typeof document !== 'undefined') {
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') dismissCenterPopup();
+  });
+
+  document.addEventListener('input', function (e) {
+    dismissCenterPopup();
+    if (e.target && e.target.classList && e.target.classList.contains('is-invalid')) {
+      e.target.classList.remove('is-invalid');
+      e.target.style.animation = '';
+    }
+  }, true);
+
+  document.addEventListener('change', function (e) {
+    dismissCenterPopup();
+    if (e.target && e.target.classList && e.target.classList.contains('is-invalid')) {
+      e.target.classList.remove('is-invalid');
+      e.target.style.animation = '';
+    }
+  }, true);
 }

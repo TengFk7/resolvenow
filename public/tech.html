@@ -122,7 +122,7 @@
         🛠️
       </div>
       <h2 class="portal-gate-title">Technician Passcode</h2>
-      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่หน้าเข้าสู่ระบบ</p>
+      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่หน้าเข้าสู่ระบบ <span class="req-star">*</span></p>
 
       <div class="portal-gate-err" id="techGateErr">
         <span>⚠️</span> <span id="techGateErrText">รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง</span>
@@ -175,12 +175,12 @@
 
       <form onsubmit="event.preventDefault(); doTechLogin();">
         <div class="fg">
-          <label for="tEmail">อีเมล</label>
+          <label for="tEmail">อีเมล <span class="req-star">*</span></label>
           <input type="email" id="tEmail" placeholder="example@gmail.com" required
             maxlength="60" autocorrect="off" autocapitalize="none" spellcheck="false" autofocus />
         </div>
         <div class="fg">
-          <label for="tPass">รหัสผ่าน</label>
+          <label for="tPass">รหัสผ่าน <span class="req-star">*</span></label>
           <input type="password" id="tPass" placeholder="รหัสผ่าน" required
             maxlength="40" autocorrect="off" autocomplete="current-password" autocapitalize="off" spellcheck="false"
             lang="en" />
@@ -521,9 +521,9 @@
       <button class="mc" onclick="closeChPw()">✕</button>
       <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
       <div class="ebox" id="chErr"></div>
-      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>รหัสผ่านปัจจุบัน <span class="req-star">*</span></label><input type="password" id="curP" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>รหัสผ่านใหม่ <span class="req-star">*</span></label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว" autocorrect="off" lang="en" /></div>
+      <div class="fg"><label>ยืนยันรหัสผ่านใหม่ <span class="req-star">*</span></label><input type="password" id="conP" autocorrect="off" lang="en" /></div>
       <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
     </div>
   </div>

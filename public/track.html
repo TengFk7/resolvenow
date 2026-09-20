@@ -437,6 +437,12 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
     }
 
+    .input-group input.is-invalid {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+      background-color: rgba(239, 68, 68, 0.04) !important;
+    }
+
     .btn-search {
       padding: 14px 24px;
       border: none;
@@ -1319,7 +1325,7 @@
           <div class="icon-wrap">🔍</div>
         </div>
         <h2>ติดตามสถานะ</h2>
-        <p>กรอกรหัสอ้างอิงเพื่อตรวจสอบสถานะเรื่องร้องเรียน</p>
+        <p>กรอกรหัสอ้างอิงเพื่อตรวจสอบสถานะเรื่องร้องเรียน <span class="req-star" style="color:#ef4444;font-weight:700">*</span></p>
       </div>
       <form id="trackForm" onsubmit="event.preventDefault(); doTrack();">
         <div class="input-group">
@@ -1480,10 +1486,13 @@
       if (!ticketId) {
         errBox.textContent = 'กรุณากรอกรหัสอ้างอิง (Ticket ID)';
         errBox.classList.add('show');
+        input.classList.add('is-invalid');
         input.classList.add('shake');
+        input.focus();
         setTimeout(() => input.classList.remove('shake'), 500);
         return;
       }
+      input.classList.remove('is-invalid');
 
       // Reset
       errBox.classList.remove('show');

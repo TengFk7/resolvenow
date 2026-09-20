@@ -185,7 +185,7 @@
         👑
       </div>
       <h2 class="portal-gate-title">Admin Passcode</h2>
-      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่หน้าเข้าสู่ระบบ</p>
+      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่หน้าเข้าสู่ระบบ <span class="req-star">*</span></p>
 
       <div class="portal-gate-err" id="adminGateErr">
         <span>⚠️</span> <span id="adminGateErrText">รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง</span>
@@ -239,12 +239,12 @@
 
       <form onsubmit="event.preventDefault(); doAdminLogin();">
         <div class="fg">
-          <label for="aEmail">อีเมล</label>
+          <label for="aEmail">อีเมล <span class="req-star">*</span></label>
           <input type="email" id="aEmail" placeholder="example@gmail.com" required maxlength="60" autocorrect="off"
             autocapitalize="none" spellcheck="false" autofocus />
         </div>
         <div class="fg">
-          <label for="aPass">รหัสผ่าน</label>
+          <label for="aPass">รหัสผ่าน <span class="req-star">*</span></label>
           <input type="password" id="aPass" placeholder="รหัสผ่าน" required maxlength="40" autocorrect="off"
             autocomplete="current-password" autocapitalize="off" spellcheck="false" lang="en" />
         </div>
@@ -642,11 +642,11 @@
       <button class="mc" onclick="closeChPw()">✕</button>
       <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
       <div class="ebox" id="chErr"></div>
-      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocorrect="off" lang="en" />
+      <div class="fg"><label>รหัสผ่านปัจจุบัน <span class="req-star">*</span></label><input type="password" id="curP" autocorrect="off" lang="en" />
       </div>
-      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"
+      <div class="fg"><label>รหัสผ่านใหม่ <span class="req-star">*</span></label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"
           autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocorrect="off" lang="en" />
+      <div class="fg"><label>ยืนยันรหัสผ่านใหม่ <span class="req-star">*</span></label><input type="password" id="conP" autocorrect="off" lang="en" />
       </div>
       <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
     </div>
@@ -819,7 +819,7 @@
         <p style="font-size:12px;color:var(--muted);margin:0" id="editCatCurrentName"></p>
       </div>
       <div class="fg">
-        <label>ชื่อแสดงผล (ภาษาไทย)</label>
+        <label>ชื่อแสดงผล (ภาษาไทย) <span class="req-star">*</span></label>
         <input type="text" id="editCatLabel" />
       </div>
       <div class="fg">
@@ -907,7 +907,7 @@
         <p style="font-size:12px;color:var(--muted);margin:0" id="editTechEmail"></p>
       </div>
       <div class="row2">
-        <div class="fg"><label>ชื่อ</label><input type="text" id="editTechFname" /></div>
+        <div class="fg"><label>ชื่อ <span class="req-star">*</span></label><input type="text" id="editTechFname" /></div>
         <div class="fg"><label>นามสกุล</label><input type="text" id="editTechLname" /></div>
       </div>
       <div class="fg">
@@ -1318,13 +1318,13 @@
         style="background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;margin-bottom:14px;line-height:1.5">
       </div>
       <div class="fg">
-        <label style="font-size:12px;font-weight:700;color:var(--navy)">ชื่อ-นามสกุล ผู้ตรวจรับมอบงาน / ประชาชน</label>
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">ชื่อ-นามสกุล ผู้ตรวจรับมอบงาน / ประชาชน <span class="req-star">*</span></label>
         <input type="text" id="woSignerName" placeholder="ชื่อ-นามสกุล ผู้เซ็นรับงาน"
           style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;background:var(--card-bg);color:var(--text);margin-bottom:6px" />
       </div>
       <div class="fg">
         <label style="font-size:12px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between">
-          <span>✍️ ลงลายมือชื่อดิจิทัล (เซ็นในกรอบด้านล่าง)</span>
+          <span>✍️ ลงลายมือชื่อดิจิทัล (เซ็นในกรอบด้านล่าง) <span class="req-star">*</span></span>
           <button type="button" onclick="clearSigCanvas()"
             style="background:none;border:none;color:var(--blue2);font-size:11px;cursor:pointer;font-weight:700">🗑️
             ล้างลายเซ็น</button>

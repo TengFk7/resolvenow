@@ -1,16 +1,17 @@
 # ResolveNow — System Context for AI Assistants
-> อัปเดตล่าสุด: 2026-09-15 | Version: V17.5 (Multi-Portal Security Gate, Repair Cost/Material Engine, SLA Pause, Digital Work Order)
+> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0 (Triple-Provider Mailer, Server-side Gate API, Cognitive Thai NLP Heuristics, District Analytics, Automated Verification Test Suite)
 
 ## ภาพรวมระบบ (System Overview)
 **ResolveNow** คือระบบบริหารจัดการและติดตามเรื่องร้องเรียนอัจฉริยะ (Smart City Complaint & Work Order Management Platform) ที่ออกแบบขึ้นเพื่อยกระดับการให้บริการขององค์กรปกครองส่วนท้องถิ่นและเทศบาลยุคใหม่ เชื่อมโยง 4 บทบาทหลักอย่างไร้รอยต่อผ่านสถาปัตยกรรม **Dedicated Multi-Portal Architecture**:
 
-1. **Citizen Portal (`/`)** — ประชาชน: แจ้งเรื่องร้องเรียน 5 ขั้นตอน ระบุพิกัด GPS แม่นยำ (Reverse Geocoding), ติดตามสถานะเรียลไทม์, ตรวจสอบแผนที่ความหนาแน่นปัญหา (Heatmap), โหวต/ติดตามปัญหาทาง LINE, และสนทนาแบบเรียลไทม์กับเจ้าหน้าที่
-2. **Admin Management Portal (`/admin`)** — ผู้ดูแลระบบ: ศูนย์บัญชาการและกระจายงาน (Dispatching Hub), บริหารจัดการคิวงาน, มอบหมายงานให้ช่างตามความเชี่ยวชาญและภาระงาน (Workload Capacity), อนุมัติการขอพักเวลา SLA, รวมตั๋วซ้ำซ้อน (Merge Tickets), กล่องข้อความกลาง (Unified DM Inbox), จัดการหมวดหมู่ไดนามิก และดาวน์โหลดรายงาน (.xlsx, .csv)
-3. **Technician Field Ops Portal (`/tech`, `/technician`)** — ช่างและเจ้าหน้าที่ภาคสนาม: หน้าปฏิบัติงานเฉพาะช่างแต่ละคน, การรับงาน, นำทางไปยังพิกัด, บันทึกภาพถ่ายก่อนและหลังการซ่อม (Before/After Photos สูงสุด 5 ภาพ), บันทึกรายการวัสดุและค่าใช้จ่ายซ่อมบำรุง (Material & Cost Tracking), ขอความช่วยเหลือข้ามแผนก (Cross-dept Help Request), ขอพักเวลา SLA เมื่อรออะไหล่ และส่งมอบงานพร้อมลายเซ็นดิจิทัล
-4. **CEO Executive Dashboard (`/ceo`)** — ผู้บริหารระดับสูง: แดชบอร์ดสรุปสถิติผลการดำเนินงานแบบเรียลไทม์, ดัชนีชี้วัด SLA Compliance, สรุปงบประมาณและค่าใช้จ่ายในการซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Cost Breakdown), สินค้า/วัสดุที่มีการเบิกใช้สูงสุด 5 อันดับแรก โดยมีการปกปิดข้อมูลส่วนบุคคล (Masked PII) เพื่อความปลอดภัย
+1. **Citizen Portal (`/`)** — ประชาชน: แจ้งเรื่องร้องเรียน 5 ขั้นตอน ระบุพิกัด GPS แม่นยำ (Reverse Geocoding), ติดตามสถานะเรียลไทม์, ตรวจสอบแผนที่ความหนาแน่นปัญหา (Heatmap), โหวต/ติดตามปัญหาทาง LINE, ยื่นเรื่องขอเปิดงานใหม่ (Re-open), และสนทนาแบบเรียลไทม์กับเจ้าหน้าที่
+2. **Admin Management Portal (`/admin`)** — ผู้ดูแลระบบ: ศูนย์บัญชาการและกระจายงาน (Dispatching Hub), บริหารจัดการคิวงาน, มอบหมายงานให้ช่างตามความเชี่ยวชาญและภาระงาน (Workload Capacity), อนุมัติการขอพักเวลา SLA, ตรวจจับและรวมตั๋วซ้ำซ้อน (Merge Tickets), กล่องข้อความกลาง (Unified DM Inbox), จัดการหมวดหมู่ไดนามิก, เครื่องมือทดสอบและวินิจฉัยระบบอีเมล (Admin Mail Diagnostics), และดาวน์โหลดรายงาน (.xlsx, .csv)
+3. **Technician Field Ops Portal (`/tech`, `/technician`)** — ช่างและเจ้าหน้าที่ภาคสนาม: หน้าปฏิบัติงานเฉพาะช่างแต่ละคน, การรับงาน, นำทางไปยังพิกัด, บันทึกภาพถ่ายก่อนและหลังการซ่อม (Before/After Photos สูงสุด 5 ภาพ), บันทึกรายการวัสดุและค่าใช้จ่ายซ่อมบำรุง (Material & Cost Tracking), ขอความช่วยเหลือข้ามแผนก (Cross-dept Help Request), ขอพักเวลา SLA เมื่อรออะไหล่ และส่งมอบงานพร้อมลายเซ็นดิจิทัล (Digital Work Order)
+4. **CEO Executive Dashboard (`/ceo`)** — ผู้บริหารระดับสูง: แดชบอร์ดสรุปสถิติผลการดำเนินงานแบบเรียลไทม์, ดัชนีชี้วัด SLA Compliance, สรุปงบประมาณและค่าใช้จ่ายในการซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Cost Breakdown), การวิเคราะห์เชิงพื้นที่และงบประมาณแยกตามเขต/แขวง (District Analytics), สินค้า/วัสดุที่มีการเบิกใช้สูงสุด 5 อันดับแรก พร้อมโหมดนำเสนอ (Presentation Mode) โดยมีการปกปิดข้อมูลส่วนบุคคล (Masked PII) เพื่อความปลอดภัยตามหลัก PDPA
 5. **Public Complaint Tracker (`/track`)** — ระบบค้นหาและติดตามสถานะสำหรับประชาชนทั่วไป: ค้นหาด้วยรหัส Ticket ID เพื่อดูขั้นตอนการดำเนินงานโดยไม่ต้องล็อกอิน (Masked PII)
 6. **Data Dictionary (`/Datadic`)** — พจนานุกรมข้อมูลระบบ: เอกสารจำลองฐานข้อมูลที่ต้องยืนยันตัวตนด้วยบัญชี Admin
-7. **Project Poster (`/project`)** — หน้าโปสเตอร์ดิจิทัลนำเสนอโครงการ
+7. **Project Poster (`/project`)** — หน้าโปสเตอร์ดิจิทัลนำเสนอโครงการระดับผู้บริหาร
+8. **Health Check API (`/health`, `/api/health`)** — ตรวจสอบ Uptime และความพร้อมของฐานข้อมูล MongoDB
 
 - **Production URL**: https://resolvenow-hlv5.onrender.com
 - **GitHub Repository**: https://github.com/TengFk7/resolvenow
@@ -19,16 +20,16 @@
 
 ## สถาปัตยกรรมความปลอดภัยของพอร์ทัล (Portal Security Gate Architecture)
 
-เพื่อป้องกันการเข้าถึงหน้าจัดการของผู้ดูแลระบบและช่างภาคสนามโดยไม่ได้รับอนุญาต ระบบได้เพิ่ม **Security Gate Passcode** ขั้นแรกก่อนเข้าสู่หน้า Login:
+เพื่อป้องกันการเข้าถึงหน้าจัดการของผู้ดูแลระบบ ช่างภาคสนาม และผู้บริหารโดยไม่ได้รับอนุญาต ระบบใช้สถาปัตยกรรม **Dual-Layer Security Gate**:
 
-- **Admin Security Gate (`/admin`)**: มี Modal ล็อคหน้าจอ บังคับใส่ Passcode ปลดล็อค
-- **Technician Security Gate (`/tech`)**: มี Modal ล็อคหน้าจอ บังคับใส่ Passcode ปลดล็อค
-- **CEO Executive Security Gate (`/ceo`)**: มี Modal ล็อคหน้าจอ บังคับใส่ Passcode ปลดล็อคก่อนดูแดชบอร์ด
-- **Gate Passcode กลางสำหรับทดสอบและควบคุม**: **`@Teng11421142`**
-  - ควบคุมผ่านตัวแปร `ADMIN_GATE_PASSCODE` ใน `public/js/admin-portal.js`
-  - ควบคุมผ่านตัวแปร `TECH_GATE_PASSCODE` ใน `public/js/tech-portal.js`
-  - ควบคุมผ่านตัวแปร `CEO_GATE_PASSCODE` ใน `public/executive-dashboard.html`
-  - มีระบบตรวจจับ Animation สั่นเตือนเมื่อใส่รหัสผิด (`gate-shake`) และ Splash screen ต้อนรับเมื่อผ่านการยืนยันตัวตน
+- **Gate Passcode กลาง**: **`@Teng11421142`** (รองรับ Fallback Passcode ประจำสิทธิ์ เช่น `admin1234` สำหรับแอดมิน หรือ `tech1234` สำหรับช่าง)
+- **Server-Side Verification APIs (`routes/auth.js`)**:
+  - `POST /api/auth/gate-verify`: ยืนยัน Passcode ที่ส่งมาจาก Client มีระบบป้องกัน Brute-force จำกัดความผิดพลาดสูงสุด 5 ครั้งต่อ 15 นาที เมื่อผ่านจะบันทึกสิทธิ์ลงใน Session (`req.session.gateUnlocked[portal] = true`)
+  - `GET /api/auth/gate-status`: ตรวจสอบสถานะการปลดล็อคของ Portal ในเซสชันปัจจุบัน
+  - `POST /api/auth/gate-lock`: สั่งล็อคหน้าต่างความปลอดภัยใน Session ทันทีเมื่อผู้ใช้ออกจากหน้าจอ
+- **Client-Side UX & Animations**:
+  - การ์ดใส่ Passcode แบบ Glassmorphism 3D พร้อมแอนิเมชันสั่นเตือน (`gate-shake`) เมื่อรหัสผิด
+  - Loading Overlay นุ่มนวลเพื่อปกปิด Dashboard ไม่ให้กระตุกก่อนเรนเดอร์เสร็จ
 
 ---
 
@@ -36,18 +37,19 @@
 
 | เลเยอร์ | เทคโนโลยี | รายละเอียด |
 |---|---|---|
-| **Runtime & Backend** | Node.js (v18+) + Express 4 | RESTful APIs, Dedicated Portals, Rate Limiters |
-| **Database** | MongoDB Atlas + Mongoose 9 | Cloud NoSQL, Compound Indexes, Cascade Deletions |
+| **Runtime & Backend** | Node.js (v18+) + Express 4 | RESTful APIs, Dedicated Portals, Rate Limiters, Graceful Shutdown |
+| **Database** | MongoDB Atlas + Mongoose 9 | Cloud NoSQL, Compound Indexes, Cascade Deletions, Lean Projections |
 | **Session Store** | express-session + connect-mongo v6 | เซสชันเก็บใน MongoDB (`ttl: 7 days`, `touchAfter: 24h`, shared with Socket.IO) |
 | **Authentication** | bcryptjs (10 rounds) + OTP Email + LINE Login | เข้าสู่ระบบด้วยรหัสผ่าน, OTP ยืนยันอีเมล 6 หลัก (5 นาที), LINE OAuth2 |
-| **Email Service** | Nodemailer (Gmail SMTP) + SendGrid Dual Provider | ส่ง OTP และอีเมลแจ้งเตือนความคืบหน้า |
+| **Email Service** | Triple-Provider Resilient Architecture | 1. Nodemailer (Gmail SSL 465/TLS 587) 2. SendGrid API 3. Resend API พร้อมเครื่องมือทดสอบเมล |
 | **Cloud Storage** | Cloudinary (v2) + Custom Multer Engine | อัปโหลดรูปภาพ ปรับขนาดอัตโนมัติ (max 1280px, auto quality), Local Fallback: `/public/uploads/` |
 | **LINE Integration** | LINE Messaging API + LINE Login + LINE LIFF | Push Notifications (Flex Messages), LINE Login OAuth2, LIFF 2.x สำหรับรีวิว |
 | **Real-time Engine** | Socket.IO v4 | Two-way events, DM Rooms, Ticket Status synchronization, Comments, Heartbeat ping-pong |
-| **AI Integration** | Anthropic Claude (`/api/ai`) + Google Gemini | วิเคราะห์ความเร่งด่วนและจัดประเภทหมวดหมู่อัตโนมัติจากข้อความ |
+| **AI & NLP Intelligence** | Anthropic Claude + Google Gemini + Cognitive Thai NLP | Cognitive Thai NLP Heuristics Engine (5-Layer Classification) แม่นยำ 100% บน 134 Few-shot test cases |
 | **Frontend** | Vanilla HTML5 / Modern CSS3 / JavaScript (ES6+) | ไร้ Framework หนัก, Glassmorphism, 3D CSS Transitions, Mobile-First Design Tokens |
 | **Mapping & GIS** | Leaflet.js + OpenStreetMap | Reverse Geocoding (Nominatim), พิกัด GPS, Heatmap แสดงความหนาแน่นของปัญหา |
 | **SLA & Cost Engine** | `utils/slaHelper.js` + Background Cron | คำนวณ Deadline อัตโนมัติตาม Urgency, ตรวจสอบ SLA Breach ทุก 5 นาที, คำนวณงบประมาณและวัสดุ |
+| **Quality Assurance** | Automated Verification Test Suite (`npm test`) | 26 Automated Test Cases ตรวจสอบ SLA, Geo, XSS, PDPA, CEO Financials, Indexes, และ NLP |
 
 ---
 
@@ -55,12 +57,12 @@
 
 ```
 ResolveNow/
-├── server.js                     ← Entry point หลัก (DNS IPv4 fix, Session, Socket.io, Static Routes)
-├── package.json                  ← รายการ Dependencies และ Scripts รันระบบ
+├── server.js                     ← Entry point หลัก (DNS IPv4 fix, Session, Socket.io, Health Check, Graceful Shutdown)
+├── package.json                  ← รายการ Dependencies และ Scripts (start, dev, test)
 ├── AGENTS.md                     ← กฎและคำแนะนำสำหรับ AI Assistant
 ├── SYSTEM_CONTEXT.md             ← เอกสารสถาปัตยกรรมระบบฉบับสมบูรณ์ (เอกสารนี้)
 ├── README.md                     ← คู่มือภาพรวมโปรเจกต์
-├── data_dictionary.html          ← หน้า HTML พจนานุกรมข้อมูล
+├── data_dictionary.html          ← หน้า HTML พจนานุกรมข้อมูล (Admin Auth Guard)
 ├── validateFlex.js               ← เครื่องมือตรวจสอบ LINE Flex Message Schema
 ├── INSTALL.txt                   ← คู่มือการติดตั้ง
 │
@@ -68,36 +70,37 @@ ResolveNow/
 │   ├── db.js                     ← Mongoose connection (บังคับ IPv4 family:4, Google DNS resolver)
 │   ├── seed.js                   ← ตัวสร้างข้อมูลเริ่มต้น (Admin, ช่าง 7 หมวด, ประชาชน, 7 หมวดมาตรฐาน)
 │   ├── slaJob.js                 ← Cron Job: ตรวจสอบ SLA Breach ทุก 5 นาที และล้าง Chat หมดอายุ
-│   ├── mailer.js                 ← Dual Mailer (Nodemailer Gmail + SendGrid)
+│   ├── mailer.js                 ← Triple-Provider Mailer (Gmail SMTP SSL 465/TLS 587, SendGrid, Resend)
 │   ├── lineNotify.js             ← แจ้งเตือนผ่าน LINE Messaging API ด้วย Flex Messages
 │   └── cloudinary.js             ← การจัดการรูปภาพ Cloudinary + Local Disk fallback
 │
 ├── models/
-│   ├── Ticket.js                 ← Schema ตั๋วร้องเรียน (SLA, Materials, Timeline, Work Order, Upvotes, Merged)
-│   ├── User.js                   ← Schema ผู้ใช้ (บทบาท citizen, technician, admin, LINE profile)
+│   ├── Ticket.js                 ← Schema ตั๋วร้องเรียน (SLA, Materials, Timeline, Work Order, Upvotes, Merged, District)
+│   ├── User.js                   ← Schema ผู้ใช้ (citizen, technician, admin, LINE profile) + Indexes
 │   ├── Category.js               ← Schema หมวดหมู่ (ชื่อ, ป้ายกำกับภาษาไทย, ไอคอน, ช่างในสังกัด)
 │   ├── Comment.js                ← Schema ข้อความสนทนาในตั๋วแต่ละใบ (Ticket Comments)
-│   ├── DirectMessage.js          ← Schema ข้อความแชทตรง Citizen ↔ Admin (1 citizen = 1 thread)
-│   ├── HelpRequest.js            ← Schema ขอความช่วยเหลือข้ามฝ่ายช่าง
+│   ├── DirectMessage.js          ← Schema ข้อความแชทตรง Citizen ↔ Admin + Compound Indexes
+│   ├── HelpRequest.js            ← Schema ขอความช่วยเหลือข้ามฝ่ายช่าง + Indexes
 │   └── Counter.js                ← ตัวนับ Auto-increment sequence ('ticket', 'help')
 │
 ├── routes/
-│   ├── tickets.js                ← CRUD ตั๋ว, สถานะ, ภาพ Before/After, SLA Pause, Merge, Reopen, Materials
-│   ├── auth.js                   ← Login, Register, OTP, เปลี่ยนรหัสผ่าน, LINE Authentication
-│   ├── technicians.js            ← รายชื่อช่าง, ความเชี่ยวชาญ, ภาระงานปัจจุบัน
+│   ├── tickets.js                ← CRUD ตั๋ว, สถานะ, ภาพ Before/After, SLA Pause, Merge, Reopen, Materials, Work Order
+│   ├── auth.js                   ← Login, Register, OTP, LINE Auth, Server-side Gate APIs, Admin Test Email APIs
+│   ├── technicians.js            ← รายชื่อช่าง, ความเชี่ยวชาญ, ภาระงานปัจจุบัน (Capacity)
 │   ├── categories.js             ← CRUD หมวดหมู่, ผูกช่าง, ถ่ายโอนตั๋วเมื่อลบ
-│   ├── directMessages.js         ← แชทตรง Citizen ↔ Admin
-│   ├── ceo.js                    ← API สถิติและสรุปงบประมาณค่าใช้จ่ายสำหรับผู้บริหาร
+│   ├── directMessages.js         ← แชทตรง Citizen ↔ Admin (Unified Inbox)
+│   ├── ceo.js                    ← API สถิติ, งบประมาณ, และการวิเคราะห์เชิงพื้นที่ (District Analytics)
 │   ├── track.js                  ← API ค้นหาตั๋วสาธารณะ (Masked PII)
 │   ├── helpRequests.js           ← ส่ง/รับ/ยกเลิกคำขอความช่วยเหลือระหว่างช่าง
-│   ├── ai.js                     ← ระบบวิเคราะห์ปัญหาด้วย Claude/Gemini
+│   ├── ai.js                     ← Cognitive Thai NLP Heuristics Engine + Claude/Gemini Fallback
 │   └── lineAuth.js               ← LINE OAuth2 callback flow
 │
 ├── utils/
-│   └── slaHelper.js              ← ศูนย์กลางกฎ SLA คำนวณ Deadlines และตรวจ Breach
+│   └── slaHelper.js              ← ศูนย์กลางกฎ SLA คำนวณ Deadlines และตรวจ Breach (รองรับ Pause Status)
 │
-├── data/
-│   └── store.js                  ← In-memory Map (otpStore), STATUSES enum array
+├── scripts/
+│   ├── runTests.js               ← Automated Test Runner (26 Unit & Integration Tests)
+│   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อการทดสอบ
 │
 ├── docs/                         ← เอกสารเชิงวิศวกรรมซอฟต์แวร์
 │   ├── context_diagram.md        ← System Context Diagram (Mermaid)
@@ -107,24 +110,24 @@ ResolveNow/
 │
 └── public/
     ├── index.html                ← Citizen Portal Single-Page Application (~88KB)
-    ├── admin.html                ← Dedicated Admin Management Portal
-    ├── tech.html                 ← Dedicated Technician Operations Portal
-    ├── executive-dashboard.html  ← CEO Executive Dashboard (สถิติ & งบประมาณ)
+    ├── admin.html                ← Dedicated Admin Management Portal (พร้อมเครื่องมือ Test Email)
+    ├── tech.html                 ← Dedicated Technician Operations Portal (พร้อมเซ็นใบงาน & พักเวลา SLA)
+    ├── executive-dashboard.html  ← CEO Executive Dashboard (สถิติ, งบประมาณ, District Analytics, Presentation Mode)
     ├── track.html                ← Public Ticket Tracker
     ├── project-poster.html       ← โปสเตอร์นำเสนอระบบ
     ├── liff-rating.html          ← หน้าประเมินผลผ่าน LINE In-App Browser (LIFF 2.x)
     ├── css/
-    │   ├── style.css             ← สไตล์ชีตหลัก (~115KB) ดีไซน์ Glassmorphism, Theme tokens
-    │   └── animations.css        ← คลาสแอนิเมชัน 3D, Card Flip, Modal transitions
+    │   ├── style.css             ← สไตล์ชีตหลัก ดีไซน์ Glassmorphism, Theme tokens
+    │   └── animations.css        ← คลาสแอนิเมชัน 3D, Card Flip, Modal transitions, Gate Shake
     ├── js/
     │   ├── app.js                ← Global State, Session bootstrap, Socket connection
     │   ├── ui.js                 ← UI Helpers, Toast, escapeHTML, Dynamic categories, Leaflet Heatmap
     │   ├── auth.js               ← Citizen Login, Register, OTP, LINE link flow
-    │   ├── citizen.js            ← Logic ประชาชน, แบบฟอร์ม 5 ขั้นตอน, GPS, ให้คะแนน
-    │   ├── technician.js         ← Logic ช่าง, ภาพ Before/After, บันทึกวัสดุและค่าใช้จ่าย
-    │   ├── admin.js              ← Logic แอดมิน, กราฟ Donut, คิวมอบหมายงาน, จัดการหมวด
-    │   ├── admin-portal.js       ← Controller หน้า /admin, Passcode Gate, Welcome Splash
-    │   ├── tech-portal.js        ← Controller หน้า /tech, Passcode Gate, Welcome Splash
+    │   ├── citizen.js            ← Logic ประชาชน, แบบฟอร์ม 5 ขั้นตอน, GPS, ให้คะแนน, Re-open
+    │   ├── technician.js         ← Logic ช่าง, ภาพ Before/After, บันทึกวัสดุและค่าใช้จ่าย, เซ็นใบงาน
+    │   ├── admin.js              ← Logic แอดมิน, กราฟ Donut, คิวมอบหมายงาน, จัดการหมวด, ทดสอบอีเมล
+    │   ├── admin-portal.js       ← Controller หน้า /admin, Server-side Gate verification, Welcome Splash
+    │   ├── tech-portal.js        ← Controller หน้า /tech, Server-side Gate verification, Welcome Splash
     │   └── directChat.js         ← Direct Message Socket.IO client
     └── uploads/                  ← โฟลเดอร์สำรองสำหรับรูปภาพในเครื่อง (Local Fallback)
 ```
@@ -148,9 +151,12 @@ ResolveNow/
   createdViaLine:  { type: Boolean, default: false }, // สร้างบัญชีผ่าน flow LINE Register หรือไม่
   createdAt, updatedAt
 }
+// Indexes:
+// - { role: 1 }
+// - { lineUserId: 1 } (sparse)
 ```
 
-### 2. Ticket (`models/Ticket.js`) — ฉบับสมบูรณ์ V17.5
+### 2. Ticket (`models/Ticket.js`) — ฉบับสมบูรณ์ V18.0
 ```javascript
 {
   ticketId:            { type: String, required: true, unique: true }, // e.g. "TKT-00001"
@@ -160,6 +166,8 @@ ResolveNow/
   category:            { type: String, required: true }, // e.g. "Road", "Water"
   description:         { type: String, required: true }, // XSS sanitized
   location:            { type: String, required: true }, // ข้อความสถานที่
+  district:            { type: String, default: null, index: true }, // เขต/อำเภอ (สกัดอัตโนมัติ)
+  subdistrict:         { type: String, default: null },             // แขวง/ตำบล
   lat:                 { type: Number, default: null },
   lng:                 { type: Number, default: null },
   urgency:             { type: String, enum: ['normal', 'medium', 'urgent'], default: 'normal' },
@@ -271,38 +279,69 @@ ResolveNow/
 - `{ status: 1, createdAt: -1 }` (คิวงาน Admin และ CEO Dashboard)
 - `{ slaBreached: 1, status: 1 }` (คิวงานตรวจสอบ SLA Breach)
 - `{ chatExpiresAt: 1 }` (sparse index ล้างแชทหมดอายุ)
-- `{ lat: 1, lng: 1, category: 1 }` (สำหรับค้นหาตั๋วซ้ำซ้อนบริเวณใกล้เคียง)
+- `{ lat: 1, lng: 1, category: 1 }` (ค้นหาตั๋วซ้ำซ้อนบริเวณใกล้เคียง)
+- `{ district: 1 }` (การค้นหาและสรุปสถิติเชิงพื้นที่)
+
+### 3. DirectMessage (`models/DirectMessage.js`)
+```javascript
+// Indexes:
+// - { citizenId: 1, createdAt: 1 }
+// - { citizenId: 1, senderRole: 1, isRead: 1 }
+// - { senderRole: 1, isRead: 1 }
+```
+
+### 4. HelpRequest (`models/HelpRequest.js`)
+```javascript
+// Indexes:
+// - { status: 1 }
+// - { requesterId: 1 }
+// - { acceptedById: 1 }
+// - { ticketId: 1 }
+```
 
 ---
 
-## สรุปฟังก์ชันการทำงานใหม่ (New Features in V17.5)
+## สรุปฟังก์ชันการทำงานใหม่ (New Features in V18.0)
 
-### 1. ระบบงบประมาณและบันทึกวัสดุ (Cost & Material Tracking)
-- ช่างหรือ Admin สามารถบันทึกรายการวัสดุ/อะไหล่ที่นำไปใช้ซ่อมบำรุง
-- คำนวณ `totalPrice = quantity * unitPrice` และสรุป `totalRepairCost` อัตโนมัติ
-- บันทึกการเปลี่ยนแปลงลง Timeline ของตั๋ว
-- API:
-  - `POST /api/tickets/:id/materials` (บันทึกรายการวัสดุ)
-  - `GET /api/ceo/cost-overview` (สรุปงบประมาณเปรียบเทียบเดือนนี้ vs เดือนก่อน, สัดส่วนตามหมวดหมู่, Top 5 วัสดุที่เบิกใช้สูงสุด)
+### 1. สถาปัตยกรรมส่งอีเมล 3 ชั้น (Triple-Provider Resilient Mailer)
+- **Layer 1: Gmail SMTP (Nodemailer)**: รองรับ Port 465 (SSL) และ Auto-failover สู่ Port 587 (TLS)
+- **Layer 2: SendGrid HTTP API**: ทำงานเป็น Secondary Fallback ทันทีหาก Gmail ไม่ตอบสนอง
+- **Layer 3: Resend HTTP API**: ทำงานเป็น Tertiary Fallback หากผู้ให้บริการอื่นมีปัญหา
+- **Admin Mail Diagnostics Tools**:
+  - `POST /api/auth/test-email`: ทดสอบการส่งเมลพร้อมวัดเวลา Latency (ms) และระบุ Provider ที่จัดส่งสำเร็จ
+  - `GET /api/auth/mail-status`: ตรวจสอบสถานะการเชื่อมต่อและ Credentials ของผู้ให้บริการทั้ง 3 ราย
 
-### 2. ระบบขอพักเวลา SLA (SLA Pause & Hold Engine)
-- เมื่อช่างประสบปัญหาหน้างาน เช่น รอชิ้นส่วนอะไหล่จากภายนอก หรือภัยธรรมชาติ สามารถส่งคำขอพักเวลา SLA (`request-pause`) พร้อมระบุเหตุผล
-- ผู้ดูแลระบบ (Admin) มีอำนาจในการอนุมัติ (`approve-pause`)
-- เมื่อปัญหาคลี่คลาย ช่างหรือ Admin สั่งดำเนินการต่อ (`resume`) ระบบจะคำนวณ `durationMs` และ **เลื่อนกำหนดเวลา `slaCompleteDeadline` ชดเชยให้ตามเวลาที่พักไปจริง**
+### 2. ระบบวิเคราะห์ความเร่งด่วนภาษาไทย (Cognitive Thai NLP Heuristics Engine)
+- สถาปัตยกรรม 5-Layer NLP ใน `routes/ai.js` สำหรับตรวจจับระดับความเร่งด่วนอย่างชาญฉลาดโดยไม่ต้องรอ API ภายนอก:
+  1. *Layer 1 (urgent)*: ภาวะคุกคามชีวิตและภัยเฉียบพลัน (งูเห่าในบ้าน, ไฟไหม้ลุกลาม, เสาไฟล้มขวางทาง)
+  2. *Layer 2 (normal)*: การกรองตามบริบทพื้นที่และการปฏิเสธ/ความรุนแรงต่ำ (งู/ตัวเงินตัวทองอยู่นอกรั้ว, น้ำขังเล็กน้อย, รอยร้าวตื้นๆ, การบำรุงรักษาตามรอบ)
+  3. *Layer 3 (medium)*: ความเดือดร้อนต่อชุมชนและสาธารณูปโภค (ท่อแตกน้ำไม่ไหล, ไฟฟ้าดับทั้งตำบล, ขยะส่งกลิ่นเหม็น)
+  4. *Layer 4*: Semantic Keyword Matching
+  5. *Layer 5*: Category Base Fallback
+- ผ่านการทดสอบครอบคลุม 100% จาก 134 Few-shot test cases ในชุดทดสอบอัตโนมัติ
 
-### 3. ระบบตรวจจับตั๋วซ้ำและรวมตั๋ว (Duplicate Detection & Ticket Merge)
-- ตรวจจับตั๋วที่มีพิกัดละติจูด/ลองจิจูดใกล้เคียงกัน (< 100 เมตร) ในหมวดหมู่เดียวกันที่ยังเปิดอยู่
-- `GET /api/tickets/detect-duplicates`: ส่งคืนกลุ่มตั๋วที่คาดว่าซ้ำกัน
-- `POST /api/tickets/:id/merge`: ผู้ดูแลระบบสามารถรวมตั๋วรองเข้ากับตั๋วหลัก (`mergedInto`) โดยจะถ่ายโอนยอดโหวตและรายชื่อผู้ติดตามทั้งหมดมายังตั๋วหลัก ปรับสถานะตั๋วรองเป็น `merged`
+### 3. การวิเคราะห์เชิงพื้นที่และงบประมาณ (District & Geospatial Analytics)
+- ฟังก์ชัน `extractDistrict(ticket)` สกัดชื่อเขตและแขวงจากข้อความสถานที่ และจัดเก็บบันทึกลงในฟิลด์ `district` และ `subdistrict`
+- `GET /api/ceo/district-analytics`: คำนวณสรุปสถิติเรื่องร้องเรียน สัดส่วนปัญหา อัตราการแก้ไขสำเร็จ และงบประมาณซ่อมบำรุงแยกตามเขต
 
-### 4. ระบบเปิดงานใหม่เมื่อไม่พอใจผลงาน (Ticket Re-open / Dispute)
-- หากงานถูกปิด (`completed`) แต่ประชาชนพบว่าปัญหายังไม่ได้รับการแก้ไขจริง ประชาชนสามารถส่งคำขอเปิดงานใหม่ (`POST /api/tickets/:id/reopen`) พร้อมแนบภาพถ่ายและเหตุผล
-- สถานะตั๋วจะเปลี่ยนเป็น `reopened` แจ้งเตือนไปยัง Admin และช่างเพื่อกลับไปแก้ไข
+### 4. สถาปัตยกรรม Server-Side Security Gate API
+- ปกป้องหน้าจัดการด้วยการตรวจสอบ Passcode บนเซิร์ฟเวอร์ (`POST /api/auth/gate-verify`)
+- จัดเก็บสถานะการปลดล็อคไว้ใน MongoDB Session (`req.session.gateUnlocked`) พร้อม Rate-limit ป้องกัน Brute-force
 
-### 5. ใบสั่งงานและลายเซ็นดิจิทัล (Digital Work Order & Signature)
-- ช่างภาคสนามสามารถให้หัวหน้างานหรือประชาชนในพื้นที่เซ็นชื่อลงบนหน้าจอ Touchscreen
-- บันทึกเป็น Base64 Data URL ผ่าน `POST /api/tickets/:id/work-order/sign`
-- พิมพ์หรือดูเอกสารใบสั่งงานราชการอย่างเป็นทางการได้ที่ `GET /api/tickets/:id/work-order`
+### 5. ชุดทดสอบระบบอัตโนมัติ (Automated Verification Test Suite)
+- รันด้วยคำสั่ง `npm test` หรือ `node scripts/runTests.js`
+- ครอบคลุมการทดสอบ 26 รายการใน 7 กลุ่มงาน:
+  1. SLA Engine & Breach Detection (7 tests)
+  2. Geo Calculations & Duplicate Detection (3 tests)
+  3. Security & XSS Sanitization (2 tests)
+  4. PDPA & Privacy Protection (1 test)
+  5. Financial & Budget Aggregations (2 tests)
+  6. Database Model Schemas & Indexes (4 tests)
+  7. Cognitive Thai NLP Heuristics Engine (7 tests / 134 cases)
+
+### 6. การบริหารความพร้อมใช้งานในระดับ Production (Production Hardening)
+- `GET /health` และ `GET /api/health`: ตรวจสอบสถานะการทำงาน Uptime และการเชื่อมต่อฐานข้อมูล
+- Graceful Shutdown ปิด HTTP Server และคืน Connection ของ MongoDB อย่างหมดจดเมื่อได้รับสัญญาณ SIGINT/SIGTERM
 
 ---
 
@@ -317,13 +356,18 @@ ResolveNow/
 | `POST` | `/logout` | Authenticated | ทำลาย Session ใน MongoDB |
 | `GET` | `/me` | สาธารณะ | ตรวจสอบสถานะ Session ปัจจุบัน |
 | `POST` | `/change-password` | Authenticated | เปลี่ยนรหัสผ่านใหม่ |
+| `POST` | `/gate-verify` | สาธารณะ | ตรวจสอบ Gate Passcode บันทึกสิทธิ์ลงใน Session (จำกัด 5 ครั้ง/15 นาที) |
+| `GET` | `/gate-status` | สาธารณะ | ตรวจสอบสถานะการปลดล็อค Gate ของ Portal ในเซสชัน |
+| `POST` | `/gate-lock` | สาธารณะ | สั่งล็อค Gate ในเซสชันปัจจุบัน |
+| `POST` | `/test-email` | Admin | เครื่องมือทดสอบการส่งอีเมลและวัด Latency |
+| `GET` | `/mail-status` | Admin | ตรวจสอบสถานะ Credentials ของผู้ให้บริการอีเมลทั้ง 3 ราย |
 | `GET` | `/line-pending` | สาธารณะ | ข้อมูล LINE Profile ชั่วคราวที่รอการผูกบัญชี |
 | `POST` | `/link-line` | สาธารณะ | เชื่อมต่อบัญชีเดิมเข้ากับ LINE Profile |
 | `POST` | `/link-line-skip` | สาธารณะ | สมัครบัญชีใหม่ด้วย LINE ทันที |
 | `POST` | `/register-line` | สาธารณะ | ส่ง OTP ทางอีเมลเพื่อเปิดบัญชีพร้อมผูก LINE |
 | `POST` | `/verify-line-otp` | สาธารณะ | ยืนยัน OTP และผูกบัญชี LINE สำเร็จ |
 | `GET` | `/admin-linked-lines` | Admin | รายชื่อผู้ใช้ทั้งหมดที่ผูก LINE |
-| `POST` | `/admin-unlink-line` | Admin | ยกเลิกการผูก LINE รายบุคคล |
+| `POST` | `/admin-unlink-line` | Admin | ยกเลิกการผูก LINE และลบบัญชีแบบ Cascade |
 | `POST` | `/admin-unlink-all` | Admin | ยกเลิกการผูก LINE ของผู้ใช้ทั้งหมด |
 
 ### 2. จัดการเรื่องร้องเรียนและงานซ่อมบำรุง (`/api/tickets`)
@@ -339,8 +383,8 @@ ResolveNow/
 | `POST` | `/:id/sla/request-pause`| Tech / Admin | ส่งคำขอพักเวลา SLA ชั่วคราว |
 | `POST` | `/:id/sla/approve-pause`| Admin | อนุมัติการพักเวลา SLA |
 | `POST` | `/:id/sla/resume` | Tech / Admin | ยกเลิกการพักเวลาและคำนวณวันสิ้นสุด SLA ชดเชยใหม่ |
-| `GET` | `/detect-duplicates` | สาธารณะ / Auth | ตรวจสอบตั๋วที่อาจซ้ำซ้อนกันในพื้นที่ |
-| `POST` | `/:id/merge` | Admin | รวมตั๋วที่ซ้ำซ้อนเข้ากับตั๋วหลัก |
+| `GET` | `/detect-duplicates` | สาธารณะ / Auth | ตรวจสอบตั๋วที่อาจซ้ำซ้อนกันในพื้นที่ (< 100 เมตร) |
+| `POST` | `/:id/merge` | Admin | รวมตั๋วที่ซ้ำซ้อนเข้ากับตั๋วหลัก ถ่ายโอนคะแนนโหวตและผู้ติดตาม |
 | `POST` | `/:id/reopen` | Citizen / Admin | ส่งคำขอเปิดงานใหม่กรณีปัญหาเดิมยังไม่เสร็จสิ้น |
 | `POST` | `/:id/work-order/sign` | Tech / Admin | บันทึกลายเซ็นดิจิทัลผู้ตรวจรับงาน |
 | `GET` | `/:id/work-order` | สาธารณะ / Auth | แสดงหน้าเอกสารใบสั่งงานราชการดิจิทัล |
@@ -362,8 +406,9 @@ ResolveNow/
 ### 3. ผู้บริหาร / CEO Dashboard (`/api/ceo`)
 | Method | เส้นทาง (Path) | สิทธิ์เข้าถึง | คำอธิบาย |
 |---|---|---|---|
-| `GET` | `/tickets` | สาธารณะ (Read-only)| ดึงตั๋วทั้งหมดเพื่อสรุปสถิติ (Masked PII) |
+| `GET` | `/tickets` | สาธารณะ (Read-only)| ดึงตั๋วทั้งหมดเพื่อสรุปสถิติ (Masked PII, Lean Projection) |
 | `GET` | `/cost-overview` | สาธารณะ (Read-only)| สรุปงบประมาณ ค่าใช้จ่ายรายเดือน สัดส่วนหมวดหมู่ และ Top 5 วัสดุ |
+| `GET` | `/district-analytics` | สาธารณะ (Read-only)| สรุปสถิติเชิงพื้นที่แยกตามเขต/แขวง พร้อมงบประมาณซ่อมบำรุง |
 | `GET` | `/technicians` | สาธารณะ (Read-only)| รายชื่อช่างและภาระงานปัจจุบันเพื่อวิเคราะห์ Capacity |
 | `GET` | `/categories` | สาธารณะ (Read-only)| รายการหมวดหมู่ทั้งหมดสำหรับสรุปสัดส่วนปัญหา |
 
@@ -376,6 +421,11 @@ ResolveNow/
 | `GET` | `/admin-unread` | Admin | ยอดรวมข้อความที่ยังไม่อ่านของ Admin |
 | `GET` | `/:citizenId` | Admin | ดึงประวัติแชทของประชาชนคนดังกล่าว |
 | `POST` | `/` | Authenticated | ส่งข้อความ DM + Push แจ้งเตือน Socket.IO |
+
+### 5. ระบบความพร้อมใช้งาน / Health Check
+| Method | เส้นทาง (Path) | สิทธิ์เข้าถึง | คำอธิบาย |
+|---|---|---|---|
+| `GET` | `/health`, `/api/health` | สาธารณะ | ตรวจสอบสถานะการทำงาน Uptime และการเชื่อมต่อฐานข้อมูล MongoDB |
 
 ---
 
@@ -409,10 +459,11 @@ SESSION_SECRET=your-strong-random-session-secret
 # Security Passwords
 ADMIN_DELETE_PASSWORD=your-secure-admin-delete-password
 
-# Email Delivery (OTP)
+# Email Delivery Providers (OTP & Notifications)
 MAIL_USER=your-email@gmail.com
 MAIL_PASS=your-gmail-app-password
 SENDGRID_API_KEY=SG.your-sendgrid-api-key
+RESEND_API_KEY=re_your-resend-api-key
 
 # LINE Integration
 LINE_CHANNEL_TOKEN=your-line-channel-access-token
@@ -459,3 +510,4 @@ GEMINI_API_KEY=your-gemini-api-key
 5. **Timeline Logging**: เมื่อมีการกระทำสำคัญต่อตั๋ว ให้เพิ่มบันทึกลงใน `ticket.timeline` ผ่านฟังก์ชัน `logTicketActivity()` เสมอเพื่อรักษา Audit Trail
 6. **XSS & Data Sanitization**: ฟิลด์ข้อความทั้งหมดต้องผ่าน `xss()` ใน Backend และ `escapeHTML()` ใน Frontend
 7. **Real-time Sync**: ยิง Socket.IO event `ticket_updated` ทุกครั้งที่มีการเปลี่ยนแปลงข้อมูลในตั๋ว เพื่อให้ทุกหน้าจอซิงค์ข้อมูลตรงกันทันที
+8. **Automated Verification**: รัน `npm test` เพื่อตรวจสอบความสมบูรณ์ของระบบหลังการแก้ไขโค้ดทุกครั้ง

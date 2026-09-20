@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ResolveNow — Developer Master Architecture & Engineering Manual (V18.0)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    @page {
+      size: A4 portrait;
+      margin: 12mm 12mm 12mm 12mm;
+      @bottom-right {
+        content: "หน้า " counter(page);
+        font-family: 'Prompt', sans-serif;
+        font-size: 7.8pt;
+        color: #64748b;
+      }
+      @bottom-left {
+        content: "ResolveNow V18.0 — Developer Master Architecture & Engineering Manual";
+        font-family: 'Prompt', sans-serif;
+        font-size: 7.8pt;
+        color: #64748b;
+      }
+    }
+
+    @page :first {
+      margin: 0;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 8.8pt;
+      line-height: 1.48;
+      color: #1e293b;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Page Breaks */
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+    .avoid-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Cover Page */
+    .cover-page {
+      width: 100vw;
+      height: 100vh;
+      min-height: 297mm;
+      background: linear-gradient(135deg, #090d16 0%, #0f172a 40%, #1e293b 80%, #0c4a6e 100%);
+      color: #ffffff;
+      padding: 45mm 22mm 25mm 22mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+    }
+    .cover-decor-1 {
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cover-decor-2 {
+      position: absolute;
+      bottom: -60px;
+      left: -60px;
+      width: 350px;
+      height: 350px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(14, 165, 233, 0.18);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      width: fit-content;
+      margin-bottom: 20px;
+    }
+    .cover-title {
+      font-size: 34pt;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 60%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cover-subtitle {
+      font-size: 15pt;
+      font-weight: 400;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin-bottom: 24px;
+    }
+    .cover-description {
+      font-size: 9.8pt;
+      color: #cbd5e1;
+      line-height: 1.6;
+      max-width: 650px;
+      padding-left: 16px;
+      border-left: 3px solid #0ea5e9;
+      margin-bottom: 35px;
+    }
+    .cover-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: auto;
+    }
+    .meta-box h4 {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      margin-bottom: 3px;
+    }
+    .meta-box p {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    /* Content Layout */
+    .content-wrap {
+      padding: 0;
+    }
+
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+      color: #0f172a;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    h1 {
+      font-size: 16pt;
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #0284c7;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h2 {
+      font-size: 12pt;
+      margin-top: 12px;
+      margin-bottom: 5px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    h3 {
+      font-size: 10pt;
+      margin-top: 8px;
+      margin-bottom: 3px;
+      color: #0369a1;
+    }
+    h4 {
+      font-size: 8.8pt;
+      margin-top: 6px;
+      margin-bottom: 2px;
+      color: #334155;
+    }
+    p {
+      margin-bottom: 5px;
+      text-align: justify;
+    }
+    ul, ol {
+      margin-left: 18px;
+      margin-bottom: 6px;
+    }
+    li {
+      margin-bottom: 2.5px;
+    }
+
+    /* Header Bar */
+    .section-header {
+      background: linear-gradient(90deg, #0369a1 0%, #0284c7 50%, #38bdf8 100%);
+      color: white;
+      padding: 7px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-header h1 {
+      color: white;
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+      font-size: 14pt;
+    }
+    .section-tag {
+      background: rgba(255, 255, 255, 0.2);
+      font-size: 7.8pt;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 5px;
+    }
+
+    /* Cards & Containers */
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 9px 11px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+    .card-highlight {
+      background: #f8fafc;
+      border-left: 3.5px solid #0284c7;
+    }
+    .card-success {
+      background: #f0fdf4;
+      border-left: 3.5px solid #16a34a;
+      border-color: #bbf7d0;
+    }
+    .card-warning {
+      background: #fffbeb;
+      border-left: 3.5px solid #d97706;
+      border-color: #fde68a;
+    }
+    .card-danger {
+      background: #fef2f2;
+      border-left: 3.5px solid #dc2626;
+      border-color: #fecaca;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      font-size: 7pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-blue { background: #e0f2fe; color: #0369a1; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-amber { background: #fef3c7; color: #b45309; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+    .badge-slate { background: #f1f5f9; color: #475569; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.8pt;
+      margin-bottom: 8px;
+      background: white;
+    }
+    tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    th {
+      background: #0f172a;
+      color: #ffffff;
+      text-align: left;
+      padding: 5px 7px;
+      font-weight: 600;
+      font-size: 7.5pt;
+      letter-spacing: 0.3px;
+    }
+    td {
+      padding: 4px 7px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    table.compact th, table.compact td {
+      padding: 3px 5px;
+      font-size: 7.4pt;
+    }
+
+    /* Code & Pre */
+    code {
+      font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+      font-size: 7.4pt;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 1px 3.5px;
+      border-radius: 3px;
+      border: 1px solid #e2e8f0;
+    }
+    pre {
+      font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+      font-size: 7pt;
+      line-height: 1.36;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 7px 9px;
+      border-radius: 6px;
+      overflow-x: hidden;
+      margin-bottom: 7px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    pre.code-tree {
+      font-size: 6.8pt;
+      line-height: 1.34;
+      padding: 7px 9px;
+      margin-bottom: 0;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border: none;
+    }
+
+    /* Diagram Containers */
+    .diagram-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 8px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin: 5px 0;
+      flex-wrap: wrap;
+    }
+    .flow-node {
+      background: #ffffff;
+      border: 1.5px solid #0284c7;
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 7.6pt;
+      font-weight: 600;
+      color: #0369a1;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      min-width: 90px;
+    }
+    .flow-node.dark {
+      background: #0f172a;
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+    .flow-node.green {
+      background: #f0fdf4;
+      color: #15803d;
+      border-color: #22c55e;
+    }
+    .flow-node.amber {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #f59e0b;
+    }
+    .flow-arrow {
+      color: #64748b;
+      font-weight: bold;
+      font-size: 9.5pt;
+    }
+
+    .toc-item {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dotted #cbd5e1;
+      padding: 3.5px 0;
+      font-size: 8.5pt;
+    }
+    .toc-item a {
+      color: #0369a1;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .toc-page {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* Footer stamp */
+    .doc-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 5px;
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7pt;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= COVER PAGE (PAGE 1) ================= -->
+  <div class="cover-page">
+    <div class="cover-decor-1"></div>
+    <div class="cover-decor-2"></div>
+    
+    <div>
+      <div class="cover-badge">
+        <span>🛡️</span> DEVELOPER MASTER ARCHITECTURE MANUAL | V18.0
+      </div>
+      <div class="cover-title">ResolveNow</div>
+      <div class="cover-subtitle">Smart City Complaint &amp; Work Order Management Platform</div>
+      <div class="cover-description">
+        เอกสารเชิงวิศวกรรมซอฟต์แวร์ฉบับสมบูรณ์สำหรับทีมนักพัฒนา (Developers &amp; Software Engineers) อธิบายสถาปัตยกรรมทั้งระบบ โครงสร้างซอร์สโค้ด ระบบความปลอดภัยขั้นสูง สกีมาฐานข้อมูล 7 Collections เครื่องยนต์คำนวณ SLA อัลกอริทึม Cognitive Thai NLP 5-Layer และแนวทางการทดสอบอัตโนมัติ 26 Test Suites
+      </div>
+    </div>
+
+    <div>
+      <div class="cover-meta-grid">
+        <div class="meta-box">
+          <h4>Platform Architecture</h4>
+          <p>Multi-Portal SPA + Node.js/Express</p>
+        </div>
+        <div class="meta-box">
+          <h4>Database &amp; Real-time</h4>
+          <p>MongoDB Atlas + Socket.IO v4</p>
+        </div>
+        <div class="meta-box">
+          <h4>Security Standard</h4>
+          <p>Dual-Gate, XSS, IDOR &amp; PDPA Hardened</p>
+        </div>
+        <div class="meta-box">
+          <h4>Cognitive AI Engine</h4>
+          <p>5-Layer Thai NLP Heuristics (100%)</p>
+        </div>
+        <div class="meta-box">
+          <h4>Resilient Services</h4>
+          <p>Triple Mailer + Cloudinary + LINE API</p>
+        </div>
+        <div class="meta-box">
+          <h4>System Status</h4>
+          <p>26/26 Automated Tests Passing</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; display: flex; justify-content: space-between; font-size: 7.8pt; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px;">
+        <span>System Version: <strong>V18.0 (2026-09-18)</strong></span>
+        <span>Repository: <strong>github.com/TengFk7/resolvenow</strong></span>
+        <span>Production Port: <strong>3001</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TABLE OF CONTENTS & SUMMARY (PAGE 2) ================= -->
+  <div class="content-wrap">
+    <div class="section-header">
+      <h1>📑 สารบัญและโครงสร้างเอกสาร (Table of Contents)</h1>
+      <span class="section-tag">Executive Summary</span>
+    </div>
+
+    <div class="card card-highlight avoid-break">
+      <h3 style="margin-top:0;">🎯 วัตถุประสงค์ของเอกสารนี้</h3>
+      <p>
+        เอกสารนี้จัดทำขึ้นสำหรับ <strong>Software Developers, System Architects และ Technical Presenters</strong> เพื่อใช้เป็นคู่มืออ้างอิงทางเทคนิคในการทำความเข้าใจสถาปัตยกรรมของ ResolveNow ในระดับ Deep-dive สามารถนำไปใช้อธิบายการทำงานของระบบ ตอบคำถามด้านความปลอดภัย (Security &amp; Compliance) ตลอดจนการบำรุงรักษาและต่อยอดระบบในอนาคตได้อย่างถูกต้อง แม่นยำ และครอบคลุมทุกมิติ
+      </p>
+    </div>
+
+    <div class="grid-2 avoid-break" style="margin-top: 6px;">
+      <div class="card">
+        <h3 style="margin-top:0; color:#0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">บทที่ 1 — 5 : แกนหลักระบบ</h3>
+        <div class="toc-item">
+          <span><strong>1.</strong> ภาพรวมและ Dedicated Multi-Portal Architecture</span>
+          <span class="toc-page">หน้า 3</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>2.</strong> เทคโนโลยีและโครงสร้างพื้นฐาน (Full Tech Stack)</span>
+          <span class="toc-page">หน้า 5</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>3.</strong> สถาปัตยกรรมความปลอดภัยระดับองค์กร (Security In-Depth)</span>
+          <span class="toc-page">หน้า 7</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>4.</strong> แผนผังโครงสร้างโฟลเดอร์และซอร์สโค้ด (Codebase Map)</span>
+          <span class="toc-page">หน้า 9</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>5.</strong> สกีมาฐานข้อมูลและ Data Dictionary (7 Collections)</span>
+          <span class="toc-page">หน้า 10</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0; color:#0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">บทที่ 6 — 9 : อัลกอริทึมและส่วนขยาย</h3>
+        <div class="toc-item">
+          <span><strong>6.</strong> เครื่องยนต์ประมวลผลทางธุรกิจและ AI (Core Engines)</span>
+          <span class="toc-page">หน้า 13</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>7.</strong> แค็ตตาล็อก REST API และ WebSocket Protocol</span>
+          <span class="toc-page">หน้า 15</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>8.</strong> ชุดทดสอบอัตโนมัติ (Automated Test Suite &amp; QA)</span>
+          <span class="toc-page">หน้า 17</span>
+        </div>
+        <div class="toc-item">
+          <span><strong>9.</strong> การติดตั้ง, ตัวแปรระบบ และบัญชีทดสอบเริ่มต้น</span>
+          <span class="toc-page">หน้า 18</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Box -->
+    <div class="card card-success avoid-break" style="margin-top: 6px;">
+      <h4 style="color:#15803d; margin-top:0;">⚡ ไฮไลต์สำคัญทางเทคนิคที่นักพัฒนาต้องจดจำ (Core System Highlights)</h4>
+      <ul style="margin-bottom:0; font-size:8.2pt;">
+        <li><strong>Dedicated Portals:</strong> แยกทางเข้าตามบทบาทผู้ใช้อย่างชัดเจน (<code>/</code>, <code>/admin</code>, <code>/tech</code>, <code>/ceo</code>, <code>/track</code>, <code>/Datadic</code>)</li>
+        <li><strong>Portal Security Gate:</strong> ป้องกันหน้าบริหารด้วย Passcode <code>@Teng11421142</code> ตรวจสอบผ่าน Server-side API และบันทึก Session ป้องกัน Client Bypass</li>
+        <li><strong>Resilient Triple Mailer:</strong> ส่งอีเมลสำรอง 3 ชั้นอัตโนมัติ (Gmail 465/587 &rarr; SendGrid HTTP API &rarr; Resend HTTP API) พร้อม Diagnostic Latency API</li>
+        <li><strong>Cognitive Thai NLP:</strong> ระบบคัดกรองความเร่งด่วนภาษาไทย 5 ชั้น ทำงานออฟไลน์ได้ 100% แม่นยำสมบูรณ์แบบบน 134 Few-shot test cases</li>
+        <li><strong>SLA Engine with Hold:</strong> กฎ SLA 3 ระดับ (Urgent 2h/8h, Med 8h/48h, Norm 24h/72h) พร้อมระบบ Hold เวลาเมื่อรออะไหล่ และ Cron เช็คทุก 5 นาที</li>
+        <li><strong>Geospatial Intelligence:</strong> ระบบตรวจจับตั๋วซ้ำด้วยพิกัด Haversine (&lt; 100m) และการสกัดชื่อเขต/แขวงอัตโนมัติเพื่อทำ District Analytics</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 1 (PAGE 3 & 4) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>1. ภาพรวมระบบและ Dedicated Multi-Portal Architecture</h1>
+      <span class="section-tag">Architecture</span>
+    </div>
+
+    <p>
+      <strong>ResolveNow</strong> คือแพลตฟอร์มบริหารจัดการเรื่องร้องเรียนและงานซ่อมบำรุงเมืองอัจฉริยะ (Smart City Complaint &amp; Work Order Management Platform) ที่เชื่อมโยงประชาชน เจ้าหน้าที่ภาคสนาม ผู้ดูแลระบบ และผู้บริหาร เข้าด้วยกันแบบเรียลไทม์ ผ่านสถาปัตยกรรม <strong>Dedicated Multi-Portal Architecture</strong> แยกหน้าจอตามบทบาท (Role-based Separation) เพื่อประสบการณ์ใช้งานที่ตอบโจทย์เฉพาะทางและปลอดภัยสูงสุด
+    </p>
+
+    <div class="grid-2 avoid-break">
+      <div class="card">
+        <h3>🏛️ 1. Citizen Portal (<code>/</code>)</h3>
+        <p><strong>ผู้ใช้:</strong> ประชาชนและผู้พักอาศัยในชุมชน</p>
+        <ul>
+          <li>แจ้งเรื่องร้องเรียน 5 ขั้นตอน พร้อมระบุพิกัด GPS อัตโนมัติ (Reverse Geocoding)</li>
+          <li>แนบรูปภาพได้สูงสุด 5 ภาพผ่าน Cloudinary / Local storage</li>
+          <li>ติดตามสถานะเรียลไทม์ และตรวจสอบ Heatmap ความหนาแน่นของปัญหา</li>
+          <li>โหวต (Upvote) และติดตามงานผ่าน LINE Notifications</li>
+          <li>ระบบยื่นขอเปิดงานใหม่ (Re-open) เมื่อการซ่อมยังไม่สมบูรณ์</li>
+          <li>สนทนาแบบเรียลไทม์กับเจ้าหน้าที่ผ่าน Ticket Chat และ Direct Message (DM)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>🛠️ 2. Technician Operations Portal (<code>/tech</code>)</h3>
+        <p><strong>ผู้ใช้:</strong> ช่างเทคนิคและทีมงานภาคสนาม 7 หมวดหมู่</p>
+        <ul>
+          <li>เข้าถึงผ่าน Dual-Gate Passcode พร้อมหน้า Login เฉพาะช่าง</li>
+          <li>รับงานตามความเชี่ยวชาญ (Specialty) และตำแหน่งพิกัด GPS</li>
+          <li>อัปโหลดภาพถ่ายก่อนเริ่ม (Before) และหลังเสร็จสิ้น (After สูงสุด 5 รูป)</li>
+          <li>บันทึกรายการวัสดุ/อุปกรณ์และค่าใช้จ่ายในการซ่อมบำรุง (Cost Tracking)</li>
+          <li>ส่งคำขอพักเวลา SLA ชั่วคราว (SLA Pause) เมื่อรออะไหล่หรือสภาพอากาศ</li>
+          <li>ขอความช่วยเหลือข้ามแผนกช่าง (Cross-department Help Requests)</li>
+          <li>ระบบปิดงานพร้อมลายเซ็นดิจิทัล (Digital Work Order &amp; Signature)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>👨‍💻 3. Admin Management Portal (<code>/admin</code>)</h3>
+        <p><strong>ผู้ใช้:</strong> ผู้ดูแลระบบและศูนย์บัญชาการ (Dispatching Hub)</p>
+        <ul>
+          <li>เข้าถึงผ่าน Dual-Gate Passcode และการยืนยันตัวตนระดับ Admin</li>
+          <li>บริหารจัดการคิวงาน มอบหมายงานช่างตามภาระงาน (Workload Capacity)</li>
+          <li>อนุมัติคำขอพักเวลา SLA และคำนวณชดเชยเวลาปิดงานอัตโนมัติ</li>
+          <li>ตรวจจับและรวมตั๋วที่ซ้ำซ้อนกันในพื้นที่ (Duplicate Merge &amp; Transfer)</li>
+          <li>กล่องข้อความรวมศูนย์ (Unified DM Inbox) สนทนาตรงกับประชาชนทุกคน</li>
+          <li>จัดการหมวดหมู่ไดนามิก (เพิ่ม/แก้/ลบ/ผูกช่างประจำหมวด)</li>
+          <li>เครื่องมือทดสอบและวินิจฉัยอีเมล (Triple Mailer Diagnostics)</li>
+          <li>ส่งออกรายงานสถิติเป็นไฟล์ Excel (.xlsx) และ CSV (.csv)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>👔 4. CEO Executive Dashboard (<code>/ceo</code>)</h3>
+        <p><strong>ผู้ใช้:</strong> ผู้บริหารระดับสูงและคณะกรรมการเทศบาล</p>
+        <ul>
+          <li>แดชบอร์ดสรุปผลการดำเนินงานแบบเรียลไทม์ในโหมดอ่านอย่างเดียว (Read-only)</li>
+          <li>ดัชนีชี้วัด SLA Compliance และอัตราการแก้ไขปัญหาสำเร็จ</li>
+          <li>สรุปงบประมาณค่าซ่อมบำรุงประจำเดือน และสัดส่วนการเปลี่ยนแปลง (&plusmn;%)</li>
+          <li>การวิเคราะห์เชิงพื้นที่และงบประมาณแยกตามเขต/แขวง (District Analytics)</li>
+          <li>สรุปรายการวัสดุอุปกรณ์ที่มีการเบิกใช้สูงสุด 5 อันดับแรก (Top 5 Materials)</li>
+          <li>โหมดนำเสนอสำหรับผู้บริหาร (Executive Presentation Mode)</li>
+          <li>การปกปิดข้อมูลส่วนบุคคล (Masked PII) เพื่อให้สอดคล้องกับ พ.ร.บ. PDPA</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 4: Sub-portals & Diagrams -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>1. ภาพรวมระบบ (ต่อ: พอร์ทัลสนับสนุนและ Context Flow)</h1>
+      <span class="section-tag">Architecture</span>
+    </div>
+
+    <div class="grid-3 avoid-break">
+      <div class="card card-highlight">
+        <h4 style="margin-top:0;">🔍 5. Public Tracker (<code>/track</code>)</h4>
+        <p style="font-size:8pt;">ค้นหาสถานะตั๋วสาธารณะด้วย Ticket ID โดยไม่ต้องล็อกอิน มีการปกปิดชื่อและข้อมูลผู้แจ้งตามหลัก PDPA อย่างเคร่งครัด</p>
+      </div>
+      <div class="card card-highlight">
+        <h4 style="margin-top:0;">📋 6. Data Dictionary (<code>/Datadic</code>)</h4>
+        <p style="font-size:8pt;">หน้าพจนานุกรมข้อมูลแสดงสกีมา 7 Collections ป้องกันความปลอดภัยด้วย Admin Authentication Guard</p>
+      </div>
+      <div class="card card-highlight">
+        <h4 style="margin-top:0;">🩺 7. Health Check (<code>/health</code>)</h4>
+        <p style="font-size:8pt;">REST API ตรวจสอบสถานะ Server Uptime และการเชื่อมต่อฐานข้อมูล MongoDB Atlas พร้อมใช้งานตลอดเวลา</p>
+      </div>
+    </div>
+
+    <!-- Context Flow Diagram -->
+    <div class="diagram-box avoid-break" style="margin-top: 10px;">
+      <h4 style="margin-bottom:8px; color:#0f172a;">ภาพรวมการปฏิสัมพันธ์ระหว่างพอร์ทัลและระบบภายนอก (System Context Diagram)</h4>
+      <div class="flow-row">
+        <div class="flow-node">👨‍👩‍👧 ประชาชน<br>(Citizen /)</div>
+        <span class="flow-arrow">&harr;</span>
+        <div class="flow-node dark">🖥️ ResolveNow<br>V18.0 Core Server</div>
+        <span class="flow-arrow">&harr;</span>
+        <div class="flow-node">👷 ช่างภาคสนาม<br>(Tech /tech)</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node">🔍 ประชาชนทั่วไป<br>(Track /track)</div>
+        <span class="flow-arrow">&harr;</span>
+        <div class="flow-node dark">Socket.IO &amp; REST<br>Port: 3001</div>
+        <span class="flow-arrow">&harr;</span>
+        <div class="flow-node">👨‍💻 ศูนย์สั่งการ<br>(Admin /admin)</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node green">🗄️ MongoDB Atlas<br>(7 Collections)</div>
+        <span class="flow-arrow">&harr;</span>
+        <div class="flow-node amber">👔 ผู้บริหาร<br>(CEO /ceo)</div>
+        <span class="flow-arrow">&harr;</span>
+        <div class="flow-node green">☁️ Services<br>(Mail / Cloud / LINE)</div>
+      </div>
+    </div>
+
+    <div class="card card-warning avoid-break" style="margin-top:10px;">
+      <h4 style="color:#b45309; margin-top:0;">💡 จุดเน้นด้านความปลอดภัยของ Multi-Portal Architecture</h4>
+      <p style="font-size:8.2pt; margin-bottom:0;">
+        พอร์ทัล <code>/admin</code>, <code>/tech</code> และ <code>/ceo</code> ถูกแยกออกจากเส้นทางสาธารณะด้วยระบบ Security Gate ฝั่งเซิร์ฟเวอร์ โดยไม่อาศัยเพียงการซ่อนปุ่มบน UI (Security by Obscurity) แต่มีการตรวจสอบสิทธิ์จริงบน Session Store ของ MongoDB ทุกคำขอ ป้องกันการ Bypass ผ่าน URL ได้อย่างสมบูรณ์
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 2 (PAGE 5 & 6) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>2. เทคโนโลยีและโครงสร้างพื้นฐาน (Full Tech Stack)</h1>
+      <span class="section-tag">Infrastructure</span>
+    </div>
+
+    <p>
+      ResolveNow เลือกใช้เทคโนโลยีที่มุ่งเน้น <strong>ความเร็ว (Speed), ความยืดหยุ่น (Flexibility), และความเสถียรระดับสูง (High Resiliency)</strong> โดยทำงานบน Node.js แบบ Event-driven ผสานฐานข้อมูล NoSQL และระบบสำรองการทำงานแบบหลายชั้น
+    </p>
+
+    <table class="avoid-break">
+      <thead>
+        <tr>
+          <th style="width: 20%;">เลเยอร์ (Layer)</th>
+          <th style="width: 28%;">เทคโนโลยีที่ใช้</th>
+          <th>บทบาทและความสำคัญในเชิงวิศวกรรม</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Runtime Environment</strong></td>
+          <td><code>Node.js (v18+)</code></td>
+          <td>รองรับ Non-blocking I/O สำหรับการประมวลผลคำขอแบบอะซิงโครนัสและ WebSocket Connections จำนวนมาก</td>
+        </tr>
+        <tr>
+          <td><strong>Web Framework</strong></td>
+          <td><code>Express.js 4.18.2</code></td>
+          <td>จัดการ RESTful Routing, Middleware Pipeline, Security Headers, Static Assets และ Error Handling</td>
+        </tr>
+        <tr>
+          <td><strong>Database Engine</strong></td>
+          <td><code>MongoDB Atlas + Mongoose 9.3.3</code></td>
+          <td>Cloud NoSQL Document Database รองรับ Schema Validation, Compound Indexes, Cascade Deletions และ Lean Queries</td>
+        </tr>
+        <tr>
+          <td><strong>Session Management</strong></td>
+          <td><code>express-session + connect-mongo v6</code></td>
+          <td>จัดเก็บ State ของเซสชันลงใน MongoDB อย่างถาวร (TTL 7 วัน, <code>touchAfter: 24h</code>) และแชร์เซสชันกับ Socket.IO</td>
+        </tr>
+        <tr>
+          <td><strong>Real-time Engine</strong></td>
+          <td><code>Socket.IO 4.8.3</code></td>
+          <td>ระบบสื่อสาร 2 ทิศทางความเร็วสูง จัดการห้องแชท (Direct Message &amp; Ticket Comments) และ Push Updates ไปยัง Dashboard</td>
+        </tr>
+        <tr>
+          <td><strong>Resilient Email System</strong></td>
+          <td><code>Nodemailer + SendGrid + Resend</code></td>
+          <td>Triple-Provider Architecture ส่ง OTP และแจ้งเตือน: Gmail SMTP (SSL 465/TLS 587) &rarr; SendGrid API &rarr; Resend API</td>
+        </tr>
+        <tr>
+          <td><strong>Media Storage Engine</strong></td>
+          <td><code>Cloudinary v2 + Multer Storage</code></td>
+          <td>อัปโหลด ปรับขนาด และบีบอัดรูปภาพอัตโนมัติ (Max 1280px, WebP format) พร้อมระบบ Local Disk Fallback (<code>/public/uploads/</code>)</td>
+        </tr>
+        <tr>
+          <td><strong>LINE Integration</strong></td>
+          <td><code>LINE Messaging API + LIFF 2.x</code></td>
+          <td>แจ้งเตือนงานผ่าน Flex Messages, LINE Login OAuth2 Single Sign-On และแบบฟอร์มประเมินดาวผ่าน LIFF Browser</td>
+        </tr>
+        <tr>
+          <td><strong>AI &amp; Cognitive NLP</strong></td>
+          <td><code>Cognitive Heuristics + Claude + Gemini</code></td>
+          <td>เครื่องยนต์วิเคราะห์ระดับความเร่งด่วน 5 ชั้น (Thai NLP Heuristics 134 Cases) เสริมด้วย LLM API ภายนอก</td>
+        </tr>
+        <tr>
+          <td><strong>GIS &amp; Mapping</strong></td>
+          <td><code>Leaflet.js + OpenStreetMap</code></td>
+          <td>ระบบแปลงพิกัดย้อนกลับ (Nominatim Reverse Geocoding), ปักหมุด GPS และ Heatmap แสดงความหนาแน่นปัญหา</td>
+        </tr>
+        <tr>
+          <td><strong>Security Hardening</strong></td>
+          <td><code>Helmet + Mongo-Sanitize + Rate-Limit</code></td>
+          <td>ป้องกัน HTTP Header Vulnerabilities, NoSQL Injection, Brute-force Attacks และ XSS Filtering</td>
+        </tr>
+        <tr>
+          <td><strong>Automated QA</strong></td>
+          <td><code>Node Test Runner (`scripts/runTests.js`)</code></td>
+          <td>26 Automated Unit &amp; Integration Tests ครอบคลุม SLA, Geo, XSS, PDPA, Financials, Indexes และ NLP</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Page 6: Network & IPv4 Monkey-patch -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>2. โครงสร้างพื้นฐาน (ต่อ: การแก้ปัญหาเครือข่ายระดับ Cloud)</h1>
+      <span class="section-tag">Infrastructure</span>
+    </div>
+
+    <div class="card card-highlight avoid-break">
+      <h3 style="margin-top:0;">🌐 การแก้ปัญหาเชิงลึก: Network &amp; DNS IPv4 Monkey-Patching for Cloud Hosting</h3>
+      <p>
+        ในการ Deploy บน Cloud Platform เช่น Render พบว่า Node.js v18+ มีอัลกอริทึม <strong>Happy Eyeballs (Auto-select family)</strong> ที่พยายามเชื่อมต่อไปยัง IPv6 ก่อนเสมอ ซึ่งทำให้เกิดปัญหา Connection Timeout กับ MongoDB Atlas หรือ Third-party APIs ระบบ ResolveNow จึงใช้เทคนิค Monkey-patching ที่จุดเริ่มต้นของ <code>server.js</code> ดังนี้:
+      </p>
+      <pre><code>// server.js (Lines 6-29) - บังคับ IPv4 ก่อนโหลดไลบรารีอื่น
+const _dns = require('dns');
+const _net = require('net');
+_dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+
+// ปิด setDefaultAutoSelectFamily ป้องกัน Node ลอง IPv6 ก่อน
+if (typeof _net.setDefaultAutoSelectFamily === 'function') {
+  _net.setDefaultAutoSelectFamily(false);
+}
+
+// Monkey-patch dns.lookup บังคับ family: 4 เสมอ
+const _originalLookup = _dns.lookup;
+_dns.lookup = function (hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = { family: 4 };
+  } else if (typeof options === 'number') {
+    options = { family: 4 };
+  } else {
+    options = Object.assign({}, options || {}, { family: 4 });
+  }
+  return _originalLookup.call(_dns, hostname, options, callback);
+};</code></pre>
+    </div>
+
+    <div class="card card-success avoid-break" style="margin-top:10px;">
+      <h3 style="margin-top:0; color:#15803d;">🛡️ Triple-Provider Resilient Mailer Architecture (<code>config/mailer.js</code>)</h3>
+      <p style="font-size:8.2pt;">
+        เพื่อแก้ปัญหาอีเมลส่งไม่ถึงประชาชนอันเนื่องมาจาก Port Blocking หรือ API Quota เต็ม ระบบส่งอีเมลใช้สถาปัตยกรรมสำรอง 3 ชั้น:
+      </p>
+      <ol style="font-size:8pt;">
+        <li><strong>Layer 1 (Gmail SMTP):</strong> ส่งผ่าน Port 465 (SSL) หากล้มเหลวจะ Failover ไปยัง Port 587 (STARTTLS) ทันที</li>
+        <li><strong>Layer 2 (SendGrid HTTP API):</strong> หาก Gmail ไม่ตอบสนอง จะสลับไปส่งผ่าน SendGrid Web API ทันที</li>
+        <li><strong>Layer 3 (Resend HTTP API):</strong> ทำหน้าที่เป็น Tertiary Fallback ชั้นสุดท้ายเพื่อรับประกันว่า OTP จะจัดส่งสำเร็จ 100%</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 3 (PAGE 7 & 8) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>3. สถาปัตยกรรมความปลอดภัยระดับองค์กร (Security In-Depth)</h1>
+      <span class="section-tag">Security &amp; Hardening</span>
+    </div>
+
+    <p>
+      ความปลอดภัยของข้อมูลและระบบเป็นหัวใจสำคัญสูงสุดของ ResolveNow ระบบจึงนำมาตรฐาน <strong>Defense-in-Depth (การป้องกันแบบหลายชั้น)</strong> มาใช้ครอบคลุมตั้งแต่ระดับเครือข่าย เซสชัน การส่งผ่านข้อมูล จนถึงระดับฐานข้อมูล
+    </p>
+
+    <!-- 1. Gate Architecture -->
+    <div class="card avoid-break">
+      <h3>🔐 1. Dual-Layer Portal Security Gate Architecture</h3>
+      <p>
+        เพื่อป้องกันการเข้าถึงหน้าจัดการของผู้ดูแลระบบ (<code>/admin</code>), ช่างภาคสนาม (<code>/tech</code>) และผู้บริหาร (<code>/ceo</code>) จากผู้ไม่ประสงค์ดี ระบบใช้สถาปัตยกรรม <strong>Dual-Layer Security Gate</strong> ที่ทำงานร่วมกันทั้งฝั่งเซิร์ฟเวอร์และไคลเอนต์:
+      </p>
+      <div class="grid-2" style="margin-top:6px;">
+        <div>
+          <h4>กลไกการยืนยันตัวตน (Verification)</h4>
+          <ul style="font-size:8pt;">
+            <li><strong>Master Gate Passcode:</strong> <code>@Teng11421142</code></li>
+            <li><strong>Role-specific Fallback:</strong> รองรับ <code>admin1234</code> สำหรับ Admin และ <code>tech1234</code> สำหรับช่าง</li>
+            <li><strong>Server-Side Verification API:</strong> <code>POST /api/auth/gate-verify</code> ทำการ Hash ตรวจสอบบนเซิร์ฟเวอร์</li>
+            <li><strong>Session State Storage:</strong> เมื่อรหัสถูกต้อง ระบบจะบันทึกสถานะลงใน MongoDB Session: <code>req.session.gateUnlocked[portal] = true</code></li>
+            <li><strong>Session Lockout:</strong> สั่งล็อคเซสชันทันทีผ่าน <code>POST /api/auth/gate-lock</code> เมื่อออกจากหน้าจอ</li>
+          </ul>
+        </div>
+        <div>
+          <h4>ระบบป้องกันการโจมตี (Brute-Force Shield)</h4>
+          <ul style="font-size:8pt;">
+            <li><strong>Gate Rate Limiter:</strong> จำกัดการใส่รหัสผ่านผิดพลาดได้ไม่เกิน 5 ครั้ง ต่อ 15 นาที ต่อ IP Address</li>
+            <li><strong>Anti-Bypass Protection:</strong> API ต่างๆ ที่ต้องใช้สิทธิ์พอร์ทัลจะตรวจสอบสถานะ Gate ใน Session เสมอ แม้ Client จะข้ามหน้าจอ UI มาก็ตาม</li>
+            <li><strong>UI Feedback &amp; UX:</strong> การ์ดกรอก Passcode สไตล์ Glassmorphism 3D พร้อมแอนิเมชันสั่นเตือน (<code>gate-shake</code>) และ Loading Overlay ป้องกันการมองเห็นข้อมูลก่อนยืนยันสิทธิ์</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Injection & XSS -->
+    <div class="grid-2 avoid-break">
+      <div class="card">
+        <h3>🛡️ 2. XSS &amp; Script Injection Mitigation</h3>
+        <p>การป้องกันการโจมตีฝั่งไคลเอนต์ (Cross-Site Scripting) แบบรอบด้าน:</p>
+        <ul>
+          <li><strong>Backend Sanitization:</strong> ข้อความที่รับจากผู้ใช้จะผ่านฟังก์ชัน <code>xss()</code> เพื่อกรองแท็กที่เป็นอันตราย เช่น <code>&lt;script&gt;</code> หรือ <code>&lt;img onerror=...&gt;</code> ออกก่อนบันทึกลง DB</li>
+          <li><strong>Frontend HTML Escaping:</strong> หน้าเว็บทุกหน้าใช้ฟังก์ชัน <code>escapeHTML()</code> ก่อนเรนเดอร์ข้อความลง DOM เพื่อป้องกัน Stored XSS:
+            <pre><code>function escapeHTML(str) {
+  if (!str) return '';
+  return str.replace(/[&amp;&lt;&gt;"']/g, m =&gt; ({
+    '&amp;': '&amp;amp;', '&lt;': '&amp;lt;',
+    '&gt;': '&amp;gt;', '"': '&amp;quot;', "'": '&amp;#39;'
+  })[m]);
+}</code></pre>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>💉 3. NoSQL Injection Prevention</h3>
+        <p>การป้องกันการโจมตีผ่านโครงสร้างคิวรีของ MongoDB:</p>
+        <ul>
+          <li><strong>Middleware Sanitization:</strong> ติดตั้ง <code>express-mongo-sanitize</code> ใน <code>server.js</code> เพื่อลบคีย์ที่ขึ้นต้นด้วย <code>$</code> หรือมีจุด <code>.</code> ออกจาก Request ทั้งหมด</li>
+          <li><strong>Mongoose Strict Schema:</strong> กำหนด Schema Type ชัดเจน ป้องกันการส่ง Object แปลกปลอมเข้าไปแทรกแซงเงื่อนไขการค้นหา เช่น <code>{ "$ne": null }</code></li>
+          <li><strong>Parameterized Queries:</strong> ทุก Query ใช้การค้นหาผ่าน Mongoose Model API โดยไม่มีการรัน Raw String Commands</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 8: Security In-Depth Part 2 -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>3. ความปลอดภัยระดับองค์กร (ต่อ: การควบคุมสิทธิ์และ PDPA)</h1>
+      <span class="section-tag">Security &amp; Hardening</span>
+    </div>
+
+    <!-- 3. IDOR & Session -->
+    <div class="grid-2 avoid-break">
+      <div class="card">
+        <h3>🚫 4. IDOR Guard</h3>
+        <p>ป้องกันการเข้าถึงหรือแก้ไขข้อมูลข้ามสิทธิ์:</p>
+        <ul>
+          <li><strong>Ticket Discussion Privacy:</strong> การดึงคอมเมนต์ (<code>GET /api/tickets/:id/comments</code>) ตรวจสอบว่าผู้ใช้เป็น <em>เจ้าของตั๋ว</em>, <em>ช่างที่รับงาน</em> หรือ <em>Admin</em> เท่านั้น</li>
+          <li><strong>Technician Work Isolation:</strong> ช่างสามารถเปลี่ยนสถานะตั๋วได้เฉพาะใบที่ตนเองได้รับมอบหมายเท่านั้น (<code>ticket.assignedTo == req.session.userId</code>)</li>
+          <li><strong>Direct Message Channel Isolation:</strong> ใน Socket.IO มีการตรวจสอบ IDOR บนอีเวนต์ <code>dm_join</code> ป้องกันไม่ให้แอบ Join ห้องคนอื่น (<code>citizen_dm_&lt;userId&gt;</code>)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>🍪 5. Session &amp; Cookie Hardening</h3>
+        <p>การจัดการเซสชันอย่างปลอดภัยและคงทน:</p>
+        <ul>
+          <li><strong>HttpOnly:</strong> ตั้งค่า Cookie เป็น <code>httpOnly: true</code> ป้องกันไม่ให้ JavaScript ฝั่ง Client อ่าน Session Token ได้ (ตัดวงจร Session Hijacking ผ่าน XSS)</li>
+          <li><strong>SameSite Lax:</strong> ป้องกันการโจมตีแบบ CSRF ด้วยนโยบาย <code>sameSite: 'lax'</code></li>
+          <li><strong>Environment Secret:</strong> ใน Production บังคับให้มี <code>SESSION_SECRET</code> เสมอ หากไม่มีระบบจะ Fatal Exit ทันที</li>
+          <li><strong>MongoStore TTL:</strong> เซสชันหมดอายุอัตโนมัติใน 7 วัน พร้อมกลไก <code>touchAfter: 24h</code> เพื่อลดภาระการเขียน DB</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. Rate Limiting & PDPA -->
+    <div class="grid-2 avoid-break">
+      <div class="card">
+        <h3>⏱️ 6. Two-Tier Rate Limiting</h3>
+        <p>การบริหารจัดการ Traffic เพื่อป้องกัน DoS &amp; Brute-Force:</p>
+        <ul>
+          <li><strong>Auth Limiter:</strong> <code>/api/auth/*</code> จำกัด 30 ครั้ง ต่อ 15 นาที ป้องกันการสแปม OTP และการเดารหัสผ่าน</li>
+          <li><strong>Polling Limiter:</strong> แยก Limiter สำหรับคำขอ <code>GET</code> (1,500 ครั้ง ต่อ 5 นาที) รองรับการ Polling ของหลายหน้าจอพร้อมกัน</li>
+          <li><strong>API Limiter:</strong> คำขอ <code>POST/PUT/DELETE</code> จำกัด 300 ครั้ง ต่อ 5 นาที ป้องกันการสร้างตั๋วหรืออัปโหลดสแปม</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>⚖️ 7. PDPA &amp; Privacy Masking</h3>
+        <p>การปกป้องข้อมูลส่วนบุคคลตาม พ.ร.บ. PDPA:</p>
+        <ul>
+          <li><strong>Public Tracker Masking:</strong> ซ่อนชื่อ นามสกุล เบอร์โทร และ LINE ID ของผู้แจ้ง โดยแสดงเป็น <code>ประชาชนผู้แจ้ง</code> ใน Timeline</li>
+          <li><strong>Technician Privacy:</strong> แสดงเฉพาะชื่อต้นของช่าง เช่น <code>ช่าง สมเกียรติ</code> เพื่อความโปร่งใสแต่ไม่เปิดเผยข้อมูลส่วนบุคคลที่เกินจำเป็น</li>
+          <li><strong>CEO Dashboard Masking:</strong> การเรียกดูข้อมูลผ่าน API ผู้บริหารจะดึงเฉพาะสถิติสรุป โดยไม่มีการส่งชื่อประชาชนออกไป (Lean Projections)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. Admin Passwords & Graceful Shutdown -->
+    <div class="card card-warning avoid-break">
+      <h3 style="margin-top:0; color:#b45309;">⚠️ 8. Administrative Master Protection &amp; Graceful Shutdown</h3>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div>
+          <h4>Master Delete Password (<code>ADMIN_DELETE_PASSWORD</code>)</h4>
+          <p style="font-size:8pt;">
+            การลบตั๋วทั้งหมดในระบบผ่าน <code>DELETE /api/tickets</code> ต้องมีการส่งรหัสผ่านพิเศษจาก Environment Variable (<code>req.body.adminPassword === process.env.ADMIN_DELETE_PASSWORD</code>) เพื่อป้องกันความผิดพลาดหรือการทำลายข้อมูลโดยไม่ตั้งใจ
+          </p>
+        </div>
+        <div>
+          <h4>Graceful Shutdown Mechanism</h4>
+          <p style="font-size:8pt;">
+            เมื่อเซิร์ฟเวอร์ได้รับสัญญาณ <code>SIGINT</code> หรือ <code>SIGTERM</code> ระบบจะหยุดรับคำขอใหม่ ปิด Socket.IO และรอปิดการเชื่อมต่อ MongoDB Atlas อย่างสมบูรณ์ เพื่อป้องกันไม่ให้ข้อมูลหรือ Transactions ค้างในระหว่างการ Restart
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 4 (PAGE 9) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>4. แผนผังโครงสร้างโฟลเดอร์และซอร์สโค้ด (Codebase Map)</h1>
+      <span class="section-tag">Code Organization</span>
+    </div>
+
+    <p>
+      โครงสร้างโปรเจกต์ของ ResolveNow ถูกออกแบบตามหลัก <strong>Separation of Concerns (SoC)</strong> เพื่อให้ง่ายต่อการดูแลรักษา ค้นหา และขยายขีดความสามารถของระบบ โดยแบ่งความรับผิดชอบอย่างชัดเจน:
+    </p>
+
+    <pre class="code-tree"><code>ResolveNow/
+├── server.js                     ← Entry point หลัก (DNS IPv4 fix, Sessions, Socket.IO, Health Check, Shutdown)
+├── package.json                  ← Dependencies, scripts: start, dev, test
+├── AGENTS.md                     ← กฎระเบียบและแนวทางการพัฒนาสำหรับ AI Assistant
+├── SYSTEM_CONTEXT.md             ← เอกสารสถาปัตยกรรมระบบฉบับสมบูรณ์ (V18.0)
+├── README.md                     ← คู่มือภาพรวมและแนวทางการติดตั้งระบบ
+├── data_dictionary.html          ← หน้า HTML พจนานุกรมข้อมูล (Admin Auth Guard)
+├── validateFlex.js               ← เครื่องมือตรวจสอบ Schema ของ LINE Flex Messages
+├── INSTALL.txt                   ← คู่มือสรุปขั้นตอนการติดตั้งและทดสอบระบบ
+│
+├── config/                       ← โมดูลการตั้งค่าโครงสร้างพื้นฐาน
+│   ├── db.js                     ← Mongoose connection (บังคับ IPv4 family:4, Google DNS resolver)
+│   ├── seed.js                   ← ตัวสร้างข้อมูลเริ่มต้น (Admin, ช่าง 7 คน, ประชาชน, 7 หมวดหมู่มาตรฐาน)
+│   ├── slaJob.js                 ← Cron ทุก 5 นาทีตรวจ SLA Breach + Cron ล้างแชทตั๋วที่หมดอายุ 24 ชม.
+│   ├── mailer.js                 ← Triple-Provider Mailer (Gmail SSL/TLS, SendGrid API, Resend API)
+│   ├── lineNotify.js             ← ส่งข้อความ Flex Message แจ้งเตือนสถานะตั๋วเข้าสู่ระบบ LINE
+│   └── cloudinary.js             ← อัปโหลดรูปภาพผ่าน Cloudinary SDK พร้อม Local Disk Fallback Engine
+│
+├── models/                       ← โมเดลข้อมูล Mongoose (7 Collections)
+│   ├── Ticket.js                 ← ตั๋วร้องเรียน (SLA, Materials, Timeline, Work Order, Upvotes, Merged, District)
+│   ├── User.js                   ← ข้อมูลผู้ใช้ (citizen, technician, admin, LINE profile) + Role Indexes
+│   ├── Category.js               ← หมวดหมู่ปัญหา (name, label, icon, technicianIds, isDefault)
+│   ├── Comment.js                ← ข้อความสนทนาในตั๋วแต่ละใบ (Ticket Discussion, 24h Expiry)
+│   ├── DirectMessage.js          ← แชทตรง 1-on-1 Citizen ↔ Admin + Compound Indexes
+│   ├── HelpRequest.js            ← คำขอความช่วยเหลือข้ามฝ่ายช่าง + Dept Indexes
+│   └── Counter.js                ← ตัวนับ Auto-increment แบบอะตอมิกสำหรับรหัส TKT-xxxxx และ HELP-xxx
+│
+├── routes/                       ← RESTful API Controllers
+│   ├── tickets.js                ← CRUD ตั๋ว, สถานะ, Before/After, SLA Pause, Merge, Reopen, Materials, Work Order
+│   ├── auth.js                   ← Login, Register, OTP, LINE Auth, Server-side Gate APIs, Mail Diagnostics
+│   ├── technicians.js            ← รายชื่อช่าง, ความเชี่ยวชาญ, ภาระงานปัจจุบัน (Capacity Tracking)
+│   ├── categories.js             ← CRUD หมวดหมู่, ผูกช่างประจำหมวด, การถ่ายโอนตั๋วเมื่อลบหมวดหมู่
+│   ├── directMessages.js         ← แชทตรง Citizen ↔ Admin (Unified Admin Inbox & Unread Counts)
+│   ├── ceo.js                    ← API สถิติภาพรวม, งบประมาณซ่อมบำรุง, และการวิเคราะห์เชิงพื้นที่ (District Analytics)
+│   ├── track.js                  ← API ค้นหาตั๋วสาธารณะ (Masked PII ตามมาตรฐาน PDPA)
+│   ├── helpRequests.js           ← คำขอความช่วยเหลือข้ามฝ่ายช่าง (ส่ง, รับงาน, ปิดงาน, ยกเลิก)
+│   ├── ai.js                     ← Cognitive Thai NLP Heuristics Engine (5-Layer) + Claude/Gemini Fallback
+│   └── lineAuth.js               ← LINE OAuth2 callback flow & Webhook receiver
+│
+├── utils/                        ← ยูทิลิตี้ส่วนกลาง
+│   └── slaHelper.js              ← ศูนย์กลางคำนวณวันสิ้นสุด SLA และตรวจ Breach (รองรับการ Freeze เวลาเมื่อ Pause)
+│
+├── scripts/                      ← สคริปต์สำหรับการทดสอบและจำลองข้อมูล
+│   ├── runTests.js               ← Automated Test Runner (26 Unit & Integration Tests ครอบคลุม 7 กลุ่มงาน)
+│   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อใช้ทดสอบระบบและแดชบอร์ด
+│
+└── public/                       ← ส่วนหน้าบ้าน (Frontend Assets & Single Page Portals)
+    ├── index.html / admin.html   ← Citizen Portal Single-Page Application & Dedicated Admin Portal
+    ├── tech.html / track.html    ← Dedicated Technician Operations Portal & Public Ticket Tracker
+    ├── executive-dashboard.html  ← CEO Executive Dashboard (สถิติ, งบประมาณ, District Analytics)
+    ├── project-poster.html       ← โปสเตอร์ดิจิทัลนำเสนอภาพรวมระบบ
+    ├── liff-rating.html          ← หน้าประเมินความพึงพอใจผ่าน LINE In-App Browser (LIFF 2.x)
+    ├── css/ (style / animations) ← Design Tokens, Glassmorphism, Responsive CSS, 3D Transitions
+    └── js/ (app, ui, auth, etc.) ← Vanilla JS Modules (citizen, technician, admin, portal controllers, directChat)</code></pre>
+  </div>
+
+  <!-- ================= CHAPTER 5 (PAGE 10, 11, 12) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>5. สกีมาฐานข้อมูลและ Data Dictionary (7 Collections)</h1>
+      <span class="section-tag">Database Schema</span>
+    </div>
+
+    <p>
+      ระบบจัดเก็บข้อมูลใน <strong>MongoDB Atlas</strong> ผ่าน Mongoose Object Modeling โดยออกแบบให้มีความสัมพันธ์แบบอ้างอิง (Normalized References) ร่วมกับข้อมูลที่จำเป็นต่อการอ่านเร็ว (Denormalized Snapshot Fields) พร้อมสร้าง Compound Indexes เพื่อความเร็วสูงสุด:
+    </p>
+
+    <!-- Collection 1: Users -->
+    <div class="card avoid-break">
+      <h3>👤 1. Collection: <code>users</code> (โมเดล: <code>models/User.js</code>)</h3>
+      <p>จัดเก็บข้อมูลผู้ใช้งานระบบทุกบทบาท (ประชาชน, ช่างเทคนิค 7 หมวด, และผู้ดูแลระบบ)</p>
+      <table class="compact">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>_id</code></td><td>ObjectId</td><td>Primary Key</td><td>รหัสประจำตัวผู้ใช้ (MongoDB Default ObjectId)</td></tr>
+          <tr><td><code>firstName</code>, <code>lastName</code></td><td>String</td><td>Required</td><td>ชื่อจริงและนามสกุลของผู้ใช้งาน</td></tr>
+          <tr><td><code>email</code></td><td>String</td><td>Required, Unique</td><td>อีเมลที่ใช้เข้าสู่ระบบ รับ OTP และแจ้งเตือน (Lowercase)</td></tr>
+          <tr><td><code>password</code></td><td>String</td><td>Required</td><td>รหัสผ่านที่เข้ารหัสด้วยอัลกอริทึม bcrypt (Salt 10 rounds)</td></tr>
+          <tr><td><code>role</code></td><td>String</td><td>Enum</td><td>บทบาท: <code>citizen</code>, <code>technician</code>, <code>admin</code> (Default: citizen)</td></tr>
+          <tr><td><code>specialty</code></td><td>String</td><td>Nullable</td><td>หมวดหมู่ความเชี่ยวชาญของช่าง (ตรงกับ <code>Category.name</code>)</td></tr>
+          <tr><td><code>lineUserId</code></td><td>String</td><td>Sparse Index</td><td>Unique LINE User ID สำหรับ Push Flex Message และ LINE SSO</td></tr>
+          <tr><td><code>lineDisplayName</code>, <code>avatar</code></td><td>String</td><td>Nullable</td><td>ชื่อโปรไฟล์และ URL รูปภาพประจำตัวจาก LINE</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:7.5pt; color:#64748b;">
+        <strong>Indexes:</strong> <code>{ email: 1 } (unique)</code>, <code>{ role: 1 }</code>, <code>{ lineUserId: 1 } (sparse)</code>
+      </div>
+    </div>
+
+    <!-- Collection 2: Tickets Part 1 -->
+    <div class="card avoid-break">
+      <h3>🎫 2. Collection: <code>tickets</code> (โมเดล: <code>models/Ticket.js</code>) — ฟิลด์หลัก</h3>
+      <p>จัดเก็บข้อมูลเรื่องร้องเรียน วงจรชีวิตงานซ่อมบำรุง SLA งบประมาณ วัสดุ ลายเซ็น และประวัติกิจกรรม</p>
+      <table class="compact">
+        <thead><tr><th>Field</th><th>Type</th><th>Description &amp; Logic</th></tr></thead>
+        <tbody>
+          <tr><td><code>ticketId</code></td><td>String (Unique)</td><td>รหัสตั๋วอ่านง่าย รันผ่าน Counter เช่น <code>TKT-00001</code></td></tr>
+          <tr><td><code>citizenId</code>, <code>citizenName</code></td><td>ObjectId, String</td><td>รหัสผู้แจ้ง (Ref: User) และชื่อผู้แจ้ง (Snapshot)</td></tr>
+          <tr><td><code>category</code>, <code>description</code></td><td>String, String</td><td>หมวดหมู่ปัญหา และรายละเอียดที่ผ่านการ Sanitization (XSS clean)</td></tr>
+          <tr><td><code>location</code>, <code>lat</code>, <code>lng</code></td><td>String, Number, Number</td><td>ข้อความที่อยู่จากการแปลงพิกัด (Reverse Geocoding) และพิกัด GPS</td></tr>
+          <tr><td><code>district</code>, <code>subdistrict</code></td><td>String (Indexed), String</td><td>เขต/อำเภอ และแขวง/ตำบล ที่ถูกสกัดอัตโนมัติเพื่อใช้ใน District Analytics</td></tr>
+          <tr><td><code>urgency</code>, <code>priorityScore</code></td><td>Enum, Number</td><td>ระดับความเร่งด่วน (ผ่าน Cognitive Thai NLP) และคะแนนความสำคัญ 0-100</td></tr>
+          <tr><td><code>status</code></td><td>Enum</td><td><code>pending</code> &rarr; <code>assigned</code> &rarr; <code>in_progress</code> &rarr; <code>completed</code> (หรือ <code>rejected</code>, <code>reopened</code>, <code>merged</code>)</td></tr>
+          <tr><td><code>assignedTo</code>, <code>assignedName</code></td><td>ObjectId, String</td><td>ช่างผู้รับผิดชอบงาน และชื่อช่างที่บันทึกไว้ในตั๋ว</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Page 11: Tickets Part 2 & Indexes -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>5. สกีมาฐานข้อมูล (ต่อ: Tickets Collection และดัชนี)</h1>
+      <span class="section-tag">Database Schema</span>
+    </div>
+
+    <div class="card avoid-break">
+      <h3>🎫 2. Collection: <code>tickets</code> (ต่อ: รูปภาพ, SLA, วัสดุ, ลายเซ็น และประวัติ)</h3>
+      <table class="compact">
+        <thead><tr><th>Field</th><th>Type</th><th>Description &amp; Logic</th></tr></thead>
+        <tbody>
+          <tr><td><code>citizenImages</code></td><td>Array[String]</td><td>รายการ URL รูปภาพที่ประชาชนแนบประกอบเรื่องร้องเรียน (สูงสุด 5 รูป)</td></tr>
+          <tr><td><code>beforeImage</code>, <code>afterImages</code></td><td>String, Array[String]</td><td>ภาพถ่ายก่อนเริ่มซ่อมบำรุง และภาพถ่ายหลังการปฏิบัติงานเสร็จสิ้น (สูงสุด 5 รูป)</td></tr>
+          <tr><td><code>slaAssignDeadline</code>, <code>slaCompleteDeadline</code></td><td>Date, Date</td><td>วันเวลาเส้นตายการรับงานและปิดงานที่คำนวณจากกฎ SLA Helper</td></tr>
+          <tr><td><code>slaBreached</code></td><td>Boolean</td><td><code>true</code> หากการรับงานหรือปิดงานเกินกำหนดเวลา SLA (ตรวจสอบทุก 5 นาที)</td></tr>
+          <tr><td><code>slaPauseStatus</code>, <code>slaTotalPausedMs</code></td><td>Enum, Number</td><td>สถานะการขอพักเวลา และผลรวมระยะเวลาที่งานถูกแช่แข็งไว้ (Freeze) หน่วย ms</td></tr>
+          <tr><td><code>slaPauseHistory</code></td><td>Array[Object]</td><td>ประวัติการขอพักเวลา: <code>{ reason, requestedBy, requestedAt, approvedBy, resumedAt, durationMs }</code></td></tr>
+          <tr><td><code>mergedInto</code>, <code>isMerged</code></td><td>String, Boolean</td><td>รหัสตั๋วหลักกรณีถูกรวมตั๋วที่ซ้ำซ้อนกันในพื้นที่ และ Flag ระบุสถานะการถูกรวม</td></tr>
+          <tr><td><code>workOrder</code></td><td>Object</td><td>ข้อมูลใบสั่งงานและลายเซ็นดิจิทัล: <code>{ signedByName, signedAt, signatureData, notes }</code></td></tr>
+          <tr><td><code>materials</code>, <code>totalRepairCost</code></td><td>Array[Object], Number</td><td>รายการวัสดุอุปกรณ์ที่เบิกใช้: <code>{ name, quantity, unit, unitPrice, totalPrice }</code> และงบรวม</td></tr>
+          <tr><td><code>timeline</code></td><td>Array[Object]</td><td>Audit Trail บันทึกกิจกรรมสำคัญ: <code>{ action, actorRole, actorId, actorName, details, timestamp }</code></td></tr>
+          <tr><td><code>chatExpiresAt</code></td><td>Date (Sparse Index)</td><td>กำหนดเวลาปิดห้องสนทนาของตั๋ว (คำนวณ 24 ชั่วโมง หลังสถานะเป็น <code>completed</code>)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card card-highlight" style="margin-top:8px; margin-bottom:0;">
+        <h4 style="margin-top:0;">⚡ Mongoose Compound Indexes ของ Tickets Collection</h4>
+        <ul style="font-size:7.6pt; margin-bottom:0;">
+          <li><code>{ ticketId: 1 } (unique)</code> — ป้องกันรหัสตั๋วซ้ำซ้อน และใช้เป็นคีย์ค้นหาหลัก</li>
+          <li><code>{ citizenId: 1, createdAt: -1 }</code> — ดึงรายการตั๋วของประชาชน เรียงจากใหม่ไปเก่า</li>
+          <li><code>{ assignedTo: 1, status: 1 }</code> — คิวงานของช่าง กรองตามสถานะการทำงาน</li>
+          <li><code>{ category: 1, status: 1 }</code> — กรองตั๋วตามหมวดหมู่และสถานะในศูนย์สั่งการ</li>
+          <li><code>{ status: 1, createdAt: -1 }</code> — รายการคิวงาน Admin และ CEO Dashboard</li>
+          <li><code>{ slaBreached: 1, status: 1 }</code> — คิวตรวจสอบตั๋วที่ผิดสัญญา SLA แบบเรียลไทม์</li>
+          <li><code>{ lat: 1, lng: 1, category: 1 }</code> — ค้นหาตั๋วซ้ำซ้อนบริเวณใกล้เคียงด้วยพิกัด</li>
+          <li><code>{ district: 1 }</code> — การรวมกลุ่มและสรุปสถิติเชิงพื้นที่ (District Analytics)</li>
+          <li><code>{ chatExpiresAt: 1 } (sparse)</code> — ให้ Background Cron ล้างแชทที่หมดอายุ</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 12: Collections 3 to 7 & ER Diagram -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>5. สกีมาฐานข้อมูล (Collections 3 — 7 และ ER Diagram)</h1>
+      <span class="section-tag">Database Schema</span>
+    </div>
+
+    <div class="grid-2 avoid-break">
+      <!-- Collection 3: Categories -->
+      <div class="card">
+        <h3>📂 3. Collection: <code>categories</code></h3>
+        <p>จัดเก็บหมวดหมู่ปัญหาและช่างที่สังกัดในแต่ละหมวด</p>
+        <table class="compact">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>String (Unique)</td><td>คีย์ภาษาอังกฤษ เช่น <code>Road</code>, <code>Water</code></td></tr>
+            <tr><td><code>label</code></td><td>String</td><td>ชื่อภาษาไทย เช่น <code>ถนน/ทางเท้า</code></td></tr>
+            <tr><td><code>icon</code></td><td>String</td><td>ไอคอนประจำหมวดหมู่ (Emoji)</td></tr>
+            <tr><td><code>technicianIds</code></td><td>Array[ObjectId]</td><td>รายชื่อ <code>User._id</code> ของช่างในสังกัด</td></tr>
+            <tr><td><code>isDefault</code></td><td>Boolean</td><td><code>true</code> สำหรับ 7 หมวดเริ่มต้น (ห้ามลบ)</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:7.2pt; color:#64748b;"><strong>Index:</strong> <code>{ name: 1 } (unique)</code></div>
+      </div>
+
+      <!-- Collection 4: Comments -->
+      <div class="card">
+        <h3>💬 4. Collection: <code>comments</code></h3>
+        <p>ข้อความสนทนาในตั๋วแต่ละใบ (หมดอายุ 24 ชม. หลังงานเสร็จ)</p>
+        <table class="compact">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>ticketId</code></td><td>String (Indexed)</td><td>รหัสตั๋วที่สนทนา เช่น <code>TKT-00001</code></td></tr>
+            <tr><td><code>userId</code>, <code>userName</code></td><td>ObjectId, String</td><td>รหัสและชื่อของผู้ส่งข้อความ</td></tr>
+            <tr><td><code>userRole</code></td><td>Enum</td><td><code>citizen</code>, <code>technician</code>, <code>admin</code></td></tr>
+            <tr><td><code>message</code></td><td>String</td><td>เนื้อหาข้อความ (สูงสุด 500 ตัว, XSS clean)</td></tr>
+            <tr><td><code>createdAt</code></td><td>Date</td><td>วันเวลาที่ส่งข้อความ</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:7.2pt; color:#64748b;"><strong>Index:</strong> <code>{ ticketId: 1 }</code></div>
+      </div>
+    </div>
+
+    <div class="grid-2 avoid-break">
+      <!-- Collection 5: DirectMessages -->
+      <div class="card">
+        <h3>✉️ 5. Collection: <code>directmessages</code></h3>
+        <p>ข้อความแชทตรง Citizen ↔ Admin (1 Thread/Citizen)</p>
+        <table class="compact">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>citizenId</code></td><td>ObjectId (Indexed)</td><td>รหัสประชาชนเจ้าของ Thread สนทนา</td></tr>
+            <tr><td><code>senderId</code>, <code>senderName</code></td><td>ObjectId, String</td><td>รหัสและชื่อของผู้ส่งข้อความ</td></tr>
+            <tr><td><code>senderRole</code></td><td>Enum</td><td><code>citizen</code> หรือ <code>admin</code></td></tr>
+            <tr><td><code>message</code></td><td>String</td><td>ข้อความสนทนา (สูงสุด 500 ตัว, XSS clean)</td></tr>
+            <tr><td><code>isRead</code></td><td>Boolean</td><td>สถานะเปิดอ่าน (Default: false)</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:7.2pt; color:#64748b;">
+          <strong>Indexes:</strong> <code>{ citizenId: 1, createdAt: 1 }</code>, <code>{ citizenId: 1, senderRole: 1, isRead: 1 }</code>
+        </div>
+      </div>
+
+      <!-- Collection 6: HelpRequests -->
+      <div class="card">
+        <h3>🤝 6. Collection: <code>helprequests</code></h3>
+        <p>คำขอความช่วยเหลือข้ามฝ่ายงานระหว่างช่างเทคนิค</p>
+        <table class="compact">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>helpId</code></td><td>String (Unique)</td><td>รหัสคำขออ่านง่าย เช่น <code>HELP-001</code></td></tr>
+            <tr><td><code>ticketId</code></td><td>String (Indexed)</td><td>รหัสตั๋วต้นทางที่ต้องการความช่วยเหลือ</td></tr>
+            <tr><td><code>requesterId</code>, <code>requesterDept</code></td><td>ObjectId, String</td><td>รหัสและแผนกของช่างผู้ส่งคำขอ</td></tr>
+            <tr><td><code>targetDept</code></td><td>String</td><td>แผนกปลายทางที่ขอความช่วยเหลือ</td></tr>
+            <tr><td><code>acceptedById</code></td><td>ObjectId</td><td>รหัสช่างที่กดรับงานช่วยเหลือ</td></tr>
+            <tr><td><code>status</code></td><td>Enum</td><td><code>open</code>, <code>accepted</code>, <code>resolved</code>, <code>cancelled</code></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:7.2pt; color:#64748b;">
+          <strong>Indexes:</strong> <code>{ helpId: 1 }</code>, <code>{ status: 1 }</code>, <code>{ ticketId: 1 }</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collection 7: Counters & ER Diagram -->
+    <div class="card avoid-break">
+      <h3>🔢 7. Collection: <code>counters</code> (Atomic Auto-increment)</h3>
+      <p style="font-size:8pt; margin-bottom:4px;">
+        จัดเก็บตัวนับลำดับตัวเลขแบบอะตอมิกด้วย <code>Counter.findOneAndUpdate({ name }, { $inc: { seq: 1 } })</code> รับประกันรหัส <code>TKT-xxxxx</code> และ <code>HELP-xxx</code> ไม่ซ้ำซ้อน
+      </p>
+    </div>
+
+    <!-- ER Diagram Box -->
+    <div class="diagram-box avoid-break">
+      <h4 style="margin-bottom:6px; color:#0f172a;">แผนภาพความสัมพันธ์ของฐานข้อมูล (Entity-Relationship Diagram)</h4>
+      <div class="flow-row">
+        <div class="flow-node"><strong>USER</strong><br>PK: _id<br>email, role, lineUserId</div>
+        <span class="flow-arrow">&rarr; creates &rarr;</span>
+        <div class="flow-node dark"><strong>TICKET</strong><br>PK: _id, ticketId<br>status, urgency, SLA, cost</div>
+        <span class="flow-arrow">&larr; categorizes &larr;</span>
+        <div class="flow-node"><strong>CATEGORY</strong><br>PK: _id, name<br>technicianIds, label</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node green"><strong>DIRECT_MESSAGE</strong><br>PK: _id<br>citizenId, senderId, isRead</div>
+        <span class="flow-arrow">&larr; 1:N &larr;</span>
+        <div class="flow-node amber"><strong>COMMENT</strong><br>PK: _id<br>ticketId, userId, message</div>
+        <span class="flow-arrow">&rarr; generates &rarr;</span>
+        <div class="flow-node green"><strong>HELP_REQUEST</strong><br>PK: _id, helpId<br>ticketId, requester, target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 6 (PAGE 13 & 14) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>6. เครื่องยนต์ประมวลผลทางธุรกิจและ AI (Core Engines)</h1>
+      <span class="section-tag">Core Logic</span>
+    </div>
+
+    <p>
+      ResolveNow มีเอนจินการคำนวณและประมวลผลอัตโนมัติที่เป็นหัวใจสำคัญ 5 ด้าน ซึ่งช่วยลดภาระงานของเจ้าหน้าที่และยกระดับการให้บริการประชาชนอย่างแม่นยำ
+    </p>
+
+    <!-- 1. SLA Engine -->
+    <div class="card avoid-break">
+      <h3>⏱️ 1. SLA Engine &amp; Background Breach Monitor (<code>utils/slaHelper.js</code> &amp; <code>config/slaJob.js</code>)</h3>
+      <p>
+        ระบบกำหนดเวลามาตรฐานการให้บริการ (Service Level Agreement) ที่คำนวณ Deadlines อัตโนมัติทันทีที่มีการสร้างตั๋ว:
+      </p>
+      <div class="grid-3" style="margin-top:6px;">
+        <div class="card card-danger" style="margin-bottom:0;">
+          <h4 style="color:#dc2626; margin-top:0;">🔴 ด่วนมาก (Urgent)</h4>
+          <p style="font-size:7.8pt; margin-bottom:2px;"><strong>มอบหมายงาน:</strong> ภายใน 2 ชั่วโมง</p>
+          <p style="font-size:7.8pt; margin-bottom:0;"><strong>ปิดงานสำเร็จ:</strong> ภายใน 8 ชั่วโมง</p>
+        </div>
+        <div class="card card-warning" style="margin-bottom:0;">
+          <h4 style="color:#d97706; margin-top:0;">🟡 ปานกลาง (Medium)</h4>
+          <p style="font-size:7.8pt; margin-bottom:2px;"><strong>มอบหมายงาน:</strong> ภายใน 8 ชั่วโมง</p>
+          <p style="font-size:7.8pt; margin-bottom:0;"><strong>ปิดงานสำเร็จ:</strong> ภายใน 48 ชั่วโมง (2 วัน)</p>
+        </div>
+        <div class="card card-highlight" style="margin-bottom:0;">
+          <h4 style="color:#0284c7; margin-top:0;">🔵 ปกติ (Normal)</h4>
+          <p style="font-size:7.8pt; margin-bottom:2px;"><strong>มอบหมายงาน:</strong> ภายใน 24 ชั่วโมง (1 วัน)</p>
+          <p style="font-size:7.8pt; margin-bottom:0;"><strong>ปิดงานสำเร็จ:</strong> ภายใน 72 ชั่วโมง (3 วัน)</p>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <h4>กลไกการพักเวลา SLA (SLA Pause / Hold) และชดเชยเวลาอัตโนมัติ:</h4>
+        <ul style="font-size:8pt; margin-bottom:0;">
+          <li>เมื่อช่างขอพักเวลา (เช่น รออะไหล่) และ Admin อนุมัติ สถานะจะเป็น <code>slaPauseStatus = 'paused'</code></li>
+          <li>ในระหว่างที่สถานะเป็น <code>paused</code> ฟังก์ชัน <code>checkIsSlaBreached()</code> จะคืนค่า <code>false</code> ทันที (เวลาถูก Freeze ไว้)</li>
+          <li>เมื่อช่างหรือ Admin กด <strong>Resume</strong> เวลาที่ถูกพักจริง (<code>durationMs</code>) จะถูกนำไปบวกเพิ่มให้ทั้ง <code>slaAssignDeadline</code> และ <code>slaCompleteDeadline</code> เพื่อชดเชยเวลาให้อย่างเป็นธรรม</li>
+          <li><strong>SLA Cron Job:</strong> ทำงานทุก 5 นาทีใน Background ทำการตรวจสอบตั๋วที่ยังไม่เสร็จสิ้น หากหมดเวลาจะอัปเดต <code>slaBreached = true</code> ทันที</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. Cognitive Thai NLP Engine -->
+    <div class="card avoid-break">
+      <h3>🧠 2. Cognitive Thai NLP Heuristics Engine (5-Layer Classification — <code>routes/ai.js</code>)</h3>
+      <p>
+        เครื่องยนต์วิเคราะห์ภาษาไทยอัจฉริยะที่สามารถจำแนกระดับความเร่งด่วนได้อย่างแม่นยำ 100% โดยไม่ต้องพึ่งพา External API:
+      </p>
+      <div class="grid-2">
+        <div>
+          <h4>สถาปัตยกรรม 5 เลเยอร์</h4>
+          <ol style="font-size:7.8pt;">
+            <li><strong>Layer 0 (Context Overrides &amp; Negations):</strong> ตรวจจับข้อยกเว้นและคำปฏิเสธ เช่น <em>"หลังคาปลิวแต่ไม่ได้ทับใคร"</em> &rarr; <code>medium</code>, <em>"กลัวมีงู"</em> &rarr; <code>normal</code></li>
+            <li><strong>Layer 1 (Life-Threatening &amp; Severe Danger):</strong> ตรวจจับภัยอันตรายถึงชีวิต เพลิงไหม้ ไฟดูด สัตว์มีพิษร้ายแรงในห้องนอน &rarr; คืนค่า <code>urgent</code> ทันที</li>
+            <li><strong>Layer 2 (Diminutive &amp; Spatial Awareness):</strong> ตรวจสอบสัตว์นอกรั้วบ้าน รอยร้าวเล็กน้อย น้ำขังตื้นๆ หรือการซ่อมบำรุงตามรอบปกติ &rarr; <code>normal</code></li>
+            <li><strong>Layer 3 (Disruptive / Public Inconvenience):</strong> ความเดือดร้อนในชุมชน เช่น ท่อแตกน้ำไม่ไหล ไฟดับทั้งตำบล ขยะส่งกลิ่นเหม็น &rarr; <code>medium</code></li>
+            <li><strong>Layer 4 &amp; 5 (Keyword &amp; Category Baseline):</strong> แมตช์คำสำคัญทางความหมาย และ Fallback ตามหมวดหมู่</li>
+          </ol>
+        </div>
+        <div>
+          <h4>จุดเด่นเชิงวิศวกรรม</h4>
+          <ul style="font-size:7.8pt;">
+            <li><strong>Zero External Latency:</strong> วิเคราะห์เสร็จสิ้นภายใน &lt; 2 มิลลิวินาที (ไม่ต้องรอ Round-trip ไปยัง Claude/Gemini)</li>
+            <li><strong>Resilience Fallback:</strong> ทำงานเป็นฐานรองรับทันทีหากไม่มี API Key หรือเมื่อเครือข่ายอินเทอร์เน็ตภายนอกขัดข้อง</li>
+            <li><strong>100% Verified Accuracy:</strong> ผ่านการทดสอบครอบคลุม 134 Few-shot test cases ในชุดทดสอบอัตโนมัติ (Group 7 ใน <code>scripts/runTests.js</code>)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 14: Geo, Cost & Work Order -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>6. เครื่องยนต์ประมวลผลทางธุรกิจ (ต่อ: Geo, ต้นทุน และใบงาน)</h1>
+      <span class="section-tag">Core Logic</span>
+    </div>
+
+    <!-- 3. Haversine & District -->
+    <div class="grid-2 avoid-break">
+      <div class="card">
+        <h3>📍 3. Geospatial &amp; Duplicate Detection</h3>
+        <p>การวิเคราะห์เชิงพื้นที่และตรวจจับเรื่องร้องเรียนซ้ำซ้อน:</p>
+        <ul style="font-size:8pt;">
+          <li><strong>Haversine Formula:</strong> คำนวณระยะห่างระหว่างจุดพิกัด 2 จุดบนผิวโลก หากพิกัดอยู่ในรัศมี &lt; 100 เมตร และเป็นหมวดหมู่เดียวกัน ระบบจะแจ้งเตือนว่าอาจเป็นตั๋วซ้ำซ้อน</li>
+          <li><strong>Admin Duplicate Merge:</strong> Admin สามารถสั่งรวมตั๋ว (Merge) ได้ โดยตั๋วรองจะถูกเปลี่ยนสถานะเป็น <code>merged</code> คะแนนโหวตและผู้ติดตามจะถูกถ่ายโอนไปยังตั๋วหลักอัตโนมัติ</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>📊 4. Cost Tracking &amp; District Analytics</h3>
+        <p>การเงินและสถิติเชิงพื้นที่สำหรับผู้บริหาร:</p>
+        <ul style="font-size:8pt;">
+          <li><strong>Material Auto-Computation:</strong> ช่างบันทึกรายการวัสดุ ระบบจะคูณ <code>quantity &times; unitPrice</code> และสรุป <code>totalRepairCost</code> รวมให้อัตโนมัติ (จำกัดจำนวนไม่เกิน 100 ชิ้นต่อรายการ)</li>
+          <li><strong>District Extraction:</strong> สกัดชื่อเขตและแขวงจากข้อความที่อยู่ด้วย Regular Expression ลงฟิลด์ <code>district</code> อัตโนมัติเพื่อนำไปสรุปงบประมาณและสถิติใน CEO Dashboard</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. Digital Work Order -->
+    <div class="card card-highlight avoid-break" style="margin-top:8px;">
+      <h3 style="margin-top:0;">✍️ 5. Digital Work Order &amp; Signature Engine (ใบสั่งงานราชการพร้อมลายเซ็นดิจิทัล)</h3>
+      <p style="font-size:8pt; margin-bottom:6px;">
+        เพื่อความโปร่งใสและตรวจสอบย้อนหลังได้ เมื่อช่างซ่อมงานเสร็จสิ้น ประชาชนหรือผู้ตรวจรับงานสามารถลงลายเซ็นดิจิทัลผ่าน HTML5 Canvas บนหน้าจอโทรศัพท์หรือแท็บเล็ต ลายเซ็นจะถูกแปลงเป็น Base64 PNG Data URL และบันทึกลงใน <code>ticket.workOrder</code> พร้อมชื่อผู้เซ็นและวันเวลา สามารถพิมพ์หรือดาวน์โหลดใบงานราชการฉบับสมบูรณ์ได้ทันทีผ่าน <code>GET /api/tickets/:id/work-order</code>
+      </p>
+      <div class="diagram-box" style="margin-bottom:0; padding:6px;">
+        <div class="flow-row">
+          <div class="flow-node">👷 ช่างซ่อมเสร็จ<br>(upload/after)</div>
+          <span class="flow-arrow">&rarr;</span>
+          <div class="flow-node">📱 ลงลายเซ็นบน Canvas<br>(HTML5 Touch)</div>
+          <span class="flow-arrow">&rarr;</span>
+          <div class="flow-node dark">💾 Base64 Data URL<br>(ticket.workOrder)</div>
+          <span class="flow-arrow">&rarr;</span>
+          <div class="flow-node green">📄 ใบงานราชการดิจิทัล<br>(Print / Export)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 7 (PAGE 15 & 16) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>7. แค็ตตาล็อก REST API และ WebSocket Protocol</h1>
+      <span class="section-tag">API &amp; Real-time</span>
+    </div>
+
+    <p>
+      ResolveNow ให้บริการ RESTful API ที่มีมาตรฐานความปลอดภัยสูง ทุก Endpoint มีการตรวจสอบสิทธิ์ (Authentication &amp; Role-based Authorization) พร้อมทั้ง Real-time Event Synchronization ผ่าน Socket.IO
+    </p>
+
+    <!-- Auth APIs -->
+    <h3 style="color:#0f172a; margin-bottom:4px;">1. Authentication &amp; Gate Management (<code>/api/auth</code>)</h3>
+    <table class="compact avoid-break">
+      <thead>
+        <tr><th style="width: 10%;">Method</th><th style="width: 25%;">Endpoint</th><th style="width: 15%;">Access</th><th>Description &amp; Payload</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/send-otp</code></td><td>Public</td><td>ส่งรหัส OTP 6 หลักทางอีเมล (Rate limited 30 req/15m): <code>{ email }</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/register</code></td><td>Public</td><td>ตรวจสอบ OTP และเปิดบัญชีประชาชน: <code>{ firstName, lastName, email, password, otp }</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/login</code></td><td>Public</td><td>เข้าสู่ระบบด้วย bcrypt verification สร้าง Session: <code>{ email, password }</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/gate-verify</code></td><td>Public</td><td>ตรวจสอบ Passcode บันทึกสิทธิ์ลง Session (จำกัด 5 ครั้ง/15m): <code>{ passcode, portal }</code></td></tr>
+        <tr><td><span class="badge badge-blue">GET</span></td><td><code>/gate-status</code></td><td>Public</td><td>ตรวจสอบสถานะการปลดล็อค Gate ของ Portal ในเซสชันปัจจุบัน: <code>?portal=admin</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/gate-lock</code></td><td>Public</td><td>สั่งล็อค Gate ใน Session ทันทีเมื่อผู้ใช้กดออกจากหน้าจอ: <code>{ portal }</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/test-email</code></td><td>Admin</td><td>เครื่องมือทดสอบการส่งอีเมล 3 ชั้น วัด Latency และระบุ Provider ที่จัดส่งสำเร็จ</td></tr>
+        <tr><td><span class="badge badge-blue">GET</span></td><td><code>/mail-status</code></td><td>Admin</td><td>ตรวจสอบสถานะ Credentials ของ Gmail SMTP, SendGrid และ Resend</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Tickets APIs Part 1 -->
+    <h3 style="color:#0f172a; margin-top:8px; margin-bottom:4px;">2. Ticket Lifecycle (<code>/api/tickets</code>) — หมวดจัดการงาน</h3>
+    <table class="compact avoid-break">
+      <thead>
+        <tr><th style="width: 10%;">Method</th><th style="width: 25%;">Endpoint</th><th style="width: 15%;">Access</th><th>Description &amp; Payload</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge badge-blue">GET</span></td><td><code>/</code></td><td>Auth</td><td>ดึงรายการตั๋ว: citizen (ของตนเอง), tech (ตามสังกัดหรือที่รับงาน), admin (ทั้งหมด)</td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/</code></td><td>Citizen</td><td>สร้างเรื่องร้องเรียนใหม่ แนบรูปได้สูงสุด 5 รูป คำนวณ SLA และส่ง Flex เข้า LINE</td></tr>
+        <tr><td><span class="badge badge-amber">PUT</span></td><td><code>/:id/status</code></td><td>Tech/Admin</td><td>เปลี่ยนสถานะตั๋วตาม State Machine (ตรวจ SLA Breach อัตโนมัติ): <code>{ status }</code></td></tr>
+        <tr><td><span class="badge badge-amber">PUT</span></td><td><code>/:id/assign</code></td><td>Admin</td><td>มอบหมายงานให้ช่าง (<code>assignedTo</code>) พร้อมเปลี่ยนสถานะเป็น <code>assigned</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/upload/before</code></td><td>Technician</td><td>อัปโหลดภาพถ่ายก่อนเริ่มปฏิบัติงานซ่อมบำรุง</td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/upload/after</code></td><td>Technician</td><td>อัปโหลดภาพถ่ายหลังปฏิบัติงานเสร็จสิ้น (แนบได้สูงสุด 5 ภาพ)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Page 16: APIs Part 2 & Socket.IO -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>7. แค็ตตาล็อก REST API (ต่อ: SLA, วัสดุ และ WebSockets)</h1>
+      <span class="section-tag">API &amp; Real-time</span>
+    </div>
+
+    <!-- Tickets APIs Part 2 -->
+    <h3 style="color:#0f172a; margin-bottom:4px;">2. Ticket Lifecycle (ต่อ: SLA Pause, วัสดุ และใบงาน)</h3>
+    <table class="compact avoid-break">
+      <thead>
+        <tr><th style="width: 10%;">Method</th><th style="width: 25%;">Endpoint</th><th style="width: 15%;">Access</th><th>Description &amp; Payload</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/materials</code></td><td>Tech/Admin</td><td>บันทึกรายการวัสดุและค่าใช้จ่ายซ่อมบำรุง: <code>{ materials: [{ name, quantity, unitPrice }] }</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/sla/request-pause</code></td><td>Tech/Admin</td><td>ส่งคำขอพักเวลา SLA ชั่วคราวเมื่อรออะไหล่: <code>{ reason }</code></td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/sla/approve-pause</code></td><td>Admin</td><td>Admin อนุมัติการพักเวลา SLA และบันทึกเวลา Freeze ลงในระบบ</td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/sla/resume</code></td><td>Tech/Admin</td><td>ยกเลิกการพักเวลา และขยาย Deadlines ชดเชยเวลาที่ถูกพักจริง</td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/merge</code></td><td>Admin</td><td>รวมตั๋วที่ซ้ำซ้อนเข้ากับตั๋วหลัก ถ่ายโอนคะแนนโหวตและผู้ติดตาม</td></tr>
+        <tr><td><span class="badge badge-green">POST</span></td><td><code>/:id/work-order/sign</code></td><td>Tech/Admin</td><td>บันทึกลายเซ็นดิจิทัลผู้ตรวจรับงาน: <code>{ signedByName, signatureData, notes }</code></td></tr>
+        <tr><td><span class="badge badge-blue">GET</span></td><td><code>/:id/work-order</code></td><td>Public/Auth</td><td>แสดงหน้าเอกสารใบสั่งงานราชการดิจิทัลพร้อมพิมพ์</td></tr>
+        <tr><td><span class="badge badge-red">DELETE</span></td><td><code>/</code></td><td>Admin</td><td>ลบตั๋วทั้งหมดในระบบ ต้องใช้ <code>adminPassword</code> จาก <code>ADMIN_DELETE_PASSWORD</code></td></tr>
+      </tbody>
+    </table>
+
+    <!-- Sockets -->
+    <div class="card avoid-break" style="margin-top:8px;">
+      <h3 style="margin-top:0;">⚡ Socket.IO Real-time Events Protocol</h3>
+      <table class="compact" style="margin-bottom:0;">
+        <thead>
+          <tr><th style="width: 20%;">Event Name</th><th style="width: 25%;">Direction</th><th>Payload &amp; Security Validation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>dm_join</code></td>
+            <td>Client &rarr; Server</td>
+            <td>เข้าร่วมห้องแชท DM ป้องกัน IDOR: ตรวจสอบว่า <code>data.userId === session.userId</code> หากเป็น Admin เข้า <code>admin_dm</code> หากเป็น Citizen เข้า <code>citizen_dm_&lt;id&gt;</code></td>
+          </tr>
+          <tr>
+            <td><code>dm_message</code></td>
+            <td>Server &rarr; Client</td>
+            <td>ยิงข้อความแชทตรงแบบเรียลไทม์ไปยังห้องของผู้รับ พร้อม Push Notification</td>
+          </tr>
+          <tr>
+            <td><code>ticket_updated</code></td>
+            <td>Server &rarr; Client (Broadcast)</td>
+            <td>ยิงแจ้งเตือนทุกพอร์ทัลเมื่อตั๋วมีการเปลี่ยนสถานะ มอบหมายงาน หรือพักเวลา SLA</td>
+          </tr>
+          <tr>
+            <td><code>ping_heartbeat</code></td>
+            <td>Client &rarr; Server</td>
+            <td>ตรวจสอบการเชื่อมต่อ Socket มีชีวิตอยู่ ตอบกลับด้วย <code>pong_heartbeat</code> ทันที</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER 8 (PAGE 17) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>8. ชุดทดสอบอัตโนมัติ (Automated Test Suite &amp; QA)</h1>
+      <span class="section-tag">Quality Assurance</span>
+    </div>
+
+    <p>
+      ResolveNow มีชุดทดสอบอัตโนมัติแบบครบวงจร (Automated Verification Test Suite) ที่รันผ่านคำสั่ง <code>npm test</code> หรือ <code>node scripts/runTests.js</code> ครอบคลุม <strong>26 การทดสอบใน 7 กลุ่มงานหลัก</strong> พร้อมการทดสอบความแม่นยำของโมเดลภาษาไทย 134 Cases:
+    </p>
+
+    <div class="grid-2 avoid-break">
+      <div class="card card-success">
+        <h3 style="color:#15803d; margin-top:0;">📊 ผลการทดสอบล่าสุด (V18.0)</h3>
+        <p style="font-size:8.2pt; margin-bottom:2px;"><strong>สถานะ:</strong> <span class="badge badge-green">PASSED 100%</span></p>
+        <p style="font-size:8.2pt; margin-bottom:2px;"><strong>จำนวนการทดสอบทั้งหมด:</strong> 26 Tests (Total 153 Assertions)</p>
+        <p style="font-size:8.2pt; margin-bottom:2px;"><strong>อัตราความสำเร็จ:</strong> 26 / 26 (100%)</p>
+        <p style="font-size:8.2pt; margin-bottom:0;"><strong>ความเร็วในการทดสอบ:</strong> &lt; 0.8 วินาที</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">🛠️ คำสั่งรันชุดทดสอบสำหรับ Developer</h3>
+        <pre><code># รันผ่าน npm script
+npm test
+
+# หรือรันผ่าน Node.js โดยตรง
+node scripts/runTests.js</code></pre>
+        <p style="font-size:7.4pt; color:#64748b; margin-bottom:0;">
+          *ทุกครั้งที่มีการแก้ไขโค้ดใน <code>routes/</code>, <code>models/</code> หรือ <code>utils/</code> นักพัฒนาต้องรันคำสั่งนี้เพื่อยืนยันว่าไม่มีฟังก์ชันใดถดถอย (No Regression)
+        </p>
+      </div>
+    </div>
+
+    <table class="compact avoid-break" style="margin-top:6px;">
+      <thead>
+        <tr><th style="width: 25%;">กลุ่มการทดสอบ (Group)</th><th style="width: 15%;">จำนวน Tests</th><th>ขอบเขตและเป้าหมายการทดสอบ (Verification Scope)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Group 1: SLA Engine &amp; Breach Detection</strong></td>
+          <td>9 Tests</td>
+          <td>
+            ตรวจสอบกฎชั่วโมง SLA ทั้ง 3 ระดับ (Urgent 2h/8h, Med 8h/48h, Norm 24h/72h), ตรวจการคำนวณวันสิ้นสุดล่วงหน้า, การตรวจจับตั๋วหมดเวลาสำหรับสถานะ <code>pending</code> และ <code>in_progress</code>, และยืนยันว่าการพักเวลา (<code>paused</code>) จะแช่แข็งการตรวจ Breach อย่างถูกต้อง
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Group 2: Geo Calculations &amp; Duplicate Detection</strong></td>
+          <td>3 Tests</td>
+          <td>
+            ตรวจสอบความแม่นยำของสูตร Haversine Distance (จุดเดียวกันระยะทาง = 0m, จุดที่ห่างกัน &lt; 100m ตรวจจับเป็นตั๋วซ้ำ, และจุดที่ห่างกัน &gt; 1km ไม่ถูกนับเป็นตั๋วซ้ำ)
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Group 3: Security &amp; XSS Sanitization</strong></td>
+          <td>2 Tests</td>
+          <td>
+            ยืนยันว่าโมดูล XSS สามารถตัดและแปลงแท็กอันตราย เช่น <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> และ Handler ร้ายแรงอย่าง <code>&lt;img onerror=...&gt;</code> ออกจากข้อความภาษาไทยได้อย่างสมบูรณ์
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Group 4: PDPA &amp; Privacy Protection</strong></td>
+          <td>1 Test</td>
+          <td>
+            ตรวจสอบการแปลงชื่อผู้ใช้ใน Audit Timeline ของระบบค้นหาสาธารณะ (Public Tracker) ให้เป็น <code>ประชาชนผู้แจ้ง</code> และช่างเป็นชื่อต้น เพื่อรักษาความลับตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Group 5: Financial &amp; Budget Aggregations</strong></td>
+          <td>2 Tests</td>
+          <td>
+            ตรวจสอบการคำนวณสัดส่วนผลต่างงบประมาณประจำเดือน (&Delta;%) และการจัดการกรณีเดือนก่อนหน้าเป็น 0 บาท โดยไม่เกิดข้อผิดพลาด Divide-by-Zero
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Group 6: Database Model Schemas &amp; Indexes</strong></td>
+          <td>4 Tests</td>
+          <td>
+            ตรวจสอบความสมบูรณ์ของ Mongoose Model Schemas และดัชนี (Indexes) สำคัญ เช่น <code>role</code> ใน User, <code>status</code> และ <code>ticketId</code> ใน HelpRequest, Compound Index ใน DirectMessage และ Geo/SLA Indexes ใน Ticket
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Group 7: Cognitive Thai NLP Heuristics Engine</strong></td>
+          <td>5 Tests (134 Cases)</td>
+          <td>
+            ทดสอบฟังก์ชัน <code>ruleBasedUrgency()</code> เทียบกับชุดข้อมูลภาษาไทย 134 Few-shot test cases ครอบคลุม 7 หมวดหมู่ปัญหา การแยกแยะสัตว์มีพิษในบ้าน/นอกบ้าน การตรวจจับคำปฏิเสธ และการแยกแยะควันขยะออกจากเพลิงไหม้ขนาดใหญ่ โดยได้คะแนนความแม่นยำ <strong>134/134 (100%)</strong>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= CHAPTER 9 (PAGE 18 & 19) ================= -->
+  <div class="page-break content-wrap">
+    <div class="section-header">
+      <h1>9. การติดตั้ง, ตัวแปรระบบ และบัญชีทดสอบเริ่มต้น</h1>
+      <span class="section-tag">Deployment &amp; Setup</span>
+    </div>
+
+    <p>
+      ResolveNow รองรับการรันทั้งบน Local Development Environment และ Cloud Production Platforms (เช่น Render, Heroku, AWS หรือ VPS ทั่วไป) โดยมีขั้นตอนการตั้งค่าที่ง่ายดาย:
+    </p>
+
+    <!-- Seeded Accounts Table (Consolidated) -->
+    <div class="card avoid-break" style="padding:6px 10px; margin-bottom:6px;">
+      <h3 style="margin-top:0; margin-bottom:3px; font-size:9pt;">👥 บัญชีทดสอบเริ่มต้นของระบบ (Default Seeded Accounts — config/seed.js)</h3>
+      <table class="compact" style="margin-bottom:0;">
+        <thead>
+          <tr><th style="width:16%;">บทบาท (Role)</th><th style="width:28%;">อีเมล (Email)</th><th style="width:16%;">รหัสผ่าน (Password)</th><th>สังกัด / แผนกความเชี่ยวชาญ</th><th style="width:16%;">Gate Passcode</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-purple">Admin</span></td>
+            <td><code>admin@resolvenow.th</code></td>
+            <td><code>admin1234</code></td>
+            <td>ศูนย์สั่งการและผู้ดูแลระบบส่วนกลาง (ควบคุมทุกพอร์ทัล)</td>
+            <td><code>@Teng11421142</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-amber">Tech 1 — 7</span></td>
+            <td><code>tech1@resolvenow.th</code> ถึง <code>tech7@...</code></td>
+            <td><code>tech1234</code></td>
+            <td>7 หมวด: ถนน (Road), ประปา (Water), ไฟฟ้า (Electricity), ขยะ (Garbage), สัตว์ (Animal), ต้นไม้ (Tree), ภัยพิบัติ (Hazard)</td>
+            <td><code>@Teng11421142</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Citizen (Dev)</span></td>
+            <td><code>tenginpb@gmail.com</code></td>
+            <td><code>123456</code></td>
+            <td>ประชาชนทดสอบระบบ (สร้างตั๋ว, แชท DM, รีวิวผลงาน)</td>
+            <td><em>ไม่ต้องใช้ Gate</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Env Vars & Quick Start on Page 18 -->
+    <div class="card avoid-break" style="margin-top:6px; margin-bottom:6px; padding:7px 10px;">
+      <h3 style="margin-top:0; margin-bottom:3px; font-size:9pt;">⚙️ ตัวแปรสภาพแวดล้อมที่สำคัญ (Environment Variables Specification — .env)</h3>
+      <div class="grid-2" style="margin-bottom:0; gap:8px;">
+        <pre style="font-size:6.3pt; line-height:1.26; padding:5px 7px; margin-bottom:0;"><code># Server &amp; Environment
+PORT=3001
+BASE_URL=https://resolvenow-hlv5.onrender.com
+NODE_ENV=development
+
+# Database &amp; Session Storage
+MONGODB_URI=mongodb+srv://&lt;user&gt;:&lt;pass&gt;@cluster.mongodb.net/resolvenow
+SESSION_SECRET=your-strong-random-session-secret-32-chars
+
+# Security Master Password (ลบตั๋วทั้งหมด)
+ADMIN_DELETE_PASSWORD=your-secure-admin-delete-password
+
+# Email Providers (Triple-Provider Architecture)
+MAIL_USER=your-email@gmail.com
+MAIL_PASS=your-gmail-app-password-16-chars
+SENDGRID_API_KEY=SG.your-sendgrid-api-key
+RESEND_API_KEY=re_your-resend-api-key</code></pre>
+        <pre style="font-size:6.3pt; line-height:1.26; padding:5px 7px; margin-bottom:0;"><code># LINE Integration (Messaging API, Login, LIFF)
+LINE_CHANNEL_TOKEN=your-line-channel-access-token
+LINE_ADMIN_USER_ID=your-line-admin-user-id
+LINE_LOGIN_CLIENT_ID=your-line-login-channel-id
+LINE_LOGIN_CLIENT_SECRET=your-line-login-channel-secret
+LINE_LOGIN_CALLBACK_URL=https://resolvenow-hlv5.onrender.com/auth/line/callback
+LINE_LIFF_ID=your-line-liff-id
+
+# Cloudinary Media Storage (รูปภาพตั๋ว &amp; Before/After)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Cognitive AI Models (Optional - มี 5-Layer Heuristics แล้ว)
+ANTHROPIC_API_KEY=sk-ant-api03-...
+GEMINI_API_KEY=your-gemini-api-key</code></pre>
+      </div>
+    </div>
+
+    <!-- Quick Start Commands & Footer -->
+    <div class="card card-highlight avoid-break" style="margin-top:4px; margin-bottom:4px; padding:6px 10px;">
+      <h3 style="margin-top:0; margin-bottom:2px; font-size:9pt;">🚀 คำสั่งเริ่มต้นและทดสอบระบบ (Quick Start Commands)</h3>
+      <div class="grid-3" style="margin-bottom:0; gap:6px;">
+        <div>
+          <p style="font-size:7.4pt; font-weight:600; margin-bottom:1px;">1. ติดตั้ง Dependencies</p>
+          <code>npm install</code>
+        </div>
+        <div>
+          <p style="font-size:7.4pt; font-weight:600; margin-bottom:1px;">2. รันโหมด Development</p>
+          <code>npm run dev</code>
+        </div>
+        <div>
+          <p style="font-size:7.4pt; font-weight:600; margin-bottom:1px;">3. ทดสอบระบบอัตโนมัติ</p>
+          <code>npm test</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer" style="margin-top:8px;">
+      <span>ResolveNow Developer Master Architecture &amp; Engineering Manual — Version V18.0 (2026-09-18)</span>
+      <span>Copyright &copy; 2026 ResolveNow Team. All rights reserved.</span>
+    </div>
+  </div>
+
+</body>
+</html>

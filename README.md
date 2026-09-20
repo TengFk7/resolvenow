@@ -1,22 +1,23 @@
 # 🏙️ ResolveNow (ระบบรับแจ้งเรื่องร้องเรียนและบริหารงานซ่อมบำรุงเมืองอัจฉริยะ)
 
-> **ResolveNow** เป็นเว็บแอปพลิเคชันรูปแบบ Dedicated Multi-Portal Architecture สำหรับบริหารจัดการและติดตามเรื่องร้องเรียนของเทศบาลและเมืองอัจฉริยะ (Smart City) เชื่อมต่อประชาชน ช่างผู้ปฏิบัติงาน และผู้ดูแลระบบแบบเรียลไทม์ พร้อมการแจ้งเตือนผ่าน LINE, ระบบวิเคราะห์ความเร่งด่วนด้วย AI, แผนที่ Heatmap, ระบบบันทึกงบประมาณ/วัสดุ, ใบสั่งงานพร้อมลายเซ็นดิจิทัล และระบบ SLA อัตโนมัติ
+> **ResolveNow (V18.0)** เป็นเว็บแอปพลิเคชันรูปแบบ **Dedicated Multi-Portal Architecture** สำหรับบริหารจัดการและติดตามเรื่องร้องเรียนของเทศบาลและเมืองอัจฉริยะ (Smart City) เชื่อมต่อประชาชน ช่างผู้ปฏิบัติงาน ผู้ดูแลระบบ และผู้บริหารระดับสูงแบบเรียลไทม์ พร้อมการแจ้งเตือนผ่าน LINE, ระบบวิเคราะห์ความเร่งด่วนด้วย AI & Cognitive Thai NLP Heuristics Engine, สถาปัตยกรรมส่งอีเมล Triple-Provider Resilient Mailer, แผนที่ Heatmap และการวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบบันทึกงบประมาณ/วัสดุ, ใบสั่งงานพร้อมลายเซ็นดิจิทัล, ระบบ SLA อัตโนมัติ และชุดทดสอบความถูกต้องของระบบอัตโนมัติ (Automated Verification Test Suite)
 
 ---
 
 ## 🌐 พอร์ทัลการใช้งาน (Dedicated Portals)
 
-ระบบแยกหน้าการใช้งานตาม URL อย่างชัดเจน พร้อมระบบรักษาความปลอดภัย **Security Gate Passcode**:
+ระบบแยกหน้าการใช้งานตาม URL อย่างชัดเจน พร้อมระบบรักษาความปลอดภัย **Security Gate Passcode** ทั้งฝั่ง Client และ Server-side Verification:
 
-| พอร์ทัล | URL | หน้าเว็บ | รหัสผ่าน Gate Passcode | ผู้ใช้งาน |
+| พอร์ทัล | URL | หน้าเว็บ | รหัสผ่าน Gate Passcode | ผู้ใช้งานและหน้าที่หลัก |
 |---|---|---|---|---|
-| **Citizen Portal** | `/` | `public/index.html` | - | ประชาชนทั่วไป แจ้งเรื่อง ติดตาม แชท โหวต |
-| **Admin Portal** | `/admin` | `public/admin.html` | `@Teng11421142` | ผู้ดูแลระบบ จัดการคิว มอบหมายงาน อนุมัติ SLA |
-| **Technician Portal** | `/tech` หรือ `/technician` | `public/tech.html` | `@Teng11421142` | ช่างภาคสนาม รับงาน บันทึกรูป Before/After บันทึกวัสดุ |
-| **CEO Dashboard** | `/ceo` | `public/executive-dashboard.html` | `@Teng11421142` | ผู้บริหารระดับสูง สถิติ SLA กราฟงบประมาณ (Masked PII) |
-| **Public Tracker** | `/track` | `public/track.html` | - (Public search) | ค้นหาและติดตามสถานะตั๋วด้วยรหัส Ticket ID |
-| **Data Dictionary** | `/Datadic` | `data_dictionary.html` | Login ด้วยสิทธิ์ Admin | พจนานุกรมข้อมูลฐานข้อมูลฉบับสมบูรณ์ |
-| **Project Poster** | `/project` | `public/project-poster.html` | - | โปสเตอร์สรุปฟีเจอร์และสถาปัตยกรรมโครงการ |
+| **Citizen Portal** | `/` | `public/index.html` | - | ประชาชนทั่วไป แจ้งเรื่อง 5 ขั้นตอน, ติดตาม, แชท, โหวต, ยื่น Re-open |
+| **Admin Portal** | `/admin` | `public/admin.html` | `@Teng11421142` | ผู้ดูแลระบบ จัดการคิว มอบหมายงาน อนุมัติ SLA รวมตั๋วซ้ำ ตรวจสอบระบบอีเมล |
+| **Technician Portal** | `/tech` หรือ `/technician` | `public/tech.html` | `@Teng11421142` | ช่างภาคสนาม รับงาน บันทึกรูป Before/After บันทึกวัสดุ ขอพักเวลา SLA เซ็นใบงาน |
+| **CEO Dashboard** | `/ceo` | `public/executive-dashboard.html` | `@Teng11421142` | ผู้บริหารระดับสูง สถิติ SLA กราฟงบประมาณ การวิเคราะห์เชิงพื้นที่ (Masked PII) |
+| **Public Tracker** | `/track` | `public/track.html` | - (Public search) | ค้นหาและติดตามสถานะตั๋วด้วยรหัส Ticket ID สำหรับประชาชนทั่วไป |
+| **Data Dictionary** | `/Datadic` | `data_dictionary.html` | Login สิทธิ์ Admin | พจนานุกรมข้อมูลฐานข้อมูลฉบับสมบูรณ์ (7 Collections, 80+ Fields) |
+| **Project Poster** | `/project` | `public/project-poster.html` | - | โปสเตอร์สรุปฟีเจอร์และสถาปัตยกรรมโครงการระดับผู้บริหาร |
+| **Health Check API** | `/health` หรือ `/api/health` | JSON API | - | ตรวจสอบสถานะการทำงาน Uptime และการเชื่อมต่อฐานข้อมูล MongoDB |
 
 ---
 
@@ -39,32 +40,35 @@
 
 ### 👨‍💼 3. ฝั่งผู้ดูแลระบบ (Admin Dispatching Hub)
 - **ศูนย์สั่งการและมอบหมายงาน**: มอบหมายตั๋วให้ช่างพร้อมวิเคราะห์ Workload Capacity
-- **ระบบตรวจจับตั๋วซ้ำและรวมตั๋ว (Duplicate Detection & Merge)**: ตรวจสอบปัญหาซ้ำซ้อนในรัศมีใกล้เคียงและรวมข้อมูล
+- **ระบบตรวจจับตั๋วซ้ำและรวมตั๋ว (Duplicate Detection & Merge)**: ตรวจสอบปัญหาซ้ำซ้อนในรัศมีใกล้เคียง (< 100 เมตร) และรวมข้อมูล
 - **อนุมัติการพักเวลา SLA**: ควบคุมและบริหารจัดการเวลา SLA ขององค์กร
 - **จัดการหมวดหมู่ปัญหาไดนามิก (Dynamic Categories)**: เพิ่ม แก้ไข ย้ายตั๋ว และผูกช่างเข้าสังกัด
 - **กล่องข้อความรวม (Unified DM Inbox)**: ตอบกลับข้อความจากประชาชนทุกคนในที่เดียว
+- **เครื่องมือทดสอบระบบอีเมล (Admin Mail Diagnostics)**: ทดสอบการเชื่อมต่อ วัด Latency และทดลองส่งเมลผ่าน Gmail, SendGrid, และ Resend
 - **รายงานสรุปเชิงลึก**: ดาวน์โหลดรายงานเป็นไฟล์ Excel (.xlsx) และ CSV
 
-### 📊 4. ฝั่งผู้บริหาร (CEO Executive Dashboard)
-- แดชบอร์ดสรุปตัวชี้วัด SLA Compliance แบบเรียลไทม์
-- รายงานสรุปงบประมาณและค่าใช้จ่ายซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Expenses)
-- กราฟสัดส่วนค่าใช้จ่ายแยกตามหมวดหมู่ และ 5 อันดับวัสดุที่มีการเบิกใช้สูงสุด
-- ปลอดภัยด้วยการ Mask ข้อมูลส่วนบุคคล (Masked PII)
+### 📊 4. ฝั่งผู้บริหาร (CEO Executive Dashboard & District Analytics)
+- **แดชบอร์ดสรุปตัวชี้วัด SLA Compliance แบบเรียลไทม์**: ติดตามอัตราการแก้ปัญหาตามกรอบเวลามาตรฐาน
+- **การวิเคราะห์เชิงพื้นที่และงบประมาณ (District Analytics)**: สรุปสถิติเรื่องร้องเรียน สัดส่วนปัญหา และการเบิกจ่ายงบประมาณแยกตามเขต/แขวง
+- **รายงานสรุปงบประมาณและค่าใช้จ่ายซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Expenses)**
+- **กราฟสัดส่วนค่าใช้จ่ายแยกตามหมวดหมู่ และ 5 อันดับวัสดุที่มีการเบิกใช้สูงสุด**
+- **ปลอดภัยด้วยการ Mask ข้อมูลส่วนบุคคล (Masked PII)** ตามหลัก PDPA
 
 ---
 
 ## 🛠️ เทคโนโลยีที่ใช้งาน (Tech Stack)
 
-- **Backend**: Node.js (v18+), Express.js 4
+- **Backend**: Node.js (v18+), Express.js 4, Helmet, Express Rate Limit, Express Mongo Sanitize
 - **Database**: MongoDB Atlas, Mongoose 9 (พร้อม Compound Indexes ครบทุก Use-case)
-- **Session & Security**: express-session, connect-mongo v6, bcryptjs, xss, helmet, express-mongo-sanitize, rateLimiters
+- **Session & Security**: express-session, connect-mongo v6, bcryptjs, xss, Server-side Gate Verification
 - **Real-Time Engine**: Socket.IO v4 (Two-way events, Heartbeat ping-pong, IDOR protection)
 - **Cloud Storage**: Cloudinary v2 (Auto-resize, Quality optimization) + Local Disk Fallback
 - **LINE Integration**: LINE Messaging API (Flex Messages), LINE Login OAuth2, LINE LIFF 2.x
-- **Email & OTP**: Nodemailer (Gmail SMTP), SendGrid API
-- **AI Analytics**: Anthropic Claude & Google Gemini
+- **Resilient Email Delivery**: Triple-Provider Architecture (Nodemailer Gmail SSL 465/TLS 587, SendGrid API, Resend API)
+- **AI & NLP Intelligence**: Anthropic Claude + Google Gemini + Cognitive Thai NLP Heuristics Engine (5-layer classification, 100% accuracy บน 134 Few-shot test cases)
 - **Frontend UI**: Vanilla HTML5, Modern CSS3 (Glassmorphism, 3D Transitions), JavaScript ES6+
 - **GIS & Mapping**: Leaflet.js, OpenStreetMap Nominatim
+- **Quality Assurance**: Automated Verification Test Suite (`scripts/runTests.js` 26 Test cases)
 
 ---
 
@@ -81,7 +85,13 @@ npm install
 cp .env.example .env
 ```
 
-### 3. รันระบบ
+### 3. ตรวจสอบความถูกต้องของระบบด้วย Automated Tests
+```bash
+npm test
+```
+*(ระบบจะรันชุดทดสอบ 26 ข้อ ครอบคลุม SLA Engine, Duplicate Detection, XSS, PDPA, CEO Financials, Database Indexes, และ Cognitive Thai NLP)*
+
+### 4. รันระบบ
 ```bash
 # โหมด Development (รีโหลดอัตโนมัติด้วย nodemon)
 npm run dev
@@ -109,15 +119,15 @@ npm start
 | **Tech 7** | `tech7@resolvenow.th` | `tech1234` | อนันต์ กู้ภัย | เพลิง/ภัยพิบัติ (`Hazard`) |
 | **Citizen** | `tenginpb@gmail.com` | `123456` | Teng Teng | ประชาชนทดสอบ |
 
-> **หมายเหตุสำหรับ Portal `/admin`, `/tech` และ `/ceo`**: ต้องกรอกรหัสผ่านปลดล็อค Gate Passcode **`@Teng11421142`** ก่อนเข้าสู่หน้าล็อกอินหรือแดชบอร์ดผู้บริหาร
+> **หมายเหตุสำหรับ Portal `/admin`, `/tech` และ `/ceo`**: ต้องกรอกรหัสผ่านปลดล็อค Gate Passcode **`@Teng11421142`** เพื่อปลดล็อคหน้าจอรักษาความปลอดภัย
 
 ---
 
 ## 📚 เอกสารประกอบระบบ (Documentation)
 
-- **สำหรับ AI Assistant (กฎระเบียบและคู่มือด่วน)**: [AGENTS.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/AGENTS.md)
-- **สถาปัตยกรรมระบบฉบับสมบูรณ์ (Deep-Dive Context)**: [SYSTEM_CONTEXT.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/SYSTEM_CONTEXT.md)
-- **พจนานุกรมข้อมูล (Data Dictionary)**: [docs/data_dictionary.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/docs/data_dictionary.md) หรือเปิดดูบนเว็บที่ [data_dictionary.html](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/data_dictionary.html)
-- **แบบจำลองฐานข้อมูล (ER Diagram)**: [docs/er_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/docs/er_diagram.md)
-- **กระแสข้อมูลระบบ (DFD)**: [docs/dfd.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/docs/dfd.md)
-- **แผนภาพบริบท (Context Diagram)**: [docs/context_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolvNow/docs/context_diagram.md)
+- **สำหรับ AI Assistant (กฎระเบียบและคู่มือด่วน)**: [AGENTS.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/AGENTS.md)
+- **สถาปัตยกรรมระบบฉบับสมบูรณ์ (Deep-Dive Context)**: [SYSTEM_CONTEXT.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/SYSTEM_CONTEXT.md)
+- **พจนานุกรมข้อมูล (Data Dictionary)**: [docs/data_dictionary.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/data_dictionary.md) หรือเปิดดูบนเว็บที่ [data_dictionary.html](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/data_dictionary.html)
+- **แบบจำลองฐานข้อมูล (ER Diagram)**: [docs/er_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/er_diagram.md)
+- **กระแสข้อมูลระบบ (DFD)**: [docs/dfd.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/dfd.md)
+- **แผนภาพบริบท (Context Diagram)**: [docs/context_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/context_diagram.md)

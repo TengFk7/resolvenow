@@ -70,9 +70,9 @@
         <!-- Login Form -->
         <div id="fLogin" class="auth-flip-panel auth-flip-front">
           <form onsubmit="event.preventDefault(); doLogin();">
-            <div class="fg"><label>อีเมล</label><input type="email" id="lEmail" placeholder="example@gmail.com"
+            <div class="fg"><label>อีเมล <span class="req-star">*</span></label><input type="email" id="lEmail" placeholder="example@gmail.com"
                 maxlength="40" autocorrect="off" autocapitalize="none" spellcheck="false" /></div>
-            <div class="fg"><label>รหัสผ่าน</label><input type="password" id="lPass" placeholder="รหัสผ่าน"
+            <div class="fg"><label>รหัสผ่าน <span class="req-star">*</span></label><input type="password" id="lPass" placeholder="รหัสผ่าน"
                 maxlength="40" autocorrect="off" autocomplete="current-password" autocapitalize="off" spellcheck="false"
                 lang="en" /></div>
             <div class="rem"><input type="checkbox" id="rem" /><label for="rem">จำการเข้าสู่ระบบไว้</label></div>
@@ -137,17 +137,17 @@
         </div>
         <div class="ebox" id="llErr" style="margin-bottom:10px"></div>
         <div style="display:flex;gap:8px">
-          <div class="fg" style="flex:1"><label>ชื่อ</label><input type="text" id="llFirst" placeholder="ชื่อ"
+          <div class="fg" style="flex:1"><label>ชื่อ <span class="req-star">*</span></label><input type="text" id="llFirst" placeholder="ชื่อ"
               onkeydown="if(event.key==='Enter')ge('llLast').focus()" /></div>
           <div class="fg" style="flex:1"><label>นามสกุล</label><input type="text" id="llLast" placeholder="นามสกุล"
               onkeydown="if(event.key==='Enter')ge('llEmail').focus()" /></div>
         </div>
-        <div class="fg"><label>Email</label><input type="email" id="llEmail" placeholder="example@gmail.com"
+        <div class="fg"><label>Email <span class="req-star">*</span></label><input type="email" id="llEmail" placeholder="example@gmail.com"
             onkeydown="if(event.key==='Enter')ge('llPass').focus()" /></div>
-        <div class="fg"><label>Password</label><input type="password" id="llPass"
+        <div class="fg"><label>Password <span class="req-star">*</span></label><input type="password" id="llPass"
             placeholder="รหัสผ่านอย่างน้อย 6 ตัวอักษร" autocapitalize="off" autocorrect="off" lang="en"
             onkeydown="if(event.key==='Enter')ge('llPass2').focus()" /></div>
-        <div class="fg"><label>ยืนยัน Password</label><input type="password" id="llPass2" placeholder="ยืนยันรหัสผ่าน"
+        <div class="fg"><label>ยืนยัน Password <span class="req-star">*</span></label><input type="password" id="llPass2" placeholder="ยืนยันรหัสผ่าน"
             autocapitalize="off" autocorrect="off" lang="en" onkeydown="if(event.key==='Enter')doLineLinkRegister()" />
         </div>
         <button class="btnp btn-ripple" id="btnLineLink" onclick="doLineLinkRegister()" style="margin-bottom:10px">✨
@@ -504,9 +504,12 @@
       <!-- Logo — centered via grid column 2 -->
       <div class="nlogo logo-anim">🏛️ <span>Resolve<span class="now-gold">Now</span></span></div>
       <!-- Hamburger pushed to right — grid column 3 -->
-      <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู" style="justify-self:end">
-        <span></span><span></span><span></span>
-      </button>
+      <div style="position:relative;justify-self:end;display:inline-flex">
+        <button class="hbg-btn btn-ripple" onclick="openDrawer()" aria-label="เมนู">
+          <span></span><span></span><span></span>
+        </button>
+        <span class="hbg-dm-badge hidden" id="hbgDmBadge">0</span>
+      </div>
     </header>
 
 
@@ -548,7 +551,7 @@
           <div class="wiz-step active" id="wiz1">
             <div class="ncard wiz-card">
               <div class="wiz-header">
-                <h2>ประเภทปัญหา</h2>
+                <h2>ประเภทปัญหา <span class="req-star">*</span></h2>
                 <p class="wiz-sub">เลือกประเภทที่ตรงกับปัญหาที่พบมากที่สุด</p>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="catGrid">
@@ -619,7 +622,7 @@
             <div class="ncard wiz-card">
               <div class="wiz-header">
                 <div class="wiz-title-row">
-                  <h2>ระบุสถานที่</h2>
+                  <h2>ระบุสถานที่ <span class="req-star">*</span></h2>
                   <div class="wiz-icon">📍</div>
                 </div>
                 <p class="wiz-sub">เลือกตำแหน่งที่ต้องการแจ้งเรื่อง</p>
@@ -674,7 +677,7 @@
             <div class="ncard wiz-card">
               <div class="wiz-header">
                 <div class="wiz-title-row">
-                  <h2>แนบรูปภาพ</h2>
+                  <h2>แนบรูปภาพ <span class="req-star">*</span></h2>
                   <div class="wiz-icon">📷</div>
                 </div>
                 <p class="wiz-sub">ถ่ายรูปหรือเลือกจากคลังภาพ เพื่อให้ช่างเห็นสภาพปัญหา</p>
@@ -819,27 +822,6 @@
     </div><!-- /nwrap -->
   </div><!-- /normalApp -->
 
-  <!-- ── DIRECT MESSAGE: Premium FAB Button (Citizen only) ──────── -->
-  <div class="dm-cloud-fab" id="dmCloudFab" onclick="openDirectChat()" role="button" aria-label="ติดต่อสอบถาม Admin"
-    tabindex="0">
-    <!-- Glow ring -->
-    <div class="dm-fab-ring"></div>
-    <!-- Main circle button -->
-    <div class="dm-fab-circle">
-      <!-- Modern chat bubble SVG icon -->
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="white"
-          opacity="0.95" />
-        <circle cx="8" cy="11" r="1.2" fill="#93c5fd" />
-        <circle cx="12" cy="11" r="1.2" fill="#93c5fd" />
-        <circle cx="16" cy="11" r="1.2" fill="#93c5fd" />
-      </svg>
-      <!-- Unread badge -->
-      <div class="dm-cloud-badge hidden" id="dmCloudBadge">0</div>
-    </div>
-    <!-- Floating label pill -->
-    <div class="dm-fab-label">💬 ติดต่อ Admin</div>
-  </div>
 
   <!-- ── DIRECT MESSAGE: Citizen Chat Modal ───────────────────── -->
   <div class="dm-modal-overlay" id="mDirectChat" onclick="closeDirectChat()">
@@ -924,11 +906,11 @@
       <button class="mc" onclick="closeChPw()">✕</button>
       <h3>🔒 เปลี่ยนรหัสผ่าน</h3>
       <div class="ebox" id="chErr"></div>
-      <div class="fg"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="curP" autocapitalize="off"
+      <div class="fg"><label>รหัสผ่านปัจจุบัน <span class="req-star">*</span></label><input type="password" id="curP" autocapitalize="off"
           autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>รหัสผ่านใหม่</label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"
+      <div class="fg"><label>รหัสผ่านใหม่ <span class="req-star">*</span></label><input type="password" id="newP" placeholder="อย่างน้อย 6 ตัว"
           autocapitalize="off" autocorrect="off" lang="en" /></div>
-      <div class="fg"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="conP" autocapitalize="off"
+      <div class="fg"><label>ยืนยันรหัสผ่านใหม่ <span class="req-star">*</span></label><input type="password" id="conP" autocapitalize="off"
           autocorrect="off" lang="en" /></div>
       <button class="btnp btn-ripple" onclick="doChPw()">บันทึก</button>
     </div>
@@ -1532,6 +1514,12 @@
 
     <!-- Menu Items -->
     <nav class="drawer-menu">
+      <!-- Citizen only: ติดต่อ Admin -->
+      <button class="drawer-item" id="drawerDmChat" onclick="closeDrawer(); openDirectChat();" style="display:none">
+        <span class="drawer-item-icon">💬</span>
+        <span style="flex:1;text-align:left">ติดต่อ Admin</span>
+        <span class="dm-drawer-badge hidden" id="drawerDmBadge">0</span>
+      </button>
       <button class="drawer-item" id="drawerChPw" onclick="openChPw();closeDrawer()">
         <span class="drawer-item-icon">🔒</span>
         <span>เปลี่ยนรหัสผ่าน</span>
@@ -1738,13 +1726,13 @@
       <div id="woSummaryBox" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;margin-bottom:14px;line-height:1.5">
       </div>
       <div class="fg">
-        <label style="font-size:12px;font-weight:700;color:var(--navy)">ชื่อ-นามสกุล ผู้ตรวจรับมอบงาน / ประชาชน</label>
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">ชื่อ-นามสกุล ผู้ตรวจรับมอบงาน / ประชาชน <span class="req-star">*</span></label>
         <input type="text" id="woSignerName" placeholder="ชื่อ-นามสกุล ผู้เซ็นรับงาน"
           style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:'Prompt',sans-serif;background:#fff;margin-bottom:6px" />
       </div>
       <div class="fg">
         <label style="font-size:12px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between">
-          <span>✍️ ลงลายมือชื่อดิจิทัล (เซ็นในกรอบด้านล่าง)</span>
+          <span>✍️ ลงลายมือชื่อดิจิทัล (เซ็นในกรอบด้านล่าง) <span class="req-star">*</span></span>
           <button type="button" onclick="clearSigCanvas()" style="background:none;border:none;color:var(--blue2);font-size:11px;cursor:pointer;font-weight:700">🗑️ ล้างลายเซ็น</button>
         </label>
         <div class="sig-canvas-wrap">

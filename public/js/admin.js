@@ -404,8 +404,13 @@ function goRejectStep1() {
 }
 
 async function submitReject() {
-  var reason = ge('rejectReason').value.trim();
-  if (!reason) return showE('rejectErr', 'กรุณาระบุเหตุผลก่อนส่ง');
+  var reasonEl = ge('rejectReason');
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+  if (!reason) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(reasonEl);
+    if (reasonEl) reasonEl.focus();
+    return showE('rejectErr', 'กรุณาระบุเหตุผลในช่องที่มี * ก่อนส่ง');
+  }
   hideE('rejectErr');
   await fetch('/api/tickets/' + _rejectId + '/status', {
     method: 'PUT',
@@ -612,14 +617,24 @@ function closeAddTechModal() {
 }
 
 async function submitAddTech() {
-  var fn = ge('addTechFname').value.trim();
+  var fnEl = ge('addTechFname'), emEl = ge('addTechEmail'), pwEl = ge('addTechPwd');
+  var fn = fnEl ? fnEl.value.trim() : '';
   var ln = ge('addTechLname').value.trim();
-  var em = ge('addTechEmail').value.trim();
-  var pw = ge('addTechPwd').value;
+  var em = emEl ? emEl.value.trim() : '';
+  var pw = pwEl ? pwEl.value : '';
   var sp = ge('addTechSpecialty').value;
-  if (!fn) return showE('addTechErr', 'กรุณากรอกชื่อ');
-  if (!em) return showE('addTechErr', 'กรุณากรอกอีเมล');
-  if (!pw || pw.length < 6) return showE('addTechErr', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+
+  var hasErr = false;
+  if (!fn) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(fnEl); hasErr = true; }
+  if (!em) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(emEl); hasErr = true; }
+  if (!pw || pw.length < 6) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(pwEl); hasErr = true; }
+
+  if (hasErr) {
+    if (!fn && fnEl) fnEl.focus();
+    else if (!em && emEl) emEl.focus();
+    else if (pwEl) pwEl.focus();
+    return showE('addTechErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน (รหัสผ่านอย่างน้อย 6 ตัวอักษร)');
+  }
   hideE('addTechErr');
 
   try {
@@ -661,10 +676,15 @@ function closeEditTechModal() {
 
 async function submitEditTech() {
   if (!_editTechId) return;
-  var fn = ge('editTechFname').value.trim();
+  var fnEl = ge('editTechFname');
+  var fn = fnEl ? fnEl.value.trim() : '';
   var ln = ge('editTechLname').value.trim();
   var sp = ge('editTechSpecialty').value;
-  if (!fn) return showE('editTechErr', 'กรุณากรอกชื่อ');
+  if (!fn) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(fnEl);
+    if (fnEl) fnEl.focus();
+    return showE('editTechErr', 'กรุณากรอกชื่อในช่องที่มี *');
+  }
   hideE('editTechErr');
 
   try {
@@ -743,9 +763,12 @@ function closeDeleteAllPw() {
 }
 
 function submitDeleteAllPw() {
-  var pw = ge('deleteAllPwInput').value;
+  var pwEl = ge('deleteAllPwInput');
+  var pw = pwEl ? pwEl.value : '';
   if (!pw) {
-    showE('deleteAllPwErr', 'กรุณากรอกรหัสผ่าน');
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(pwEl);
+    if (pwEl) pwEl.focus();
+    showE('deleteAllPwErr', 'กรุณากรอกรหัสผ่านในช่องที่มี *');
     return;
   }
   // เก็บชั่วคราวเพื่อส่งไปกับ DELETE request — server เป็นคนตรวจ
@@ -893,12 +916,21 @@ function closeAddCategoryModal() {
 }
 
 async function submitAddCategory() {
-  var name = ge('addCatName').value.trim();
-  var label = ge('addCatLabel').value.trim();
-  var icon = ge('addCatIcon').value.trim();
-  if (!name) return showE('addCatErr', 'กรุณากรอกชื่อ Key');
-  if (!label) return showE('addCatErr', 'กรุณากรอกชื่อแสดงผล');
-  if (!icon) return showE('addCatErr', 'กรุณาเลือก Emoji');
+  var nameEl = ge('addCatName'), labelEl = ge('addCatLabel'), iconEl = ge('addCatIcon'), gridEl = ge('emojiPickerGrid');
+  var name = nameEl ? nameEl.value.trim() : '';
+  var label = labelEl ? labelEl.value.trim() : '';
+  var icon = iconEl ? iconEl.value.trim() : '';
+
+  var hasErr = false;
+  if (!name) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(nameEl); hasErr = true; }
+  if (!label) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(labelEl); hasErr = true; }
+  if (!icon) { if (typeof rnMarkInvalid === 'function') rnMarkInvalid(gridEl); hasErr = true; }
+
+  if (hasErr) {
+    if (!name && nameEl) nameEl.focus();
+    else if (!label && labelEl) labelEl.focus();
+    return showE('addCatErr', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน');
+  }
   hideE('addCatErr');
 
   try {
@@ -946,9 +978,14 @@ function closeEditCategoryModal() {
 
 async function submitEditCategory() {
   if (!_editCatId) return;
-  var label = ge('editCatLabel').value.trim();
+  var labelEl = ge('editCatLabel');
+  var label = labelEl ? labelEl.value.trim() : '';
   var icon = ge('editCatIcon').value.trim();
-  if (!label) return showE('editCatErr', 'กรุณากรอกชื่อแสดงผล');
+  if (!label) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(labelEl);
+    if (labelEl) labelEl.focus();
+    return showE('editCatErr', 'กรุณากรอกชื่อแสดงผลในช่องที่มี *');
+  }
   hideE('editCatErr');
 
   try {
@@ -1548,7 +1585,11 @@ function closeSlaPauseModal() {
 async function submitSlaPause() {
   var reasonEl = ge('slaPauseReasonInput');
   var reason = reasonEl ? reasonEl.value.trim() : '';
-  if (!reason) return showE('slaPauseErr', 'กรุณาระบุรายละเอียดเหตุผลที่ต้องหยุดเวลา');
+  if (!reason) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(reasonEl);
+    if (reasonEl) reasonEl.focus();
+    return showE('slaPauseErr', 'กรุณาระบุรายละเอียดเหตุผลในช่องที่มี *');
+  }
   hideE('slaPauseErr');
 
   var btn = ge('btnSubmitSlaPause');
@@ -1741,14 +1782,23 @@ function openPrintWorkOrder() {
 
 async function saveWorkOrderSignature() {
   var cv = ge('sigCanvas');
-  if (!_sigHasPoints || !cv) {
-    return showE('woErr', 'กรุณาลงลายมือชื่อก่อนบันทึก');
-  }
-
+  var cvWrap = cv ? cv.closest('.sig-canvas-wrap') : null;
   var nameInp = ge('woSignerName');
   var signerName = nameInp ? nameInp.value.trim() : '';
+
+  var hasErr = false;
   if (!signerName) {
-    return showE('woErr', 'กรุณาระบุชื่อผู้ตรวจรับมอบงาน');
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(nameInp);
+    hasErr = true;
+  }
+  if (!_sigHasPoints || !cv) {
+    if (cvWrap && typeof rnMarkInvalid === 'function') rnMarkInvalid(cvWrap);
+    hasErr = true;
+  }
+
+  if (hasErr) {
+    if (!signerName && nameInp) nameInp.focus();
+    return showE('woErr', 'กรุณากรอกชื่อและลงลายมือชื่อในช่องที่มี * ให้ครบถ้วน');
   }
 
   var notesInp = ge('woNotes');
@@ -2000,6 +2050,112 @@ async function doAdminUnlinkAll() {
       btn.textContent = '🗑️ ลบทั้งหมด';
     }
     showE('ulErr', 'ไม่สามารถเชื่อมต่อได้');
+  }
+}
+
+/* ── Merge Ticket Modal (Admin) ─────────────────────────── */
+var _mergeSourceTicketId = null;
+var _mergeSelectedTargetId = null;
+
+function openMergeModal(ticketId) {
+  _mergeSourceTicketId = ticketId;
+  _mergeSelectedTargetId = null;
+  var lbl = ge('mergeTicketLabel');
+  if (lbl) lbl.textContent = 'Ticket #' + ticketId;
+  var customInp = ge('mergeCustomTargetId');
+  if (customInp) {
+    customInp.value = '';
+    if (typeof rnClearInvalid === 'function') rnClearInvalid(customInp);
+  }
+  hideE('mergeErr');
+
+  var tks = (typeof _lastAdminTickets !== 'undefined' && Array.isArray(_lastAdminTickets)) ? _lastAdminTickets : [];
+  var src = tks.find(function (t) { return t.ticketId === ticketId; });
+  var srcInfo = ge('mergeSourceInfo');
+  if (srcInfo && src) {
+    srcInfo.innerHTML = '<strong>' + escapeHTML(src.ticketId) + '</strong> · หมวด: <strong>' + escapeHTML(src.category) + '</strong><br><span style="color:var(--muted)">' + escapeHTML(src.description || 'ไม่มีรายละเอียด') + '</span>';
+  }
+
+  var candBox = ge('mergeCandidatesList');
+  if (candBox) {
+    var candidates = tks.filter(function (t) {
+      return t.ticketId !== ticketId && t.status !== 'merged' && t.category === (src ? src.category : t.category);
+    });
+    if (!candidates.length) {
+      candBox.innerHTML = '<div class="empty" style="padding:10px;text-align:center;font-size:12px;color:var(--muted)">ไม่พบเคสหมวดเดียวกัน</div>';
+    } else {
+      var ch = '';
+      candidates.slice(0, 6).forEach(function (c) {
+        ch += '<div class="merge-cand-item" onclick="selectMergeTarget(\'' + c.ticketId + '\', this)" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:12px;transition:var(--transition)">';
+        ch += '<strong>' + escapeHTML(c.ticketId) + '</strong> (' + escapeHTML(c.category) + ') · <span style="color:var(--muted)">' + escapeHTML(c.description ? c.description.slice(0, 40) + '...' : '') + '</span>';
+        ch += '</div>';
+      });
+      candBox.innerHTML = ch;
+    }
+  }
+
+  var m = ge('mMergeTicket');
+  if (m) m.classList.add('on');
+}
+
+function selectMergeTarget(ticketId, el) {
+  _mergeSelectedTargetId = ticketId;
+  var customInp = ge('mergeCustomTargetId');
+  if (customInp) {
+    customInp.value = ticketId;
+    if (typeof rnClearInvalid === 'function') rnClearInvalid(customInp);
+  }
+  var candBox = ge('mergeCandidatesList');
+  if (candBox) {
+    candBox.querySelectorAll('.merge-cand-item').forEach(function (item) {
+      item.style.borderColor = 'var(--border)';
+      item.style.background = '';
+    });
+  }
+  if (el) {
+    el.style.borderColor = 'var(--blue2)';
+    el.style.background = 'rgba(37,99,235,0.06)';
+  }
+}
+
+function closeMergeModal() {
+  var m = ge('mMergeTicket');
+  if (m) m.classList.remove('on');
+  _mergeSourceTicketId = null;
+  _mergeSelectedTargetId = null;
+}
+
+async function submitMergeTicket() {
+  if (!_mergeSourceTicketId) return;
+  var customInp = ge('mergeCustomTargetId');
+  var targetId = _mergeSelectedTargetId || (customInp ? customInp.value.trim() : '');
+  if (!targetId) {
+    if (customInp && typeof rnMarkInvalid === 'function') rnMarkInvalid(customInp);
+    if (customInp) customInp.focus();
+    return showE('mergeErr', 'กรุณาเลือกเคสเป้าหมายหรือระบุรหัสเคสหลักในช่องที่มี *');
+  }
+  hideE('mergeErr');
+
+  var btn = ge('btnSubmitMerge');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังรวมเคส...'; }
+
+  try {
+    var res = await fetch('/api/tickets/' + _mergeSourceTicketId + '/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetTicketId: targetId })
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = '🔗 ยืนยันการรวมเคส'; }
+      return showE('mergeErr', data.error || 'ไม่สามารถรวมเคสได้');
+    }
+    closeMergeModal();
+    showToast('รวมเคสเข้ากับ ' + targetId + ' สำเร็จ 🔗', 'success');
+    if (typeof loadAdmin === 'function') loadAdmin();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🔗 ยืนยันการรวมเคส'; }
+    showE('mergeErr', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
   }
 }
 

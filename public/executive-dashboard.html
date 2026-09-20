@@ -1437,7 +1437,7 @@
         🏛️ EXECUTIVE PORTAL
       </div>
       <h2 class="portal-gate-title">Executive Passcode</h2>
-      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่แดชบอร์ดผู้บริหารระดับสูง</p>
+      <p class="portal-gate-sub">กรุณากรอกรหัสผ่านความปลอดภัย เพื่อเข้าสู่แดชบอร์ดผู้บริหารระดับสูง <span class="req-star" style="color:#ef4444;font-weight:700">*</span></p>
 
       <div class="portal-gate-err" id="ceoGateErr">
         <span>⚠️</span> <span id="ceoGateErrText">รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง</span>
@@ -2525,6 +2525,10 @@
       const val = inp ? inp.value.trim() : '';
 
       if (!val) {
+        if (inp) {
+          inp.classList.add('is-invalid');
+          inp.focus();
+        }
         if (err) {
           err.style.display = 'flex';
           const errTxt = ge('ceoGateErrText');
@@ -2532,6 +2536,7 @@
         }
         return;
       }
+      if (inp) inp.classList.remove('is-invalid');
 
       if (btn) {
         btn.disabled = true;
