@@ -296,6 +296,11 @@
             <div class="sval" id="sTD" style="color:var(--blue2)">0</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sTDSub">แจ้งวันนี้</div>
           </div>
+          <div class="scard amber scard-clickable" id="ambStatCard" onclick="filterAndGoQueue('ambiguous')" title="ดูเรื่องที่ AI ไม่แน่ใจ/คลุมเครือ (รอแอดมินมอบหมาย)" style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);border:1.5px solid #fde68a">
+            <div class="slabel" style="color:#b45309">⚠️ AI คลุมเครือ</div>
+            <div class="sval" id="sAmbiguous" style="color:#d97706">0</div>
+            <div style="font-size:11px;color:#92400e;margin-top:2px" id="sAmbSub">รอแอดมินส่งช่าง</div>
+          </div>
         </div>
 
 
@@ -523,7 +528,7 @@
 
 
     <div class="nwrap">
-      <!-- Citizen Section — 5-Step Wizard -->
+      <!-- Citizen Section — 4-Step AI-Powered Wizard -->
       <div id="secCitizen" style="display:none">
 
         <!-- ── Step Progress Indicator ─────────────────────── -->
@@ -533,18 +538,15 @@
           </div>
           <div class="step-dots">
             <div class="step-dot on" data-step="1"><span>1</span>
-              <div class="step-dot-label">ประเภท</div>
+              <div class="step-dot-label">รายละเอียด</div>
             </div>
             <div class="step-dot" data-step="2"><span>2</span>
-              <div class="step-dot-label">รายละเอียด</div>
+              <div class="step-dot-label">รูปภาพ</div>
             </div>
             <div class="step-dot" data-step="3"><span>3</span>
               <div class="step-dot-label">สถานที่</div>
             </div>
             <div class="step-dot" data-step="4"><span>4</span>
-              <div class="step-dot-label">รูปภาพ</div>
-            </div>
-            <div class="step-dot" data-step="5"><span>5</span>
               <div class="step-dot-label">ยืนยัน</div>
             </div>
           </div>
@@ -553,72 +555,96 @@
         <!-- ── Step Viewport ────────────────────────────────── -->
         <div class="step-viewport" id="stepViewport">
 
-          <!-- STEP 1: ประเภทปัญหา -->
+          <!-- STEP 1: รายละเอียดปัญหา + AI Real-time Assistant -->
           <div class="wiz-step active" id="wiz1">
             <div class="ncard wiz-card">
               <div class="wiz-header">
-                <h2>ประเภทปัญหา <span class="req-star">*</span></h2>
-                <p class="wiz-sub">เลือกประเภทที่ตรงกับปัญหาที่พบมากที่สุด</p>
+                <div class="wiz-title-row">
+                  <h2>รายละเอียดปัญหา <span class="req-star">*</span></h2>
+                  <div class="wiz-icon">📝</div>
+                </div>
+                <p class="wiz-sub">พิมพ์อธิบายปัญหาที่พบ ระบบ AI จะช่วยจำแนกหมวดหมู่และส่งช่างให้อัตโนมัติ</p>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="catGrid">
-                <div class="catbox" data-val="Road" onclick="toggleCat(this)"><span
-                    class="caticon">🛣️</span>ถนน/ทางเท้า</div>
-                <div class="catbox" data-val="Water" onclick="toggleCat(this)"><span
-                    class="caticon">💧</span>ท่อน้ำแตก/น้ำไม่ไหล</div>
-                <div class="catbox" data-val="Electricity" onclick="toggleCat(this)"><span
-                    class="caticon">💡</span>ไฟฟ้า</div>
-                <div class="catbox" data-val="Garbage" onclick="toggleCat(this)"><span
-                    class="caticon">🗑️</span>ขยะตกค้าง</div>
-                <div class="catbox" data-val="Animal" onclick="toggleCat(this)"><span
-                    class="caticon">🐍</span>สัตว์มีพิษ</div>
-                <div class="catbox" data-val="Tree" onclick="toggleCat(this)"><span
-                    class="caticon">🌿</span>สิ่งกีดขวางทาง</div>
-                <div class="catbox" data-val="Hazard" onclick="toggleCat(this)" style="grid-column:1/-1"><span
-                    class="caticon">🚨</span>เหตุระเบิด/เพลิง/ภัยพิบัติ</div>
+              <div style="margin-bottom:14px">
+                <label
+                  style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">รายละเอียดปัญหาที่พบ
+                  <span style="color:var(--r)">*</span></label>
+                <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ เช่น ท่อน้ำแตกหน้าบ้าน น้ำพุ่งท่วมถนน หรือ ไฟฟ้าส่องสว่างริมทางดับ..." maxlength="300"
+                  oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestClassification()"
+                  style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;outline:none;background:#fafafa;font-family:'Prompt',sans-serif;resize:vertical;min-height:110px;transition:var(--transition)"
+                  onfocus="this.style.borderColor='var(--blue2)';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
+                  onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"></textarea>
+                <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:4px"><span
+                    id="descCount">0</span> / 300</div>
               </div>
-              <div class="ebox" id="catErr">กรุณาเลือกประเภทปัญหา</div>
-              <button class="wiz-next btn-ripple" onclick="wizNext(1)">ถัดไป →</button>
+              <div style="margin-bottom:18px">
+                <div
+                  style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px">
+                  <span>🤖</span> AI วิเคราะห์หมวดหมู่และความเร่งด่วน</div>
+                <div class="urg-box" id="urgAiBox" style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:var(--transition)">
+                  <span class="urg-icon" id="urgAiIcon" style="font-size:24px">🤖</span>
+                  <div style="flex:1">
+                    <div class="urg-label" id="urgAiLabel" style="font-size:13px;font-weight:700;color:var(--navy)">รอวิเคราะห์...</div>
+                    <div class="urg-sub" id="urgAiSub" style="font-size:11px;color:var(--muted);margin-top:2px">พิมพ์รายละเอียดเพื่อให้ AI ประเมินหมวดหมู่และระดับความเร่งด่วน</div>
+                  </div>
+                </div>
+                <input type="hidden" id="tUrg" value="" />
+                <input type="hidden" id="tCat" value="auto" />
+              </div>
+              <div class="wiz-nav">
+                <div></div>
+                <button class="wiz-next btn-ripple" id="wizNextBtn1" onclick="wizNext(1)">ถัดไป (แนบรูปภาพ) →</button>
+              </div>
             </div>
           </div>
 
-          <!-- STEP 2: รายละเอียด + AI Urgency -->
+          <!-- STEP 2: รูปภาพ -->
           <div class="wiz-step" id="wiz2">
             <div class="ncard wiz-card">
               <div class="wiz-header">
                 <div class="wiz-title-row">
-                  <h2>รายละเอียดปัญหา</h2>
-                  <div class="wiz-icon">📝</div>
+                  <h2>แนบรูปภาพ <span class="req-star">*</span></h2>
+                  <div class="wiz-icon">📷</div>
                 </div>
-                <p class="wiz-sub">อธิบายปัญหาให้ชัดเจน AI จะช่วยประเมินความเร่งด่วน</p>
+                <p class="wiz-sub">ถ่ายรูปหรือเลือกจากคลังภาพ เพื่อให้ช่างเห็นสภาพปัญหาจริง</p>
               </div>
-              <div style="margin-bottom:14px">
-                <label
-                  style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">รายละเอียด
-                  <span style="color:var(--r)">*</span></label>
-                <textarea id="tDesc" placeholder="อธิบายปัญหาที่พบ เช่น ท่อน้ำแตกที่หน้าบ้าน..." maxlength="200"
-                  oninput="document.getElementById('descCount').textContent=this.value.length; aiSuggestUrgency()"
-                  style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;outline:none;background:#fafafa;font-family:'Prompt',sans-serif;resize:vertical;min-height:100px;transition:var(--transition)"
-                  onfocus="this.style.borderColor='var(--blue2)';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
-                  onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"></textarea>
-                <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:4px"><span
-                    id="descCount">0</span> / 200</div>
-              </div>
-              <div style="margin-bottom:18px">
-                <div
-                  style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
-                  🤖 AI วิเคราะห์ความเร่งด่วน</div>
-                <div class="urg-box" id="urgAiBox">
-                  <span class="urg-icon" id="urgAiIcon">🤖</span>
-                  <div>
-                    <div class="urg-label" id="urgAiLabel">รอวิเคราะห์...</div>
-                    <div class="urg-sub" id="urgAiSub">พิมพ์รายละเอียดเพื่อให้ AI ประเมิน</div>
-                  </div>
+
+              <!-- Hidden gallery input only -->
+              <input type="file" id="cImgGallery" accept="image/*" multiple style="display:none"
+                onchange="prevCitizenImg(event)" />
+              <!-- Unified hidden input used by rest of form -->
+              <input type="file" id="cImg" accept="image/*" multiple style="display:none" />
+
+              <!-- Preview area -->
+              <div id="cImgPrev" style="margin-bottom:16px">
+                <!-- Image preview (hidden until selected) -->
+                <div id="cImgPreviewWrap" style="display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+                  <!-- Dynamic previews injected via JS -->
                 </div>
-                <input type="hidden" id="tUrg" value="" />
+
+                <div id="cImgCountInfo"
+                  style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;text-align:right"></div>
+
+                <!-- Two-button picker (shown when no image) -->
+                <div id="cImgPickerBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <!-- ถ่ายรูปด้วยกล้อง (getUserMedia) -->
+                  <button type="button" class="img-pick-btn" onclick="openCameraCapture()">
+                    <span style="font-size:32px;display:block;margin-bottom:8px">📸</span>
+                    <div style="font-weight:700;font-size:13px">ถ่ายรูป</div>
+                    <div style="font-size:11px;margin-top:4px;color:var(--muted)">เปิดกล้องโดยตรง</div>
+                  </button>
+                  <!-- เลือกจากคลัง -->
+                  <button type="button" class="img-pick-btn" onclick="document.getElementById('cImgGallery').click()">
+                    <span style="font-size:32px;display:block;margin-bottom:8px">🖼️</span>
+                    <div style="font-weight:700;font-size:13px">เลือกจากคลัง</div>
+                    <div style="font-size:11px;margin-top:4px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>
+                  </button>
+                </div>
               </div>
+
               <div class="wiz-nav">
                 <button class="wiz-back btn-ripple" onclick="wizBack(2)">← ย้อนกลับ</button>
-                <button class="wiz-next btn-ripple" id="wizNextBtn2" onclick="wizNext(2)">ถัดไป →</button>
+                <button class="wiz-next btn-ripple" onclick="wizNext(2)">ถัดไป (ระบุสถานที่) →</button>
               </div>
             </div>
           </div>
@@ -631,7 +657,7 @@
                   <h2>ระบุสถานที่ <span class="req-star">*</span></h2>
                   <div class="wiz-icon">📍</div>
                 </div>
-                <p class="wiz-sub">เลือกตำแหน่งที่ต้องการแจ้งเรื่อง</p>
+                <p class="wiz-sub">เลือกตำแหน่งที่ต้องการแจ้งเรื่องบนแผนที่</p>
               </div>
 
               <!-- ── Tab switcher ── -->
@@ -672,66 +698,13 @@
 
               <div class="wiz-nav" style="margin-top:20px">
                 <button class="wiz-back btn-ripple" onclick="wizBack(3)">← ย้อนกลับ</button>
-                <button class="wiz-next btn-ripple" onclick="wizNext(3)">ถัดไป →</button>
+                <button class="wiz-next btn-ripple" onclick="wizNext(3)">ถัดไป (ตรวจสอบข้อมูล) →</button>
               </div>
             </div>
           </div>
 
-
-          <!-- STEP 4: รูปภาพ -->
+          <!-- STEP 4: ยืนยันและส่ง -->
           <div class="wiz-step" id="wiz4">
-            <div class="ncard wiz-card">
-              <div class="wiz-header">
-                <div class="wiz-title-row">
-                  <h2>แนบรูปภาพ <span class="req-star">*</span></h2>
-                  <div class="wiz-icon">📷</div>
-                </div>
-                <p class="wiz-sub">ถ่ายรูปหรือเลือกจากคลังภาพ เพื่อให้ช่างเห็นสภาพปัญหา</p>
-              </div>
-
-              <!-- Hidden gallery input only -->
-              <input type="file" id="cImgGallery" accept="image/*" multiple style="display:none"
-                onchange="prevCitizenImg(event)" />
-              <!-- Unified hidden input used by rest of form -->
-              <input type="file" id="cImg" accept="image/*" multiple style="display:none" />
-
-              <!-- Preview area -->
-              <div id="cImgPrev" style="margin-bottom:16px">
-                <!-- Image preview (hidden until selected) -->
-                <div id="cImgPreviewWrap" style="display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-                  <!-- Dynamic previews injected via JS -->
-                </div>
-
-                <div id="cImgCountInfo"
-                  style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;text-align:right"></div>
-
-                <!-- Two-button picker (shown when no image) -->
-                <div id="cImgPickerBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                  <!-- ถ่ายรูปด้วยกล้อง (getUserMedia) -->
-                  <button type="button" class="img-pick-btn" onclick="openCameraCapture()">
-                    <span style="font-size:32px;display:block;margin-bottom:8px">📸</span>
-                    <div style="font-weight:700;font-size:13px">ถ่ายรูป</div>
-                    <div style="font-size:11px;margin-top:4px;color:var(--muted)">เปิดกล้องโดยตรง</div>
-                  </button>
-                  <!-- เลือกจากคลัง -->
-                  <button type="button" class="img-pick-btn" onclick="document.getElementById('cImgGallery').click()">
-                    <span style="font-size:32px;display:block;margin-bottom:8px">🖼️</span>
-                    <div style="font-weight:700;font-size:13px">เลือกจากคลัง</div>
-                    <div style="font-size:11px;margin-top:4px;color:var(--muted)">PNG, JPG ไม่เกิน 5MB</div>
-                  </button>
-                </div>
-              </div>
-
-              <div class="wiz-nav">
-                <button class="wiz-back btn-ripple" onclick="wizBack(4)">← ย้อนกลับ</button>
-                <button class="wiz-next btn-ripple" onclick="wizNext(4)">ถัดไป →</button>
-              </div>
-            </div>
-          </div>
-
-
-          <!-- STEP 5: ยืนยันและส่ง -->
-          <div class="wiz-step" id="wiz5">
             <div class="ncard wiz-card">
               <div class="wiz-header">
                 <div class="wiz-title-row">
@@ -742,8 +715,8 @@
               </div>
               <div id="wizSummary" style="margin-bottom:20px"></div>
               <div class="wiz-nav">
-                <button class="wiz-back btn-ripple" onclick="wizBack(5)">← ย้อนกลับ</button>
-                <button class="btns btn-ripple wiz-submit" onclick="submitTicket()">📨 ส่งเรื่องร้องเรียน</button>
+                <button class="wiz-back btn-ripple" onclick="wizBack(4)">← ย้อนกลับ</button>
+                <button class="btns btn-ripple wiz-submit" onclick="submitTicket()">📨 ยืนยันและส่งเรื่องร้องเรียน</button>
               </div>
             </div>
           </div>

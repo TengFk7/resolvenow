@@ -23,6 +23,12 @@ const ticketSchema = new mongoose.Schema({
   assignedTo:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   assignedName:  { type: String, default: null },
   rejectReason:  { type: String, default: null },
+  // ── AI Auto-Dispatch & Ambiguity Detection ──
+  isAmbiguous:      { type: Boolean, default: false, index: true },
+  needsAdminReview: { type: Boolean, default: false, index: true },
+  aiConfidence:     { type: String, enum: ['high', 'medium', 'low'], default: 'high' },
+  aiDispatched:     { type: Boolean, default: false },
+  aiReviewReason:   { type: String, default: null },
   // รูปภาพ (URL จาก Cloudinary หรือ local)
   citizenImage:  { type: String, default: null },
   citizenImages: { type: [String], default: [] },
@@ -115,5 +121,6 @@ ticketSchema.index({ status: 1, createdAt: -1 });           // admin list + ceo 
 ticketSchema.index({ slaBreached: 1, status: 1 });          // slaJob breach query
 ticketSchema.index({ chatExpiresAt: 1 }, { sparse: true }); // chat cleanup job
 ticketSchema.index({ lat: 1, lng: 1, category: 1 });        // duplicate detection query
+ticketSchema.index({ needsAdminReview: 1, status: 1 });     // admin ambiguous review queue
 
 module.exports = mongoose.model('Ticket', ticketSchema);

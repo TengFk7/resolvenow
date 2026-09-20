@@ -296,6 +296,78 @@ runTest('Cognitive Engine distinguishes nuisance smoke from active fire hazard',
   assert.strictEqual(ruleBasedUrgency('ไฟไหม้ร้านอาหารในตลาดสด ควันลามไปตึกข้างเคียงอย่างรวดเร็ว', 'Hazard'), 'urgent');
 });
 
+// ── Group 8: AI Auto-Categorization & Smart Fallback Dispatcher ──
+console.log('\n\x1b[1m[Group 8: AI Auto-Categorization & Smart Fallback Dispatcher]\x1b[0m');
+
+runTest('ruleBasedClassification accurately classifies complaints across all 7 categories without manual selection', () => {
+  const { ruleBasedClassification } = require('../routes/ai');
+  const samples = [
+    { text: 'ท่อประปาหน้าบ้านแตก น้ำพุ่งทะลักท่วมถนน', expected: 'Water' },
+    { text: 'เสาไฟเอียง 45 องศา สายไฟห้อยลงมาอันตรายมาก', expected: 'Electricity' },
+    { text: 'มีงูเหลือมตัวใหญ่เลื้อยเข้าห้องนอนเด็ก', expected: 'Animal' },
+    { text: 'กิ่งไม้ใหญ่หักโค่นขวางทางเข้าหมู่บ้าน รถผ่านไม่ได้', expected: 'Tree' },
+    { text: 'ถนนเป็นหลุมขนาดใหญ่ รถตกหลุมยางแตกเสียหาย', expected: 'Road' },
+    { text: 'ขยะล้นถังส่งกลิ่นเหม็นเน่า แมลงวันตอมเต็มหน้าบ้าน', expected: 'Garbage' },
+    { text: 'เกิดเพลิงไหม้โรงงาน มีสารเคมีรั่วไหลและควันพิษพุ่งสูง', expected: 'Hazard' }
+  ];
+
+  for (const s of samples) {
+    const res = ruleBasedClassification(s.text);
+    assert.strictEqual(res.category, s.expected, `Expected ${s.expected} for "${s.text}", got ${res.category}`);
+    assert.strictEqual(res.isAmbiguous, false, `Expected not ambiguous for "${s.text}"`);
+    assert.strictEqual(res.confidence, 'high');
+  }
+});
+
+runTest('ruleBasedClassification detects ambiguous and vague complaints for admin review queue', () => {
+  const { ruleBasedClassification } = require('../routes/ai');
+  const ambiguousTexts = [
+    'ช่วยด้วยครับ มีปัญหาแถวนี้',
+    'ตรงนี้พังช่วยมาดูหน่อย',
+    'แถวนี้แย่มาก',
+    'ช่วยหน่อย',
+    'พัง'
+  ];
+
+  for (const text of ambiguousTexts) {
+    const res = ruleBasedClassification(text);
+    assert.strictEqual(res.isAmbiguous, true, `Expected ambiguous:true for "${text}", got ${res.isAmbiguous}`);
+    assert.strictEqual(res.confidence, 'low');
+  }
+});
+
+runTest('Ticket model schema includes AI Dispatch and Ambiguity detection fields', () => {
+  const Ticket = require('../models/Ticket');
+  const paths = Ticket.schema.paths;
+  assert.ok(paths.isAmbiguous, 'isAmbiguous field missing from Ticket schema');
+  assert.strictEqual(paths.isAmbiguous.instance, 'Boolean');
+  assert.ok(paths.needsAdminReview, 'needsAdminReview field missing from Ticket schema');
+  assert.strictEqual(paths.needsAdminReview.instance, 'Boolean');
+  assert.ok(paths.aiDispatched, 'aiDispatched field missing from Ticket schema');
+  assert.strictEqual(paths.aiDispatched.instance, 'Boolean');
+  assert.ok(paths.aiConfidence, 'aiConfidence field missing from Ticket schema');
+  assert.deepStrictEqual(paths.aiConfidence.enumValues, ['high', 'medium', 'low']);
+  assert.ok(paths.aiReviewReason, 'aiReviewReason field missing from Ticket schema');
+});
+
+runTest('Cognitive Engine classifies severe damage like "ถนนหน้าบ้านพังยับ" as Road with high urgency (not normal)', () => {
+  const { ruleBasedClassification, ruleBasedUrgency } = require('../routes/ai');
+  const res = ruleBasedClassification('ถนนหน้าบ้านพังยับ');
+  assert.strictEqual(res.category, 'Road');
+  assert.strictEqual(res.urgency, 'urgent');
+  assert.strictEqual(res.isAmbiguous, false);
+
+  // Severe road damage should never be 'normal'
+  const res2 = ruleBasedClassification('ถนนหน้าบ้านพัง');
+  assert.strictEqual(res2.category, 'Road');
+  assert.strictEqual(res2.urgency, 'medium');
+
+  // Minor issue remains 'normal'
+  const res3 = ruleBasedClassification('สีตีเส้นจราจรทางม้าลายซีดจางจนแทบมองไม่เห็น');
+  assert.strictEqual(res3.category, 'Road');
+  assert.strictEqual(res3.urgency, 'normal');
+});
+
 // ── Summary ──────────────────────────────────────────────────────
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);

@@ -14,18 +14,17 @@ var _citizenImages = []; // stores array of {file, dataUrl}
    ───────────────────────────────────────────── */
 
 /* ══════════════════════════════════════════
-   WIZARD — 5-Step form controller
+   WIZARD — 4-Step AI-Powered form controller
 ══════════════════════════════════════════ */
 var _curStep = 1;
-var TOTAL_STEPS = 5;
+var TOTAL_STEPS = 4;
 
 // Transition map: step → { forward: [exitClass, enterClass], backward: [exitClass, enterClass] }
 var WIZ_TRANS = {
   1: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
-  2: { fwd: ['exit-top', 'enter-bottom'], bwd: ['exit-bottom', 'enter-top'] },
+  2: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
   3: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
-  4: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] },
-  5: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] }
+  4: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] }
 };
 
 function wizGoTo(from, to) {
@@ -52,8 +51,8 @@ function wizGoTo(from, to) {
   _curStep = to;
   wizUpdateProgress(to);
 
-  // If arriving at step 5 — render summary
-  if (to === 5) wizBuildSummary();
+  // If arriving at step 4 — render summary
+  if (to === 4) wizBuildSummary();
 
   // Scroll to top of wizard
   var prog = ge('stepProgress');
@@ -63,26 +62,6 @@ function wizGoTo(from, to) {
 function wizNext(step) {
   // Validation per step
   if (step === 1) {
-    if (!getSelectedCat()) {
-      var catGrid = ge('catGrid');
-      if (catGrid) {
-        catGrid.classList.add('is-invalid');
-        catGrid.style.border = '1.5px solid var(--r, #ef4444)';
-        catGrid.style.borderRadius = '12px';
-        catGrid.style.padding = '8px';
-      }
-      ge('catErr').classList.add('on');
-      return;
-    }
-    var catGrid = ge('catGrid');
-    if (catGrid) {
-      catGrid.classList.remove('is-invalid');
-      catGrid.style.border = '';
-      catGrid.style.padding = '';
-    }
-    hideE('catErr');
-  }
-  if (step === 2) {
     var descEl = ge('tDesc');
     var desc = descEl ? descEl.value.trim() : '';
     if (!desc) {
@@ -95,7 +74,18 @@ function wizNext(step) {
       }
       return;
     }
-    if (_aiAnalyzing) { showToast('⏳ กรุณารอ AI วิเคราะห์ความเร่งด่วนให้เสร็จก่อน', true); return; }
+    if (_aiAnalyzing) {
+      showToast('⏳ กรุณารอ AI วิเคราะห์ข้อความสักครู่...', true);
+      return;
+    }
+  }
+  if (step === 2) {
+    if (_citizenImages.length === 0) {
+      var pickerBtns = ge('cImgPickerBtns');
+      if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
+      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true);
+      return;
+    }
   }
   if (step === 3) {
     if (!ge('tLat').value || !ge('tLng').value) {
@@ -106,14 +96,6 @@ function wizNext(step) {
         if (locInput) rnMarkInvalid(locInput);
       }
       showToast('กรุณาระบุตำแหน่งสถานที่ก่อน', true);
-      return;
-    }
-  }
-  if (step === 4) {
-    if (_citizenImages.length === 0) {
-      var pickerBtns = ge('cImgPickerBtns');
-      if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
-      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true);
       return;
     }
   }
@@ -139,23 +121,27 @@ function wizUpdateProgress(step) {
   });
 }
 
+var _aiDetectedCategory = 'auto';
+var _aiClassificationResult = null;
+
 function wizBuildSummary() {
-  var cat = getSelectedCat();
   var desc = ge('tDesc').value.trim();
   var hasGps = ge('tLat').value && ge('tLng').value;
-  var file = ge('cImg').files[0];
-  var urg = ge('tUrg').value || 'ไม่ระบุ';
-  var urgTH = { urgent: '⚡ ด่วนมาก', medium: '⏰ ด่วน', normal: '🔵 ปกติ' }[urg] || urg;
-  var catTH = DEPT[cat] || cat || '—';
+  var urg = ge('tUrg').value || 'normal';
+  var urgTH = { urgent: '🔴 ด่วนมาก (Urgent)', medium: '🟡 ด่วน (Medium)', normal: '🟢 ปกติ (Normal)' }[urg] || '🟢 ปกติ';
+  var cat = (_aiDetectedCategory && _aiDetectedCategory !== 'auto') ? _aiDetectedCategory : 'Road';
+  var catTH = DEPT[cat] || cat;
+  var catIcon = DEPT_ICON[cat] || '🤖';
 
   var h = '';
-  h += sumRow(DEPT_ICON[cat] || '📋', 'ประเภทปัญหา', catTH);
-  h += sumRow('📝', 'รายละเอียด', escapeHTML(desc) || '—');
-  h += sumRow('📍', 'สถานที่', hasGps ? '✅ ' + escapeHTML(_gpsAddress || 'บันทึกแล้ว') : '❌ ยังไม่ได้ระบุ');
-  // Show image thumbnail instead of filename
+  h += sumRow('📝', 'รายละเอียดปัญหา', escapeHTML(desc) || '—');
+  h += sumRow(catIcon, 'หมวดหมู่ (AI วิเคราะห์)', catTH + ' • จัดส่งช่างอัตโนมัติ');
+  h += sumRow('⚡', 'ระดับความเร่งด่วน', urgTH);
+  h += sumRow('📍', 'สถานที่เกิดเหตุ', hasGps ? '✅ ' + escapeHTML(_gpsAddress || 'พิกัด GPS') : '❌ ยังไม่ได้ระบุ');
+  
   var imgHtml = '';
   if (_citizenImages.length) {
-    imgHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">';
+    imgHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
     _citizenImages.forEach(function (img) {
       imgHtml += '<img src="' + img.dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"/>';
     });
@@ -163,8 +149,11 @@ function wizBuildSummary() {
   } else {
     imgHtml = '❌ ยังไม่ได้แนบ';
   }
-  h += sumRowRaw('📷', 'รูปภาพ', imgHtml);
-  h += sumRow('🤖', 'ระดับความเร่งด่วน', urgTH);
+  h += sumRowRaw('📷', 'รูปภาพหลักฐาน', imgHtml);
+  h += '<div style="margin-top:14px;padding:12px 14px;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;font-size:12px;color:#0369a1;display:flex;align-items:center;gap:10px">';
+  h += '<span style="font-size:20px">🤖</span>';
+  h += '<div><strong>AI Dispatcher:</strong> ระบบ AI จะนำส่งเรื่องร้องเรียนให้ช่างประจำฝ่าย' + catTH + ' โดยอัตโนมัติทันทีหลังส่งเรื่อง</div>';
+  h += '</div>';
   ge('wizSummary').innerHTML = h;
 }
 
@@ -190,98 +179,114 @@ function sumRowRaw(icon, label, rawHtml) {
   return '<div class="wiz-summary-item"><div class="wiz-summary-icon">' + icon + '</div><div style="flex:1;min-width:0"><div class="wiz-summary-label">' + label + '</div>' + rawHtml + '</div></div>';
 }
 
-
-/* ── Category Selection ──────────────────────────────── */
+/* ── Category Selection Helper ──────────────────────── */
 function toggleCat(el) {
   document.querySelectorAll('#catGrid .catbox').forEach(function (b) { b.classList.remove('on'); });
   el.classList.add('on');
-  var catGrid = ge('catGrid');
-  if (catGrid) {
-    catGrid.classList.remove('is-invalid');
-    catGrid.style.border = '';
-    catGrid.style.padding = '';
-  }
-  hideE('catErr');
+  _aiDetectedCategory = el.getAttribute('data-val');
 }
 function getSelectedCat() {
   var el = document.querySelector('#catGrid .catbox.on');
-  return el ? el.getAttribute('data-val') : null;
+  return el ? el.getAttribute('data-val') : (_aiDetectedCategory || 'auto');
 }
 
-/* ── AI Urgency Suggestion ──────────────────────────── */
+/* ── AI Real-time Classification & Urgency ─────────── */
 var _urgTimer = null;
-var _aiAnalyzing = false; // true ขณะ AI กำลังวิเคราะห์ → block ปุ่มถัดไป
+var _aiAnalyzing = false;
 
-function _setNextBtn2State(analyzing) {
-  var btn = ge('wizNextBtn2');
+function _setNextBtn1State(analyzing) {
+  var btn = ge('wizNextBtn1');
   if (!btn) return;
   if (analyzing) {
     btn.disabled = true;
-    btn.style.opacity = '0.5';
+    btn.style.opacity = '0.6';
     btn.style.cursor = 'not-allowed';
     btn.textContent = '⏳ กำลังวิเคราะห์...';
   } else {
     btn.disabled = false;
     btn.style.opacity = '';
     btn.style.cursor = '';
-    btn.textContent = 'ถัดไป →';
+    btn.textContent = 'ถัดไป (แนบรูปภาพ) →';
   }
 }
-function aiSuggestUrgency() {
+
+function aiSuggestClassification() {
   var desc = ge('tDesc').value.trim();
   if (desc.length < 5) {
     ge('tUrg').value = '';
+    _aiDetectedCategory = 'auto';
     ge('urgAiIcon').textContent = '🤖';
     ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
-    ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
+    ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินหมวดหมู่และระดับความเร่งด่วน';
     ge('urgAiBox').style.background = '#f8fafc';
     ge('urgAiBox').style.borderColor = '#cbd5e0';
-    hideE('urgErr');
-    // ถ้าพิมพ์น้อยกว่า 5 ตัวอักษร ยกเลิกสถานะ analyzing ด้วย
     _aiAnalyzing = false;
-    _setNextBtn2State(false);
+    _setNextBtn1State(false);
     return;
   }
-  // debounce 900ms — ทันทีที่พิมพ์ให้ lock ปุ่มถัดไปไว้ก่อน
   clearTimeout(_urgTimer);
   _aiAnalyzing = true;
-  _setNextBtn2State(true);
+  _setNextBtn1State(true);
   ge('urgAiIcon').textContent = '⏳';
   ge('urgAiLabel').textContent = 'AI กำลังวิเคราะห์...';
-  ge('urgAiSub').textContent = 'สักครู่...';
+  ge('urgAiSub').textContent = 'ระบบกำลังวิเคราะห์หมวดหมู่และความเร่งด่วน...';
   _urgTimer = setTimeout(async function () {
     try {
-      var r = await fetch('/api/ai/urgency', {
+      var r = await fetch('/api/ai/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc, category: getSelectedCat() })
+        body: JSON.stringify({ description: desc })
       });
       var d = await r.json();
+      _aiClassificationResult = d;
       var urg = d.urgency || 'normal';
+      var cat = d.category || 'Road';
+      _aiDetectedCategory = cat;
       ge('tUrg').value = urg;
-      hideE('urgErr');
-      var cfg = {
-        urgent: { icon: '⚡', label: 'ด่วนมาก', sub: 'AI ประเมินว่าเรื่องนี้เร่งด่วนมาก', bg: '#fff5f5', border: '#fc8181', labelColor: '#c53030' },
-        medium: { icon: '⏰️', label: 'ด่วน', sub: 'AI ประเมินว่าควรเร่งดำเนินการ', bg: '#fffbeb', border: '#f6ad55', labelColor: '#c05621' },
-        normal: { icon: '🔵', label: 'ปกติ', sub: 'AI ประเมินว่าไม่เร่งด่วน', bg: '#ebf8ff', border: '#90cdf4', labelColor: '#2b6cb0' }
-      }[urg];
-      ge('urgAiIcon').textContent = cfg.icon;
-      ge('urgAiLabel').textContent = cfg.label;
-      ge('urgAiLabel').style.color = cfg.labelColor;
-      ge('urgAiSub').textContent = cfg.sub;
-      ge('urgAiBox').style.background = cfg.bg;
-      ge('urgAiBox').style.borderColor = cfg.border;
-      ge('urgAiBox').style.borderStyle = 'solid';
+      
+      var catTH = DEPT[cat] || cat;
+      var catIcon = DEPT_ICON[cat] || '📌';
+      var urgText = { urgent: '🔴 ด่วนมาก (8 ชม.)', medium: '🟡 ด่วน (48 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || urg;
+
+      ge('urgAiIcon').textContent = catIcon;
+      if (d.isAmbiguous) {
+        ge('urgAiLabel').textContent = '⚠️ ข้อความสั้น/คลุมเครือ: รอแอดมินคัดกรอง';
+        ge('urgAiSub').textContent = 'หมวดหมู่คาดการณ์: ' + catIcon + ' ' + catTH + ' • ความเร่งด่วน: ' + urgText;
+        ge('urgAiBox').style.background = '#fefce8';
+        ge('urgAiBox').style.borderColor = '#facc15';
+      } else {
+        ge('urgAiLabel').textContent = '✅ ตรวจพบ: ' + catIcon + ' ' + catTH + ' • ' + urgText;
+        ge('urgAiSub').textContent = '🤖 ระบบ AI จะจัดส่งช่างฝ่าย' + catTH + ' ให้โดยอัตโนมัติ (ระดับความเร่งด่วน: ' + urgText + ')';
+        if (urg === 'urgent') {
+          ge('urgAiBox').style.background = '#fef2f2';
+          ge('urgAiBox').style.borderColor = '#fca5a5';
+        } else if (urg === 'medium') {
+          ge('urgAiBox').style.background = '#fffbeb';
+          ge('urgAiBox').style.borderColor = '#fde68a';
+        } else {
+          ge('urgAiBox').style.background = '#f0fdf4';
+          ge('urgAiBox').style.borderColor = '#86efac';
+        }
+      }
     } catch (e) {
-      ge('urgAiIcon').textContent = '⚠️';
-      ge('urgAiLabel').textContent = 'ไม่สามารถวิเคราะห์ได้';
-      ge('urgAiSub').textContent = 'กรุณาตรวจสอบการเชื่อมต่อ';
+      console.warn('[AI classify] error:', e);
+      // Fast client-side fallback so severe damage is never marked as normal
+      var isSevere = /พังยับ|ไฟไหม้|ระเบิด|งูพิษ|สายไฟขาด|เสาไฟล้ม|น้ำทะลัก/.test(desc);
+      var fallbackUrg = isSevere ? 'urgent' : (/พัง|แตก|รั่ว|หลุม|ขยะ|มืด|ดับ/.test(desc) ? 'medium' : 'normal');
+      ge('tUrg').value = fallbackUrg;
+      ge('urgAiIcon').textContent = '🤖';
+      ge('urgAiLabel').textContent = 'AI โหมดอัตโนมัติ (' + (fallbackUrg === 'urgent' ? '🔴 ด่วนมาก' : fallbackUrg === 'medium' ? '🟡 ด่วน' : '🟢 ปกติ') + ')';
+      ge('urgAiSub').textContent = 'ระบบจะจำแนกหมวดหมู่และจัดส่งงานให้ช่างที่เกี่ยวข้องโดยตรง';
     } finally {
-      // ไม่ว่าจะสำเร็จหรือเกิด error ก็ unlock ปุ่มถัดไปเสมอ
       _aiAnalyzing = false;
-      _setNextBtn2State(false);
+      _setNextBtn1State(false);
     }
-  }, 900);
+  }, 350);
+}
+
+// Backward compatibility alias
+function aiSuggestUrgency() {
+  aiSuggestClassification();
 }
 
 
@@ -432,35 +437,27 @@ function selectLocResult(lat, lng, displayName) {
 
 /* ── Submit Ticket ───────────────────────────────────── */
 async function submitTicket() {
-  var cat = getSelectedCat();
-  var urg = ge('tUrg').value;
+  var cat = (_aiDetectedCategory && _aiDetectedCategory !== 'auto') ? _aiDetectedCategory : 'auto';
+  var urg = (_aiClassificationResult && _aiClassificationResult.urgency) ? _aiClassificationResult.urgency : (ge('tUrg').value || 'normal');
   var descEl = ge('tDesc');
   var desc = descEl ? descEl.value.trim() : '';
   var lat = ge('tLat').value;
   var lng = ge('tLng').value;
   var ok = true;
-  if (!cat) {
-    var catGrid = ge('catGrid');
-    if (catGrid) {
-      catGrid.classList.add('is-invalid');
-      catGrid.style.border = '1.5px solid var(--r, #ef4444)';
-      catGrid.style.borderRadius = '12px';
-    }
-    ge('catErr').classList.add('on');
-    ok = false;
-  } else {
-    var catGrid = ge('catGrid');
-    if (catGrid) { catGrid.classList.remove('is-invalid'); catGrid.style.border = ''; }
-    hideE('catErr');
-  }
-  if (!urg) { urg = 'normal'; ge('tUrg').value = 'normal'; } else hideE('urgErr');
+
   if (!desc) {
     if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
     if (typeof showCenterPopup === 'function') {
-      showCenterPopup('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', 2300, 'ℹ️');
+      showCenterPopup('กรุณากรอกรายละเอียดปัญหาให้ชัดเจน', 2300, 'ℹ️');
     } else {
-      showToast('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', true);
+      showToast('กรุณากรอกรายละเอียดปัญหาให้ชัดเจน', true);
     }
+    ok = false;
+  }
+  if (_citizenImages.length === 0) {
+    var pickerBtns = ge('cImgPickerBtns');
+    if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
+    showToast('กรุณาแนบรูปภาพก่อนส่งอย่างน้อย 1 รูป', true);
     ok = false;
   }
   if (!lat || !lng) {
@@ -469,20 +466,14 @@ async function submitTicket() {
       if (gpsBtn) rnMarkInvalid(gpsBtn);
       if (locInput) rnMarkInvalid(locInput);
     }
-    showToast('กรุณาระบุตำแหน่ง GPS ก่อนส่ง', true);
-    ok = false;
-  }
-  if (_citizenImages.length === 0) {
-    var pickerBtns = ge('cImgPickerBtns');
-    if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
-    showToast('กรุณาแนบรูปภาพก่อนส่ง', true);
+    showToast('กรุณาระบุตำแหน่งบนแผนที่ก่อนส่ง', true);
     ok = false;
   }
   if (!ok) return;
 
   // ── Disable submit button to prevent double-submit ────
   var submitBtn = document.querySelector('.wiz-submit');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ กำลังส่ง...'; }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ AI กำลังประมวลผลและส่งช่าง...'; }
 
   try {
     var fd = new FormData();
@@ -499,7 +490,7 @@ async function submitTicket() {
     var data = await res.json();
     if (!res.ok) {
       // Re-enable button on API error
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ส่งเรื่องร้องเรียน'; }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ยืนยันและส่งเรื่องร้องเรียน'; }
       return showToast(data.error || 'เกิดข้อผิดพลาด', true);
     }
 
@@ -513,15 +504,19 @@ async function submitTicket() {
       ge('tLat').value = '';
       ge('tLng').value = '';
       ge('tUrg').value = '';
-      _gpsAddress = ''; // BUG-007: reset GPS address to prevent stale data on next submission
+      _aiDetectedCategory = 'auto';
+      _aiClassificationResult = null;
+      _gpsAddress = '';
       ge('descCount').textContent = '0';
       ge('gpsResult').style.display = 'none';
       _citizenImages = [];
       _renderCitizenImgs();
-      ge('urgAiIcon').textContent = '🤖'; ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
+      ge('urgAiIcon').textContent = '🤖';
+      ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
       ge('urgAiLabel').style.color = '#4a5568';
-      ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินระดับความเร่งด่วน';
-      ge('urgAiBox').style.background = '#f8fafc'; ge('urgAiBox').style.borderColor = '#cbd5e0'; ge('urgAiBox').style.borderStyle = 'dashed';
+      ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินหมวดหมู่และระดับความเร่งด่วน';
+      ge('urgAiBox').style.background = '#f8fafc';
+      ge('urgAiBox').style.borderColor = '#cbd5e0';
       var gpsBtn = ge('btnGps'); var gpsIcon2 = ge('gpsIcon'); var gpsBtnText = ge('gpsBtnText');
       gpsBtn.style.background = ''; gpsBtn.style.borderColor = ''; gpsBtn.style.color = '';
       gpsIcon2.textContent = '📍'; gpsBtnText.textContent = 'ระบุตำแหน่ง GPS จากอุปกรณ์ของฉัน';
@@ -529,19 +524,16 @@ async function submitTicket() {
       switchLocTab('gps');
       var locInp = ge('locSearchInput'); if (locInp) locInp.value = '';
       var locRes = ge('locSearchResults'); if (locRes) locRes.style.display = 'none';
-      // Reset image picker UI
-      _renderCitizenImgs();
       // Reset wizard to step 1
       _curStep = 1;
       document.querySelectorAll('.wiz-step').forEach(function (s) { s.classList.remove('active', 'enter-right', 'enter-left', 'enter-bottom', 'enter-top', 'exit-left', 'exit-right', 'exit-top'); });
       var wiz1 = ge('wiz1');
-      if (wiz1) { wiz1.classList.add('active'); var h2 = wiz1.querySelector('h2'); if (h2) h2.textContent = 'ประเภทปัญหา'; }
+      if (wiz1) wiz1.classList.add('active');
       wizUpdateProgress(1);
       // Re-enable submit button for next submission
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ส่งเรื่องร้องเรียน'; }
-      // Reset AI analyzing state + next button for step 2
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ยืนยันและส่งเรื่องร้องเรียน'; }
       _aiAnalyzing = false;
-      _setNextBtn2State(false);
+      _setNextBtn1State(false);
       // ── Scroll กลับขึ้นไปที่ยอด wizard ────────────────
       var prog = ge('stepProgress');
       if (prog) prog.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -58,8 +58,12 @@ function ruleBasedUrgency(text, category) {
     /ควันและกลิ่นฉุนรุนแรง.*แสบตา/,
     /น้ำมันหก.*รถ.*ชนกัน|รถ.*ชนกันหลายคัน/,
 
-    // 3. โครงสร้างวิบัติ / ภัยธรรมชาติรุนแรง / อุบัติเหตุรุนแรง
+    // 3. โครงสร้างวิบัติ / ภัยธรรมชาติรุนแรง / อุบัติเหตุรุนแรง / ทางชำรุดเสียหายหนัก
     /แผ่นดินไหว|เขื่อน.*พัง|สะพาน.*(ขาด|พัง|ถล่ม)|คอสะพานขาด|หลุมยุบขนาดใหญ่|(ดินถล่ม|ดินสไลด์).*ทับ|ตึกถล่ม|อาคาร.*(ทรุดตัว|จะถล่ม)/,
+    /(ถนน|ทางเท้า|สะพาน|พื้นถนน|ผิวทาง).*(พังยับ|พังยับเยิน|พังหมด|พังหนักมาก|ทรุดหนักมาก|ยุบตัวหนัก|ขาด|ถล่ม|ใช้การไม่ได้|สัญจรไม่ได้|ผ่านไม่ได้)/,
+    /พังยับเยิน|พังยับ/,
+    /หลุมยักษ์|หลุมลึกมาก.*(รถ|อันตราย|สัญจร)/,
+    /(รถยนต์|มอเตอร์ไซค์|รถ).*(ตกหลุม|คว่ำ|พังยับ)/,
     /เสาไฟแรงสูงหัก|เสาไฟ.*ล้มทับ|รถเครน.*ล้ม|ขวางรางรถไฟ|สึนามิ|น้ำป่าไหลหลาก/,
     /ทะลักเข้าท่วม(โรงเรียน|บ้าน)|ไหลเข้าท่วมบ้าน/,
     /พายุ.*โค่นหลายสิบต้น/,
@@ -162,6 +166,8 @@ function ruleBasedUrgency(text, category) {
     /ไฟตกบ่อยมาก/,
     /สายเคเบิลขาดห้อย/,
     /ถนนเป็นหลุมเป็นบ่อ/,
+    /(ถนน|ทางเท้า|ลูกระนาด).*(พัง|ชำรุดหนัก|ทรุดตัว|เป็นโพรง|แตกร้าวหนัก|เป็นหลุม)/,
+    /ถนนเละ|ทางเละ|หลุมลึก|ทางขรุขระมาก/,
     /ฝาท่อ.*หาย/,
     /แผงกั้น.*ล้ำ/,
     /ป้าย.*ขวาง/,
@@ -482,5 +488,317 @@ ${catCtx}
   return res.json({ urgency: ruleBasedUrgency(description, category), source: 'rule' });
 });
 
+// ─── Smart Cognitive Thai NLP Fallback for Category & Ambiguity ────────
+function ruleBasedClassification(text) {
+  if (!text || typeof text !== 'string' || text.trim().length < 5) {
+    return {
+      category: 'Road',
+      urgency: 'normal',
+      isAmbiguous: true,
+      confidence: 'low',
+      reason: 'ข้อความสั้นเกินไป ไม่สามารถระบุหมวดหมู่ปัญหาได้',
+      source: 'rule'
+    };
+  }
+
+  const t = text.trim().toLowerCase();
+
+  // 1. ตรวจสอบข้อความคลุมเครือทั่วไป (Vague / Ambiguous checks)
+  const vaguePatterns = [
+    /^(ช่วยด้วย|มีปัญหา|ช่วยหน่อย|พัง|ซ่อมหน่อย|เดือดร้อน|แย่มาก|ไม่ไหวแล้ว|มาดูหน่อย|แย่เลย)[!?. ]*$/,
+    /^มีปัญหา(แถวนี้|ตรงนี้|มาก|จริงๆ)/,
+    /^(ตรงนี้|แถวนี้|ที่นี่)พัง/,
+    /^(รบกวน|ช่วย)มาดู(ให้หน่อย|ด่วน)/,
+    /^ไม่รู้(เรื่องอะไร|ว่าเป็นอะไร|จะทำยังไง)/
+  ];
+  for (const pat of vaguePatterns) {
+    if (pat.test(t)) {
+      return {
+        category: 'Road',
+        urgency: 'normal',
+        isAmbiguous: true,
+        confidence: 'low',
+        reason: 'ข้อความระบุปัญหาคลุมเครือ ไม่มีคำระบุลักษณะปัญหาหรืออาการที่แน่ชัด',
+        source: 'rule'
+      };
+    }
+  }
+
+  // 2. Multi-category Dictionary & Pattern Matching with Weights
+  const categoryDefs = {
+    Hazard: {
+      regex: /(เพลิงไหม้|ไฟไหม้|ไฟลุก|ระเบิด|แก๊สรั่ว|สารเคมี|กัมมันตรังสี|นิวเคลียร์|ตึกถล่ม|อาคารถล่ม|สะพานพัง|สะพานขาด|คอสะพานขาด|แผ่นดินไหว|ดินสไลด์.*ทับ|ดินถล่ม.*ทับ|สึนามิ|น้ำป่าไหลหลาก)/,
+      weight: 3.0
+    },
+    Animal: {
+      regex: /(งูเห่า|งูจงอาง|งูเหลือม|งูหลาม|งูเขียว|งู|ตะขาบ|แมงป่อง|ผึ้งหลวง|รังผึ้ง|ผึ้ง|แตน|รังแตน|ต่อหัวเสือ|รังต่อ|ตัวเหี้ย|ตัวเงินตัวทอง|หมาบ้า|สุนัขบ้า|สุนัขจรจัด.*กัด|หมากัดคน|ช้างป่า|ลิงกัด|จระเข้|สัตว์มีพิษ|สัตว์ดุร้าย)/,
+      weight: 2.5
+    },
+    Water: {
+      regex: /(น้ำประปา|ท่อประปา|ท่อน้ำแตก|ท่อแตก|ท่อรั่ว|น้ำไม่ไหล|น้ำไหลอ่อน|น้ำประปาขุ่น|น้ำขุ่น|น้ำมีกลิ่น|น้ำรั่วซึม|น้ำท่วม|น้ำขัง|ท่อระบายน้ำ.*ตัน|น้ำผุด|ท่อเมน|น้ำเสีย|น้ำเอ่อ)/,
+      weight: 2.0
+    },
+    Electricity: {
+      regex: /(เสาไฟ|สายไฟ|หม้อแปลง|ไฟดับ|ไฟตก|ไฟกระพริบ|ไฟช็อต|ไฟรั่ว|หลอดไฟทาง|ไฟส่องสว่าง|สายสื่อสาร.*ห้อย|สายเคเบิล|มิเตอร์ไฟ|ไฟฟ้าสาธารณะ)/,
+      weight: 2.0
+    },
+    Garbage: {
+      regex: /(ขยะ|ถังขยะ|กองขยะ|ขยะล้น|กลิ่นเน่า|เหม็นเน่า|สิ่งปฏิกูล|แอบทิ้งขยะ|เผาขยะ|รถขยะ|เศษอาหาร|ซากสุนัข|ซากสัตว์|กลิ่นเหม็นรุนแรง)/,
+      weight: 2.0
+    },
+    Tree: {
+      regex: /(ต้นไม้|กิ่งไม้|หักโค่น|ล้มทับ|ล้มขวาง|กิ่งไม้ยื่น|กิ่งไม้แห้ง|ต้นไม้ใหญ่|ป้ายโฆษณา.*ล้ม|สิ่งกีดขวาง|หญ้ารก|วัชพืช)/,
+      weight: 2.0
+    },
+    Road: {
+      regex: /(ถนน|ผิวทาง|ทางเท้า|ฟุตบาท|หลุม|บ่อ|ทรุดตัว|ลูกระนาด|ฝาท่อ|ป้ายจราจร|ไฟจราจร|สัญญาณไฟ|เส้นจราจร|คอสะพาน|แผงกั้น|สะพานไม้)/,
+      weight: 1.8
+    }
+  };
+
+  const scores = {};
+  for (const [cat, def] of Object.entries(categoryDefs)) {
+    scores[cat] = 0;
+    const match = t.match(new RegExp(def.regex.source, 'g'));
+    if (match) {
+      scores[cat] += match.length * def.weight;
+    }
+  }
+
+  // หาหมวดหมู่ที่ได้คะแนนสูงสุด
+  let topCat = null;
+  let maxScore = 0;
+  let secondScore = 0;
+  for (const [cat, sc] of Object.entries(scores)) {
+    if (sc > maxScore) {
+      secondScore = maxScore;
+      maxScore = sc;
+      topCat = cat;
+    } else if (sc > secondScore) {
+      secondScore = sc;
+    }
+  }
+
+  // หากมีหมวดหมู่เฉพาะทาง (เช่น Water, Electricity, Animal, Tree, Garbage, Hazard) ได้คะแนน
+  // และ Road ได้คะแนนจากเพียงคำระบุตำแหน่ง เช่น ถนน, ทางเท้า ให้ลดผลกระทบของ Road ต่อการเป็นข้อความคลุมเครือ
+  if (topCat !== 'Road' && scores.Road > 0) {
+    secondScore = Math.max(...Object.entries(scores).filter(([c]) => c !== topCat && c !== 'Road').map(([, s]) => s), 0);
+  }
+
+  // หากไม่มีหมวดใดแมทช์เลย (คะแนน 0)
+  if (maxScore === 0) {
+    return {
+      category: 'Road',
+      urgency: 'normal',
+      isAmbiguous: true,
+      confidence: 'low',
+      reason: 'ไม่พบคำสำคัญที่ตรงกับหมวดหมู่งานช่างใดๆ ชัดเจน',
+      source: 'rule'
+    };
+  }
+
+  // หากคะแนนของ 2 หมวดสูสีกันมากอย่างแท้จริง และไม่ใช่เรื่องสถานที่
+  if (secondScore > 0 && (maxScore - secondScore < 0.3) && topCat !== 'Hazard') {
+    return {
+      category: topCat,
+      urgency: ruleBasedUrgency(text, topCat),
+      isAmbiguous: true,
+      confidence: 'medium',
+      reason: `พบประเด็นคาบเกี่ยวระหว่างหลายหมวดหมู่ (${topCat} และหมวดอื่นๆ)`,
+      source: 'rule'
+    };
+  }
+
+  const urgency = ruleBasedUrgency(text, topCat);
+  return {
+    category: topCat,
+    urgency,
+    isAmbiguous: false,
+    confidence: 'high',
+    reason: `จำแนกตรงกับหมวดหมู่ ${topCat} ด้วยระบบ Cognitive Thai NLP`,
+    source: 'rule'
+  };
+}
+
+const CLASSIFY_PROMPT = `คุณคือระบบ AI ผู้เชี่ยวชาญจำแนกหมวดหมู่เรื่องร้องเรียนของเทศบาล/เมืองอัจฉริยะ (ResolveNow)
+หน้าที่ของคุณคือวิเคราะห์ข้อความร้องเรียนจากประชาชน แล้วตอบกลับเป็น JSON เท่านั้น (ห้ามใส่คำบรรยายอื่นนอก JSON)
+
+หมวดหมู่ที่เป็นไปได้ (Category) มี 7 หมวด:
+- "Road" = ปัญหาเกี่ยวกับถนน ทางเท้า หลุม บ่อ ทรุดตัว ลูกระนาด ฝาท่อ ป้ายจราจร ไฟจราจร คอสะพาน
+- "Water" = ปัญหาน้ำประปา ท่อน้ำแตก ท่อรั่ว น้ำไม่ไหล น้ำขุ่น น้ำท่วมขัง ท่อระบายน้ำอุดตัน
+- "Electricity" = ปัญหาไฟฟ้า เสาไฟ สายไฟ หม้อแปลง ไฟดับ ไฟตก ไฟกระพริบ ไฟรั่ว ไฟส่องสว่างริมทาง
+- "Garbage" = ปัญหาขยะ ถังขยะ กลิ่นเน่า ขยะล้น สิ่งปฏิกูล ลักลอบทิ้งขยะ ซากสัตว์ เผาขยะ
+- "Animal" = สัตว์มีพิษ สัตว์ดุร้าย งู ตัวเงินตัวทอง สุนัขบ้า สุนัขจรจัดกัดคน รังผึ้ง รังต่อ รังแตน
+- "Tree" = ต้นไม้ กิ่งไม้หักโค่น ล้มทับ ล้มขวางทาง กิ่งไม้ยื่นบดบัง หรือหญ้ารกรุงรัง
+- "Hazard" = เพลิงไหม้ ไฟลุก การระเบิด แก๊สรั่วรุนแรง สารเคมีรั่ว ตึกถล่ม คานสะพานขาด ภัยพิบัติฉับพลัน
+
+ระดับความเร่งด่วน (Urgency) วิเคราะห์ตามระดับความเสียหายและผลกระทบ:
+- "urgent" = เป็นอันตรายต่อชีวิต ร่างกาย หรือทรัพย์สินรุนแรง หรือโครงสร้างพังเสียหายหนักมาก ต้องดำเนินการทันที
+  * ตัวอย่างเด่น: ถนนพังยับ/พังยับเยิน, หลุมยุบ/คอสะพานขาด, เสาไฟล้ม/สายไฟขาดแช่น้ำ, ไฟไหม้/แก๊สรั่ว, ท่อเมนแตกน้ำทะลักท่วม, งูมีพิษในบ้าน, ต้นไม้ล้มทับบ้านหรือรถ
+- "medium" = ส่งผลกระทบต่อชีวิตประจำวันและการสัญจร ควรรีบแก้ไขโดยเร็ว
+  * ตัวอย่างเด่น: ถนนเป็นหลุมบ่อ/ทรุดตัว/เละ/ชำรุดหนัก, ท่อแตกน้ำไม่ไหล/ขุ่นแดง, ไฟดับทั้งซอย, ขยะเน่าสะสมส่งกลิ่น, กิ่งไม้ยื่นบดบังป้าย, รังผึ้ง/รังแตน
+- "normal" = ความไม่สะดวกเล็กน้อย ยังใช้งานได้ตามปกติ ไม่มีความเสียหายรุนแรง
+  * ตัวอย่างเด่น: สีเส้นจราจรซีด, ลูกระนาดแตกร้าวเล็กน้อย, หลอดไฟทางขาด 1 ดวง, น้ำขังเล็กน้อยหลังฝนตก, ขอถังขยะใหม่, กิ่งไม้ร่วงเล็กน้อย
+
+การประเมินความคลุมเครือ (isAmbiguous):
+- หากข้อความสั้นเกินไป, กำกวมมาก, ไม่มีคำระบุลักษณะปัญหาหรืออาการ (เช่น "ช่วยด้วยครับ", "มีปัญหาแถวนี้", "ตรงนี้พังช่วยมาดูหน่อย", "แย่มาก") ให้ระบุ isAmbiguous: true, confidence: "low"
+- หากข้อความมีหลายประเด็นชนกันจนแยกไม่ออกว่าช่างฝ่ายไหนควรรับผิดชอบเป็นหลัก ให้ระบุ isAmbiguous: true, confidence: "medium"
+- หากระบุปัญหาและอาการชัดเจน ให้ระบุ isAmbiguous: false, confidence: "high"
+
+รูปแบบ JSON ที่ต้องตอบ (Strict JSON):
+{
+  "category": "Road",
+  "urgency": "medium",
+  "isAmbiguous": false,
+  "confidence": "high",
+  "reason": "คำอธิบายเหตุผลสั้นๆ"
+}
+
+ข้อความร้องเรียน: "`;
+
+async function classifyComplaint(description) {
+  if (!description || typeof description !== 'string' || description.trim().length < 5) {
+    return ruleBasedClassification(description);
+  }
+
+  const prompt = CLASSIFY_PROMPT + description.replace(/"/g, "'") + '"';
+
+  // 1. Try Gemini
+  if (GEMINI_KEY) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const body = JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1024,
+            responseMimeType: 'application/json'
+          }
+        });
+        const reqC = https.request({
+          hostname: 'generativelanguage.googleapis.com',
+          path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+          }
+        }, (r) => {
+          let d = '';
+          r.on('data', c => (d += c));
+          r.on('end', () => {
+            try {
+              const json = JSON.parse(d);
+              if (json.error) return reject(json.error.message);
+              const rawText = (json.candidates?.[0]?.content?.parts?.[0]?.text || '{}').trim();
+              const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+              const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+              const validCats = ['Road', 'Water', 'Electricity', 'Garbage', 'Animal', 'Tree', 'Hazard'];
+              const validUrgs = ['normal', 'medium', 'urgent'];
+              const cat = validCats.includes(parsed.category) ? parsed.category : 'Road';
+              const urg = validUrgs.includes(parsed.urgency) ? parsed.urgency : 'normal';
+              resolve({
+                category: cat,
+                urgency: urg,
+                isAmbiguous: Boolean(parsed.isAmbiguous),
+                confidence: ['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'high',
+                reason: parsed.reason || 'วิเคราะห์ด้วย Gemini Flash',
+                source: 'gemini'
+              });
+            } catch (e) { reject(e); }
+          });
+        });
+        reqC.setTimeout(3500, () => {
+          reqC.destroy();
+          reject(new Error('Gemini timeout (3.5s)'));
+        });
+        reqC.on('error', reject);
+        reqC.write(body);
+        reqC.end();
+      });
+      return result;
+    } catch (err) {
+      console.log(`[AI classify] [Gemini] failed: ${err.message || err}, falling back to Claude...`);
+    }
+  }
+
+  // 2. Try Claude
+  if (CLAUDE_KEY) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const body = JSON.stringify({
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 256,
+          temperature: 0,
+          messages: [{ role: 'user', content: prompt }]
+        });
+        const reqC = https.request({
+          hostname: 'api.anthropic.com',
+          path: '/v1/messages',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+            'x-api-key': CLAUDE_KEY,
+            'anthropic-version': '2023-06-01'
+          }
+        }, (r) => {
+          let d = '';
+          r.on('data', c => (d += c));
+          r.on('end', () => {
+            try {
+              const json = JSON.parse(d);
+              if (json.error) return reject(json.error.message);
+              const rawText = (json.content?.[0]?.text || '{}').trim();
+              const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+              const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+              const validCats = ['Road', 'Water', 'Electricity', 'Garbage', 'Animal', 'Tree', 'Hazard'];
+              const validUrgs = ['normal', 'medium', 'urgent'];
+              const cat = validCats.includes(parsed.category) ? parsed.category : 'Road';
+              const urg = validUrgs.includes(parsed.urgency) ? parsed.urgency : 'normal';
+              resolve({
+                category: cat,
+                urgency: urg,
+                isAmbiguous: Boolean(parsed.isAmbiguous),
+                confidence: ['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'high',
+                reason: parsed.reason || 'วิเคราะห์ด้วย Claude Haiku',
+                source: 'claude'
+              });
+            } catch (e) { reject(e); }
+          });
+        });
+        reqC.setTimeout(3500, () => {
+          reqC.destroy();
+          reject(new Error('Claude timeout (3.5s)'));
+        });
+        reqC.on('error', reject);
+        reqC.write(body);
+        reqC.end();
+      });
+      return result;
+    } catch (err) {
+      console.log(`[AI classify] [Claude] failed: ${err.message || err}, falling back to rule-based...`);
+    }
+  }
+
+  // 3. Fallback to Cognitive Thai NLP Heuristics Engine
+  console.log(`[AI classify] [Rule-based] fallback for: "${description.slice(0, 50)}"`);
+  return ruleBasedClassification(description);
+}
+
+// ─── POST /api/ai/classify ─────────────────────────────────────────
+router.post('/classify', async (req, res) => {
+  try {
+    const { description } = req.body;
+    const result = await classifyComplaint(description || '');
+    res.json(result);
+  } catch (err) {
+    console.error('[AI classify] error:', err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการวิเคราะห์' });
+  }
+});
+
 module.exports = router;
 module.exports.ruleBasedUrgency = ruleBasedUrgency;
+module.exports.ruleBasedClassification = ruleBasedClassification;
+module.exports.classifyComplaint = classifyComplaint;

@@ -21,6 +21,7 @@ const { notifyNewTicket, notifyAssigned, notifyInProgress, notifyCompleted, noti
 const { upload: cloudinaryUpload, isCloudinaryConfigured, cloudinary, purgeTicketImages } = require('../config/cloudinary');
 
 const { calcSlaDeadlines, checkIsSlaBreached } = require('../utils/slaHelper');
+const { classifyComplaint } = require('./ai');
 
 // ─── Middleware & Helpers ──────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -322,6 +323,12 @@ function formatTicket(t, currentUserId) {
     materials: t.materials || [],
     totalRepairCost: t.totalRepairCost || 0,
     repairCostNotes: t.repairCostNotes || null,
+    // AI Auto-Dispatch & Ambiguity Detection
+    isAmbiguous: t.isAmbiguous || false,
+    needsAdminReview: t.needsAdminReview || false,
+    aiConfidence: t.aiConfidence || 'high',
+    aiDispatched: t.aiDispatched || false,
+    aiReviewReason: t.aiReviewReason || null,
   };
   // Per-user flags
   if (currentUserId) {
@@ -1173,21 +1180,48 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
   try {
     const { category, description: rawDescription, location, urgency, lat, lng } = req.body;
     const user = await User.findById(req.session.userId);
-    if (!category || !rawDescription || !location)
+    if (!rawDescription || !location)
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่งอย่างน้อย 1 รูป' });
 
-    // Validate category exists
-    const categoryExists = await Category.findOne({ name: category });
-    if (!categoryExists) {
-      return res.status(400).json({ error: 'หมวดหมู่ไม่ถูกต้อง' });
-    }
-
     // XSS-FIX: sanitize user-supplied text before storing
     const description = xss(rawDescription.trim());
 
-    let score = urgency === 'urgent' ? 90 : urgency === 'medium' ? 60 : 30;
+    // ── AI Auto-Categorization & Ambiguity Analysis ──
+    let finalCategory = category;
+    let finalUrgency = urgency;
+    let isAmbiguous = false;
+    let needsAdminReview = false;
+    let aiConfidence = 'high';
+    let aiDispatched = false;
+    let aiReviewReason = null;
+
+    const autoResult = await classifyComplaint(description);
+
+    if (!finalCategory || finalCategory === 'auto') {
+      finalCategory = autoResult.category || 'Road';
+      if (!finalUrgency || (finalUrgency === 'normal' && autoResult.urgency && autoResult.urgency !== 'normal')) {
+        finalUrgency = autoResult.urgency || 'normal';
+      }
+      isAmbiguous = autoResult.isAmbiguous;
+      aiConfidence = autoResult.confidence;
+      aiReviewReason = autoResult.reason;
+    } else {
+      // Validate category exists if citizen selected manually
+      const categoryExists = await Category.findOne({ name: finalCategory });
+      if (!categoryExists) {
+        return res.status(400).json({ error: 'หมวดหมู่ไม่ถูกต้อง' });
+      }
+      if (!finalUrgency) finalUrgency = autoResult.urgency || 'normal';
+      if (autoResult.isAmbiguous && autoResult.confidence === 'low') {
+        isAmbiguous = true;
+        aiConfidence = 'low';
+        aiReviewReason = autoResult.reason;
+      }
+    }
+
+    let score = finalUrgency === 'urgent' ? 90 : finalUrgency === 'medium' ? 60 : 30;
     const desc = description.toLowerCase();
     for (const kw of ['flood', 'fire', 'อันตราย', 'เร่งด่วน', 'น้ำท่วม', 'ฉุกเฉิน'])
       if (desc.includes(kw)) score = Math.min(score + 10, 100);
@@ -1203,38 +1237,121 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const ticketId = 'TKT-' + String(seq).padStart(5, '0');
 
     // คำนวณ SLA deadlines
-    const urg = urgency || 'normal';
+    const urg = finalUrgency || 'normal';
     const sla = calcSlaDeadlines(urg);
+
+    // Initial timeline
+    const initialTimeline = [{
+      action: 'created',
+      actorRole: 'citizen',
+      actorId: user._id,
+      actorName: user.firstName + ' ' + user.lastName,
+      details: 'แจ้งเรื่องร้องเรียนใหม่: ' + finalCategory,
+      oldValue: null,
+      newValue: 'pending',
+      timestamp: new Date()
+    }];
+
+    let assignedTo = null;
+    let assignedName = null;
+    let initialStatus = 'pending';
+
+    if (!isAmbiguous) {
+      // ── Auto-Dispatch: หาช่างประจำหมวดหมู่นี้ ──
+      const catDoc = await Category.findOne({ name: finalCategory }).populate('technicianIds');
+      let candidateTechs = (catDoc && catDoc.technicianIds && catDoc.technicianIds.length) ? catDoc.technicianIds : [];
+
+      if (!candidateTechs.length) {
+        candidateTechs = await User.find({ role: 'technician', specialty: finalCategory });
+      }
+
+      if (candidateTechs.length > 0) {
+        // Workload Balancing: เลือกช่างที่มีงานค้างน้อยที่สุด
+        let bestTech = null;
+        let minActive = Infinity;
+
+        for (const tech of candidateTechs) {
+          const activeCount = await Ticket.countDocuments({
+            assignedTo: tech._id,
+            status: { $nin: ['completed', 'rejected', 'merged'] }
+          });
+          if (activeCount < minActive) {
+            minActive = activeCount;
+            bestTech = tech;
+          }
+        }
+
+        if (bestTech) {
+          assignedTo = bestTech._id;
+          assignedName = bestTech.firstName + ' ' + bestTech.lastName;
+          initialStatus = 'assigned';
+          aiDispatched = true;
+          const catLabel = catDoc ? (catDoc.label || catDoc.name) : finalCategory;
+          initialTimeline.push({
+            action: 'assigned',
+            actorRole: 'system',
+            actorId: null,
+            actorName: 'AI Dispatcher',
+            details: `AI จำแนกหมวดหมู่ [${catLabel}] และมอบหมายงานให้ช่าง [${assignedName}] อัตโนมัติ (งานค้างขณะนี้: ${minActive} งาน)`,
+            oldValue: 'pending',
+            newValue: 'assigned',
+            timestamp: new Date()
+          });
+        }
+      } else {
+        // ไม่พบช่างในหมวดหมู่นี้ ส่งเข้า Admin Review
+        isAmbiguous = true;
+        needsAdminReview = true;
+        aiReviewReason = `ไม่พบช่างประจำหมวด ${finalCategory} ในระบบ`;
+      }
+    }
+
+    if (isAmbiguous) {
+      needsAdminReview = true;
+      initialTimeline.push({
+        action: 'ai_flagged_ambiguous',
+        actorRole: 'system',
+        actorId: null,
+        actorName: 'AI Dispatcher',
+        details: 'AI ตรวจพบเรื่องร้องเรียนคลุมเครือ ส่งเข้าคิวรอผู้ดูแลระบบตรวจสอบและมอบหมายงาน' + (aiReviewReason ? ` (${aiReviewReason})` : ''),
+        oldValue: null,
+        newValue: 'pending',
+        timestamp: new Date()
+      });
+    }
 
     const ticket = await new Ticket({
       ticketId,
       citizenId: user._id,
       citizenName: user.firstName + ' ' + user.lastName,
       citizenLineId: user.lineUserId || null,
-      category, description,
+      category: finalCategory,
+      description,
       location: locationName,
       lat: lat ? parseFloat(lat) : null,
       lng: lng ? parseFloat(lng) : null,
       urgency: urg,
       priorityScore: score,
-      status: 'pending',
+      status: initialStatus,
+      assignedTo,
+      assignedName,
+      isAmbiguous,
+      needsAdminReview,
+      aiConfidence,
+      aiDispatched,
+      aiReviewReason,
       citizenImage: getFileUrls(req)[0], // For backward compatibility
       citizenImages: getFileUrls(req),
       slaAssignDeadline: sla.slaAssignDeadline,
       slaCompleteDeadline: sla.slaCompleteDeadline,
-      timeline: [{
-        action: 'created',
-        actorRole: 'citizen',
-        actorId: user._id,
-        actorName: user.firstName + ' ' + user.lastName,
-        details: 'แจ้งเรื่องร้องเรียนใหม่: ' + category,
-        oldValue: null,
-        newValue: 'pending',
-        timestamp: new Date()
-      }]
+      timeline: initialTimeline
     }).save();
 
-    notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+    if (assignedTo) {
+      notifyAssigned(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyAssigned error:', e));
+    } else {
+      notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+    }
     emitUpdate(req);
     res.status(201).json(formatTicket(ticket, user._id));
   } catch (e) {
@@ -1410,23 +1527,30 @@ router.put('/:id/assign', requireAuth, async (req, res) => {
     const caller = await User.findById(req.session.userId);
     if (caller.role !== 'admin') return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
 
-    const { technicianId } = req.body;
+    const { technicianId, category } = req.body;
     const ticket = await Ticket.findOne({ ticketId: req.params.id });
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
     const tech = await User.findOne({ _id: technicianId, role: 'technician' });
     if (!tech) return res.status(404).json({ error: 'ไม่พบช่าง' });
 
+    if (category) {
+      const catDoc = await Category.findOne({ name: category });
+      if (catDoc) ticket.category = category;
+    }
+
     const oldAssignedName = ticket.assignedName || 'ยังไม่ระบุ';
     ticket.assignedTo = tech._id;
     ticket.assignedName = tech.firstName + ' ' + tech.lastName;
     ticket.status = 'assigned';
+    ticket.isAmbiguous = false;
+    ticket.needsAdminReview = false;
     logTicketActivity(ticket, {
       action: 'assigned',
       actorRole: 'admin',
       actorId: caller._id,
       actorName: caller.firstName + ' ' + caller.lastName,
-      details: 'แอดมินมอบหมายงานให้ ' + tech.firstName + ' ' + tech.lastName,
+      details: 'แอดมินมอบหมายงานให้ ' + tech.firstName + ' ' + tech.lastName + (category ? ` (หมวดหมู่: ${ticket.category})` : ''),
       oldValue: oldAssignedName,
       newValue: tech.firstName + ' ' + tech.lastName
     });

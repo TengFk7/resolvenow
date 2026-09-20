@@ -1,5 +1,5 @@
 # ResolveNow — System Context for AI Assistants
-> อัปเดตล่าสุด: 2026-09-20 | Version: V18.1 (Triple-Provider Mailer, Server-side Gate API, Cognitive Thai NLP Heuristics, District Analytics, Dedicated My-Tickets Portal, Automated Verification Test Suite)
+> อัปเดตล่าสุด: 2026-09-20 | Version: V18.2 (Triple-Provider Mailer, Server-side Gate API, Cognitive Thai NLP Heuristics, District Analytics, Dedicated My-Tickets Portal, Chronological Admin Queue & Real-time Today Metrics, Automated Verification Test Suite)
 
 ## ภาพรวมระบบ (System Overview)
 **ResolveNow** คือระบบบริหารจัดการและติดตามเรื่องร้องเรียนอัจฉริยะ (Smart City Complaint & Work Order Management Platform) ที่ออกแบบขึ้นเพื่อยกระดับการให้บริการขององค์กรปกครองส่วนท้องถิ่นและเทศบาลยุคใหม่ เชื่อมโยง 4 บทบาทหลักอย่างไร้รอยต่อผ่านสถาปัตยกรรม **Dedicated Multi-Portal Architecture**:

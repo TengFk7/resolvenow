@@ -92,6 +92,10 @@ async function loadAdmin() {
       slaCard.classList.toggle('sla-ok', slaCount === 0);
     }
 
+    // Ambiguous tickets count (Waiting for Admin Review)
+    var ambCount = tks.filter(function (t) { return t.isAmbiguous || t.needsAdminReview; }).length;
+    if (ge('sAmbiguous')) animateNum(ge('sAmbiguous'), ambCount);
+
     // Pie chart
     var pend = tks.filter(function (t) { return t.status === 'pending'; }).length;
     var inpg = tks.filter(function (t) { return t.status === 'in_progress' || t.status === 'assigned'; }).length;
@@ -264,10 +268,20 @@ function renderQueue(tks, techs) {
     var gpsUrl = (t.lat && t.lng) ? 'https://www.google.com/maps?q=' + t.lat + ',' + t.lng : '';
 
     // ── Desktop table row ──
+    var catHtml = (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category);
+    if (t.isAmbiguous || t.needsAdminReview) {
+      catHtml += '<div style="margin-top:4px"><span style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;border:1px solid #fde68a" title="' + escapeHTML(t.aiReviewReason || 'AI คลุมเครือ') + '">⚠️ AI คลุมเครือ</span></div>';
+      var catSelectOpts = '<select id="csel_' + t.ticketId + '" style="margin-top:5px;width:100%;padding:4px 6px;font-size:10px;border-radius:6px;border:1.5px solid #cbd5e1;background:var(--card-bg)" onchange="onAdminChangeCategory(\'' + t.ticketId + '\', this.value)">' +
+        '<option value="">— เปลี่ยนหมวด —</option>' +
+        Object.keys(DEPT).map(function(k){ return '<option value="' + k + '"' + (t.category === k ? ' selected' : '') + '>' + (DEPT_ICON[k] || '') + ' ' + DEPT[k] + '</option>'; }).join('') +
+        '</select>';
+      catHtml += catSelectOpts;
+    }
+
     h += '<tr>';
     h += '<td style="font-family:Inter,sans-serif;font-weight:700;color:var(--navy)">' + escapeHTML(t.ticketId) + '</td>';
     h += '<td style="font-size:12px">' + escapeHTML(t.citizenName) + '</td>';
-    h += '<td>' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + '</td>';
+    h += '<td>' + catHtml + '</td>';
     h += '<td style="max-width:160px"><div style="font-size:12px;font-weight:600">📍 ' + escapeHTML(t.location || '') + gpsLink + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">' + escapeHTML(t.description || '') + '</div></td>';
     h += '<td>' + pLabel(t.priorityScore) + (t.upvoteCount > 0 ? '<div style="font-size:10px;margin-top:3px">👍 ' + parseInt(t.upvoteCount || 0) + '</div>' : '') + '</td>';
     h += '<td>' + (typeof slaLabel === 'function' ? slaLabel(t) : '') + '</td>';
@@ -283,6 +297,15 @@ function renderQueue(tks, techs) {
     // ── Mobile card ──
     var priorityHtml = pLabel(t.priorityScore);
     var slaHtml = (typeof slaLabel === 'function') ? slaLabel(t) : '';
+    var mobCatHtml = (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category);
+    if (t.isAmbiguous || t.needsAdminReview) {
+      mobCatHtml += ' <span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;border:1px solid #fde68a">⚠️ AI คลุมเครือ</span>';
+      mobCatHtml += '<select id="csel_mob_' + t.ticketId + '" style="margin-top:6px;width:100%;padding:5px 8px;font-size:11px;border-radius:8px;border:1.5px solid #cbd5e1;background:var(--card-bg)" onchange="onAdminChangeCategory(\'' + t.ticketId + '\', this.value)">' +
+        '<option value="">— เปลี่ยนหมวดหมู่ —</option>' +
+        Object.keys(DEPT).map(function(k){ return '<option value="' + k + '"' + (t.category === k ? ' selected' : '') + '>' + (DEPT_ICON[k] || '') + ' ' + DEPT[k] + '</option>'; }).join('') +
+        '</select>';
+    }
+
     mh += '<div class="queue-mob-card">';
     // Header row: ID + priority + SLA badges
     mh += '<div class="queue-mob-card-header">';
@@ -294,7 +317,7 @@ function renderQueue(tks, techs) {
     mh += '</div>';
     // Category + location + description
     mh += '<div class="queue-mob-card-body">';
-    mh += '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">' + (DEPT_ICON[t.category] || '') + ' ' + escapeHTML(DEPT[t.category] || t.category) + '</div>';
+    mh += '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">' + mobCatHtml + '</div>';
     mh += '<div class="queue-mob-card-location">📍 ' + escapeHTML(t.location || '') + (gpsUrl ? ' <a href="' + gpsUrl + '" target="_blank" style="font-size:11px;color:var(--blue2);font-weight:600">🗺️ GPS</a>' : '') + '</div>';
     mh += '<div class="queue-mob-card-desc">' + escapeHTML(t.description || '') + '</div>';
     mh += '</div>';
@@ -336,28 +359,60 @@ function autoSelect(ticket, techs) {
   if (mobSel) mobSel.value = bestId;
 }
 
+/* ── Change Category from Ambiguous Queue ───────────── */
+function onAdminChangeCategory(ticketId, newCat) {
+  if (!newCat || !_lastAdminTechs) return;
+  var sel = ge('tsel_' + ticketId);
+  var mobSel = ge('tsel_mob_' + ticketId);
+  var opts = '<option value="">— เลือกช่าง —</option>';
+  for (var j = 0; j < _lastAdminTechs.length; j++) {
+    var tc = _lastAdminTechs[j];
+    var match = tc.specialty === newCat;
+    var optText = (match ? '⭐ ' : '') + (DEPT_ICON[tc.specialty] || '') + ' ' + tc.name + ' — ' + tc.statusLabel;
+    var optAttrs = 'value="' + tc.id + '"' + (tc.statusLabel === 'FULL' ? ' disabled' : '');
+    opts += '<option ' + optAttrs + '>' + optText + '</option>';
+  }
+  if (sel) sel.innerHTML = opts;
+  if (mobSel) mobSel.innerHTML = opts;
+  autoSelect({ ticketId: ticketId, category: newCat }, _lastAdminTechs);
+  showToast('ปรับหมวดหมู่เป็น ' + (DEPT[newCat] || newCat) + ' แล้ว', 'info');
+}
+
 /* ── Approve / Reject ────────────────────────────────── */
 async function approveTicket(btn) {
   var id = btn.getAttribute('data-id');
   var sel = ge('tsel_' + id);
+  var catSel = ge('csel_' + id);
   if (!sel || !sel.value) return showToast('กรุณาเลือกช่างก่อน', 'warning');
-  var res = await fetch('/api/tickets/' + id + '/assign', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ technicianId: sel.value }) });
+  var payload = { technicianId: sel.value };
+  if (catSel && catSel.value) payload.category = catSel.value;
+  var res = await fetch('/api/tickets/' + id + '/assign', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
   if (!res.ok) { var d = await res.json(); return showToast(d.error, 'error'); }
-  showToast('Approve แล้ว! 🎉', 'success');
+  showToast('มอบหมายงานให้ช่างสำเร็จแล้ว! 🎉', 'success');
   loadAdmin();
 }
 
 /* ── Approve from Mobile Card ────────────────────────── */
 async function approveMob(btn) {
   var id = btn.getAttribute('data-id');
-  // Read from mobile dropdown first, fallback to desktop
   var mobSel = ge('tsel_mob_' + id);
   var deskSel = ge('tsel_' + id);
   var techId = (mobSel && mobSel.value) ? mobSel.value : (deskSel ? deskSel.value : '');
+  var catSel = ge('csel_mob_' + id) || ge('csel_' + id);
   if (!techId) return showToast('กรุณาเลือกช่างก่อน', 'warning');
-  var res = await fetch('/api/tickets/' + id + '/assign', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ technicianId: techId }) });
+  var payload = { technicianId: techId };
+  if (catSel && catSel.value) payload.category = catSel.value;
+  var res = await fetch('/api/tickets/' + id + '/assign', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
   if (!res.ok) { var d = await res.json(); return showToast(d.error, 'error'); }
-  showToast('Approve แล้ว! 🎉', 'success');
+  showToast('มอบหมายงานให้ช่างสำเร็จแล้ว! 🎉', 'success');
   loadAdmin();
 }
 
@@ -515,15 +570,18 @@ function renderAllQueue(tks, filter) {
     filterLabel = _dateSortOrder === 'desc'
       ? '🕒 งานล่าสุด (เรียงจากล่าสุด → ช้ากว่า/เก่าสุด)'
       : '🕒 งานตามวันที่ (เรียงจากเก่าสุด → ล่าสุด)';
+  } else if (filter === 'ambiguous') {
+    filtered = tks.filter(function (t) { return t.isAmbiguous || t.needsAdminReview; });
+    filterLabel = '⚠️ เรื่องที่ AI คลุมเครือ (ต้องการให้แอดมินมอบหมายงาน)';
   }
 
   // ── Filter chip above table ──
   var chipEl = ge('queueFilterChip');
   if (chipEl) {
     if (filterLabel) {
-      var chipColor = filter === 'completed' ? '#f0fdf4' : ((filter === 'latest' || filter === 'today') ? '#f0f9ff' : '#fff0f0');
-      var chipBorder = filter === 'completed' ? '#86efac' : ((filter === 'latest' || filter === 'today') ? '#7dd3fc' : '#fca5a5');
-      var chipText = filter === 'completed' ? '#15803d' : ((filter === 'latest' || filter === 'today') ? '#0369a1' : '#b91c1c');
+      var chipColor = filter === 'completed' ? '#f0fdf4' : (filter === 'ambiguous' ? '#fffbeb' : ((filter === 'latest' || filter === 'today') ? '#f0f9ff' : '#fff0f0'));
+      var chipBorder = filter === 'completed' ? '#86efac' : (filter === 'ambiguous' ? '#fde68a' : ((filter === 'latest' || filter === 'today') ? '#7dd3fc' : '#fca5a5'));
+      var chipText = filter === 'completed' ? '#15803d' : (filter === 'ambiguous' ? '#b45309' : ((filter === 'latest' || filter === 'today') ? '#0369a1' : '#b91c1c'));
       chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;background:' + chipColor + ';border:1.5px solid ' + chipBorder + ';border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:' + chipText + '">' +
         filterLabel +
         '<button onclick="clearQueueFilter()" style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:' + chipText + ';padding:0;margin-left:2px" title="ล้างตัวกรอง">✕</button>' +

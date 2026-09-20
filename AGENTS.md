@@ -12,7 +12,7 @@
 
 # ResolveNow — AI Assistant Quick Architecture & Reference Guide
 
-> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-20 | Version: V18.1)
+> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-20 | Version: V18.2 - Admin Chronological Queue & Today's Metric Sync)
 
 ---
 
