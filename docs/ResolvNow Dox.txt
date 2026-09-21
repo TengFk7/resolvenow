@@ -1,0 +1,10 @@
+ คัดลอก Channel Secret เก็บไว้ — เห็นในภาพแล้ว (e3b4190261f50f74f7bd772069371e48) เก็บใส่ไฟล์ .env ไว้ก่อนเลยครับ
+
+Channel access token
+Channel access token (long-term)
+lOIBePrkUuIZCveR0JjsZiXyWQ0qF+0uIdN7Pgcb4+ovIMcpb50EXYsHbkB7H7LqXy9l4Mi0DWnS02PBdxUinn Mbj6/FYkcwfsxT7xKGF05VbDnqUs+IlcWDZ3pSmW8TM4BYDD0tbM9bnePSZm6YfgdB04t89/1O/w1cDnyilFU=
+
+
+
+
+kvkq wxzv uzkg trqa

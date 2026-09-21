@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #ffffff;
+        }
+
+        .cover-page {
+            text-align: center;
+            padding: 50px 20px;
+            border: 2px solid #2980b9;
+            margin-bottom: 50px;
+            border-radius: 10px;
+        }
+
+        .cover-title {
+            font-size: 36px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .cover-subtitle {
+            font-size: 20px;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 26px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h2 {
+            color: #2980b9;
+            font-size: 20px;
+            margin-top: 30px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        h3 {
+            color: #16a085;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        p {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        ul,
+        ol {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .note-box {
+            background-color: #fce4ec;
+            border-left: 5px solid #e91e63;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-style: italic;
+            font-size: 15px;
+            color: #880e4f;
+        }
+
+        .step-box {
+            background-color: #f4f6f7;
+            border: 1px solid #bdc3c7;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .citizen-badge {
+            background-color: #27ae60;
+        }
+
+        .tech-badge {
+            background-color: #e67e22;
+        }
+
+        .admin-badge {
+            background-color: #8e44ad;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <div class="cover-title">คู่มือการใช้งานระบบ ResolveNow</div>
+        <div class="cover-subtitle">แอปพลิเคชันจัดการเรื่องร้องเรียน</div>
+        <p>เอกสารฉบับนี้อธิบายวิธีการใช้งานสำหรับ ผู้แจ้งปัญหา (Citizen), เจ้าหน้าที่ช่าง (Technician) และผู้ดูแลระบบ
+            (Admin) โดยละเอียด</p>
+    </div>
+
+    <!-- Section 1 -->
+    <h1><span class="role-badge citizen-badge">CITIZEN</span> 1. การใช้งานสำหรับประชาชน (ผู้แจ้งปัญหา)</h1>
+    <p>ในฐานะประชาชน คุณสามารถแจ้งปัญหาต่างๆ ภายในพื้นที่ ติดตามความคืบหน้า และสื่อสารกับเจ้าหน้าที่ได้อย่างรวดเร็ว</p>
+
+    <!-- 1.1 -->
+    <h2>1.1 การเข้าสู่ระบบ (Login & Register)</h2>
+    <div class="step-box">
+        <ol>
+            <li><strong>เข้าใช้งานผ่านอีเมล:</strong> กรอกอีเมลและรหัสผ่านที่คุณได้ลงทะเบียนไว้เพื่อเข้าสู่ระบบ</li>
+            <li><strong>เชื่อมต่อด้วย LINE (LINE Login):</strong> เพื่อความสะดวกสูงสุด คุณสามารถกดปุ่ม <em>"Login with
+                    LINE"</em> ระบบจะดึงข้อมูลโปรไฟล์และสามารถส่งข้อความแจ้งเตือนสถานะต่างๆ ผ่าน LINE ได้ทันที</li>
+        </ol>
+    </div>
+
+    <!-- 1.2 -->
+    <h2>1.2 การสร้างรายการแจ้งปัญหา (Create Ticket)</h2>
+    <div class="step-box">
+        <ol>
+            <li>กดปุ่ม <strong>"แจ้งปัญหาใหม่ (New Ticket)"</strong> จากหน้า Dashboard หรือหน้าจัดการส่วนตัว</li>
+            <li><strong>ระบุหมวดหมู่:</strong> เลือกประเภทของปัญหา (เช่น ถนน/ทางเท้า, แสงสว่าง, น้ำประปา ฯลฯ)</li>
+            <li><strong>อธิบายรายละเอียด:</strong> พิมพ์อาการหรือปัญหาที่พบเจอ เพื่อให้ช่างเตรียมเครื่องมือได้ถูกต้อง
+            </li>
+            <li><strong>แนบรูปภาพ:</strong> ถ่ายภาพหรือเลือกรูปจากมือถืออัปโหลดเป็นหลักฐาน (รูปภาพก่อนการแก้ไข)</li>
+            <li><strong>ระบุตำแหน่ง:</strong> ปักหมุดบนแผนที่ หรือปล่อยให้ระบบดึงตำแหน่ง GPS ปัจจุบัน</li>
+            <li>กด <strong>"ส่งข้อมูล (Submit)"</strong> เมื่อเสร็จสิ้น คุณจะได้รับหมายเลขอ้างอิง (เช่น TKT-001)
+                ไว้สำหรับติดตามผล</li>
+        </ol>
+    </div>
+
+    <!-- 1.3 -->
+    <h2>1.3 การติดตามสถานะและแชทกับช่าง (Tracking & Chat)</h2>
+    <p>เมื่อปัญหาถูกส่งเข้าระบบ สถานะต่างๆ จะถูกอัปเดตแบบเรียลไทม์:</p>
+    <ul>
+        <li><strong>Pending:</strong> รอแอดมินหรือระบบแจกจ่ายงาน</li>
+        <li><strong>Assigned:</strong> ช่างรับเรื่องแล้วและเตรียมเดินทาง</li>
+        <li><strong>In Progress:</strong> ช่างกำลังดำเนินการซ่อมแซม</li>
+        <li><strong>Completed:</strong> งานซ่อมแซมเสร็จสิ้นสมบูรณ์</li>
+    </ul>
+    <p>นอกจากนี้ คุณสามารถเข้าไปที่รายละเอียดของปัญหา เพื่อเข้าไปพิมพ์ <strong>"พูดคุย (Comment)"</strong>
+        กับเจ้าหน้าที่ช่าง หรือแอดมิน เพื่อส่งตำแหน่งเพิ่มเติมหรือความคืบหน้าต่างๆ ได้ตลอดเวลา</p>
+
+    <!-- 1.4 -->
+    <h2>1.4 การโหวตและติดตามปัญหาของผู้อื่น (Upvotes & Followers)</h2>
+    <div class="step-box">
+        <p>หากคุณพบว่าจุดที่มีปัญหา มีการรับชมบนหน้ากระดานสาธารณะ (Public Feed) คุณสามารถ:</p>
+        <ul>
+            <li><strong>กดติดตาม (Follow):</strong>
+                เพื่อรับการแจ้งเตือนความคืบหน้าของปัญหานั้นประหนึ่งว่าคุณเป็นคนแจ้งเอง</li>
+            <li><strong>กดโหวต (Upvote):</strong> เพื่อผลักดันและบอกระบบว่าปัญหานี้มีความสำคัญและกระทบต่อคนหมู่มาก (ระบบ
+                Smart Queue จะจัดให้เป็นเคสคิวแรกๆ)</li>
+        </ul>
+    </div>
+
+    <!-- 1.5 -->
+    <h2>1.5 การประเมินผลงาน (Review & Rating)</h2>
+    <p>เมื่อเจ้าหน้าที่ซ่อมแซมเสร็จสิ้น (สถานะเป็น Completed) ระบบจะเปิดให้คุณสามารถให้คะแนน (1-5 ดาว)
+        พร้อมพิมพ์ข้อความติชม เพื่อเป็นขวัญกำลังใจและเป็นข้อมูลอ้างอิงให้ผู้ดูแลระบบตรวจสอบมาตรฐานได้</p>
+
+
+    <!-- Section 2 -->
+    <h1><span class="role-badge tech-badge">TECHNICIAN</span> 2. การใช้งานสำหรับเจ้าหน้าที่ช่าง</h1>
+    <p>ในฐานะเจ้าหน้าที่ช่าง ระบบจะช่วยจัดคิวงาน นำทาง และใช้เป็นเครื่องมือยืนยันผลการทำงานของคุณ</p>
+
+    <h2>2.1 การรับงานและปฎิบัติงาน (Job Assignment)</h2>
+    <div class="step-box">
+        <ol>
+            <li><strong>หน้า Dashboard ส่วนตัว:</strong> เมื่อคุณล็อกอินเข้ามา จะพบรายการปัญหาที่ผู้ดูแลระบบ Assign
+                มาให้ หรือคุณสามารถกด "รับงาน (Accept)" จากกองกลางได้เอง</li>
+            <li><strong>อัปเดตสถานะ:</strong> เมื่อเริ่มออกปฏิบัติงาน ให้กดเปลี่ยนสถานะเป็น <em>"In Progress"</em>
+                เพื่อให้ประชาชนทราบว่ากำลังดำเนินการ</li>
+            <li><strong>การค้นหาเส้นทาง:</strong> สามารถแตะที่แผนที่ของปัญหานั้นๆ เพื่อนำทางไปยังพิกัด (GPS)
+                จากแอปพลิเคชันนำทางที่คุณมี</li>
+        </ol>
+    </div>
+
+    <h2>2.2 การส่งานและรูปภาพหลักฐาน (Before & After Images)</h2>
+    <p>การยืนยันการทำงานเป็นสิ่งสำคัญ เมื่อคุณไปถึงหน้างานและซ่อมเสร็จแล้ว ระบบบังคับว่า:</p>
+    <ul>
+        <li>ให้ช่างอัปโหลดภาพ <strong>ก่อนการแก้ไข (Before Image)</strong> (หากประชาชนยังไม่ได้อัปโหลด
+            หรือต้องการภาพมุมกว้างกว่า)</li>
+        <li>ให้ช่างอัปโหลดภาพ <strong>หลังการแก้ไขเสร็จสิ้น (After Image)</strong>
+            เพื่อเป็นหลักฐานว่างานได้แก้ไขลุล่วงแล้ว จากนั้นจึงสามารถเปลี่ยนสถานะเป็น Completed ได้</li>
+    </ul>
+
+    <h2>2.3 การขอความช่วยเหลือ (Help Requests)</h2>
+    <div class="step-box">
+        <p>หากปัญหาหน้างานซับซ้อนเกินกว่าช่างคนเดียว หรือข้ามขอบเขตหน่วยงาน คุณสามารถสร้าง <strong>"ขอความช่วยเหลือ
+                (Help Request)"</strong></p>
+        <ul>
+            <li>ระบุรายละเอียดสิ่งที่ต้องการสนับสนุน</li>
+            <li>กำหนดหน่วยงานเป้าหมาย (Target Department) หรือส่งให้ส่วนกลาง</li>
+            <li>ช่างแผนกอื่น หรือตัวเจ้าหน้าที่รัฐส่วนอื่น จะสามารถมองเห็นและเข้ามากด <em>“รับงานช่วยเหลือ” (Accept
+                    Request)</em> ได้ทันที</li>
+        </ul>
+    </div>
+
+
+    <!-- Section 3 -->
+    <h1><span class="role-badge admin-badge">ADMIN</span> 3. การใช้งานสำหรับผู้ดูแลระบบ (Admin)</h1>
+    <p>ผู้ดูแลระบบจะมีสิทธิ์ในการมองเห็นข้อมูลทั้งหมด ควบคุมการทำงานของเจ้าหน้าที่ และจัดการข้อมูลเชิงระบบ</p>
+
+    <h2>3.1 ระบบจัดการคิวอัจฉริยะ (Smart Queue System)</h2>
+    <div class="step-box">
+        <p>ที่หน้า Dashboard ของ Admin จะสังเกตเห็นคิวงานที่เรียงลำดับความสำคัญให้แล้วอัตโนมัติ โดยอิงจาก:</p>
+        <ul>
+            <li><strong>คะแนนความเร่งด่วน (Priority Score):</strong> ที่ระบบคำนวนให้จาก Urgency Level และความถี่ผู้โหวต
+                (Upvotes)</li>
+            <li><strong>ระบบแจ้งเตือน SLA (SLA Monitoring):</strong> หากใกล้ถึงวันหมดอายุ (Deadline)
+                หรือละเมิดข้อตกลงในการให้บริการ กรอบงานจะแสดงสีแดง เพื่อให้แอดมินเร่งจ่ายงาน</li>
+        </ul>
+        <p>คุณสามารถลาก (Drag) หรือกดเลือกรายการเพื่อมอบหมายงาน (Assign) งานให้กับช่างที่ว่างและเชี่ยวชาญในด้านนั้นๆ
+            ประจำกะงานนั้นได้</p>
+    </div>
+
+    <h2>3.2 จัดการผู้ใช้งานและหมวดหมู่ (User & Category Management)</h2>
+    <ul>
+        <li><strong>การเพิ่ม/ลด หมวดหมู่ปัญหา:</strong> เข้าไปที่เมนู Category Management เพื่อสร้างประเภทปัญหาใหม่
+            (เช่น ไฟไหม้, กิ่งไม้หักทับสายไฟ) พร้อมใส่ไอคอน (Emoji) แสดงผลได้ทันที</li>
+        <li><strong>จัดการบทบาท:</strong> สามารถโปรโมทบุลคลจาก Citizen ขึ้นมาเป็น Technician หรือ Admin
+            รวมถึงสามารถแบนบัญชีชั่วคราวได้</li>
+    </ul>
+</body>
+
+</html>

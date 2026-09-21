@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ResolveNow: Presentation Kit</title>
+    <!-- นำเข้า Mermaid JS สำหรับวาด Diagram อัตโนมัติ -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true, theme: 'base', themeVariables: {
+                primaryColor: '#e1f5fe',
+                primaryTextColor: '#2c3e50',
+                primaryBorderColor: '#3498db',
+                lineColor: '#2980b9',
+                secondaryColor: '#f3e5f5',
+                tertiaryColor: '#fff3e0'
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #ffffff;
+        }
+
+        .cover-page {
+            text-align: center;
+            padding: 50px 20px;
+            border: 2px solid #34495e;
+            margin-bottom: 50px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+        }
+
+        .cover-title {
+            font-size: 38px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .cover-subtitle {
+            font-size: 22px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 26px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h2 {
+            color: #2980b9;
+            font-size: 20px;
+            margin-top: 30px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        p,
+        li {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .diagram-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            page-break-inside: avoid;
+            /* ป้องกันการเลื่อนหน้ากลาง Diagram ตอน Print PDF */
+        }
+
+        .highlight-box {
+            background-color: #e8f8f5;
+            border-left: 5px solid #1abc9c;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .highlight-box strong {
+            color: #16a085;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .cover-page {
+                border: none;
+                margin-bottom: 20px;
+            }
+
+            .diagram-container {
+                border: none;
+                background-color: transparent;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <div class="cover-title">ResolveNow </div>
+        <div class="cover-subtitle">System Architecture & Data Flows</div>
+        <p>เอกสารสรุปแผนภาพโครงสร้างระบบ ฐานข้อมูล และกระบวนการทำงาน
+        </p>
+    </div>
+
+    <!-- Section 1 -->
+    <h1>1. System Architecture (สถาปัตยกรรมภาพรวมของระบบ)</h1>
+    <p>ระบบ ResolveNow ทำงานบนสถาปัตยกรรม Client-Server สมัยใหม่ โดยมี <strong>LINE</strong> และ
+        <strong>Cloudinary</strong> เป็น 3rd-party Services ช่วยเสริมความสามารถให้ทำงานได้รวดเร็วและใช้ทรัพยากรน้อยลง
+    </p>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+            graph TD
+            subgraph Frontend [ฝั่งผู้ใช้งาน]
+            Client[📱 Web / Mobile Browser <br /> HTML, CSS, Vanilla JS]
+            LINE_App[🟢 LINE Application <br /> LINE Login]
+            end
+
+            subgraph Backend [ฝั่งเซิร์ฟเวอร์]
+            Node[⚙️ Node.js + Express.js <br /> RESTful API]
+            end
+
+            subgraph Database_&_Storage [ฝั่งข้อมูล]
+            Mongo[(🍃 MongoDB <br /> Database)]
+            Cloudinary[☁️ Cloudinary <br /> Image Hosting]
+            end
+
+            Client -- "REST/JSON" --> Node
+            LINE_App -- "LINE Profile Auth" --> Node
+            Node -- "Mongoose (CRUD)" --> Mongo
+            Node -- "Upload Images" --> Cloudinary
+            Node -- "Push Notify" --> LINE_App
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- Section 2 -->
+    <h1>2. Database ER Diagram (ความสัมพันธ์ฐานข้อมูล)</h1>
+    <p>แผนภาพ Entity-Relationship (ER) ของฐานข้อมูล MongoDB แสดงความเชื่อมโยงผ่าน Model Mongoose อย่างเป็นระบบ</p>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+            erDiagram
+            USER ||--o{ TICKET : "creates (Citizen)"
+            USER ||--o{ TICKET : "assigned to (Technic)"
+            USER ||--o{ HELP_REQUEST : "requests help"
+            TICKET ||--o{ COMMENT : "has"
+            USER ||--o{ COMMENT : "writes"
+            TICKET ||--o{ HELP_REQUEST : "related to"
+            CATEGORY }|--o{ USER : "has specialists"
+
+            USER {
+            ObjectId _id PK
+            String role "citizen, tech, admin"
+            String email
+            String lineUserId
+            }
+            TICKET {
+            String ticketId PK
+            String status "pending, assigned..."
+            Number priorityScore
+            Boolean slaBreached
+            ObjectId citizenId FK
+            ObjectId assignedTo FK
+            }
+            HELP_REQUEST {
+            String helpId PK
+            String status "open, resolved"
+            ObjectId requesterId FK
+            }
+            COMMENT {
+            ObjectId _id PK
+            String message
+            ObjectId ticketId FK
+            }
+            CATEGORY {
+            String name
+            Array technicianIds FK
+            }
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- Section 3 -->
+    <h1>3. Ticket State Flow (State Flow ของการรับร้องเรียน)</h1>
+    <p>การเปลี่ยนสถานะ (State Flow) ตั้งแต่จังหวะที่ประชาชนเริ่มกดแจ้ง ไปจนจบกระบวนการการประเมินดาว (Rating)</p>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+            stateDiagram-v2
+            [*] --> pending : 1. ประชาชนกด Submit
+            pending --> assigned : 2a. Admin จ่ายงาน (Smart Queue)
+            pending --> in_progress : 2b. ช่างกดรับงานเอง (Auto)
+            assigned --> in_progress : 3. ช่างลงพื้นที่และเริ่มงาน
+            in_progress --> completed : 4. ช่างอัปโหลดภาพ Before/After
+            pending --> rejected : 2c. ข้อมูลซ้ำซ้อน/Admin ปฏิเสธ
+            completed --> [*] : 5. ประชาชนให้คะแนน (Rating)
+            rejected --> [*] : 6. จบกระบวนการ (ไม่ผ่าน)
+        </div>
+    </div>
+
+    <!-- Section 4 -->
+    <!-- <h1>4. โครงสร้างสไลด์และบทพูดที่แนะนำ (Pitching Outline)</h1>
+    <p>หากต้องทำ Powerpoint / Keynote ให้จัดเรียงลำดับการนำเสนอตามนี้ จะดึงความสนใจคนฟังได้ดีที่สุดครับ:</p>
+    <ol>
+        <li><strong>ปัญหา (The Problem):</strong> การร้องเรียนต่อหน้าเจ้าหน้าที่รัฐมีความล่าช้า ไม่รู้สถานะปัจจุบัน
+            ช่างทำงานซ้ำซ้อนกัน ขาดหลักฐาน</li>
+        <li><strong>ทางออก (The Solution):</strong> <em>ResolveNow</em> แพลตฟอร์ม One-Stop ที่เชื่อมโยงประชาชน แจ้งปัญหา
+            พร้อมจบงานได้ในที่เดียว</li>
+        <li><strong>จุดเด่น (Key Features):</strong>
+            <ul>
+                <li><strong>AI Smart Queue:</strong> จัดลำดับความสำคัญอัตโนมัติตามพฤติกรรม (เช่น คนกด Upvote เยอะ ๆ
+                    จะเด้งขึ้นคิวแรก)</li>
+                <li><strong>Citizen Empowerment:</strong> แค่เชื่อมต่อ LINE ก็เห็นความคืบหน้าเรียลไทม์ โหวตได้
+                    ติดตามปัญหาของคนข้างบ้านได้</li>
+                <li><strong>Operation Proof:</strong> ช่างปฏิบัติงานต้องมีภาพ Before / After
+                    เข้ามายืนยันเท่านั้นถึงจะจบงานได้</li>
+            </ul>
+        </li>
+        <li><strong>System Arch & Database:</strong> (โชว์ภาพกราฟิกจากสไลด์หน้านี้ให้ดูสัก 1 หน้า
+            เพื่อให้ระบบดูโปรและมีความซับซ้อน Engineer สวยงาม)</li>
+        <li><strong>Live Demo:</strong> เปิดหน้ามือถือสาธิตการแจ้ง แล้วสลับให้ดูหน้า Admin/Tech ตอนกดรับงาน</li>
+        <li><strong>สรุปทิ้งท้าย:</strong> แผนพัฒนาอนาคต (Future Plan) เช่น การเชื่อม Open Data ของหน่วยงานรัฐ หรือเอา
+            AI มาช่วยรีวิวภาพ</li> -->
+    </ol>
+
+    <hr style="margin-top: 50px; border: 1px dashed #bdc3c7;">
+
+</body>
+
+</html>
