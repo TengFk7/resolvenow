@@ -113,6 +113,21 @@ function wizNext(step) {
       return; // ห้ามข้ามไปหน้า 2 โดยเด็ดขาด
     }
 
+    // ── Check Civic Context ──
+    var hasCivicWord = /(ถนน|ทางเท้า|หลุม|บ่อ|ท่อ|น้ำ|ไฟ|ขยะ|ต้นไม้|สัตว์|งู|เพลิง|ไฟไหม้|ช่วยด้วย|มีปัญหา|ช่วยหน่อย|พัง|ซ่อม|เดือดร้อน|แย่มาก|ชำรุด|เสียหาย|ใช้การไม่ได้|ขัดข้อง|อันตราย|รบกวน|แจ้งเรื่อง|ร้องเรียน|ร้องทุกข์)/i.test(desc);
+    if (!hasCivicWord) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+      if (descEl) descEl.focus();
+      var noCivicMsg = '⚠️ ไม่สามารถไปหน้าแนบรูปได้: ไม่พบรายละเอียดปัญหาความเดือดร้อนจริง (เช่น ท่อแตก, ไฟดับ, ถนนชำรุด)';
+      if (typeof showCenterPopup === 'function') {
+        showCenterPopup(noCivicMsg, 3500, '🚫');
+      } else {
+        showToast(noCivicMsg, true);
+      }
+      _updateStep1NextButton(true, 'ไม่พบรายละเอียดปัญหาความเดือดร้อน');
+      return; // ห้ามข้ามไปหน้า 2 โดยเด็ดขาด
+    }
+
     if (_aiAnalyzing) {
       showToast('⏳ กรุณารอ AI วิเคราะห์ข้อความสักครู่...', true);
       return;
@@ -252,15 +267,33 @@ function clientValidateSpam(rawText) {
     }
   }
 
-  // 2. Test phrases
+  // 2. Test phrases & Playful typing
   var tests = ['test', 'testing', 'ทดสอบ', 'ทดสอบระบบ', 'ลองส่ง', 'ลองระบบ', '1234', '12345', '123456', 'aaa', 'bbb', 'ccc', 'sample', 'dummy'];
   for (var ti = 0; ti < tests.length; ti++) {
     if (cleanLower === tests[ti] || cleanLower.indexOf(tests[ti]) === 0) {
       return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความทดสอบระบบ' };
     }
   }
-  if (/^(test|เทส|ทดสอบ|ลองส่ง|ลองระบบ)(\s*[0-9a-zA-Z\.\-]*)*$/i.test(raw)) {
-    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความทดสอบระบบ' };
+  if (/^(test|เทส|ทดสอบ|ลองส่ง|ลองระบบ|ทดลอง|ส่งเล่น|พิมพ์เล่น|พิมพ์มั่ว|ลองดู|เทสๆ)(\b|[\s0-9a-zA-Z\.\-ก-๙]|$)/i.test(cleanLower) ||
+      /(พิมพ์มั่ว|พิมพ์เรื่อย|ส่งเล่น|ไม่มีไรทำ|บลาๆๆ)/i.test(cleanLower)) {
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความทดสอบหรือพิมพ์เล่น' };
+  }
+
+  // 2.1 English consecutive consonants (e.g. jsdkfjweoifj, dfkjsdf)
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(cleanLower)) {
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (English Smash)' };
+  }
+
+  // 2.2 English vowelless string >= 5 (e.g. dfghjk, zxcvb)
+  if (cleanLower.length >= 5 && /^[a-z0-9_\-\.]+$/i.test(cleanLower) && !/[aeiouy]/i.test(cleanLower)) {
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (Vowelless English)' };
+  }
+
+  // 2.3 Thai vowelless string >= 6 (e.g. กฟหกดส, ผปแ... wait thai consonants)
+  var thCons = (cleanLower.match(/[\u0E01-\u0E2E]/g) || []).length;
+  var thVows = (cleanLower.match(/[\u0E30-\u0E39\u0E40-\u0E47]/g) || []).length;
+  if (thCons >= 6 && thVows === 0) {
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์พยัญชนะล้วนไม่มีสระ (Thai Smash)' };
   }
 
   // 3. Row Smashing (Thai home row, English home row, Top/Bottom rows)
@@ -423,7 +456,9 @@ function aiSuggestClassification() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: desc })
       });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
+      if (d.error) throw new Error(d.error);
       _aiClassificationResult = d;
       
       if (d.isHardBlock || d.isSpam) {
@@ -471,6 +506,32 @@ function aiSuggestClassification() {
       _updateStep1NextButton(false);
     } catch (e) {
       console.warn('[AI classify] error:', e);
+      var clientCheck = clientValidateSpam(desc);
+      if (clientCheck.isSpam) {
+        _aiClassificationResult = clientCheck;
+        ge('urgAiIcon').textContent = '🚫';
+        ge('urgAiLabel').textContent = '🚫 ' + clientCheck.reason;
+        ge('urgAiLabel').style.color = '#dc2626';
+        ge('urgAiSub').textContent = 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนจริง เพื่อปลดล็อคขั้นตอนแนบรูปภาพ';
+        ge('urgAiBox').style.background = '#fef2f2';
+        ge('urgAiBox').style.borderColor = '#ef4444';
+        _updateStep1NextButton(true, clientCheck.reason);
+        return;
+      }
+
+      var hasCivic = /(ถนน|ทางเท้า|หลุม|บ่อ|ท่อ|น้ำ|ไฟ|ขยะ|ต้นไม้|สัตว์|งู|เพลิง|ไฟไหม้|ช่วยด้วย|มีปัญหา|ช่วยหน่อย|พัง|ซ่อม|เดือดร้อน|แย่มาก|ชำรุด|เสียหาย|ใช้การไม่ได้|ขัดข้อง|อันตราย|รบกวน|แจ้งเรื่อง|ร้องเรียน|ร้องทุกข์)/i.test(desc);
+      if (!hasCivic) {
+        _aiClassificationResult = { isSpam: true, isHardBlock: true, reason: 'ไม่พบรายละเอียดปัญหาความเดือดร้อน' };
+        ge('urgAiIcon').textContent = '🚫';
+        ge('urgAiLabel').textContent = '🚫 ไม่พบรายละเอียดปัญหาความเดือดร้อน';
+        ge('urgAiLabel').style.color = '#dc2626';
+        ge('urgAiSub').textContent = 'กรุณาระบุปัญหาที่เกิดขึ้นจริง (เช่น ไฟดับ, ท่อแตก, ถนนชำรุด) เพื่อปลดล็อคขั้นตอนแนบรูปภาพ';
+        ge('urgAiBox').style.background = '#fef2f2';
+        ge('urgAiBox').style.borderColor = '#ef4444';
+        _updateStep1NextButton(true, 'ไม่พบรายละเอียดปัญหาความเดือดร้อน');
+        return;
+      }
+
       var isSevere = /พังยับ|ไฟไหม้|ระเบิด|งูพิษ|สายไฟขาด|เสาไฟล้ม|น้ำทะลัก/.test(desc);
       var fallbackUrg = isSevere ? 'urgent' : (/พัง|แตก|รั่ว|หลุม|ขยะ|มืด|ดับ/.test(desc) ? 'medium' : 'normal');
       ge('tUrg').value = fallbackUrg;

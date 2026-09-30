@@ -182,15 +182,40 @@ function analyzeComplaintSpam(text, geo = {}) {
     }
   }
 
-  // Test regex patterns like "test 1", "ลองส่งดูครับ", "ทดสอบ 123"
-  if (/^(test|เทส|ทดสอบ|ลองส่ง|ลองระบบ)(\s*[0-9a-zA-Z\.\-]*)*$/i.test(lower)) {
+  // Test regex patterns like "test 1", "ลองส่งดูครับ", "ทดสอบ 123", "พิมพ์เรื่อยๆมั่วๆ", "พิมพ์เล่น", "ส่งเล่น"
+  if (/^(test|เทส|ทดสอบ|ลองส่ง|ลองระบบ|ทดลอง|ส่งเล่น|พิมพ์เล่น|พิมพ์มั่ว|ลองดู|เทสๆ)(\b|[\s0-9a-zA-Z\.\-ก-๙]|$)/i.test(lower) ||
+      /(พิมพ์มั่ว|พิมพ์เรื่อย|ส่งเล่น|ไม่มีไรทำ|บลาๆๆ)/i.test(lower)) {
     return {
       isHardBlock: true,
       isSpam: true,
       spamType: 'test',
       spamFlag: 'junk',
       aiCredibilityScore: 5,
-      reason: 'ตรวจพบข้อความทดสอบระบบ'
+      reason: 'ตรวจพบข้อความทดสอบหรือพิมพ์เล่น'
+    };
+  }
+
+  // English 5+ consecutive consonants (e.g. jsdkfjweoifj, dfkjsdf, asdfgh)
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(noSpace)) {
+    return {
+      isHardBlock: true,
+      isSpam: true,
+      spamType: 'gibberish',
+      spamFlag: 'incomprehensible',
+      aiCredibilityScore: 10,
+      reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (English Smash/Gibberish)'
+    };
+  }
+
+  // English letters >= 5 with 0 vowels (e.g. dfghjk, zxcvb)
+  if (noSpace.length >= 5 && /^[a-z]+$/i.test(noSpace) && !/[aeiouy]/i.test(noSpace)) {
+    return {
+      isHardBlock: true,
+      isSpam: true,
+      spamType: 'gibberish',
+      spamFlag: 'incomprehensible',
+      aiCredibilityScore: 10,
+      reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (Vowelless English Gibberish)'
     };
   }
 
@@ -335,9 +360,9 @@ function analyzeComplaintSpam(text, geo = {}) {
   }
 
   // Thai consonant/vowel proportion:
-  // If Thai text is >= 7 characters long and has 0 vowels, it's almost certainly gibberish (e.g. "กฟหกดสวผป")
+  // If Thai text is >= 6 characters long and has 0 vowels, it's almost certainly gibberish (e.g. "กฟหกดสวผป")
   const ling = analyzeLinguisticProperties(raw);
-  if (ling.thaiConsonants >= 7 && ling.thaiVowels === 0) {
+  if (ling.thaiConsonants >= 6 && ling.thaiVowels === 0) {
     return {
       isHardBlock: true,
       isSpam: true,

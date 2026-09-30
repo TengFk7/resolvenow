@@ -375,6 +375,18 @@ router.post('/urgency', async (req, res) => {
   if (!description || description.trim().length < 5)
     return res.json({ urgency: ruleBasedUrgency('', category), source: 'default' });
 
+  // ── Fast Anti-Spam Gate: หากตรวจพบว่าเป็นสแปม ตัดจบส่งคืนผลทันที (ไม่ส่ง AI และไม่รัน Fallback) ──
+  const spamAnalysis = analyzeComplaintSpam(description);
+  if (spamAnalysis.isSpam) {
+    return res.json({
+      urgency: 'normal',
+      source: 'spam_filter',
+      isSpam: true,
+      isHardBlock: spamAnalysis.isHardBlock,
+      reason: spamAnalysis.reason
+    });
+  }
+
   const catCtx = CAT_CONTEXT[category] || 'ประเภท: ทั่วไป';
   const prompt = `คุณคือระบบจำแนกระดับความเร่งด่วนของคำร้องเรียนจากประชาชนในไทย ตอบด้วยคำเดียวเท่านั้น: urgent, medium, หรือ normal
 
@@ -493,19 +505,19 @@ ${catCtx}
 function ruleBasedClassification(text, geo = {}) {
   const spamAnalysis = analyzeComplaintSpam(text, geo || {});
 
-  // Hard Block: severe gibberish, placeholder, keyboard smash, or profanity
-  if (spamAnalysis.isHardBlock) {
+  // Fast Anti-Spam Gate: หากตรวจพบว่าเป็นสแปม (Hard Block หรือ Soft Quarantine) ตัดจบส่งคืนผลทันที ไม่รัน Fallback
+  if (spamAnalysis.isSpam) {
     return {
       category: 'Road',
       urgency: 'normal',
       isAmbiguous: true,
       confidence: 'low',
-      reason: spamAnalysis.reason || 'ตรวจพบข้อความสแปมหรือข้อความทดสอบ',
-      source: 'rule',
+      reason: spamAnalysis.reason || 'ตรวจพบข้อความสแปมหรือไม่เกี่ยวข้องกับบริการสาธารณะ',
+      source: 'spam_filter',
       aiCredibilityScore: spamAnalysis.aiCredibilityScore,
       spamFlag: spamAnalysis.spamFlag,
       isSpam: true,
-      isHardBlock: true,
+      isHardBlock: spamAnalysis.isHardBlock,
       spamReason: spamAnalysis.reason,
       spamType: spamAnalysis.spamType
     };
@@ -620,19 +632,56 @@ function ruleBasedClassification(text, geo = {}) {
 
   // หากไม่มีหมวดใดแมทช์เลย (คะแนน 0)
   if (maxScore === 0) {
+    if (spamAnalysis.isSpam) {
+      return {
+        category: 'Road',
+        urgency: 'normal',
+        isAmbiguous: true,
+        confidence: 'low',
+        reason: spamAnalysis.reason || 'ตรวจพบข้อความไม่ถูกต้องหรือไม่เกี่ยวข้องกับงานบริการสาธารณะ',
+        source: 'rule',
+        aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+        spamFlag: spamAnalysis.spamFlag,
+        isSpam: true,
+        isHardBlock: spamAnalysis.isHardBlock,
+        spamReason: spamAnalysis.reason,
+        spamType: spamAnalysis.spamType
+      };
+    }
+
+    const hasCivicDistress = /(ช่วยด้วย|มีปัญหา|ช่วยหน่อย|พัง|ซ่อม|เดือดร้อน|แย่มาก|ไม่ไหวแล้ว|มาดูหน่อย|ชำรุด|เสียหาย|ใช้การไม่ได้|ขัดข้อง|อันตราย|รบกวน|แจ้งเรื่อง|ร้องเรียน|ร้องทุกข์|ตรวจสอบ)/i.test(t);
+
+    if (hasCivicDistress) {
+      return {
+        category: 'Road',
+        urgency: 'normal',
+        isAmbiguous: true,
+        confidence: 'low',
+        reason: 'ข้อความระบุปัญหาคลุมเครือ ไม่มีคำระบุลักษณะปัญหาหรืออาการที่แน่ชัด (ส่งแอดมินคัดกรอง)',
+        source: 'rule',
+        aiCredibilityScore: 70,
+        spamFlag: 'valid',
+        isSpam: false,
+        isHardBlock: false,
+        spamReason: null,
+        spamType: 'none'
+      };
+    }
+
+    // หากไม่มีทั้งหมวดหมู่ช่าง และไม่มีแม้แต่คำระบุปัญหาความเดือดร้อนสาธารณะใดๆ (เช่น พิมพ์เรื่อยๆมั่วๆ, คำทักทายทั่วไป, ข้อความไร้ความหมาย)
     return {
       category: 'Road',
       urgency: 'normal',
       isAmbiguous: true,
       confidence: 'low',
-      reason: spamAnalysis.reason || 'ไม่พบคำสำคัญที่ตรงกับหมวดหมู่งานช่างใดๆ ชัดเจน',
+      reason: 'ไม่พบรายละเอียดปัญหาหรือความเดือดร้อนที่เกี่ยวข้องกับบริการสาธารณะ',
       source: 'rule',
-      aiCredibilityScore: spamAnalysis.aiCredibilityScore,
-      spamFlag: spamAnalysis.spamFlag,
-      isSpam: spamAnalysis.isSpam,
-      isHardBlock: false,
-      spamReason: spamAnalysis.reason,
-      spamType: spamAnalysis.spamType
+      aiCredibilityScore: 10,
+      spamFlag: 'incomprehensible',
+      isSpam: true,
+      isHardBlock: true,
+      spamReason: 'ไม่พบรายละเอียดปัญหาหรือความเดือดร้อนที่เกี่ยวข้องกับบริการสาธารณะ',
+      spamType: 'gibberish'
     };
   }
 
@@ -725,14 +774,40 @@ const CLASSIFY_PROMPT = `คุณคือระบบ AI ผู้เชี่
 ข้อความร้องเรียน: "`;
 
 async function classifyComplaint(description, geo = {}) {
-  // Always evaluate heuristic safety guard
+  // ── 1. Fast Anti-Spam Gate: หากตรวจพบว่าเป็นสแปม ตัดจบส่งคืนผลทันที (ไม่ส่ง AI และไม่รัน Fallback) ──
   const heuristicSpam = analyzeComplaintSpam(description, geo || {});
-  if (heuristicSpam.isHardBlock) {
-    return ruleBasedClassification(description, geo);
+  if (heuristicSpam.isSpam) {
+    return {
+      category: 'Road',
+      urgency: 'normal',
+      isAmbiguous: true,
+      confidence: 'low',
+      reason: heuristicSpam.reason || 'ตรวจพบข้อความสแปมหรือไม่เกี่ยวข้องกับบริการสาธารณะ',
+      source: 'spam_filter',
+      aiCredibilityScore: heuristicSpam.aiCredibilityScore,
+      spamFlag: heuristicSpam.spamFlag,
+      isSpam: true,
+      isHardBlock: heuristicSpam.isHardBlock,
+      spamReason: heuristicSpam.reason,
+      spamType: heuristicSpam.spamType
+    };
   }
 
   if (!description || typeof description !== 'string' || description.trim().length < 5) {
-    return ruleBasedClassification(description, geo);
+    return {
+      category: 'Road',
+      urgency: 'normal',
+      isAmbiguous: true,
+      confidence: 'low',
+      reason: 'กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร',
+      source: 'spam_filter',
+      aiCredibilityScore: 0,
+      spamFlag: 'incomprehensible',
+      isSpam: true,
+      isHardBlock: true,
+      spamReason: 'ข้อความสั้นเกินไป',
+      spamType: 'gibberish'
+    };
   }
 
   const prompt = CLASSIFY_PROMPT + description.replace(/"/g, "'") + '"';

@@ -540,6 +540,33 @@ runTest('checkIsSlaBreached excludes quarantined spam tickets from SLA breach ca
   assert.strictEqual(checkIsSlaBreached(quarantinedTicket), false);
 });
 
+runTest('analyzeComplaintSpam and ruleBasedClassification block non-civic meaningless gibberish and playful input ("พิมพ์เรื่อยๆมั่วๆ", "jsdkfjweoifj", "ไม่มีไรทำส่งเล่น")', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const { ruleBasedClassification } = require('../routes/ai');
+
+  const blockedSamples = [
+    'พิมพ์เรื่อยๆมั่วๆ',
+    'jsdkfjweoifj',
+    'ไม่มีไรทำส่งเล่น',
+    'ทดสอบระบบ 1234',
+    'ลองส่งดูครับ',
+    'asdfghjkl'
+  ];
+
+  for (const text of blockedSamples) {
+    const sp = analyzeComplaintSpam(text);
+    const rc = ruleBasedClassification(text);
+    assert.strictEqual(sp.isHardBlock || rc.isHardBlock, true, `Expected hard block for "${text}"`);
+    assert.strictEqual(sp.isSpam || rc.isSpam, true, `Expected spam flag for "${text}"`);
+  }
+
+  // Real civic ambiguous complaints should remain allowed for admin review
+  const validAmbiguous = ruleBasedClassification('ช่วยด้วยครับ มีปัญหาแถวนี้');
+  assert.strictEqual(validAmbiguous.isHardBlock, false);
+  assert.strictEqual(validAmbiguous.isSpam, false);
+  assert.strictEqual(validAmbiguous.isAmbiguous, true);
+});
+
 // ── Summary ──────────────────────────────────────────────────────
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);

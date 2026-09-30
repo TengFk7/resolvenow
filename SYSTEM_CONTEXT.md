@@ -334,14 +334,16 @@ ResolveNow/
 
 ### 5. ชุดทดสอบระบบอัตโนมัติ (Automated Verification Test Suite)
 - รันด้วยคำสั่ง `npm test` หรือ `node scripts/runTests.js`
-- ครอบคลุมการทดสอบ 26 รายการใน 7 กลุ่มงาน:
-  1. SLA Engine & Breach Detection (7 tests)
+- ครอบคลุมการทดสอบ 41 รายการใน 9 กลุ่มงาน:
+  1. SLA Engine & Breach Detection (9 tests)
   2. Geo Calculations & Duplicate Detection (3 tests)
   3. Security & XSS Sanitization (2 tests)
   4. PDPA & Privacy Protection (1 test)
   5. Financial & Budget Aggregations (2 tests)
   6. Database Model Schemas & Indexes (4 tests)
-  7. Cognitive Thai NLP Heuristics Engine (7 tests / 134 cases)
+  7. Cognitive Thai NLP Heuristics Engine & AI Fallback (5 tests / 134 cases)
+  8. AI Auto-Categorization & Smart Fallback Dispatcher (4 tests)
+  9. Anti-Spam, Prank Detection & Citizen Strike Engine (11 tests)
 
 ### 6. การบริหารความพร้อมใช้งานในระดับ Production (Production Hardening)
 - `GET /health` และ `GET /api/health`: ตรวจสอบสถานะการทำงาน Uptime และการเชื่อมต่อฐานข้อมูล
