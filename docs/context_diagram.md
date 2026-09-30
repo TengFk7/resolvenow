@@ -1,7 +1,7 @@
 # ResolvNow Context Diagram (ภาพรวมระบบ)
-> อัปเดตล่าสุด: 2026-09-20 | Version: V18.1
+> อัปเดตล่าสุด: 2026-09-30 | Version: V19.2
 
-แผนภาพ Context Diagram นี้แสดงการโต้ตอบระหว่าง **ระบบ ResolveNow (V18.1)** กับ **ผู้ใช้งานทุกบทบาท (External Entities)** และ **ระบบภายนอกอื่นๆ**
+แผนภาพ Context Diagram นี้แสดงการโต้ตอบระหว่าง **ระบบ ResolveNow (V19.2)** กับ **ผู้ใช้งานทุกบทบาท (External Entities)** และ **ระบบภายนอกอื่นๆ**
 
 ```mermaid
 flowchart LR
@@ -13,7 +13,7 @@ flowchart LR
     CEO["👔 ผู้บริหาร (CEO Dashboard)"]
     
     %% The System
-    System(("🖥️ ระบบรับแจ้งเรื่องร้องเรียน<br>และงานซ่อมบำรุงเมือง<br>ResolveNow (V18.0)"))
+    System(("🖥️ ระบบรับแจ้งเรื่องร้องเรียน<br>และงานซ่อมบำรุงเมือง<br>ResolveNow (V19.2)"))
 
     %% Subgraph for External Services
     subgraph ExternalServices [ระบบภายนอกและโครงสร้างพื้นฐาน]
@@ -24,13 +24,13 @@ flowchart LR
         Cloudinary["☁️ Cloudinary Storage"]
         Email["📧 Triple-Provider Mailer<br>(Gmail / SendGrid / Resend)"]
         MongoDB["🗄️ MongoDB Atlas (7 Collections)"]
-        AIService["🤖 Cognitive Thai NLP & AI<br>(5-Layer Engine / Claude / Gemini)"]
+        AIService["🤖 Cognitive Thai NLP & AI<br>(5-Layer Engine / Claude / Gemini / Spam Gate)"]
     end
 
     %% Interactions: Citizen
     Citizen -- "แจ้งเรื่อง 5 ขั้นตอน / พิกัด GPS / แชทตั๋ว / Direct Message / โหวต / Re-open" --> System
     Citizen -- "เปิดหน้าต่างเว็บแยก /my-tickets ผ่าน Drawer (ตรวจสอบความปลอดภัย 6 ชั้น)" --> System
-    System -- "สถานะงานเรียลไทม์ / Heatmap / ข้อความตอบกลับ / รายการตั๋วส่วนตัว (IDOR Scoped)" --> Citizen
+    System -- "สถานะงานเรียลไทม์ / Heatmap / ข้อความตอบกลับ / แจ้งเตือนสแปม & ทัณฑ์บน / รายการตั๋วส่วนตัว" --> Citizen
     Citizen -. "ให้คะแนนความพึงพอใจ" .-> LineLIFF
     LineLIFF -. "ส่งคะแนนประเมิน" .-> System
     Citizen -. "ล็อกอิน SSO" .-> LineLogin
@@ -40,12 +40,12 @@ flowchart LR
     System -- "แสดงสถานะงาน (Masked PII)" --> PublicUser
     
     %% Interactions: Technician
-    Technician -- "อัปโหลด Before-After / บันทึกวัสดุ / ขอพักเวลา SLA / เซ็นใบงาน" --> System
-    System -- "คิวงานตามความเชี่ยวชาญ / ผลอนุมัติ SLA / แผนที่นำทาง" --> Technician
+    Technician -- "อัปโหลด Before-After / บันทึกวัสดุ / ขอพักเวลา SLA / เซ็นใบงานดิจิทัล (Validated)" --> System
+    System -- "คิวงานตามความเชี่ยวชาญ (ไม่รวมสแปม) / ผลอนุมัติ SLA / แผนที่นำทาง" --> Technician
     
     %% Interactions: Admin
-    Admin -- "มอบหมายงาน / รวมตั๋วซ้ำ / อนุมัติพัก SLA / จัดการหมวด / ทดสอบอีเมล" --> System
-    System -- "รายงานสถิติ (Excel/CSV) / DM Inbox / รายงานการส่งเมล" --> Admin
+    Admin -- "มอบหมายงาน / รวมตั๋วซ้ำ / อนุมัติพัก SLA / กู้คืนตั๋วสแปม / จัดการทัณฑ์บน / จัดการหมวด / ทดสอบอีเมล" --> System
+    System -- "รายงานสถิติ (Excel/CSV) / DM Inbox / Spam Quarantine Drawer / รายงานการส่งเมล" --> Admin
 
     %% Interactions: CEO
     CEO -- "เข้าดูสถิติภาพรวม / โหมดนำเสนอ" --> System
@@ -62,8 +62,8 @@ flowchart LR
     System -- "อัปโหลดภาพตั๋ว / Before / After" --> Cloudinary
     Cloudinary -- "Secure Image URL" --> System
 
-    System -- "ส่งข้อความเพื่อจำแนกความเร่งด่วน" --> AIService
-    AIService -- "Urgency Level (urgent/medium/normal)" --> System
+    System -- "ส่งข้อความเพื่อจำแนกความเร่งด่วนและคัดกรองสแปม" --> AIService
+    AIService -- "Urgency Level (urgent/medium/normal) / Credibility Score" --> System
 
     System -- "ส่งการแจ้งเตือนงานและการติดตาม (Push)" --> LineNotify
     LineNotify -- "Flex Messages" --> Citizen
@@ -82,16 +82,16 @@ flowchart LR
 
 ## คำอธิบายสัญลักษณ์และปฏิสัมพันธ์
 
-1. **ระบบหลัก (วงกลมตรงกลาง):** `ResolveNow (V18.0)` ทำหน้าที่เป็นศูนย์กลางการประมวลผล (Node.js/Express + Socket.IO + SLA Engine + Cognitive Thai NLP + Health Checks)
+1. **ระบบหลัก (วงกลมตรงกลาง):** `ResolveNow (V19.2)` ทำหน้าที่เป็นศูนย์กลางการประมวลผล (Node.js/Express + Socket.IO + SLA Engine + Cognitive Thai NLP + Anti-Spam & Strike Engine + Health Checks)
 2. **ผู้ใช้งานระบบ (ฝั่งซ้าย):**
-   - **ประชาชน (Citizen):** แจ้งเรื่องร้องเรียน 5 ขั้นตอนพร้อมพิกัด GPS, แนบรูปได้สูงสุด 5 รูป, สนทนาในตั๋ว, แชทตรงกับ Admin (DM), กดโหวต/ติดตามปัญหา, และยื่นเรื่องขอเปิดงานใหม่ (Re-open)
+   - **ประชาชน (Citizen):** แจ้งเรื่องร้องเรียน 5 ขั้นตอนพร้อมพิกัด GPS, ระบบตรวจจับสแปมและแจ้งเตือนทัณฑ์บนแบบเรียลไทม์, แนบรูปได้สูงสุด 5 รูป, สนทนาในตั๋ว, แชทตรงกับ Admin (DM), กดโหวต/ติดตามปัญหา, และยื่นเรื่องขอเปิดงานใหม่ (Re-open)
    - **ประชาชนทั่วไป (Public User):** ติดตามสถานะความคืบหน้าของตั๋วผ่านหน้าระบบค้นหาสาธารณะ (`/track`) โดยมีการปกปิดข้อมูลส่วนบุคคลตามหลัก PDPA
-   - **ช่างปฏิบัติงาน (Technician):** ดำเนินการงานตามความเชี่ยวชาญ, อัปโหลดรูปภาพ Before & After, บันทึกรายการอะไหล่และค่าใช้จ่าย, ขอพักเวลา SLA ชั่วคราวเมื่อรออะไหล่, ขอความช่วยเหลือข้ามฝ่าย, และบันทึกลายเซ็นดิจิทัลในใบสั่งงาน
-   - **ผู้ดูแลระบบ (Admin Dispatcher):** ควบคุมคิวงาน, มอบหมายงานตาม Workload Capacity, ตรวจจับและรวมตั๋วที่ซ้ำซ้อนในรัศมีใกล้เคียง, อนุมัติการพักเวลา SLA, จัดการหมวดหมู่ไดนามิก, ตอบข้อความ DM รวมศูนย์ และใช้เครื่องมือทดสอบการส่งอีเมล
+   - **ช่างปฏิบัติงาน (Technician):** ดำเนินการงานตามความเชี่ยวชาญ (เฉพาะตั๋วที่ผ่านการคัดกรอง), อัปโหลดรูปภาพ Before & After, บันทึกรายการอะไหล่และค่าใช้จ่าย, ขอพักเวลา SLA ชั่วคราวเมื่อรออะไหล่, ขอความช่วยเหลือข้ามฝ่าย, และส่งมอบงานพร้อมลายเซ็นดิจิทัลที่ผ่านการตรวจความปลอดภัย (Work Order Digital Signature)
+   - **ผู้ดูแลระบบ (Admin Dispatcher):** ควบคุมคิวงาน, มอบหมายงานตาม Workload Capacity, ตรวจจับและรวมตั๋วที่ซ้ำซ้อนในรัศมีใกล้เคียง, อนุมัติการพักเวลา SLA, บริหารจัดการ Spam Quarantine Drawer (กู้คืนเรื่อง/ลบ/จัดการทัณฑ์บนผู้ใช้), จัดการหมวดหมู่ไดนามิก, ตอบข้อความ DM รวมศูนย์ และใช้เครื่องมือทดสอบการส่งอีเมล
    - **ผู้บริหารระดับสูง (CEO):** ดูสรุปตัวชี้วัด SLA Compliance, สรุปงบประมาณค่าซ่อมบำรุงประจำเดือน, และการวิเคราะห์เชิงพื้นที่และงบประมาณแยกตามเขต (District Analytics) ในโหมด Read-only
 3. **ระบบภายนอกที่นำมาเชื่อมต่อ (ฝั่งขวา):**
    - **MongoDB Atlas:** ฐานข้อมูล NoSQL หลัก จัดเก็บ 7 Collections พร้อม Compound Indexes
    - **Cloudinary:** บริการจัดเก็บและปรับแต่งภาพถ่ายอัตโนมัติ (พร้อมระบบ Local Disk Fallback)
    - **Triple-Provider Mailer:** ระบบส่งอีเมลสำรอง 3 ชั้น (Gmail SMTP SSL/TLS, SendGrid API, Resend API)
    - **LINE Login / LIFF / Messaging API:** บริการ LINE สำหรับ Single Sign-On, Flex Messages แจ้งเตือนสถานะ และ LINE LIFF สำหรับการประเมินผล
-   - **Cognitive Thai NLP & AI Service:** ระบบจำแนกความเร่งด่วน 5 ชั้น (Cognitive Heuristics 134 Cases) เสริมด้วย Anthropic Claude และ Google Gemini
+   - **Cognitive Thai NLP & AI Service:** ระบบจำแนกความเร่งด่วน 5 ชั้น (Cognitive Heuristics 134 Cases) และเกตเวย์คัดกรองสแปม 3 ระดับ เสริมด้วย Anthropic Claude และ Google Gemini

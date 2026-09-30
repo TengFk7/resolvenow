@@ -1,7 +1,7 @@
 # Entity-Relationship (ER) Diagram - ResolvNow
-> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0
+> อัปเดตล่าสุด: 2026-09-30 | Version: V19.2
 
-เอกสารนี้แสดงโครงสร้างและความสัมพันธ์ของฐานข้อมูล (MongoDB) ภายในระบบ ResolvNow ครอบคลุมทั้ง 7 Collections พร้อมฟิลด์ข้อมูลและการสกัดข้อมูลเชิงพื้นที่ (District Analytics)
+เอกสารนี้แสดงโครงสร้างและความสัมพันธ์ของฐานข้อมูล (MongoDB) ภายในระบบ ResolvNow ครอบคลุมทั้ง 7 Collections พร้อมฟิลด์ข้อมูลและการสกัดข้อมูลเชิงพื้นที่ (District Analytics), สถาปัตยกรรม Anti-Spam & Strike Engine และ AI Dispatcher
 
 ```mermaid
 erDiagram
@@ -29,6 +29,10 @@ erDiagram
         String lineDisplayName "Nullable"
         String avatar "Nullable"
         Boolean createdViaLine "Default false"
+        Number spamStrikes "Default 0"
+        Boolean isSuspended "Default false"
+        Date suspendedUntil "Nullable"
+        Array strikeHistory "Strike audit records"
         Date createdAt
         Date updatedAt
     }
@@ -40,18 +44,28 @@ erDiagram
         String citizenName
         String citizenLineId "Nullable"
         String category "Ref Category name"
-        String description "XSS sanitized"
-        String location "Reverse geocoded text"
+        String description "5-3000 chars (XSS sanitized)"
+        String location "Reverse geocoded (Max 500 chars)"
         String district "District/Amphoe (Indexed)"
         String subdistrict "Subdistrict/Tambon"
         Number lat "Nullable"
         Number lng "Nullable"
         String urgency "normal, medium, urgent"
         Number priorityScore "0-100"
-        String status "pending, assigned, in_progress, completed, rejected, reopened, merged"
+        String status "pending, assigned, in_progress, completed, rejected, reopened, merged, spam_quarantine"
         ObjectId assignedTo FK "Ref User (Technician)"
         String assignedName "Nullable"
         String rejectReason "Nullable"
+        Boolean isSpam "Default false (Indexed)"
+        String spamReason "Nullable"
+        String spamType "none, hard_blocked, gibberish, test, profanity, joke, out_of_bounds, ai_flagged"
+        Number aiCredibilityScore "0-100 (Default 95)"
+        String spamFlag "valid, junk, incomprehensible, irrelevant"
+        Boolean isAmbiguous "Default false (Indexed)"
+        Boolean needsAdminReview "Default false (Indexed)"
+        String aiConfidence "high, medium, low"
+        Boolean aiDispatched "Default false"
+        String aiReviewReason "Nullable"
         String citizenImage "Cloudinary URL"
         Array citizenImages "List of URLs (Max 5)"
         String beforeImage "Cloudinary URL"
@@ -76,7 +90,7 @@ erDiagram
         Date reopenedAt "Nullable"
         String reopenReason "Nullable"
         Array reopenImages "List of URLs"
-        Object workOrder "Signature Data & Signed By"
+        Object workOrder "Signature Data (Base64 URL <= 500KB) & Signed By"
         Array timeline "Audit log events"
         Array materials "Parts, price & qty list"
         Number totalRepairCost "Total repair expense"

@@ -12,7 +12,7 @@
 
 # ResolveNow — AI Assistant Quick Architecture & Reference Guide
 
-> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-30 | Version: V19.0 - Anti-Spam, Prank Detection & Citizen Strike Engine)
+> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-30 | Version: V19.2 - Work Order Digital Signature, Dynamic Flood Rate-Limiter, Advanced XSS/ReDoS Defense, IDOR Hardening & 43 Automated Tests)
 
 ---
 
@@ -85,7 +85,7 @@ ResolveNow/
 │   └── spamFilter.js             ← เครื่องมือวิเคราะห์สแปม, Shannon Entropy, Thai NLP Linguistic, Geofencing, Blacklist
 │
 ├── scripts/
-│   ├── runTests.js               ← Automated Test Runner (39 Unit & Integration Tests)
+│   ├── runTests.js               ← Automated Test Runner (43 Unit & Integration Tests)
 │   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อการทดสอบ
 │
 ├── docs/                         ← เอกสารเชิงวิศวกรรมซอฟต์แวร์ และ Architecture
@@ -130,13 +130,28 @@ ResolveNow/
   - `checkIsSlaBreached(ticket)`: ตรวจสอบสถานะการผิดสัญญาแบบแม่นยำ (รองรับการพักเวลา `slaPauseStatus` และข้ามตั๋ว `spam_quarantine`)
 
 ### กฎด้านความปลอดภัย (Security Rules)
-1. **XSS Protection**: ข้อมูลประเภท Text ที่รับจากผู้ใช้ (ชื่อ, รายละเอียด, คอมเมนต์, วัสดุ, เหตุผล) ต้องคลุมด้วย `xss()` ในฝั่ง Backend และใช้ฟังก์ชัน `escapeHTML()` ในฝั่ง Frontend เสมอ
-2. **IDOR Protection**:
+1. **XSS Protection & Boundary Limits**:
+   - ข้อมูลประเภท Text ที่รับจากผู้ใช้ (ชื่อ, รายละเอียด, คอมเมนต์, วัสดุ, เหตุผล, สถานที่) ต้องคลุมด้วย `xss()` ในฝั่ง Backend และใช้ฟังก์ชัน `escapeHTML()` ในฝั่ง Frontend เสมอ
+   - จำกัดความยาวของอินพุตอย่างเคร่งครัด: `description` (5 - 3,000 ตัวอักษร), `location` (2 - 500 ตัวอักษร), ข้อมูลโปรไฟล์ช่าง (`firstName`, `lastName`, `specialty` ไม่เกิน 50 ตัวอักษร)
+   - ป้องกัน ReDoS (Regular Expression Denial of Service) ใน `utils/spamFilter.js` โดยจำกัดขนาดข้อความก่อนรัน Regex ไม่เกิน 1,000 ตัวอักษร
+2. **IDOR & Authorization Protection**:
    - การดูคอมเมนต์ตั๋ว: ต้องเป็นเจ้าของตั๋ว, ช่างที่ได้รับมอบหมาย, หรือแอดมินเท่านั้น
-   - การเปลี่ยนสถานะตั๋ว: ช่างทำได้เฉพาะตั๋วที่ได้รับมอบหมายเท่านั้น (`ticket.assignedTo == req.session.userId`)
-3. **Security Gate Server-side Verification**:
+   - การแสดงความคิดเห็นในตั๋ว: ช่างคอมเมนต์ได้เฉพาะตั๋วที่ตนเองได้รับมอบหมายเท่านั้น (`ticket.assignedTo == req.session.userId`)
+   - การเปลี่ยนสถานะตั๋ว: ช่างทำได้เฉพาะตั๋วที่ได้รับมอบหมายเท่านั้น
+   - การขอความช่วยเหลือข้ามฝ่าย (`HelpRequest`): ช่างขอความช่วยเหลือได้เฉพาะตั๋วที่ตนได้รับมอบหมาย หรือเป็นแอดมินเท่านั้น
+   - การลงนามในใบสั่งงาน (`workOrder`): อนุญาตเฉพาะเจ้าของเคส (`citizenId`), ช่างที่ได้รับมอบหมาย (`assignedTo`) หรือ Admin เท่านั้น
+   - การส่งข้อความตรง (`DirectMessage`): ฝั่งแอดมินส่งหาประชาชนต้องตรวจสอบความถูกต้องของ ObjectId (`mongoose.Types.ObjectId.isValid`) เสมอ
+3. **Work Order Digital Signature Validation**:
+   - ข้อมูลลายเซ็นต้องเป็น Base64 Data URL รูปร่าง `^data:image\/(?:png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$` เท่านั้น
+   - ขนาดข้อมูล Base64 ต้องไม่เกิน 500KB เพื่อป้องกัน Payload Injection และฐานข้อมูลบวม
+   - ชื่อผู้ลงนามจำกัดไม่เกิน 100 ตัวอักษร และหมายเหตุไม่เกิน 1,000 ตัวอักษร
+4. **Per-User Ticket Creation Flood Guard**:
+   - ตรวจจับและบล็อกการยิงสคริปต์ส่งตั๋วรัวๆ ด้วย `checkTicketCreationRateLimit(userId)` เพื่อป้องกันการ Flood ฐานข้อมูล
+5. **GPS Boundary Validation**:
+   - ตรวจสอบพิกัด GPS ให้อยู่ในช่วงที่ถูกต้องเสมอ (Latitude: -90 ถึง 90, Longitude: -180 ถึง 180)
+6. **Security Gate Server-side Verification**:
    - การเข้าถึงข้อมูลหรือปลดล็อค Gate ต้องผ่าน `POST /api/auth/gate-verify` เพื่อบันทึกสถานะลงใน Session และป้องกันการ Bypass ฝั่ง Client
-4. **Admin Actions**: การลบตั๋วทั้งหมดต้องตรวจสอบ `ADMIN_DELETE_PASSWORD` จาก Environment เสมอ
+7. **Admin Actions**: การลบตั๋วทั้งหมดต้องตรวจสอบ `ADMIN_DELETE_PASSWORD` จาก Environment เสมอ
 
 ### กฎด้านการจำแนกความเร่งด่วนด้วย AI & Thai NLP (Cognitive NLP Engine Rule)
 - `routes/ai.js` ใช้สถาปัตยกรรม **Cognitive Thai NLP Heuristics Engine (5-Layer Classification)** เป็นฐานรองรับ Fallback ที่ทำงานได้อย่างสมบูรณ์แบบโดยไม่ต้องพึ่งพา External API:
@@ -161,10 +176,11 @@ ResolveNow/
    - ระบบตรวจจับตั๋วซ้ำซ้อนผ่านรัศมีพิกัด Haversine (< 100 เมตร) และหมวดหมู่เดียวกัน
    - Admin สามารถสั่งรวมตั๋ว (Merge) ได้ โดยโหวตและผู้ติดตามจะถูกถ่ายโอนไปยังตั๋วหลัก
 5. **Digital Work Order & Signature (`workOrder`)**:
-   - บันทึกชื่อผู้เซ็นรับงาน ลายเซ็นดิจิทัล (Data URL) และดูใบงานผ่าน `GET /api/tickets/:id/work-order`
+   - ตรวจสอบความถูกต้องของลายเซ็น และบันทึกชื่อผู้เซ็นรับงาน ลายเซ็นดิจิทัล (Data URL) พร้อมดูใบงานผ่าน `GET /api/tickets/:id/work-order`
 6. **Geospatial & District Intelligence (`district`, `subdistrict`)**:
    - สกัดชื่อเขตและแขวงจากข้อความสถานที่โดยอัตโนมัติ รองรับรายงานเชิงพื้นที่ `GET /api/ceo/district-analytics`
 7. **Anti-Spam, Prank Detection & Citizen Strike Engine (`isSpam`, `spamType`, `spamFlag`, `aiCredibilityScore`, `spam_quarantine`)**:
    - ระบบ 3 ระดับ: **แบบที่ 1 (Hard Block)** ดักจับการเคาะแป้นพิมพ์มั่ว (Keyboard Smash), ข้อความทดสอบ, คำหยาบคาย หน้าบ้านและ API ทันที (HTTP 400), **แบบที่ 2 (Soft Quarantine)** กักกันข้อความเล่นตลก/มุก/นอกขอบเขต หรือหมุดนอกพิกัดประเทศไทยไว้ที่สถานะ `spam_quarantine` ไม่แจ้งเตือนช่าง ไม่นับ SLA เข้าดูได้จากเมนูขีดสามขีดของ Admin, **แบบที่ 3 (Warning & Strike System)** สะสมประวัติทัณฑ์บนผู้ใช้ หากส่งเรื่องเล่นครบ 3 ครั้งจะถูกระงับการแจ้งเรื่อง 24 ชั่วโมง โดย Admin สามารถปลดแบนหรือกู้คืนเรื่องได้
+   - Admin มี APIs จัดการ: `GET /api/tickets/quarantine/list`, `POST /api/tickets/:id/quarantine/restore`, `DELETE /api/tickets/:id/quarantine/delete`, และ `POST /api/tickets/quarantine/user-strikes/:userId`
 8. **Real-time Synchronization**:
    - เมื่อทำการอัปเดตตั๋ว ให้ยิง Socket event `ticket_updated` เสมอ (`emitUpdate(req)`) เพื่อให้แดชบอร์ดทุกพอร์ทัลอัปเดตแบบเรียลไทม์

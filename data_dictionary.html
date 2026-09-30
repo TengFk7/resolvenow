@@ -516,12 +516,12 @@
       <div class="cover-badge">📋 Data Dictionary</div>
       <h1>Resolve<span>Now</span></h1>
       <div class="sub">ระบบรับแจ้งเรื่องร้องเรียน - อธิบายโครงสร้างฐานข้อมูล</div>
-      <div class="cover-meta">7
+      <div class="cover-meta">
         <div class="cover-meta-item"><strong>Database</strong>MongoDB Atlas (Mongoose 9)</div>
         <div class="cover-meta-item"><strong>Collections</strong>7 collections</div>
-        <div class="cover-meta-item"><strong>เวอร์ชัน</strong>v1.0 (15/04/2026)</div>
+        <div class="cover-meta-item"><strong>เวอร์ชัน</strong>v19.2 (30/09/2026)</div>
         <div class="cover-meta-item"><strong>Stack</strong>Node.js + Express 4</div>
-        <div class="cover-meta-item"><strong>Deploy on</strong>Render.com</div>
+        <div class="cover-meta-item"><strong>Security &amp; AI</strong>6-Layer Security · Anti-Spam Gate · Cognitive NLP</div>
       </div>
     </div>
 
@@ -531,13 +531,13 @@
       <div class="index-grid">
         <div class="index-item">
           <div class="idx-col">users</div>
-          <div class="idx-desc">ผู้ใช้งานระบบ Citizen/Technician/Admin</div>
-          <div class="idx-count">11 fields</div>
+          <div class="idx-desc">ผู้ใช้งานระบบ Citizen/Technician/Admin + ทัณฑ์บนสแปม</div>
+          <div class="idx-count">17 fields</div>
         </div>
         <div class="index-item">
           <div class="idx-col">tickets</div>
-          <div class="idx-desc">เรื่องร้องเรียนของประชาชน</div>
-          <div class="idx-count">27 fields + 2 sub-docs</div>
+          <div class="idx-desc">เรื่องร้องเรียน, SLA, กักกันสแปม, AI Dispatch, ใบงาน &amp; วัสดุ</div>
+          <div class="idx-count">55+ fields + 5 sub-docs</div>
         </div>
         <div class="index-item">
           <div class="idx-col">helprequests</div>
@@ -701,6 +701,63 @@
           <td class="req-no">default: false</td>
         </tr>
         <tr>
+          <td class="fname">spamStrikes</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>จำนวนครั้งที่ถูกตักเตือน/ติดทัณฑ์บนจากการส่งสแปมหรือแจ้งเรื่องเล่น</td>
+          <td>≥ 0, ครบ 3 ครั้งจะถูกระงับบัญชี 24 ชั่วโมง</td>
+          <td class="req-yes">default: 0</td>
+        </tr>
+        <tr>
+          <td class="fname">isSuspended</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระบุว่าบัญชีผู้ใช้นี้ถูกระงับสิทธิ์การส่งเรื่องร้องเรียนชั่วคราวหรือไม่</td>
+          <td>true = ถูกระงับ; false = ปกติ</td>
+          <td class="req-yes">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">suspendedUntil</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่สิ้นสุดการระงับบัญชี (ระบบปลดแบนอัตโนมัติเมื่อพ้นกำหนด)</td>
+          <td>null = ไม่ได้ถูกระงับ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr class="sub-header">
+          <td colspan="7">📌 Sub-document Array: strikeHistory[] — ประวัติการติดทัณฑ์บน</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">strikeHistory[].reason</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เหตุผลที่ถูกตัดทัณฑ์บน (เช่น แป้นพิมพ์มั่ว, คำหยาบ, หลอกลวง)</td>
+          <td>ห้ามว่าง</td>
+          <td class="req-yes">Required</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">strikeHistory[].ticketId</td>
+          <td class="ftype">String</td>
+          <td class="flen">10</td>
+          <td class="fkey">—</td>
+          <td>รหัสตั๋วที่ส่งผลให้ถูกติดทัณฑ์บน เช่น TKT-00001</td>
+          <td>null = ให้ทัณฑ์บนโดยตรง</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr class="sub">
+          <td class="fname">strikeHistory[].givenAt</td>
+          <td class="ftype">Date</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>วันเวลาที่บันทึกทัณฑ์บน</td>
+          <td>default: Date.now</td>
+          <td class="req-yes">Auto</td>
+        </tr>
+        <tr>
           <td class="fname">createdAt</td>
           <td class="ftype">Date</td>
           <td class="flen">—</td>
@@ -818,8 +875,26 @@
           <td class="flen">—</td>
           <td class="fkey">—</td>
           <td>ที่อยู่หรือคำอธิบายสถานที่ อาจได้จาก reverse geocoding ของ GPS</td>
-          <td>ห้ามว่าง</td>
+          <td>ห้ามว่าง (สูงสุด 500 ตัวอักษร)</td>
           <td class="req-yes">Required</td>
+        </tr>
+        <tr>
+          <td class="fname">district</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-idx">IDX</span></td>
+          <td>เขตหรืออำเภอของสถานที่เกิดเหตุ สกัดอัตโนมัติจาก Geocoding สำหรับ District Analytics</td>
+          <td>null = ไม่มีข้อมูลพิกัด</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">subdistrict</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>แขวงหรือตำบลของสถานที่เกิดเหตุ สกัดอัตโนมัติจาก Geocoding</td>
+          <td>null = ไม่มีข้อมูลพิกัด</td>
+          <td class="req-no">Nullable</td>
         </tr>
         <tr>
           <td class="fname">lat</td>
@@ -876,6 +951,9 @@
               <li>in_progress</li>
               <li>completed</li>
               <li>rejected</li>
+              <li>reopened</li>
+              <li>merged</li>
+              <li>spam_quarantine</li>
             </ul>
           </td>
           <td class="req-yes">default: pending</td>
@@ -907,13 +985,145 @@
           <td>null = ไม่ถูกปฏิเสธ, ผ่าน xss sanitize</td>
           <td class="req-no">Nullable</td>
         </tr>
+        <!-- Anti-Spam & Credibility -->
+        <tr class="sub-header">
+          <td colspan="7">🛡️ Anti-Spam, Prank Detection &amp; Credibility Matrix</td>
+        </tr>
+        <tr>
+          <td class="fname">isSpam</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-idx">IDX</span></td>
+          <td>ระบุว่าเป็นเรื่องสแปม/แจ้งเล่น/กักกันใน Spam Quarantine Drawer หรือไม่</td>
+          <td>true = สแปม/กักกัน; false = เรื่องปกติ</td>
+          <td class="req-yes">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">spamReason</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เหตุผลที่ระบบหรือ AI ตรวจพบสแปม (เช่น แป้นพิมพ์มั่ว, หยาบคาย, พิกัดนอกประเทศ)</td>
+          <td>null = เรื่องปกติ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">spamType</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ประเภทการตรวจจับสแปม</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">none</li>
+              <li>hard_blocked</li>
+              <li>gibberish</li>
+              <li>test</li>
+              <li>profanity</li>
+              <li>joke</li>
+              <li>out_of_bounds</li>
+              <li>ai_flagged</li>
+            </ul>
+          </td>
+          <td class="req-yes">default: none</td>
+        </tr>
+        <tr>
+          <td class="fname">aiCredibilityScore</td>
+          <td class="ftype">Number</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>คะแนนความน่าเชื่อถือประเมินโดย AI (0–100)</td>
+          <td>ช่วง 0–100, &lt; 40 ถูกกักกัน</td>
+          <td class="req-yes">default: 95</td>
+        </tr>
+        <tr>
+          <td class="fname">spamFlag</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ป้ายกำกับระดับความเกี่ยวข้อง</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">valid</li>
+              <li>junk</li>
+              <li>incomprehensible</li>
+              <li>irrelevant</li>
+            </ul>
+          </td>
+          <td class="req-yes">default: valid</td>
+        </tr>
+
+        <!-- AI Dispatch & Ambiguity -->
+        <tr class="sub-header">
+          <td colspan="7">🤖 AI Auto-Dispatch &amp; Ambiguity Detection</td>
+        </tr>
+        <tr>
+          <td class="fname">isAmbiguous</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-idx">IDX</span></td>
+          <td>ระบบตรวจพบว่าเรื่องร้องเรียนมีความกำกวมหรือรายละเอียดไม่ชัดเจน</td>
+          <td>true = กำกวม; false = ชัดเจน</td>
+          <td class="req-yes">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">needsAdminReview</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey"><span class="badge badge-idx">IDX</span></td>
+          <td>ต้องการให้แอดมินตรวจสอบคิวงานก่อนจ่ายให้ช่างภาคสนาม</td>
+          <td>true = ต้องตรวจสอบ; false = จ่ายงานได้ทันที</td>
+          <td class="req-yes">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">aiConfidence</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระดับความมั่นใจของ AI ในการจำแนกหมวดหมู่และความเร่งด่วน</td>
+          <td>
+            <ul class="enum-list">
+              <li class="def">high</li>
+              <li>medium</li>
+              <li>low</li>
+            </ul>
+          </td>
+          <td class="req-yes">default: high</td>
+        </tr>
+        <tr>
+          <td class="fname">aiDispatched</td>
+          <td class="ftype">Boolean</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>ระบุว่าเรื่องนี้ได้รับการกระจายงานอัตโนมัติด้วย AI หรือไม่</td>
+          <td>true = AI กระจายงาน; false = แมนนวล</td>
+          <td class="req-yes">default: false</td>
+        </tr>
+        <tr>
+          <td class="fname">aiReviewReason</td>
+          <td class="ftype">String</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>เหตุผลประกอบคำแนะนำของ AI ที่เสนอให้แอดมินตรวจสอบ</td>
+          <td>null = ไม่ต้องตรวจสอบ</td>
+          <td class="req-no">Nullable</td>
+        </tr>
         <tr>
           <td class="fname">citizenImage</td>
           <td class="ftype">String</td>
           <td class="flen">—</td>
           <td class="fkey">—</td>
-          <td>URL รูปภาพที่ประชาชนแนบตอนส่งเรื่องร้องเรียน (Cloudinary/local)</td>
-          <td>null = ไม่มีรูป, ต้องเป็น URL ที่ถูกต้อง (jpg/png/gif/webp)</td>
+          <td>URL รูปภาพแรกที่ประชาชนแนบตอนส่งเรื่องร้องเรียน (Cloudinary/local)</td>
+          <td>null = ไม่มีรูป, ต้องเป็น URL ที่ถูกต้อง</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">citizenImages</td>
+          <td class="ftype">Array[String]</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>รายการ URL รูปภาพทั้งหมดที่ประชาชนแนบ (สูงสุด 5 รูป)</td>
+          <td>Array of URLs, สูงสุด 5 รูป</td>
           <td class="req-no">Nullable</td>
         </tr>
         <tr>
@@ -930,8 +1140,17 @@
           <td class="ftype">String</td>
           <td class="flen">—</td>
           <td class="fkey">—</td>
-          <td>URL รูปภาพหลังซ่อมเสร็จ อัปโหลดโดยช่างเมื่อ status = in_progress</td>
+          <td>URL รูปภาพแรกหลังซ่อมเสร็จ อัปโหลดโดยช่างเมื่อ status = in_progress</td>
           <td>null = ยังไม่อัปโหลด, URL Cloudinary หรือ /uploads/filename</td>
+          <td class="req-no">Nullable</td>
+        </tr>
+        <tr>
+          <td class="fname">afterImages</td>
+          <td class="ftype">Array[String]</td>
+          <td class="flen">—</td>
+          <td class="fkey">—</td>
+          <td>รายการ URL รูปภาพหลังซ่อมเสร็จทั้งหมด (สูงสุด 5 รูป)</td>
+          <td>Array of URLs, สูงสุด 5 รูป</td>
           <td class="req-no">Nullable</td>
         </tr>
         <tr>
@@ -1717,7 +1936,7 @@
     <div class="footer">
       <strong>ResolveNow Data Dictionary</strong> — ระบบรับแจ้งเรื่องร้องเรียน<br />
       MongoDB Atlas · Mongoose 9 · Node.js + Express 4 · Deploy on: Render.com<br />
-      จัดทำ: 15/04/2569 | อัปเดต: 27/08/2569 | ครอบคลุม 7 collections, 80+ fields<br />
+      จัดทำ: 15/04/2569 | อัปเดต: 30/09/2569 | ครอบคลุม 7 collections, 85+ fields (Version: V19.2)<br />
       Copyright © 2026 ResolveNow. All rights reserved.
     </div>
 

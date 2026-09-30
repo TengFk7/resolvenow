@@ -1,6 +1,6 @@
 # 🏙️ ResolveNow (ระบบรับแจ้งเรื่องร้องเรียนและบริหารงานซ่อมบำรุงเมืองอัจฉริยะ)
 
-> **ResolveNow (V18.1)** เป็นเว็บแอปพลิเคชันรูปแบบ **Dedicated Multi-Portal Architecture** สำหรับบริหารจัดการและติดตามเรื่องร้องเรียนของเทศบาลและเมืองอัจฉริยะ (Smart City) เชื่อมต่อประชาชน ช่างผู้ปฏิบัติงาน ผู้ดูแลระบบ และผู้บริหารระดับสูงแบบเรียลไทม์ พร้อมการแจ้งเตือนผ่าน LINE, ระบบวิเคราะห์ความเร่งด่วนด้วย AI & Cognitive Thai NLP Heuristics Engine, สถาปัตยกรรมส่งอีเมล Triple-Provider Resilient Mailer, แผนที่ Heatmap และการวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบบันทึกงบประมาณ/วัสดุ, ใบสั่งงานพร้อมลายเซ็นดิจิทัล, ระบบ SLA อัตโนมัติ และชุดทดสอบความถูกต้องของระบบอัตโนมัติ (Automated Verification Test Suite)
+> **ResolveNow (V19.2)** เป็นเว็บแอปพลิเคชันรูปแบบ **Dedicated Multi-Portal Architecture** สำหรับบริหารจัดการและติดตามเรื่องร้องเรียนของเทศบาลและเมืองอัจฉริยะ (Smart City) เชื่อมต่อประชาชน ช่างผู้ปฏิบัติงาน ผู้ดูแลระบบ และผู้บริหารระดับสูงแบบเรียลไทม์ พร้อมการแจ้งเตือนผ่าน LINE, ระบบวิเคราะห์ความเร่งด่วนด้วย AI & Cognitive Thai NLP Heuristics Engine, สถาปัตยกรรมส่งอีเมล Triple-Provider Resilient Mailer, แผนที่ Heatmap และการวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบบันทึกงบประมาณ/วัสดุ, ใบสั่งงานพร้อมลายเซ็นดิจิทัลที่ผ่านการตรวจความปลอดภัย, ระบบตรวจจับสแปมและทัณฑ์บนประชาชน (Anti-Spam & Strike Engine), ระบบป้องกัน Flood Rate Limit & ReDoS, ระบบ SLA อัตโนมัติ และชุดทดสอบความถูกต้องของระบบอัตโนมัติ (Automated Verification Test Suite 43 รายการ)
 
 ---
 
@@ -10,13 +10,13 @@
 
 | พอร์ทัล | URL | หน้าเว็บ | รหัสผ่าน Gate Passcode | ผู้ใช้งานและหน้าที่หลัก |
 |---|---|---|---|---|
-| **Citizen Portal** | `/` | `public/index.html` | - | ประชาชนทั่วไป แจ้งเรื่อง 5 ขั้นตอน, ติดตาม, แชท, โหวต, ยื่น Re-open |
+| **Citizen Portal** | `/` | `public/index.html` | - | ประชาชนทั่วไป แจ้งเรื่อง 5 ขั้นตอน, ติดตาม, แชท, โหวต, ยื่น Re-open, ระบบเตือนสแปม Real-time |
 | **My Tickets Portal** | `/my-tickets` หรือ `/tickets/my` | `public/my-tickets.html` | - | หน้าต่างเว็บแยกดูเรื่องร้องเรียนทั้งหมดของฉัน (ความปลอดภัย 6 ชั้น, คัดกรอง, แชท) |
-| **Admin Portal** | `/admin` | `public/admin.html` | `@Teng11421142` | ผู้ดูแลระบบ จัดการคิว มอบหมายงาน อนุมัติ SLA รวมตั๋วซ้ำ ตรวจสอบระบบอีเมล |
+| **Admin Portal** | `/admin` | `public/admin.html` | `@Teng11421142` | ผู้ดูแลระบบ จัดการคิว มอบหมายงาน อนุมัติ SLA รวมตั๋วซ้ำ ตรวจสอบระบบอีเมล และจัดการ Spam Quarantine Drawer |
 | **Technician Portal** | `/tech` หรือ `/technician` | `public/tech.html` | `@Teng11421142` | ช่างภาคสนาม รับงาน บันทึกรูป Before/After บันทึกวัสดุ ขอพักเวลา SLA เซ็นใบงาน |
 | **CEO Dashboard** | `/ceo` | `public/executive-dashboard.html` | `@Teng11421142` | ผู้บริหารระดับสูง สถิติ SLA กราฟงบประมาณ การวิเคราะห์เชิงพื้นที่ (Masked PII) |
 | **Public Tracker** | `/track` | `public/track.html` | - (Public search) | ค้นหาและติดตามสถานะตั๋วด้วยรหัส Ticket ID สำหรับประชาชนทั่วไป |
-| **Data Dictionary** | `/Datadic` | `data_dictionary.html` | Login สิทธิ์ Admin | พจนานุกรมข้อมูลฐานข้อมูลฉบับสมบูรณ์ (7 Collections, 80+ Fields) |
+| **Data Dictionary** | `/Datadic` | `data_dictionary.html` | Login สิทธิ์ Admin | พจนานุกรมข้อมูลฐานข้อมูลฉบับสมบูรณ์ (7 Collections, 85+ Fields) |
 | **Project Poster** | `/project` | `public/project-poster.html` | - | โปสเตอร์สรุปฟีเจอร์และสถาปัตยกรรมโครงการระดับผู้บริหาร |
 | **Health Check API** | `/health` หรือ `/api/health` | JSON API | - | ตรวจสอบสถานะการทำงาน Uptime และการเชื่อมต่อฐานข้อมูล MongoDB |
 
@@ -26,22 +26,25 @@
 
 ### 🏠 1. ฝั่งประชาชน (Citizen Experience)
 - **แจ้งเรื่อง 5 ขั้นตอน พร้อมพิกัด GPS แม่นยำ**: ระบุตำแหน่งอัตโนมัติด้วย Reverse Geocoding (OpenStreetMap Nominatim) แนบรูปภาพได้สูงสุด 5 รูป
+- **ระบบคัดกรองสแปมแบบเรียลไทม์ (Real-time Anti-Spam Assistant)**: แจ้งเตือนและบล็อกการเคาะแป้นพิมพ์มั่ว คำหยาบคาย ข้อความทดสอบ หรือพิกัดนอกประเทศไทยทันทีตั้งแต่ Step 1
 - **ติดตามสถานะงานแบบเรียลไทม์**: อัปเดตการทำงานของเจ้าหน้าที่ทันทีผ่าน Socket.IO
 - **ระบบมีส่วนร่วมของชุมชน (Community Upvote & Follow)**: โหวตดันเรื่องสำคัญ และติดตามความคืบหน้าผ่าน LINE Notify
 - **แชทตรงกับเจ้าหน้าที่ (Direct Message)**: สนทนาแบบ 1-on-1 ระหว่างประชาชนกับแอดมินส่วนกลาง
 - **ประเมินความพึงพอใจ & เปิดงานใหม่ (Re-open)**: ประเมิน 1-5 ดาวผ่านเว็บหรือ LINE LIFF และสามารถยื่นเรื่องเปิดงานใหม่กรณีปัญหายังไม่เรียบร้อย
 
 ### 👷 2. ฝั่งช่างและเจ้าหน้าที่ปฏิบัติการ (Technician Field Ops)
-- **ระบบงานตามความเชี่ยวชาญ**: คัดกรองและรับงานซ่อมแซมตามหมวดหมู่ที่ได้รับมอบหมาย
+- **ระบบงานตามความเชี่ยวชาญ**: คัดกรองและรับงานซ่อมแซมตามหมวดหมู่ที่ได้รับมอบหมาย (พร้อมระบบ IDOR Isolation)
 - **บันทึกหลักฐานก่อน-หลังซ่อม**: อัปโหลดรูปภาพ Before & After ได้สูงสุด 5 ภาพ
 - **ระบบบันทึกรายการวัสดุและค่าใช้จ่าย (Cost & Material Tracking)**: บันทึกรายการอะไหล่ที่ใช้ซ่อม พร้อมคำนวณงบประมาณรวมอัตโนมัติ
 - **ระบบขอพักเวลา SLA (SLA Pause / Hold)**: ขอพักเวลาชั่วคราวกรณีรออะไหล่หรือสภาพอากาศไม่เอื้ออำนวย
-- **ใบสั่งงานพร้อมลายเซ็นดิจิทัล (Digital Work Order)**: บันทึกลายเซ็นผู้ตรวจรับงานและออกใบงานดิจิทัลได้ทันที
-- **ขอความช่วยเหลือข้ามฝ่าย (Help Requests)**: ประสานงานกับช่างฝ่ายอื่นเมื่อต้องใช้ทักษะเฉพาะทาง
+- **ใบสั่งงานพร้อมลายเซ็นดิจิทัล (Digital Work Order)**: บันทึกลายเซ็นผู้ตรวจรับงานและออกใบงานดิจิทัล ตรวจสอบรูปแบบ Base64 และขนาดข้อมูลไม่เกิน 500KB
+- **ขอความช่วยเหลือข้ามฝ่าย (Help Requests)**: ประสานงานกับช่างฝ่ายอื่นเมื่อต้องใช้ทักษะเฉพาะทางพร้อมการตรวจสอบสิทธิ์
 
 ### 👨‍💼 3. ฝั่งผู้ดูแลระบบ (Admin Dispatching Hub)
 - **ศูนย์สั่งการและมอบหมายงาน**: มอบหมายตั๋วให้ช่างพร้อมวิเคราะห์ Workload Capacity
 - **ระบบตรวจจับตั๋วซ้ำและรวมตั๋ว (Duplicate Detection & Merge)**: ตรวจสอบปัญหาซ้ำซ้อนในรัศมีใกล้เคียง (< 100 เมตร) และรวมข้อมูล
+- **ระบบจัดการเรื่องแจ้งเล่น/สแปม (Spam Quarantine Drawer)**: ตรวจสอบเรื่องกักกัน ปลดล็อก กู้คืนเข้าคิวปกติ หรือลบทิ้งถาวร
+- **จัดการทัณฑ์บนผู้ใช้ (Citizen Strike & Suspension Management)**: ควบคุมประวัติการติดทัณฑ์บนและปลดแบนผู้ใช้
 - **อนุมัติการพักเวลา SLA**: ควบคุมและบริหารจัดการเวลา SLA ขององค์กร
 - **จัดการหมวดหมู่ปัญหาไดนามิก (Dynamic Categories)**: เพิ่ม แก้ไข ย้ายตั๋ว และผูกช่างเข้าสังกัด
 - **กล่องข้อความรวม (Unified DM Inbox)**: ตอบกลับข้อความจากประชาชนทุกคนในที่เดียว
@@ -54,6 +57,12 @@
 - **รายงานสรุปงบประมาณและค่าใช้จ่ายซ่อมบำรุงประจำเดือน (Monthly Budget & Repair Expenses)**
 - **กราฟสัดส่วนค่าใช้จ่ายแยกตามหมวดหมู่ และ 5 อันดับวัสดุที่มีการเบิกใช้สูงสุด**
 - **ปลอดภัยด้วยการ Mask ข้อมูลส่วนบุคคล (Masked PII)** ตามหลัก PDPA
+
+### 🛡️ 5. ระบบความปลอดภัยและความน่าเชื่อถือ (Security & Reliability Guard)
+- **Anti-Spam & Strike Engine (3 ระดับ)**: Hard Block ข้อความมั่ว/หยาบคาย, Soft Quarantine ข้อความเล่นตลก/พิกัดนอกประเทศ, Strike สะสม 3 ครั้งระงับบัญชี 24 ชั่วโมง
+- **Anti-Flood Rate Limiting**: ป้องกันการยิงสคริปต์สแปมส่งตั๋วรัวๆ ด้วย `checkTicketCreationRateLimit`
+- **ReDoS Defense & Input Sanitization**: จำกัดความยาวและตัดข้อความก่อนตรวจสอบ Regex ป้องกัน Regular Expression Denial of Service
+- **IDOR Protection ครบวงจร**: ตรวจสอบสิทธิ์เข้มงวดทั้งการคอมเมนต์, การขอความช่วยเหลือ, และการเซ็นรับมอบงาน
 
 ---
 
@@ -69,7 +78,7 @@
 - **AI & NLP Intelligence**: Anthropic Claude + Google Gemini + Cognitive Thai NLP Heuristics Engine (5-layer classification, 100% accuracy บน 134 Few-shot test cases)
 - **Frontend UI**: Vanilla HTML5, Modern CSS3 (Glassmorphism, 3D Transitions), JavaScript ES6+
 - **GIS & Mapping**: Leaflet.js, OpenStreetMap Nominatim
-- **Quality Assurance**: Automated Verification Test Suite (`scripts/runTests.js` 26 Test cases)
+- **Quality Assurance**: Automated Verification Test Suite (`scripts/runTests.js` 43 Test cases ใน 9 กลุ่มงาน)
 
 ---
 
@@ -90,7 +99,7 @@ cp .env.example .env
 ```bash
 npm test
 ```
-*(ระบบจะรันชุดทดสอบ 26 ข้อ ครอบคลุม SLA Engine, Duplicate Detection, XSS, PDPA, CEO Financials, Database Indexes, และ Cognitive Thai NLP)*
+*(ระบบจะรันชุดทดสอบ 43 ข้อ ครอบคลุม 9 กลุ่มงาน: SLA Engine, Duplicate Detection, Security & XSS Sanitization, PDPA, CEO Financials, Database Indexes, Cognitive Thai NLP, AI Dispatcher, และ Anti-Spam / Strike Engine)*
 
 ### 4. รันระบบ
 ```bash
@@ -129,7 +138,7 @@ npm start
 - **สำหรับ AI Assistant (กฎระเบียบและคู่มือด่วน)**: [AGENTS.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/AGENTS.md)
 - **สถาปัตยกรรมระบบฉบับสมบูรณ์ (Deep-Dive Context)**: [SYSTEM_CONTEXT.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/SYSTEM_CONTEXT.md)
 - **แผนภาพสถาปัตยกรรมระบบ & ความปลอดภัย 6 ชั้น**: [docs/system_architecture.mmd](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/system_architecture.mmd)
-- **พจนานุกรมข้อมูล (Data Dictionary)**: [docs/data_dictionary.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/data_dictionary.md) หรือเปิดดูบนเว็บที่ [data_dictionary.html](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/data_dictionary.html)
+- **พจนานุกรมข้อมูล (Data Dictionary)**: [docs/data_dictionary.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/data_dictionary.md) หรือเปิดดูบนเว็บที่ `/Datadic` (Login สิทธิ์ Admin)
 - **แบบจำลองฐานข้อมูล (ER Diagram)**: [docs/er_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/er_diagram.md)
 - **กระแสข้อมูลระบบ (DFD)**: [docs/dfd.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/dfd.md)
 - **แผนภาพบริบท (Context Diagram)**: [docs/context_diagram.md](file:///c:/Users/TENG/OneDrive/Desktop/ResolveNow/docs/context_diagram.md)

@@ -1,7 +1,7 @@
 # Data Flow Diagram (DFD) - ResolvNow
-> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0
+> อัปเดตล่าสุด: 2026-09-30 | Version: V19.2
 
-เอกสารนี้แสดงแผนภาพกระแสข้อมูล (Data Flow Diagram) ของระบบ ResolveNow (V18.0) ตั้งแต่ระดับภาพรวม (Level 0) จนถึงระดับกระบวนการย่อย (Level 1) รองรับ 7 Data Stores, ระบบรักษาความปลอดภัย Security Gate, การวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบงบประมาณ/วัสดุ, และการส่งอีเมลแบบ Triple-Provider
+เอกสารนี้แสดงแผนภาพกระแสข้อมูล (Data Flow Diagram) ของระบบ ResolveNow (V19.2) ตั้งแต่ระดับภาพรวม (Level 0) จนถึงระดับกระบวนการย่อย (Level 1) รองรับ 7 Data Stores, ระบบรักษาความปลอดภัย Security Gate, การวิเคราะห์เชิงพื้นที่ (District Analytics), ระบบงบประมาณ/วัสดุ, สถาปัตยกรรม Anti-Spam & Citizen Strike Engine, การตรวจสอบลายเซ็นดิจิทัล (Work Order Digital Signature) และการส่งอีเมลแบบ Triple-Provider
 
 ---
 
@@ -19,14 +19,15 @@ graph TD
     ExtServices["บริการภายนอก\n(LINE / Triple Mailer / Cloudinary / AI)"]
 
     %% Process
-    System(("ResolveNow (V18.0)\nระบบรับแจ้งเรื่องร้องเรียน\nและบริหารงานซ่อมบำรุง"))
+    System(("ResolveNow (V19.2)\nระบบรับแจ้งเรื่องร้องเรียน\nและบริหารงานซ่อมบำรุง"))
 
     %% Data Flow Citizen
     Citizen -- ข้อมูลส่วนตัว / OTP / รหัสผ่าน / Security Gate --> System
-    System -- สถานะเซสชัน / ข้อมูลผู้ใช้ --> Citizen
+    System -- สถานะเซสชัน / ข้อมูลผู้ใช้ / สถานะทัณฑ์บน (Spam Strikes) --> System
+    System -- ข้อมูลผู้ใช้ / แจ้งเตือนทัณฑ์บน --> Citizen
     
     Citizen -- ข้อมูลแจ้งเรื่อง / รูปภาพ / GPS / ยื่น Re-open --> System
-    System -- รหัสติดตาม (Ticket ID) / สถานะงาน / Heatmap --> Citizen
+    System -- แจ้งเตือนสแปม Real-time / รหัสติดตาม (Ticket ID) / สถานะงาน / Heatmap --> Citizen
     
     Citizen -- ข้อความแชทตั๋ว / Direct Message / โหวต / ติดตาม --> System
     System -- ข้อความสนทนา / แจ้งเตือนสถานะเรียลไทม์ --> Citizen
@@ -37,17 +38,17 @@ graph TD
 
     %% Data Flow Technician
     Tech -- ข้อมูลเข้าสู่ระบบ / Security Gate Passcode --> System
-    System -- คิวงานที่ได้รับมอบหมายตามสังกัด --> Tech
+    System -- คิวงานที่ได้รับมอบหมายตามสังกัด (กรองตั๋วสแปมออก) --> Tech
     
-    Tech -- รูปภาพ Before-After / สถานะงาน / บันทึกวัสดุ / เซ็นใบงาน --> System
+    Tech -- รูปภาพ Before-After / สถานะงาน / บันทึกวัสดุ / เซ็นใบงานดิจิทัล --> System
     Tech -- ขอพักเวลา SLA / ขอความช่วยเหลือข้ามฝ่าย --> System
     System -- ผลการอนุมัติ SLA / งานที่ได้รับความช่วยเหลือ --> Tech
 
     %% Data Flow Admin
     Admin -- ข้อมูลเข้าสู่ระบบ / Gate Passcode --> System
-    System -- Dashboard / คิวงาน / DM Inbox / แผนที่ความร้อน --> Admin
+    System -- Dashboard / คิวงาน / DM Inbox / Spam Quarantine Drawer / แผนที่ความร้อน --> Admin
     
-    Admin -- มอบหมายงาน / จัดการหมวด / รวมตั๋วซ้ำ / อนุมัติ SLA / ทดสอบเมล --> System
+    Admin -- มอบหมายงาน / จัดการหมวด / รวมตั๋วซ้ำ / อนุมัติ SLA / กู้คืนตั๋วสแปม / จัดการทัณฑ์บน / ทดสอบเมล --> System
     System -- รายงานประจำเดือน (Excel/CSV) / ผลทดสอบอีเมล --> Admin
 
     %% Data Flow CEO
@@ -55,8 +56,8 @@ graph TD
     System -- สถิติ SLA / งบประมาณรายเดือน / District Analytics (Masked PII) --> CEO
 
     %% Data Flow External Services
-    System -- ส่ง OTP / ทดสอบเมล / อัปโหลดรูป / แจ้งเตือน LINE / วิเคราะห์ AI --> ExtServices
-    ExtServices -- ผลการทำงาน / Callback Token / Image URL / Urgency Level --> System
+    System -- ส่ง OTP / ทดสอบเมล / อัปโหลดรูป / แจ้งเตือน LINE / วิเคราะห์ AI & Spam --> ExtServices
+    ExtServices -- ผลการทำงาน / Callback Token / Image URL / Urgency Level / AI Dispatch --> System
 ```
 
 ---
@@ -104,24 +105,27 @@ graph TD
     P1 -- Session State / Gate Unlocked --> Admin
     P1 -- Gate Unlocked --> CEO
 
-    %% Flows - Process 2.0 (Tickets & SLA Ops)
+    %% Flows - Process 2.0 (Tickets, SLA & Field Ops)
     Citizen -- สร้างเรื่องร้องเรียน / แนบรูป / ยื่น Re-open --> P2
+    P2 -- ตรวจสอบความถี่ (Flood Rate Limit) & ทัณฑ์บน (Spam Strikes) --> D1
     P2 -- ขอรหัสลำดับถัดไป (Atomic) --> D7
     D7 -- คืนค่าเลขรันตั๋ว TKT-xxxxx --> P2
-    P2 -- สกัดพิกัดและคำนวณ Urgency (Cognitive Thai NLP/AI) --> ExtServices
+    P2 -- สกัดพิกัดและคำนวณ Urgency (Cognitive Thai NLP/AI/Spam Gate) --> ExtServices
     P2 -- อัปโหลดรูปภาพ --> ExtServices
-    P2 -- บันทึก Ticket, Deadlines, District, Timeline --> D2
+    P2 -- บันทึก Ticket, Deadlines, District, Spam Quarantine, Timeline --> D2
+    P2 -- บันทึกทัณฑ์บนผู้ใช้กรณีส่งเรื่องเล่น (Spam Strikes) --> D1
     D2 -- ข้อมูลงาน --> P2
-    P2 -- สถานะงาน / รหัส Ticket ID --> Citizen
+    P2 -- สถานะงาน / รหัส Ticket ID / ผลตรวจสแปม --> Citizen
     PublicUser -- ค้นหาด้วย Ticket ID --> P2
     P2 -- ข้อมูลสถานะงาน (Masked PII) --> PublicUser
 
-    Tech -- อัปรูป Before-After / อัปเดตสถานะ / บันทึกวัสดุ / เซ็นใบงาน --> P2
+    Tech -- อัปรูป Before-After / อัปเดตสถานะ / บันทึกวัสดุ / เซ็นใบงานดิจิทัล (Validated) --> P2
     Tech -- ส่งคำขอพักเวลา SLA / ขอความช่วยเหลือข้ามแผนก --> P2
     P2 -- บันทึกคำขอความช่วยเหลือ --> D5
     D5 -- รายการคำขอที่ช่างอื่นส่งมา --> P2
-    Admin -- มอบหมายงาน / รวมตั๋วซ้ำ / อนุมัติพักเวลา SLA --> P2
+    Admin -- มอบหมายงาน / รวมตั๋วซ้ำ / อนุมัติพักเวลา SLA / กู้คืนตั๋วสแปม / จัดการทัณฑ์บน --> P2
     P2 -- บันทึกการเปลี่ยนแปลงและ Audit Timeline --> D2
+    P2 -- อัปเดต/ปลดแบนทัณฑ์บนผู้ใช้ --> D1
 
     %% Flows - Process 3.0 (Category & Capacity)
     Admin -- เพิ่ม/แก้ไข/ลบหมวดหมู่ / ผูกช่าง --> P3

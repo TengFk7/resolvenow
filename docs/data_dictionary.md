@@ -1,5 +1,5 @@
 # Data Dictionary - ResolvNow
-> อัปเดตล่าสุด: 2026-09-18 | Version: V18.0
+> อัปเดตล่าสุด: 2026-09-30 | Version: V19.2
 
 เอกสารนี้อธิบายรายละเอียดของแต่ละคอลเลกชัน (Collection), ฟิลด์ (Field), ชนิดข้อมูล (Data Type) และดัชนี (Indexes) ที่ใช้ในฐานข้อมูล MongoDB ของระบบ ResolvNow ครอบคลุมทั้ง 7 Collections
 
@@ -46,8 +46,8 @@
 | `citizenName` | String | Yes | ชื่อผู้แจ้ง (Denormalized) |
 | `citizenLineId`| String | No | LINE UID ของผู้แจ้งสำหรับ Push แจ้งเตือน |
 | `category` | String | Yes | หมวดหมู่ปัญหา อ้างอิงตาม `Category.name` |
-| `description` | String | Yes | รายละเอียดของปัญหา (XSS Sanitized) |
-| `location` | String | Yes | ที่อยู่หรือสถานที่เกิดเหตุจากการแปลงพิกัด (Reverse Geocoding) |
+| `description` | String | Yes | รายละเอียดของปัญหา (ความยาว 5-3,000 ตัวอักษร, XSS Sanitized) |
+| `location` | String | Yes | ที่อยู่หรือสถานที่เกิดเหตุจากการแปลงพิกัด (Reverse Geocoding, สูงสุด 500 ตัวอักษร) |
 | `district` | String | No | เขตหรืออำเภอของสถานที่เกิดเหตุ (สกัดอัตโนมัติ, Indexed) |
 | `subdistrict` | String | No | แขวงหรือตำบลของสถานที่เกิดเหตุ |
 | `lat` | Number | No | พิกัดละติจูด |
@@ -58,11 +58,16 @@
 | `assignedTo` | ObjectId | No | ช่างที่ได้รับมอบหมาย อ้างอิง `User._id` |
 | `assignedName` | String | No | ชื่อช่างผู้รับผิดชอบ (Denormalized) |
 | `rejectReason` | String | No | เหตุผลในการปฏิเสธงาน |
-| `isSpam` | Boolean | Yes | ระบุว่าเป็นเรื่องสแปม/แจ้งเล่น/กักกันหรือไม่ (Default: false) |
+| `isSpam` | Boolean | Yes | ระบุว่าเป็นเรื่องสแปม/แจ้งเล่น/กักกันหรือไม่ (Default: false, Indexed) |
 | `spamReason` | String | No | เหตุผลการตรวจพบสแปม (เช่น แป้นพิมพ์มั่ว, เล่นตลก, พิกัดนอกประเทศ) |
 | `spamType` | String | Yes | ประเภทสแปม: `none`, `hard_blocked`, `gibberish`, `test`, `profanity`, `joke`, `out_of_bounds`, `ai_flagged` |
-| `aiCredibilityScore` | Number | Yes | คะแนนความน่าเชื่อถือประเมินโดย AI (0-100, Default: 100) |
+| `aiCredibilityScore` | Number | Yes | คะแนนความน่าเชื่อถือประเมินโดย AI (0-100, Default: 95) |
 | `spamFlag` | String | Yes | ป้ายกำกับสแปม: `valid`, `junk`, `incomprehensible`, `irrelevant` |
+| `isAmbiguous` | Boolean | Yes | ตรวจพบความกำกวมหรือรายละเอียดไม่ชัดเจน (Default: false, Indexed) |
+| `needsAdminReview` | Boolean | Yes | ต้องการให้ผู้ดูแลระบบตรวจสอบก่อนมอบหมายงาน (Default: false, Indexed) |
+| `aiConfidence` | String | Yes | ระดับความเชื่อมั่นของ AI: `high`, `medium`, `low` (Default: `high`) |
+| `aiDispatched` | Boolean | Yes | กระจายงานอัตโนมัติด้วย AI หรือไม่ (Default: false) |
+| `aiReviewReason` | String | No | เหตุผลที่ AI แนะนำให้ส่ง Admin ตรวจสอบ |
 | `citizenImage` | String | No | URL รูปภาพแรกที่ประชาชนแนบ |
 | `citizenImages`| Array[String] | No | รายการ URL รูปภาพทั้งหมดที่ประชาชนแนบ (สูงสุด 5 รูป) |
 | `beforeImage` | String | No | URL ภาพถ่ายก่อนเริ่มซ่อมบำรุง (ช่างอัปโหลด) |
@@ -87,7 +92,7 @@
 | `reopenedAt` | Date | No | วันเวลาที่ยื่นเรื่องเปิดงานใหม่ล่าสุด |
 | `reopenReason` | String | No | เหตุผลที่ประชาชนขอเปิดงานใหม่ |
 | `reopenImages` | Array[String] | No | ภาพถ่ายประกอบการขอเปิดงานใหม่ |
-| `workOrder` | Object | No | เอกสารใบสั่งงานและลายเซ็น: `{ signedByName, signedAt, signatureData, notes }` |
+| `workOrder` | Object | No | เอกสารใบสั่งงานและลายเซ็นดิจิทัล: `{ signedByName, signedAt, signatureData (Base64 URL <= 500KB), notes }` |
 | `timeline` | Array[Object] | No | บันทึกประวัติกิจกรรม: `{ action, actorRole, actorId, actorName, details, oldValue, newValue, timestamp }` |
 | `materials` | Array[Object] | No | รายการวัสดุ/อุปกรณ์: `{ name, quantity, unit, unitPrice, totalPrice, addedBy, addedAt }` |
 | `totalRepairCost` | Number | Yes | ค่าใช้จ่ายและงบประมาณรวมในการซ่อม (Default: 0) |
@@ -107,6 +112,8 @@
 - `{ category: 1, status: 1 }` (กรองตั๋วตามหมวดหมู่และสถานะ)
 - `{ status: 1, createdAt: -1 }` (คิวงาน Admin และ CEO Dashboard)
 - `{ isSpam: 1, status: 1 }` (คิวงานกักกันสแปมและคัดกรองตั๋วช่าง)
+- `{ isAmbiguous: 1 }` (กรองตั๋วที่ข้อความกำกวมหรือต้องการการยืนยัน)
+- `{ needsAdminReview: 1, status: 1 }` (คิวงานตั๋วที่ AI แนะนำให้แอดมินตรวจสอบ)
 - `{ slaBreached: 1, status: 1 }` (คิวงานตรวจสอบ SLA Breach)
 - `{ chatExpiresAt: 1 }` (Sparse index ล้างแชทหมดอายุ)
 - `{ lat: 1, lng: 1, category: 1 }` (ค้นหาตั๋วซ้ำซ้อนบริเวณใกล้เคียง)
