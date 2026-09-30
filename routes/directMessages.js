@@ -5,6 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const xss = require('xss');
 const DirectMessage = require('../models/DirectMessage');
 const User = require('../models/User');
@@ -175,6 +176,9 @@ router.post('/', requireAuth, async (req, res) => {
       citizenId = userId;
     } else if (role === 'admin') {
       if (!req.body.citizenId) return res.status(400).json({ error: 'ระบุ citizenId' });
+      if (!mongoose.Types.ObjectId.isValid(req.body.citizenId)) {
+        return res.status(400).json({ error: 'รหัสผู้ใช้ (citizenId) ไม่ถูกต้อง' });
+      }
       citizenId = req.body.citizenId;
     } else {
       return res.status(403).json({ error: 'ไม่มีสิทธิ์' });

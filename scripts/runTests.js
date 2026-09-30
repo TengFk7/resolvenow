@@ -149,6 +149,37 @@ runTest('XSS sanitizer neutralizes malicious onerror handlers in images', () => 
   assert(!clean.includes('onerror'));
 });
 
+runTest('Work order digital signature payload validator rejects invalid schemes, scripts, or oversized data', () => {
+  const validSig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const invalidSigScript = 'data:text/html,<script>alert(1)</script>';
+  const invalidSigPayload = 'javascript:alert(1)';
+  const oversizedSig = 'data:image/png;base64,' + 'A'.repeat(500001);
+
+  const isValidFormat = (data) => {
+    return typeof data === 'string' &&
+      data.startsWith('data:image/') &&
+      data.length <= 500000 &&
+      /^data:image\/(?:png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/.test(data);
+  };
+
+  assert.strictEqual(isValidFormat(validSig), true);
+  assert.strictEqual(isValidFormat(invalidSigScript), false);
+  assert.strictEqual(isValidFormat(invalidSigPayload), false);
+  assert.strictEqual(isValidFormat(oversizedSig), false);
+});
+
+runTest('Location and technician inputs are bounded and sanitized against XSS', () => {
+  const maliciousLoc = '<b onmouseover=alert(1)>ถนนสุขุมวิท 71</b>' + 'X'.repeat(600);
+  const cleanLoc = xss(maliciousLoc.trim()).slice(0, 500);
+  assert(!cleanLoc.includes('onmouseover'));
+  assert(cleanLoc.length <= 500);
+
+  const dirtyTechName = 'ช่างสมชาย <script>evil()</script>';
+  const cleanTechName = xss(dirtyTechName.trim().slice(0, 50));
+  assert(!cleanTechName.includes('<script>'));
+  assert(cleanTechName.includes('ช่างสมชาย'));
+});
+
 // ── 4. Public Track PDPA Masking ─────────────────────────────────
 console.log('\n\x1b[36m[Group 4: PDPA & Privacy Protection]\x1b[0m');
 

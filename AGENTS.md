@@ -37,7 +37,7 @@
    - **Technicians (7 หมวด)**: `tech1@resolvenow.th` ถึง `tech7@resolvenow.th` / รหัสผ่าน: `tech1234`
    - **Citizen (Dev)**: `tenginpb@gmail.com` / `123456`
 5. **Automated Verification Test Suite**:
-   - รันตรวจสอบความถูกต้องของระบบด้วยคำสั่ง: `npm test` หรือ `node scripts/runTests.js` (41 การทดสอบ ครอบคลุม 9 กลุ่มงาน: SLA, Geo, XSS, PDPA, CEO Aggregation, Model Indexes, Cognitive Thai NLP, AI Dispatcher, และ Anti-Spam / Strike Engine)
+   - รันตรวจสอบความถูกต้องของระบบด้วยคำสั่ง: `npm test` หรือ `node scripts/runTests.js` (43 การทดสอบ ครอบคลุม 9 กลุ่มงาน: SLA, Geo, XSS, PDPA, CEO Aggregation, Model Indexes, Cognitive Thai NLP, AI Dispatcher, และ Anti-Spam / Strike Engine)
 
 ---
 

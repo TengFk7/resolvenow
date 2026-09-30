@@ -143,7 +143,8 @@ function validateCoordinates(lat, lng) {
  * @returns {Object} { isHardBlock, isSpam, spamType, spamFlag, aiCredibilityScore, reason }
  */
 function analyzeComplaintSpam(text, geo = {}) {
-  const raw = (text || '').trim();
+  // ReDoS Defense: Limit text to 1000 chars for regex evaluation
+  const raw = (text || '').trim().slice(0, 1000);
   const lower = raw.toLowerCase();
   const noSpace = lower.replace(/\s+/g, '');
 
@@ -203,7 +204,7 @@ function analyzeComplaintSpam(text, geo = {}) {
       spamType: 'gibberish',
       spamFlag: 'incomprehensible',
       aiCredibilityScore: 10,
-      reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (English Smash/Gibberish)'
+      reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
     };
   }
 
@@ -215,7 +216,7 @@ function analyzeComplaintSpam(text, geo = {}) {
       spamType: 'gibberish',
       spamFlag: 'incomprehensible',
       aiCredibilityScore: 10,
-      reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (Vowelless English Gibberish)'
+      reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
     };
   }
 
@@ -233,7 +234,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น (Keyboard Smash)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
   }
@@ -247,7 +248,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น (Keyboard Smash)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
   }
@@ -274,7 +275,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวกลาง (Thai Home Row Smash)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
     if (enHome / len >= 0.70) {
@@ -284,7 +285,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวกลาง (QWERTY Home Row Smash)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
     if (enTop / len >= 0.75) {
@@ -294,7 +295,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวบน (QWERTY Top Row Smash)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
     if (enBot / len >= 0.75) {
@@ -304,7 +305,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวล่าง (QWERTY Bottom Row Smash)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
   }
@@ -323,7 +324,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: isLaughter ? 'joke' : 'gibberish',
         spamFlag: isLaughter ? 'junk' : 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: isLaughter ? 'ตรวจพบข้อความหัวเราะ/เล่นตลก' : 'ตรวจพบตัวอักษรซ้ำซ้อนผิดปกติ'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
   }
@@ -338,7 +339,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 15,
-        reason: 'ตรวจพบข้อความพิมพ์วนซ้ำไปมา (Loop Pattern)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
   }
@@ -354,7 +355,7 @@ function analyzeComplaintSpam(text, geo = {}) {
         spamType: 'gibberish',
         spamFlag: 'incomprehensible',
         aiCredibilityScore: 10,
-        reason: 'ข้อความมีความหลากหลายของตัวอักษรต่ำผิดปกติ (ไม่มีความหมาย)'
+        reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น'
       };
     }
   }

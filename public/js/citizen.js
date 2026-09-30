@@ -263,7 +263,7 @@ function clientValidateSpam(rawText) {
   ];
   for (var i = 0; i < obvious.length; i++) {
     if (cleanLower.indexOf(obvious[i]) !== -1) {
-      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น (Keyboard Smash)' };
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
     }
   }
 
@@ -281,19 +281,19 @@ function clientValidateSpam(rawText) {
 
   // 2.1 English consecutive consonants (e.g. jsdkfjweoifj, dfkjsdf)
   if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(cleanLower)) {
-    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (English Smash)' };
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
   }
 
   // 2.2 English vowelless string >= 5 (e.g. dfghjk, zxcvb)
-  if (cleanLower.length >= 5 && /^[a-z0-9_\-\.]+$/i.test(cleanLower) && !/[aeiouy]/i.test(cleanLower)) {
-    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่นภาษาอังกฤษ (Vowelless English)' };
+  if (cleanLower.length >= 5 && /^[a-z]+$/i.test(cleanLower) && !/[aeiouy]/i.test(cleanLower)) {
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
   }
 
   // 2.3 Thai vowelless string >= 6 (e.g. กฟหกดส, ผปแ... wait thai consonants)
   var thCons = (cleanLower.match(/[\u0E01-\u0E2E]/g) || []).length;
   var thVows = (cleanLower.match(/[\u0E30-\u0E39\u0E40-\u0E47]/g) || []).length;
   if (thCons >= 6 && thVows === 0) {
-    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์พยัญชนะล้วนไม่มีสระ (Thai Smash)' };
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
   }
 
   // 3. Row Smashing (Thai home row, English home row, Top/Bottom rows)
@@ -312,10 +312,10 @@ function clientValidateSpam(rawText) {
       if (enBotStr.indexOf(ch) !== -1) enBot++;
     }
     var len = cleanLower.length;
-    if (thHome / len >= 0.68) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวกลาง (Thai Home Row Smash)' };
-    if (enHome / len >= 0.70) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวกลาง (QWERTY Home Row Smash)' };
-    if (enTop / len >= 0.75) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวบน (QWERTY Top Row Smash)' };
-    if (enBot / len >= 0.75) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวล่าง (QWERTY Bottom Row Smash)' };
+    if (thHome / len >= 0.68) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
+    if (enHome / len >= 0.70) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
+    if (enTop / len >= 0.75) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
+    if (enBot / len >= 0.75) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
   }
 
   // 4. Repeated character >= 5 (e.g. 555555, กกกกกกกก)
@@ -324,15 +324,14 @@ function clientValidateSpam(rawText) {
     var repCh = repeatMatch[1];
     var repCount = (cleanLower.split(repCh).length - 1);
     if (repCount / cleanLower.length > 0.45) {
-      var isLaugh = (repCh === '5' || repCh === 'ห');
-      return { isSpam: true, isHardBlock: true, reason: isLaugh ? 'ตรวจพบข้อความหัวเราะ/เล่นตลก' : 'ตรวจพบตัวอักษรซ้ำซ้อนผิดปกติ' };
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
     }
   }
 
   // 5. Repeating loop patterns (e.g. อะไรไม่รู้อะไรไม่รู้, มั่วๆมั่วๆมั่วๆ, asdasdasd)
   if (cleanLower.length >= 6) {
     if (/^(.{2,10})\1{2,}$/.test(cleanLower) || /(.{3,8})\1{2,}/.test(cleanLower)) {
-      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความพิมพ์วนซ้ำไปมา (Loop Pattern)' };
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น' };
     }
   }
 
@@ -366,7 +365,7 @@ function _updateStep1NextButton(isBlocked, blockReason) {
     btn.style.cursor = 'not-allowed';
     btn.style.background = '#e2e8f0';
     btn.style.color = '#64748b';
-    btn.innerHTML = '🚫 ' + (blockReason ? blockReason : 'ข้อความไม่ถูกต้อง') + ' (ไม่สามารถไปต่อได้)';
+    btn.innerHTML = '🚫 ' + (blockReason ? blockReason : 'ข้อความไม่ถูกต้อง');
     if (descEl) {
       descEl.style.borderColor = '#ef4444';
       descEl.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, .12)';

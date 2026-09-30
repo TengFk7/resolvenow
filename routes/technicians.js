@@ -6,6 +6,7 @@
 const express = require('express');
 const router  = express.Router();
 const bcrypt  = require('bcryptjs');
+const xss     = require('xss');
 const User    = require('../models/User');
 const Ticket  = require('../models/Ticket');
 const Category = require('../models/Category');
@@ -51,9 +52,9 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     const tech = await User.findOne({ _id: req.params.id, role: 'technician' });
     if (!tech) return res.status(404).json({ error: 'ไม่พบช่าง' });
 
-    if (firstName) tech.firstName = firstName.trim();
-    if (lastName) tech.lastName = lastName.trim();
-    if (specialty !== undefined) tech.specialty = specialty.trim();
+    if (firstName) tech.firstName = xss(firstName.trim().slice(0, 50));
+    if (lastName) tech.lastName = xss(lastName.trim().slice(0, 50));
+    if (specialty !== undefined) tech.specialty = xss(specialty.trim().slice(0, 50));
     await tech.save();
 
     res.json({ message: 'อัปเดตข้อมูลช่างสำเร็จ', name: tech.firstName + ' ' + tech.lastName });
@@ -74,12 +75,12 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
     const tech = await new User({
-      firstName: firstName.trim(),
-      lastName: (lastName || '-').trim(),
+      firstName: xss(firstName.trim().slice(0, 50)),
+      lastName: xss((lastName || '-').trim().slice(0, 50)),
       email: email.trim().toLowerCase(),
       password: hashed,
       role: 'technician',
-      specialty: (specialty || '').trim()
+      specialty: xss((specialty || '').trim().slice(0, 50))
     }).save();
 
     res.status(201).json({

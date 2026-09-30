@@ -1183,15 +1183,69 @@ router.get('/', requireAuth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
+// ─── Per-User Ticket Submission Flood Protection (Rate Limiting) ──
+const ticketCreationWindow = new Map();
+const MAX_TICKETS_PER_WINDOW = 10;
+const TICKET_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+function checkTicketCreationRateLimit(userId) {
+  const now = Date.now();
+  let timestamps = ticketCreationWindow.get(userId.toString()) || [];
+  timestamps = timestamps.filter(ts => now - ts < TICKET_WINDOW_MS);
+  if (timestamps.length >= MAX_TICKETS_PER_WINDOW) {
+    const oldest = timestamps[0];
+    const waitSec = Math.ceil((TICKET_WINDOW_MS - (now - oldest)) / 1000);
+    return `คุณส่งเรื่องร้องเรียนถี่เกินไป กรุณารออีกประมาณ ${waitSec} วินาที (จำกัดไม่เกิน ${MAX_TICKETS_PER_WINDOW} เรื่องต่อ 5 นาที)`;
+  }
+  timestamps.push(now);
+  ticketCreationWindow.set(userId.toString(), timestamps);
+  return null;
+}
+
 // ─── POST /api/tickets ───────────────────────────────────────────
 router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
   try {
     const { category, description: rawDescription, location, urgency, lat, lng } = req.body;
     const user = await User.findById(req.session.userId);
-    if (!rawDescription || !location)
-      return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+    if (!user) return res.status(401).json({ error: 'ไม่พบข้อมูลผู้ใช้' });
+
+    // ── Per-User Rate Limit Guard (ป้องกันการยิงสคริปต์น้ำท่วมฐานข้อมูล) ──
+    const floodErr = checkTicketCreationRateLimit(user._id);
+    if (floodErr) {
+      return res.status(429).json({ error: floodErr });
+    }
+
+    // ── Input Type & Length Validations ──
+    if (!rawDescription || typeof rawDescription !== 'string')
+      return res.status(400).json({ error: 'กรุณากรอกรายละเอียดปัญหา' });
+    const trimmedDesc = rawDescription.trim();
+    if (trimmedDesc.length < 5)
+      return res.status(400).json({ error: 'กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร' });
+    if (trimmedDesc.length > 3000)
+      return res.status(400).json({ error: 'รายละเอียดปัญหาต้องมีความยาวไม่เกิน 3,000 ตัวอักษร' });
+
+    if (!location || typeof location !== 'string' || location.trim().length < 2)
+      return res.status(400).json({ error: 'กรุณาระบุสถานที่เกิดเหตุให้ชัดเจน (อย่างน้อย 2 ตัวอักษร)' });
+    if (location.trim().length > 500)
+      return res.status(400).json({ error: 'สถานที่ต้องมีความยาวไม่เกิน 500 ตัวอักษร' });
+
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่งอย่างน้อย 1 รูป' });
+
+    // Validate GPS Coordinates bounds
+    if (lat != null && lng != null && lat !== '' && lng !== '') {
+      const nLat = parseFloat(lat);
+      const nLng = parseFloat(lng);
+      if (isNaN(nLat) || isNaN(nLng) || nLat < -90 || nLat > 90 || nLng < -180 || nLng > 180) {
+        return res.status(400).json({ error: 'พิกัด GPS ไม่ถูกต้อง (ละติจูดต้องอยู่ระหว่าง -90 ถึง 90, ลองจิจูดระหว่าง -180 ถึง 180)' });
+      }
+    }
+
+    // Validate Urgency Enum
+    const validUrgs = ['normal', 'medium', 'urgent'];
+    if (urgency && !validUrgs.includes(urgency) && urgency !== 'auto') {
+      return res.status(400).json({ error: 'ระดับความเร่งด่วนไม่ถูกต้อง' });
+    }
 
     // ── Strike & Suspension Guard (แบบที่ 3: Warning & Strike System) ──
     if (user.isSuspended) {
@@ -1211,7 +1265,7 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     }
 
     // XSS-FIX: sanitize user-supplied text before storing
-    const description = xss(rawDescription.trim());
+    const description = xss(trimmedDesc);
 
     // ── Anti-Spam Heuristic Safety Check ──
     const spamCheck = analyzeComplaintSpam(description, { lat, lng });
@@ -1265,10 +1319,14 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     for (const kw of ['flood', 'fire', 'อันตราย', 'เร่งด่วน', 'น้ำท่วม', 'ฉุกเฉิน'])
       if (desc.includes(kw)) score = Math.min(score + 10, 100);
 
-    let locationName = (location || '').trim();
+    let locationName = xss((location || '').trim());
     const isRawCoord = !locationName || /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(locationName) || locationName === 'กำลังค้นหาตำแหน่ง...';
     if (isRawCoord && lat && lng) {
-      locationName = await reverseGeocode(lat, lng);
+      const geoResult = await reverseGeocode(lat, lng);
+      locationName = xss(geoResult || '');
+    }
+    if (locationName.length > 500) {
+      locationName = locationName.slice(0, 500);
     }
 
     // สร้าง ticketId แบบ TKT-00001 (5 หลัก รองรับถึง 99,999 เคส)
@@ -2015,6 +2073,10 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
     if (user.role === 'citizen' && ticket.citizenId.toString() !== user._id.toString())
       return res.status(403).json({ error: 'ไม่สามารถแสดงความคิดเห็นใน Ticket ของคนอื่นได้' });
 
+    // technician can only comment on assigned tickets
+    if (user.role === 'technician' && ticket.assignedTo && ticket.assignedTo.toString() !== user._id.toString())
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์แสดงความคิดเห็นใน Ticket ที่ไม่ได้มอบหมายให้คุณ' });
+
     const comment = await new Comment({
       ticketId: req.params.id,
       userId: user._id,
@@ -2563,16 +2625,39 @@ router.post('/:id/sla/resume', requireAuth, async (req, res) => {
 router.post('/:id/work-order/sign', requireAuth, async (req, res) => {
   try {
     const caller = await User.findById(req.session.userId);
+    if (!caller) return res.status(401).json({ error: 'ไม่พบผู้ใช้' });
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // IDOR Protection: เฉพาะเจ้าของเคส, ช่างผู้รับผิดชอบ หรือ Admin เท่านั้น
+    const isOwner = ticket.citizenId && ticket.citizenId.toString() === caller._id.toString();
+    const isAssignedTech = ticket.assignedTo && ticket.assignedTo.toString() === caller._id.toString();
+    const isAdmin = caller.role === 'admin';
+    if (!isOwner && !isAssignedTech && !isAdmin) {
+      return res.status(403).json({ error: 'คุณไม่มีสิทธิ์ลงนามในใบงานของ Ticket นี้' });
+    }
+
     const { signatureData, signedByName: rawName, notes: rawNotes } = req.body;
 
     if (!signatureData) {
       return res.status(400).json({ error: 'กรุณาลงลายมือชื่อก่อนบันทึก' });
     }
-    const signedByName = rawName ? xss(rawName.trim()) : (caller ? caller.firstName + ' ' + (caller.lastName || '') : 'ผู้รับมอบงาน');
-    const notes = rawNotes ? xss(rawNotes.trim()) : '';
 
-    const ticket = await Ticket.findOne({ ticketId: req.params.id });
-    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+    // Payload & Format Validation: ตรวจสอบว่าเป็น Base64 Image URL และขนาดไม่เกิน 500KB
+    if (
+      typeof signatureData !== 'string' ||
+      !signatureData.startsWith('data:image/') ||
+      signatureData.length > 500000 ||
+      !/^data:image\/(?:png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/.test(signatureData)
+    ) {
+      return res.status(400).json({ error: 'รูปแบบลายเซ็นดิจิทัลไม่ถูกต้อง หรือมีขนาดใหญ่เกินไป (สูงสุด 500KB)' });
+    }
+
+    const signedByName = rawName
+      ? xss(rawName.trim().slice(0, 100))
+      : (caller.firstName + ' ' + (caller.lastName || ''));
+    const notes = rawNotes ? xss(rawNotes.trim().slice(0, 1000)) : '';
 
     ticket.workOrder = {
       signedByName,
