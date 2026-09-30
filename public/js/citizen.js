@@ -68,12 +68,51 @@ function wizNext(step) {
       if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
       if (descEl) descEl.focus();
       if (typeof showCenterPopup === 'function') {
-        showCenterPopup('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', 2300, 'ℹ️');
+        showCenterPopup('กรุณากรอกรายละเอียดปัญหาในช่องที่มี * ให้ครบถ้วน', 2500, 'ℹ️');
       } else {
-        showToast('กรุณากรอกรายละเอียดในช่องที่มี * ให้ครบถ้วน', true);
+        showToast('กรุณากรอกรายละเอียดปัญหาให้ครบถ้วน', true);
       }
       return;
     }
+    if (desc.length < 5) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+      if (descEl) descEl.focus();
+      if (typeof showCenterPopup === 'function') {
+        showCenterPopup('กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร', 2500, '⚠️');
+      } else {
+        showToast('กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร', true);
+      }
+      return;
+    }
+
+    // ── Instant Client-Side Anti-Spam Gate (บล็อกไม่ให้ไปหน้าแนบรูปภาพเด็ดขาด) ──
+    var clientCheck = clientValidateSpam(desc);
+    if (clientCheck.isSpam) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+      if (descEl) descEl.focus();
+      var blockMsg = '⚠️ ไม่สามารถไปหน้าแนบรูปได้: ' + (clientCheck.reason || 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนที่เกิดขึ้นจริง');
+      if (typeof showCenterPopup === 'function') {
+        showCenterPopup(blockMsg, 3500, '🚫');
+      } else {
+        showToast(blockMsg, true);
+      }
+      _updateStep1NextButton(true, clientCheck.reason);
+      return; // ห้ามข้ามไปหน้า 2 โดยเด็ดขาด
+    }
+
+    if (_aiClassificationResult && (_aiClassificationResult.isHardBlock || _aiClassificationResult.isSpam)) {
+      if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+      if (descEl) descEl.focus();
+      var aiBlockMsg = '⚠️ ไม่สามารถไปหน้าแนบรูปได้: ' + (_aiClassificationResult.reason || 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนที่เกิดขึ้นจริง');
+      if (typeof showCenterPopup === 'function') {
+        showCenterPopup(aiBlockMsg, 3500, '🚫');
+      } else {
+        showToast(aiBlockMsg, true);
+      }
+      _updateStep1NextButton(true, _aiClassificationResult.reason);
+      return; // ห้ามข้ามไปหน้า 2 โดยเด็ดขาด
+    }
+
     if (_aiAnalyzing) {
       showToast('⏳ กรุณารอ AI วิเคราะห์ข้อความสักครู่...', true);
       return;
@@ -194,6 +233,125 @@ function getSelectedCat() {
 var _urgTimer = null;
 var _aiAnalyzing = false;
 
+/* ── Client-side Anti-Spam & Gibberish Validator ──────── */
+function clientValidateSpam(rawText) {
+  var raw = (rawText || '').trim();
+  if (!raw || raw.length < 5) {
+    return { isSpam: true, isHardBlock: true, reason: 'กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร' };
+  }
+  var cleanLower = raw.toLowerCase().replace(/\s+/g, '');
+
+  // 1. Obvious smash sequences (เช่น asdfgh, ฟหกด, qwerty)
+  var obvious = [
+    'asdfgh', 'asdfghjkl', 'qwerty', 'zxcvbn', 'qazwsx',
+    'ฟหกด', 'ฟหกด่าสว', 'ผปแอิ', 'ๆไำพะ', 'กด่าสว', 'ด่าสว'
+  ];
+  for (var i = 0; i < obvious.length; i++) {
+    if (cleanLower.indexOf(obvious[i]) !== -1) {
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์เล่น (Keyboard Smash)' };
+    }
+  }
+
+  // 2. Test phrases
+  var tests = ['test', 'testing', 'ทดสอบ', 'ทดสอบระบบ', 'ลองส่ง', 'ลองระบบ', '1234', '12345', '123456', 'aaa', 'bbb', 'ccc', 'sample', 'dummy'];
+  for (var ti = 0; ti < tests.length; ti++) {
+    if (cleanLower === tests[ti] || cleanLower.indexOf(tests[ti]) === 0) {
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความทดสอบระบบ' };
+    }
+  }
+  if (/^(test|เทส|ทดสอบ|ลองส่ง|ลองระบบ)(\s*[0-9a-zA-Z\.\-]*)*$/i.test(raw)) {
+    return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความทดสอบระบบ' };
+  }
+
+  // 3. Row Smashing (Thai home row, English home row, Top/Bottom rows)
+  if (cleanLower.length >= 7) {
+    var thHomeStr = 'ฟหกด่าสวงฃ';
+    var enHomeStr = "asdfghjkl;'";
+    var enTopStr = 'qwertyuiop';
+    var enBotStr = 'zxcvbnm';
+
+    var thHome = 0, enHome = 0, enTop = 0, enBot = 0;
+    for (var ci = 0; ci < cleanLower.length; ci++) {
+      var ch = cleanLower.charAt(ci);
+      if (thHomeStr.indexOf(ch) !== -1) thHome++;
+      if (enHomeStr.indexOf(ch) !== -1) enHome++;
+      if (enTopStr.indexOf(ch) !== -1) enTop++;
+      if (enBotStr.indexOf(ch) !== -1) enBot++;
+    }
+    var len = cleanLower.length;
+    if (thHome / len >= 0.68) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวกลาง (Thai Home Row Smash)' };
+    if (enHome / len >= 0.70) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวกลาง (QWERTY Home Row Smash)' };
+    if (enTop / len >= 0.75) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวบน (QWERTY Top Row Smash)' };
+    if (enBot / len >= 0.75) return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบการเคาะแป้นพิมพ์แถวล่าง (QWERTY Bottom Row Smash)' };
+  }
+
+  // 4. Repeated character >= 5 (e.g. 555555, กกกกกกกก)
+  var repeatMatch = cleanLower.match(/(.)\1{4,}/);
+  if (repeatMatch) {
+    var repCh = repeatMatch[1];
+    var repCount = (cleanLower.split(repCh).length - 1);
+    if (repCount / cleanLower.length > 0.45) {
+      var isLaugh = (repCh === '5' || repCh === 'ห');
+      return { isSpam: true, isHardBlock: true, reason: isLaugh ? 'ตรวจพบข้อความหัวเราะ/เล่นตลก' : 'ตรวจพบตัวอักษรซ้ำซ้อนผิดปกติ' };
+    }
+  }
+
+  // 5. Repeating loop patterns (e.g. อะไรไม่รู้อะไรไม่รู้, มั่วๆมั่วๆมั่วๆ, asdasdasd)
+  if (cleanLower.length >= 6) {
+    if (/^(.{2,10})\1{2,}$/.test(cleanLower) || /(.{3,8})\1{2,}/.test(cleanLower)) {
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบข้อความพิมพ์วนซ้ำไปมา (Loop Pattern)' };
+    }
+  }
+
+  // 6. Profanity patterns
+  var profanities = [/ควย/i, /เย็ด/i, /เหี้ย/i, /สัส/i, /ไอ้สัส/i, /มึง/i, /พ่องตาย/i, /แม่มึง/i, /จวย/i, /หี/i, /แตด/i, /ไอ้ควาย/i, /\bfuck\b/i, /\bshit\b/i, /\basshole\b/i];
+  for (var pi = 0; pi < profanities.length; pi++) {
+    if (profanities[pi].test(raw)) {
+      return { isSpam: true, isHardBlock: true, reason: 'ตรวจพบถ้อยคำหยาบคายหรือไม่สุภาพ' };
+    }
+  }
+
+  // 7. Jokes patterns
+  var jokes = [/แฟนทิ้ง/, /อกหัก/, /โดนแฟนบอกเลิก/, /หาแฟน/, /อยากมีแฟน/, /เหงาจัง/, /ขอยืมเงิน/, /ยืมเงินหน่อย/, /กู้เงิน/, /ขอตังค์/, /หวยงวดนี้/, /ขอหวย/, /เลขเด็ด/];
+  for (var ji = 0; ji < jokes.length; ji++) {
+    if (jokes[ji].test(raw)) {
+      return { isSpam: true, isHardBlock: false, reason: 'ตรวจพบเนื้อหาเล่นตลก/เรื่องส่วนตัวที่ไม่เกี่ยวข้องกับงานบริการสาธารณะ' };
+    }
+  }
+
+  return { isSpam: false, isHardBlock: false, reason: null };
+}
+
+function _updateStep1NextButton(isBlocked, blockReason) {
+  var btn = ge('wizNextBtn1');
+  var descEl = ge('tDesc');
+  if (!btn) return;
+
+  if (isBlocked) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    btn.style.background = '#e2e8f0';
+    btn.style.color = '#64748b';
+    btn.innerHTML = '🚫 ' + (blockReason ? blockReason : 'ข้อความไม่ถูกต้อง') + ' (ไม่สามารถไปต่อได้)';
+    if (descEl) {
+      descEl.style.borderColor = '#ef4444';
+      descEl.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, .12)';
+    }
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = 'pointer';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.innerHTML = 'ถัดไป (แนบรูปภาพ) →';
+    if (descEl && document.activeElement !== descEl) {
+      descEl.style.borderColor = '#10b981';
+      descEl.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, .12)';
+    }
+  }
+}
+
 function _setNextBtn1State(analyzing) {
   var btn = ge('wizNextBtn1');
   if (!btn) return;
@@ -211,24 +369,52 @@ function _setNextBtn1State(analyzing) {
 }
 
 function aiSuggestClassification() {
-  var desc = ge('tDesc').value.trim();
+  var descEl = ge('tDesc');
+  var desc = descEl ? descEl.value.trim() : '';
   if (desc.length < 5) {
     ge('tUrg').value = '';
     _aiDetectedCategory = 'auto';
+    _aiClassificationResult = null;
     ge('urgAiIcon').textContent = '🤖';
     ge('urgAiLabel').textContent = 'รอวิเคราะห์...';
+    ge('urgAiLabel').style.color = 'var(--navy)';
     ge('urgAiSub').textContent = 'พิมพ์รายละเอียดเพื่อให้ AI ประเมินหมวดหมู่และระดับความเร่งด่วน';
     ge('urgAiBox').style.background = '#f8fafc';
     ge('urgAiBox').style.borderColor = '#cbd5e0';
     _aiAnalyzing = false;
-    _setNextBtn1State(false);
+    _updateStep1NextButton(true, 'กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร');
     return;
   }
+
+  // ── 1. FAST SYNCHRONOUS CLIENT-SIDE SPAM CHECK (ดักจับทันทีขณะพิมพ์ 0ms) ──
+  var clientCheck = clientValidateSpam(desc);
+  if (clientCheck.isSpam) {
+    clearTimeout(_urgTimer);
+    _aiAnalyzing = false;
+    _aiClassificationResult = clientCheck;
+    ge('urgAiIcon').textContent = '🚫';
+    ge('urgAiLabel').textContent = '🚫 ' + clientCheck.reason;
+    ge('urgAiLabel').style.color = '#dc2626';
+    ge('urgAiSub').textContent = 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนจริงที่เกิดขึ้นจริง เพื่อปลดล็อคขั้นตอนแนบรูปภาพ';
+    ge('urgAiBox').style.background = '#fef2f2';
+    ge('urgAiBox').style.borderColor = '#ef4444';
+    _updateStep1NextButton(true, clientCheck.reason);
+    return;
+  }
+
+  // ── 2. ข้อความผ่านการตรวจสอบเบื้องต้น: ส่งให้ AI วิเคราะห์ ──
   clearTimeout(_urgTimer);
   _aiAnalyzing = true;
-  _setNextBtn1State(true);
+  var btn = ge('wizNextBtn1');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.innerHTML = '⏳ AI กำลังวิเคราะห์...';
+  }
   ge('urgAiIcon').textContent = '⏳';
   ge('urgAiLabel').textContent = 'AI กำลังวิเคราะห์...';
+  ge('urgAiLabel').style.color = 'var(--navy)';
   ge('urgAiSub').textContent = 'ระบบกำลังวิเคราะห์หมวดหมู่และความเร่งด่วน...';
   _urgTimer = setTimeout(async function () {
     try {
@@ -239,6 +425,18 @@ function aiSuggestClassification() {
       });
       var d = await r.json();
       _aiClassificationResult = d;
+      
+      if (d.isHardBlock || d.isSpam) {
+        ge('urgAiIcon').textContent = '🚫';
+        ge('urgAiLabel').textContent = '🚫 ' + (d.reason || 'ตรวจพบข้อความไม่ถูกต้อง');
+        ge('urgAiLabel').style.color = '#dc2626';
+        ge('urgAiSub').textContent = 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนจริง เพื่อปลดล็อคขั้นตอนแนบรูปภาพ';
+        ge('urgAiBox').style.background = '#fef2f2';
+        ge('urgAiBox').style.borderColor = '#ef4444';
+        _updateStep1NextButton(true, d.reason);
+        return;
+      }
+
       var urg = d.urgency || 'normal';
       var cat = d.category || 'Road';
       _aiDetectedCategory = cat;
@@ -251,11 +449,13 @@ function aiSuggestClassification() {
       ge('urgAiIcon').textContent = catIcon;
       if (d.isAmbiguous) {
         ge('urgAiLabel').textContent = '⚠️ ข้อความสั้น/คลุมเครือ: รอแอดมินคัดกรอง';
+        ge('urgAiLabel').style.color = '#854d0e';
         ge('urgAiSub').textContent = 'หมวดหมู่คาดการณ์: ' + catIcon + ' ' + catTH + ' • ความเร่งด่วน: ' + urgText;
         ge('urgAiBox').style.background = '#fefce8';
         ge('urgAiBox').style.borderColor = '#facc15';
       } else {
         ge('urgAiLabel').textContent = '✅ ตรวจพบ: ' + catIcon + ' ' + catTH + ' • ' + urgText;
+        ge('urgAiLabel').style.color = '#15803d';
         ge('urgAiSub').textContent = '🤖 ระบบ AI จะจัดส่งช่างฝ่าย' + catTH + ' ให้โดยอัตโนมัติ (ระดับความเร่งด่วน: ' + urgText + ')';
         if (urg === 'urgent') {
           ge('urgAiBox').style.background = '#fef2f2';
@@ -268,18 +468,19 @@ function aiSuggestClassification() {
           ge('urgAiBox').style.borderColor = '#86efac';
         }
       }
+      _updateStep1NextButton(false);
     } catch (e) {
       console.warn('[AI classify] error:', e);
-      // Fast client-side fallback so severe damage is never marked as normal
       var isSevere = /พังยับ|ไฟไหม้|ระเบิด|งูพิษ|สายไฟขาด|เสาไฟล้ม|น้ำทะลัก/.test(desc);
       var fallbackUrg = isSevere ? 'urgent' : (/พัง|แตก|รั่ว|หลุม|ขยะ|มืด|ดับ/.test(desc) ? 'medium' : 'normal');
       ge('tUrg').value = fallbackUrg;
       ge('urgAiIcon').textContent = '🤖';
       ge('urgAiLabel').textContent = 'AI โหมดอัตโนมัติ (' + (fallbackUrg === 'urgent' ? '🔴 ด่วนมาก' : fallbackUrg === 'medium' ? '🟡 ด่วน' : '🟢 ปกติ') + ')';
+      ge('urgAiLabel').style.color = 'var(--navy)';
       ge('urgAiSub').textContent = 'ระบบจะจำแนกหมวดหมู่และจัดส่งงานให้ช่างที่เกี่ยวข้องโดยตรง';
+      _updateStep1NextButton(false);
     } finally {
       _aiAnalyzing = false;
-      _setNextBtn1State(false);
     }
   }, 350);
 }
@@ -471,6 +672,19 @@ async function submitTicket() {
   }
   if (!ok) return;
 
+  // ── Client-side Hard Block Pre-check (แบบที่ 1: Hard Block ดักหน้าบ้านทันที) ──
+  var spamCheck = clientValidateSpam(desc);
+  if (spamCheck.isSpam) {
+    if (typeof rnMarkInvalid === 'function') rnMarkInvalid(descEl);
+    var alertMsg = 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนที่เกิดขึ้นจริง (' + (spamCheck.reason || 'ตรวจพบข้อความพิมพ์มั่ว') + ')';
+    if (typeof showCenterPopup === 'function') {
+      showCenterPopup(alertMsg, 3500, '🚫');
+    } else {
+      showToast(alertMsg, true);
+    }
+    return;
+  }
+
   // ── Disable submit button to prevent double-submit ────
   var submitBtn = document.querySelector('.wiz-submit');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ AI กำลังประมวลผลและส่งช่าง...'; }
@@ -491,7 +705,16 @@ async function submitTicket() {
     if (!res.ok) {
       // Re-enable button on API error
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ยืนยันและส่งเรื่องร้องเรียน'; }
-      return showToast(data.error || 'เกิดข้อผิดพลาด', true);
+      if (typeof showCenterPopup === 'function' && (res.status === 400 || res.status === 403)) {
+        showCenterPopup(data.error || 'เกิดข้อผิดพลาดในการส่งเรื่อง', 3500, res.status === 403 ? '🚫' : '⚠️');
+      } else {
+        showToast(data.error || 'เกิดข้อผิดพลาด', true);
+      }
+      return;
+    }
+
+    if (data.strikeNotice) {
+      showToast(data.strikeNotice, true);
     }
 
     // ── Success Animation ─────────────────────────────────
@@ -533,7 +756,7 @@ async function submitTicket() {
       // Re-enable submit button for next submission
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📨 ยืนยันและส่งเรื่องร้องเรียน'; }
       _aiAnalyzing = false;
-      _setNextBtn1State(false);
+      _updateStep1NextButton(true, 'กรุณากรอกรายละเอียดปัญหาอย่างน้อย 5 ตัวอักษร');
       // ── Scroll กลับขึ้นไปที่ยอด wizard ────────────────
       var prog = ge('stepProgress');
       if (prog) prog.scrollIntoView({ behavior: 'smooth', block: 'start' });

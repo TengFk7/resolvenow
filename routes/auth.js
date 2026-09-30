@@ -295,7 +295,10 @@ router.get('/me', async (req, res) => {
     res.json({ id: user._id, firstName: user.firstName, lastName: user.lastName,
                email: user.email, role: user.role, specialty: user.specialty,
                lineUserId: user.lineUserId, avatar: user.avatar,
-               createdViaLine: !!user.createdViaLine, loggedIn: true });
+               createdViaLine: !!user.createdViaLine, loggedIn: true,
+               spamStrikes: user.spamStrikes || 0,
+               isSuspended: Boolean(user.isSuspended),
+               suspendedUntil: user.suspendedUntil });
   } catch (e) { res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 

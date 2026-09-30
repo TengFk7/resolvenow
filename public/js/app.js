@@ -283,6 +283,21 @@ function enterApp() {
     ge('hName').textContent = CU.firstName + (CU.lastName && CU.lastName !== '-' ? ' ' + CU.lastName : '');
     ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
     ge('secTech').style.display = CU.role === 'technician' ? 'block' : 'none';
+
+    // Strike Warning Banner (แบบที่ 3: Warning & Strike System)
+    var strikeBanner = ge('citizenStrikeWarningBanner');
+    var strikeText = ge('citizenStrikeWarningText');
+    if (strikeBanner && strikeText) {
+      if (CU && CU.role === 'citizen' && CU.spamStrikes > 0) {
+        strikeBanner.style.display = 'flex';
+        strikeText.textContent = CU.isSuspended
+          ? '🚫 บัญชีของคุณถูกระงับชั่วคราว 24 ชม. เนื่องจากมีประวัติส่งเรื่องเล่นๆ ครบ 3 ครั้ง'
+          : '⚠️ คุณมีประวัติส่งเรื่องเล่นๆ (ทัณฑ์บน ' + CU.spamStrikes + '/3 ครั้ง) หากครบ 3 ครั้งจะถูกระงับการแจ้งเรื่องชั่วคราว';
+      } else {
+        strikeBanner.style.display = 'none';
+      }
+    }
+
     loadTickets();
     _ticketsInterval = setInterval(function () {
       if (!_socketConnected) loadTickets();

@@ -22,6 +22,7 @@ const { upload: cloudinaryUpload, isCloudinaryConfigured, cloudinary, purgeTicke
 
 const { calcSlaDeadlines, checkIsSlaBreached } = require('../utils/slaHelper');
 const { classifyComplaint } = require('./ai');
+const { analyzeComplaintSpam } = require('../utils/spamFilter');
 
 // ─── Middleware & Helpers ──────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -329,6 +330,12 @@ function formatTicket(t, currentUserId) {
     aiConfidence: t.aiConfidence || 'high',
     aiDispatched: t.aiDispatched || false,
     aiReviewReason: t.aiReviewReason || null,
+    // Anti-Spam & Credibility System
+    isSpam: t.isSpam || false,
+    spamReason: t.spamReason || null,
+    spamType: t.spamType || 'none',
+    aiCredibilityScore: t.aiCredibilityScore != null ? t.aiCredibilityScore : 95,
+    spamFlag: t.spamFlag || 'valid',
   };
   // Per-user flags
   if (currentUserId) {
@@ -1157,6 +1164,7 @@ router.get('/', requireAuth, async (req, res) => {
       }).select('name');
       const catNames = Array.from(new Set([user.specialty, ...cats.map(c => c.name)].filter(Boolean)));
       query = {
+        status: { $ne: 'spam_quarantine' },
         $or: [
           { category: { $in: catNames } },
           { assignedTo: user._id }
@@ -1185,8 +1193,28 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'กรุณาแนบรูปภาพก่อนส่งอย่างน้อย 1 รูป' });
 
+    // ── Strike & Suspension Guard (แบบที่ 3: Warning & Strike System) ──
+    if (user.isSuspended) {
+      if (user.suspendedUntil && new Date() < new Date(user.suspendedUntil)) {
+        const remainingHours = Math.ceil((new Date(user.suspendedUntil) - new Date()) / (60 * 60 * 1000));
+        return res.status(403).json({
+          error: `บัญชีของคุณถูกระงับการแจ้งเรื่องชั่วคราวเนื่องจากมีประวัติส่งเรื่องเล่นๆ ซ้ำครบ 3 ครั้ง (ระงับชั่วคราวอีกประมาณ ${remainingHours} ชม.)`,
+          isSuspended: true,
+          suspendedUntil: user.suspendedUntil
+        });
+      } else {
+        // Auto-lift expired suspension
+        user.isSuspended = false;
+        user.suspendedUntil = null;
+        await user.save();
+      }
+    }
+
     // XSS-FIX: sanitize user-supplied text before storing
     const description = xss(rawDescription.trim());
+
+    // ── Anti-Spam Heuristic Safety Check ──
+    const spamCheck = analyzeComplaintSpam(description, { lat, lng });
 
     // ── AI Auto-Categorization & Ambiguity Analysis ──
     let finalCategory = category;
@@ -1197,7 +1225,18 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     let aiDispatched = false;
     let aiReviewReason = null;
 
-    const autoResult = await classifyComplaint(description);
+    const autoResult = await classifyComplaint(description, { lat, lng });
+
+    // ── แบบที่ 1: Hard Block (ดักหน้าบ้านและ API ทันที) ──
+    if (spamCheck.isHardBlock || autoResult.isHardBlock) {
+      const blockReason = spamCheck.reason || autoResult.spamReason || autoResult.reason || 'ระบบตรวจพบข้อความทดสอบหรือพิมพ์มั่ว';
+      return res.status(400).json({
+        error: `กรุณากรอกรายละเอียดปัญหาความเดือดร้อนที่เกิดขึ้นจริง (${blockReason})`,
+        isSpamBlocked: true,
+        spamReason: blockReason,
+        spamType: spamCheck.spamType !== 'none' ? spamCheck.spamType : (autoResult.spamType || 'gibberish')
+      });
+    }
 
     if (!finalCategory || finalCategory === 'auto') {
       finalCategory = autoResult.category || 'Road';
@@ -1236,9 +1275,19 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const seq = await Counter.nextSeq('ticket');
     const ticketId = 'TKT-' + String(seq).padStart(5, '0');
 
-    // คำนวณ SLA deadlines
-    const urg = finalUrgency || 'normal';
-    const sla = calcSlaDeadlines(urg);
+    // ── ตรวจสอบ Soft Quarantine (แบบที่ 2: Soft Quarantine) ──
+    const isSpam = Boolean(spamCheck.isSpam || autoResult.isSpam);
+    const spamType = spamCheck.spamType !== 'none' ? spamCheck.spamType : (autoResult.spamType || 'joke');
+    const spamFlag = spamCheck.isSpam ? spamCheck.spamFlag : (autoResult.spamFlag || 'junk');
+    const aiCredibilityScore = isSpam
+      ? Math.min(spamCheck.aiCredibilityScore, autoResult.aiCredibilityScore || 100)
+      : (autoResult.aiCredibilityScore || 95);
+    const spamReason = spamCheck.reason || autoResult.spamReason || 'ตรวจพบข้อความเล่นๆ หรือไม่เกี่ยวข้องกับบริการสาธารณะ';
+
+    let initialStatus = 'pending';
+    let assignedTo = null;
+    let assignedName = null;
+    let sla = { slaAssignDeadline: null, slaCompleteDeadline: null };
 
     // Initial timeline
     const initialTimeline = [{
@@ -1248,76 +1297,108 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
       actorName: user.firstName + ' ' + user.lastName,
       details: 'แจ้งเรื่องร้องเรียนใหม่: ' + finalCategory,
       oldValue: null,
-      newValue: 'pending',
+      newValue: isSpam ? 'spam_quarantine' : 'pending',
       timestamp: new Date()
     }];
 
-    let assignedTo = null;
-    let assignedName = null;
-    let initialStatus = 'pending';
+    if (isSpam) {
+      // ── Soft Quarantine Flow: ไม่นับ SLA, ไม่ส่งช่าง, เก็บเข้าคิวขยะตรวจสอบ ──
+      initialStatus = 'spam_quarantine';
+      isAmbiguous = false;
+      needsAdminReview = false;
+      aiDispatched = false;
 
-    if (!isAmbiguous) {
-      // ── Auto-Dispatch: หาช่างประจำหมวดหมู่นี้ ──
-      const catDoc = await Category.findOne({ name: finalCategory }).populate('technicianIds');
-      let candidateTechs = (catDoc && catDoc.technicianIds && catDoc.technicianIds.length) ? catDoc.technicianIds : [];
-
-      if (!candidateTechs.length) {
-        candidateTechs = await User.find({ role: 'technician', specialty: finalCategory });
-      }
-
-      if (candidateTechs.length > 0) {
-        // Workload Balancing: เลือกช่างที่มีงานค้างน้อยที่สุด
-        let bestTech = null;
-        let minActive = Infinity;
-
-        for (const tech of candidateTechs) {
-          const activeCount = await Ticket.countDocuments({
-            assignedTo: tech._id,
-            status: { $nin: ['completed', 'rejected', 'merged'] }
-          });
-          if (activeCount < minActive) {
-            minActive = activeCount;
-            bestTech = tech;
-          }
-        }
-
-        if (bestTech) {
-          assignedTo = bestTech._id;
-          assignedName = bestTech.firstName + ' ' + bestTech.lastName;
-          initialStatus = 'assigned';
-          aiDispatched = true;
-          const catLabel = catDoc ? (catDoc.label || catDoc.name) : finalCategory;
-          initialTimeline.push({
-            action: 'assigned',
-            actorRole: 'system',
-            actorId: null,
-            actorName: 'AI Dispatcher',
-            details: `AI จำแนกหมวดหมู่ [${catLabel}] และมอบหมายงานให้ช่าง [${assignedName}] อัตโนมัติ (งานค้างขณะนี้: ${minActive} งาน)`,
-            oldValue: 'pending',
-            newValue: 'assigned',
-            timestamp: new Date()
-          });
-        }
-      } else {
-        // ไม่พบช่างในหมวดหมู่นี้ ส่งเข้า Admin Review
-        isAmbiguous = true;
-        needsAdminReview = true;
-        aiReviewReason = `ไม่พบช่างประจำหมวด ${finalCategory} ในระบบ`;
-      }
-    }
-
-    if (isAmbiguous) {
-      needsAdminReview = true;
       initialTimeline.push({
-        action: 'ai_flagged_ambiguous',
+        action: 'quarantined_spam',
         actorRole: 'system',
         actorId: null,
-        actorName: 'AI Dispatcher',
-        details: 'AI ตรวจพบเรื่องร้องเรียนคลุมเครือ ส่งเข้าคิวรอผู้ดูแลระบบตรวจสอบและมอบหมายงาน' + (aiReviewReason ? ` (${aiReviewReason})` : ''),
+        actorName: 'Anti-Spam Engine',
+        details: `ระบบกักกันเรื่องร้องเรียนเนื่องจากตรวจพบเป็นข้อความเล่นๆ/ไม่เกี่ยวข้อง (${spamReason}) (ความน่าเชื่อถือ: ${aiCredibilityScore}%)`,
         oldValue: null,
-        newValue: 'pending',
+        newValue: 'spam_quarantine',
         timestamp: new Date()
       });
+
+      // ── ติดทัณฑ์บนผู้ใช้ (แบบที่ 3: Warning & Strike System) ──
+      user.spamStrikes = (user.spamStrikes || 0) + 1;
+      if (!user.strikeHistory) user.strikeHistory = [];
+      user.strikeHistory.push({
+        reason: spamReason,
+        ticketId,
+        givenAt: new Date()
+      });
+
+      if (user.spamStrikes >= 3) {
+        user.isSuspended = true;
+        user.suspendedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // ระงับ 24 ชั่วโมง
+      }
+      await user.save();
+    } else {
+      // ── Normal Flow: คำนวณ SLA และจ่ายงานช่าง ──
+      const urg = finalUrgency || 'normal';
+      sla = calcSlaDeadlines(urg);
+
+      if (!isAmbiguous) {
+        // Auto-Dispatch: หาช่างประจำหมวดหมู่นี้
+        const catDoc = await Category.findOne({ name: finalCategory }).populate('technicianIds');
+        let candidateTechs = (catDoc && catDoc.technicianIds && catDoc.technicianIds.length) ? catDoc.technicianIds : [];
+
+        if (!candidateTechs.length) {
+          candidateTechs = await User.find({ role: 'technician', specialty: finalCategory });
+        }
+
+        if (candidateTechs.length > 0) {
+          let bestTech = null;
+          let minActive = Infinity;
+
+          for (const tech of candidateTechs) {
+            const activeCount = await Ticket.countDocuments({
+              assignedTo: tech._id,
+              status: { $nin: ['completed', 'rejected', 'merged', 'spam_quarantine'] }
+            });
+            if (activeCount < minActive) {
+              minActive = activeCount;
+              bestTech = tech;
+            }
+          }
+
+          if (bestTech) {
+            assignedTo = bestTech._id;
+            assignedName = bestTech.firstName + ' ' + bestTech.lastName;
+            initialStatus = 'assigned';
+            aiDispatched = true;
+            const catLabel = catDoc ? (catDoc.label || catDoc.name) : finalCategory;
+            initialTimeline.push({
+              action: 'assigned',
+              actorRole: 'system',
+              actorId: null,
+              actorName: 'AI Dispatcher',
+              details: `AI จำแนกหมวดหมู่ [${catLabel}] และมอบหมายงานให้ช่าง [${assignedName}] อัตโนมัติ (งานค้างขณะนี้: ${minActive} งาน)`,
+              oldValue: 'pending',
+              newValue: 'assigned',
+              timestamp: new Date()
+            });
+          }
+        } else {
+          isAmbiguous = true;
+          needsAdminReview = true;
+          aiReviewReason = `ไม่พบช่างประจำหมวด ${finalCategory} ในระบบ`;
+        }
+      }
+
+      if (isAmbiguous) {
+        needsAdminReview = true;
+        initialTimeline.push({
+          action: 'ai_flagged_ambiguous',
+          actorRole: 'system',
+          actorId: null,
+          actorName: 'AI Dispatcher',
+          details: 'AI ตรวจพบเรื่องร้องเรียนคลุมเครือ ส่งเข้าคิวรอผู้ดูแลระบบตรวจสอบและมอบหมายงาน' + (aiReviewReason ? ` (${aiReviewReason})` : ''),
+          oldValue: null,
+          newValue: 'pending',
+          timestamp: new Date()
+        });
+      }
     }
 
     const ticket = await new Ticket({
@@ -1330,7 +1411,7 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
       location: locationName,
       lat: lat ? parseFloat(lat) : null,
       lng: lng ? parseFloat(lng) : null,
-      urgency: urg,
+      urgency: finalUrgency || 'normal',
       priorityScore: score,
       status: initialStatus,
       assignedTo,
@@ -1340,20 +1421,39 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
       aiConfidence,
       aiDispatched,
       aiReviewReason,
-      citizenImage: getFileUrls(req)[0], // For backward compatibility
+      // Anti-Spam & Credibility fields
+      isSpam,
+      spamReason: isSpam ? spamReason : null,
+      spamType: isSpam ? spamType : 'none',
+      aiCredibilityScore,
+      spamFlag,
+      citizenImage: getFileUrls(req)[0],
       citizenImages: getFileUrls(req),
       slaAssignDeadline: sla.slaAssignDeadline,
       slaCompleteDeadline: sla.slaCompleteDeadline,
       timeline: initialTimeline
     }).save();
 
-    if (assignedTo) {
-      notifyAssigned(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyAssigned error:', e));
-    } else {
-      notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+    if (!isSpam) {
+      if (assignedTo) {
+        notifyAssigned(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyAssigned error:', e));
+      } else {
+        notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
+      }
     }
+
     emitUpdate(req);
-    res.status(201).json(formatTicket(ticket, user._id));
+
+    const formatted = formatTicket(ticket, user._id);
+    formatted.strikeCount = user.spamStrikes || 0;
+    formatted.isSuspended = Boolean(user.isSuspended);
+    if (user.spamStrikes > 0) {
+      formatted.strikeNotice = user.isSuspended
+        ? '⚠️ บัญชีของคุณถูกระงับ 24 ชม. เนื่องจากมีประวัติส่งเรื่องเล่นๆ ครบ 3 ครั้ง'
+        : `⚠️ แจ้งเตือน: คุณมีทัณฑ์บน ${user.spamStrikes}/3 ครั้ง จากการแจ้งเรื่องเล่นๆ`;
+    }
+
+    res.status(201).json(formatted);
   } catch (e) {
     console.error(e);
     // ROLLBACK-FIX: ถ้า DB save ล้มเหลว ให้ลบรูปที่ upload ขึ้น Cloudinary ไปแล้วออก
@@ -2728,6 +2828,214 @@ router.post('/:id/materials', requireAuth, async (req, res) => {
   } catch (e) {
     console.error('[Materials Endpoint] Error:', e);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกวัสดุ' });
+  }
+});
+
+// ─── ADMIN SPAM QUARANTINE APIS ──────────────────────────────────
+// 1. GET /api/tickets/quarantine/list — ดูรายการเรื่องร้องเรียนเล่นๆ/สแปมทั้งหมด
+router.get('/quarantine/list', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') {
+      return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
+    }
+
+    const tickets = await Ticket.find({
+      $or: [{ status: 'spam_quarantine' }, { isSpam: true }]
+    })
+      .populate('citizenId', 'firstName lastName email spamStrikes isSuspended suspendedUntil strikeHistory')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      total: tickets.length,
+      tickets: tickets.map(t => {
+        const base = formatTicket(t, caller._id);
+        base.citizenDetails = t.citizenId ? {
+          name: t.citizenId.firstName + ' ' + t.citizenId.lastName,
+          email: t.citizenId.email,
+          spamStrikes: t.citizenId.spamStrikes || 0,
+          isSuspended: Boolean(t.citizenId.isSuspended),
+          suspendedUntil: t.citizenId.suspendedUntil
+        } : null;
+        return base;
+      })
+    });
+  } catch (e) {
+    console.error('[Quarantine List] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการโหลดรายการสแปม' });
+  }
+});
+
+// 2. POST /api/tickets/:id/quarantine/restore — กู้คืนเรื่องร้องเรียนกลับเข้าคิวปกติ
+router.post('/:id/quarantine/restore', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') {
+      return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
+    }
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // คำนวณ SLA ใหม่นับจากวินาทีนี้
+    const sla = calcSlaDeadlines(ticket.urgency || 'normal');
+
+    ticket.status = 'pending';
+    ticket.isSpam = false;
+    ticket.spamType = 'none';
+    ticket.slaBreached = false;
+    ticket.slaAssignDeadline = sla.slaAssignDeadline;
+    ticket.slaCompleteDeadline = sla.slaCompleteDeadline;
+
+    // ลดทัณฑ์บนผู้ใช้ 1 ครั้ง (ถ้ามี)
+    if (ticket.citizenId) {
+      const citizen = await User.findById(ticket.citizenId);
+      if (citizen && citizen.spamStrikes > 0) {
+        citizen.spamStrikes = Math.max(0, citizen.spamStrikes - 1);
+        if (citizen.spamStrikes < 3) {
+          citizen.isSuspended = false;
+          citizen.suspendedUntil = null;
+        }
+        await citizen.save();
+      }
+    }
+
+    // มอบหมายช่างอัตโนมัติหากมี
+    const catDoc = await Category.findOne({ name: ticket.category }).populate('technicianIds');
+    let candidateTechs = (catDoc && catDoc.technicianIds && catDoc.technicianIds.length) ? catDoc.technicianIds : [];
+    if (!candidateTechs.length) {
+      candidateTechs = await User.find({ role: 'technician', specialty: ticket.category });
+    }
+
+    if (candidateTechs.length > 0) {
+      let bestTech = null;
+      let minActive = Infinity;
+      for (const tech of candidateTechs) {
+        const activeCount = await Ticket.countDocuments({
+          assignedTo: tech._id,
+          status: { $nin: ['completed', 'rejected', 'merged', 'spam_quarantine'] }
+        });
+        if (activeCount < minActive) {
+          minActive = activeCount;
+          bestTech = tech;
+        }
+      }
+      if (bestTech) {
+        ticket.assignedTo = bestTech._id;
+        ticket.assignedName = bestTech.firstName + ' ' + bestTech.lastName;
+        ticket.status = 'assigned';
+        ticket.aiDispatched = true;
+      }
+    }
+
+    logTicketActivity(ticket, {
+      action: 'quarantine_restored',
+      actorRole: 'admin',
+      actorId: caller._id,
+      actorName: caller.firstName + ' ' + caller.lastName,
+      details: 'ผู้ดูแลระบบตรวจสอบแล้ว กู้คืนตั๋วจากถังขยะสแปมกลับเข้าสู่คิวงานปกติ' + (ticket.assignedName ? ` และมอบหมายให้ช่าง [${ticket.assignedName}]` : ''),
+      oldValue: 'spam_quarantine',
+      newValue: ticket.status
+    });
+
+    await ticket.save();
+
+    if (ticket.assignedTo) {
+      notifyAssigned(formatTicket(ticket, caller._id)).catch(e => console.error('[LINE] restore notifyAssigned error:', e));
+    } else {
+      notifyNewTicket(formatTicket(ticket, caller._id)).catch(e => console.error('[LINE] restore notifyNewTicket error:', e));
+    }
+
+    emitUpdate(req);
+
+    res.json({
+      message: 'กู้คืนเรื่องร้องเรียนกลับเข้าสู่ระบบสำเร็จ',
+      ticket: formatTicket(ticket, caller._id)
+    });
+  } catch (e) {
+    console.error('[Quarantine Restore] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการกู้คืนตั๋ว' });
+  }
+});
+
+// 3. DELETE /api/tickets/:id/quarantine/delete — ลบเรื่องร้องเรียนเล่นๆ ทิ้งถาวร
+router.delete('/:id/quarantine/delete', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') {
+      return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
+    }
+
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
+
+    // ลบรูปภาพจาก Cloudinary
+    await purgeTicketImages(ticket);
+
+    // ลบคอมเมนต์และข้อมูลตั๋ว
+    await Comment.deleteMany({ ticketId: ticket.ticketId });
+    await Ticket.deleteOne({ _id: ticket._id });
+
+    emitUpdate(req);
+
+    res.json({ message: 'ลบเรื่องร้องเรียนเล่นๆ ออกจากระบบเรียบร้อยแล้ว' });
+  } catch (e) {
+    console.error('[Quarantine Delete] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการลบตั๋ว' });
+  }
+});
+
+// 4. POST /api/tickets/quarantine/user-strikes/:userId — จัดการทัณฑ์บนผู้ใช้
+router.post('/quarantine/user-strikes/:userId', requireAuth, async (req, res) => {
+  try {
+    const caller = await User.findById(req.session.userId);
+    if (!caller || caller.role !== 'admin') {
+      return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
+    }
+
+    const targetUser = await User.findById(req.params.userId);
+    if (!targetUser) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+
+    const { action, reason } = req.body; // 'reset' | 'add' | 'lift_suspension'
+
+    if (action === 'reset') {
+      targetUser.spamStrikes = 0;
+      targetUser.isSuspended = false;
+      targetUser.suspendedUntil = null;
+    } else if (action === 'add') {
+      targetUser.spamStrikes = (targetUser.spamStrikes || 0) + 1;
+      if (!targetUser.strikeHistory) targetUser.strikeHistory = [];
+      targetUser.strikeHistory.push({
+        reason: reason || 'ผู้ดูแลระบบเพิ่มทัณฑ์บนจากการส่งเรื่องเล่นๆ',
+        ticketId: null,
+        givenAt: new Date()
+      });
+      if (targetUser.spamStrikes >= 3) {
+        targetUser.isSuspended = true;
+        targetUser.suspendedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      }
+    } else if (action === 'lift_suspension') {
+      targetUser.isSuspended = false;
+      targetUser.suspendedUntil = null;
+      targetUser.spamStrikes = Math.min(2, targetUser.spamStrikes || 0); // ลดเหลือ 2 ครั้ง
+    }
+
+    await targetUser.save();
+
+    res.json({
+      message: 'ปรับปรุงสถานะทัณฑ์บนเรียบร้อยแล้ว',
+      user: {
+        id: targetUser._id,
+        name: targetUser.firstName + ' ' + targetUser.lastName,
+        email: targetUser.email,
+        spamStrikes: targetUser.spamStrikes,
+        isSuspended: targetUser.isSuspended,
+        suspendedUntil: targetUser.suspendedUntil
+      }
+    });
+  } catch (e) {
+    console.error('[Quarantine User Strikes] Error:', e);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการจัดการทัณฑ์บน' });
   }
 });
 

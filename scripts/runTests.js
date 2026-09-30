@@ -368,6 +368,178 @@ runTest('Cognitive Engine classifies severe damage like "ถนนหน้า�
   assert.strictEqual(res3.urgency, 'normal');
 });
 
+// ── 9. Anti-Spam, Prank Detection & Citizen Strike Engine ────────
+console.log('\n\x1b[1m[Group 9: Anti-Spam, Prank Detection & Citizen Strike Engine]\x1b[0m');
+
+runTest('analyzeComplaintSpam catches keyboard smashing sequences (English QWERTY and Thai Kedmanee)', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const smashSamples = ['asdfghjk', 'กฟหกด่าสว', 'qwerty', 'zxcvbnm'];
+  for (const text of smashSamples) {
+    const res = analyzeComplaintSpam(text);
+    assert.strictEqual(res.isSpam, true, `Expected spam for "${text}"`);
+    assert.strictEqual(res.isHardBlock, true, `Expected hard block for "${text}"`);
+    assert.strictEqual(res.spamType, 'gibberish');
+    assert.strictEqual(res.spamFlag, 'incomprehensible');
+    assert.ok(res.aiCredibilityScore <= 15, 'Credibility score should be <= 15');
+  }
+});
+
+runTest('analyzeComplaintSpam catches continuous row smashing and loop patterns ("กดาสฟหกดาสฟหกดาส", "sdfkjhsdflkjh", "อะไรไม่รู้อะไรไม่รู้")', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const continuousSamples = [
+    'กดาสฟหกดาสฟหกดาสฟหกดาส',
+    'ฟหกสดาฟหกวดาสฟหกดวา',
+    'สวดฟกห ดฟสากหด ฟสหกดา ฟหกสาด',
+    'sdfkjhsdflkjhsdflkjh',
+    'asdfghjklasdfghjkl',
+    'อะไรไม่รู้อะไรไม่รู้อะไรไม่รู้',
+    'มั่วๆ มั่วๆ มั่วๆ มั่วๆ มั่วๆ'
+  ];
+  for (const text of continuousSamples) {
+    const res = analyzeComplaintSpam(text);
+    assert.strictEqual(res.isSpam, true, `Expected spam for "${text}"`);
+    assert.strictEqual(res.isHardBlock, true, `Expected hard block for "${text}"`);
+    assert.strictEqual(res.spamType, 'gibberish');
+  }
+});
+
+runTest('analyzeComplaintSpam catches repetitive character smashing and laughter ("55555555", "กกกกกกกก")', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const laughRes = analyzeComplaintSpam('5555555555');
+  assert.strictEqual(laughRes.isSpam, true);
+  assert.strictEqual(laughRes.isHardBlock, true);
+  assert.strictEqual(laughRes.spamType, 'joke');
+
+  const smashRes = analyzeComplaintSpam('กกกกกกกกกกกก');
+  assert.strictEqual(smashRes.isSpam, true);
+  assert.strictEqual(smashRes.isHardBlock, true);
+  assert.strictEqual(smashRes.spamType, 'gibberish');
+
+  // Genuine complaint with trailing elongation should NOT be blocked
+  const realRes = analyzeComplaintSpam('ช่วยด้วยยยยยยยย ท่อประปาหน้าบ้านแตก น้ำพุ่งทะลักท่วมถนน');
+  assert.strictEqual(realRes.isSpam, false);
+  assert.strictEqual(realRes.isHardBlock, false);
+  assert.strictEqual(realRes.spamFlag, 'valid');
+  assert.ok(realRes.aiCredibilityScore >= 80);
+});
+
+runTest('analyzeComplaintSpam catches test and placeholder phrases ("test", "1234", "ทดสอบระบบ", "ลองส่ง")', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const testPhrases = ['test', '1234', 'ทดสอบระบบ', 'ลองส่ง', 'aaa', 'ลองระบบ'];
+  for (const phrase of testPhrases) {
+    const res = analyzeComplaintSpam(phrase);
+    assert.strictEqual(res.isSpam, true, `Expected spam for "${phrase}"`);
+    assert.strictEqual(res.isHardBlock, true, `Expected hard block for "${phrase}"`);
+    assert.strictEqual(res.spamType, 'test');
+    assert.strictEqual(res.spamFlag, 'junk');
+  }
+});
+
+runTest('analyzeComplaintSpam detects vulgar profanity and abusive words', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const profaneSamples = ['ควย', 'ไอ้เหี้ยมึง', 'fuck this shit'];
+  for (const text of profaneSamples) {
+    const res = analyzeComplaintSpam(text);
+    assert.strictEqual(res.isSpam, true, `Expected spam for "${text}"`);
+    assert.strictEqual(res.isHardBlock, true, `Expected hard block for "${text}"`);
+    assert.strictEqual(res.spamType, 'profanity');
+    assert.strictEqual(res.spamFlag, 'junk');
+  }
+});
+
+runTest('analyzeComplaintSpam detects out-of-domain jokes and classifies as Soft Quarantine', () => {
+  const { analyzeComplaintSpam } = require('../utils/spamFilter');
+  const jokes = [
+    'แฟนทิ้งช่วยด้วย ทำยังไงดี',
+    'ขอยืมเงินหน่อย ไม่มีตังค์กินข้าว',
+    'หวยงวดนี้ออกอะไร ขอเลขเด็ด',
+    'เหงาจัง อยากหาคนคุย'
+  ];
+  for (const text of jokes) {
+    const res = analyzeComplaintSpam(text);
+    assert.strictEqual(res.isSpam, true, `Expected spam for "${text}"`);
+    assert.strictEqual(res.isHardBlock, false, `Expected soft quarantine (isHardBlock:false) for "${text}"`);
+    assert.strictEqual(res.spamType, 'joke');
+    assert.strictEqual(res.spamFlag, 'irrelevant');
+  }
+});
+
+runTest('validateCoordinates and analyzeComplaintSpam detect GPS out-of-bounds outside Thailand and Null Island', () => {
+  const { validateCoordinates, analyzeComplaintSpam } = require('../utils/spamFilter');
+  // Bangkok: inside Thailand
+  const bkk = validateCoordinates(13.7563, 100.5018);
+  assert.strictEqual(bkk.isValid, true);
+  assert.strictEqual(bkk.isOutOfBounds, false);
+
+  // Paris: outside Thailand
+  const paris = validateCoordinates(48.8566, 2.3522);
+  assert.strictEqual(paris.isValid, false);
+  assert.strictEqual(paris.isOutOfBounds, true);
+
+  // Null Island
+  const nullIsland = validateCoordinates(0, 0);
+  assert.strictEqual(nullIsland.isValid, false);
+  assert.strictEqual(nullIsland.isOutOfBounds, true);
+
+  // Check analyzeComplaintSpam integration with geo
+  const geoSpam = analyzeComplaintSpam('มีน้ำขังหน้าบ้าน', { lat: 48.8566, lng: 2.3522 });
+  assert.strictEqual(geoSpam.isSpam, true);
+  assert.strictEqual(geoSpam.isHardBlock, false);
+  assert.strictEqual(geoSpam.spamType, 'out_of_bounds');
+});
+
+runTest('Linguistic entropy and Thai consonant/vowel analysis detect vowelless Thai smashing', () => {
+  const { analyzeComplaintSpam, calculateEntropy, analyzeLinguisticProperties } = require('../utils/spamFilter');
+  // Vowelless Thai consonant smash
+  const vowelless = 'กขคงจฉชซดตถท';
+  const res = analyzeComplaintSpam(vowelless);
+  assert.strictEqual(res.isSpam, true);
+  assert.strictEqual(res.isHardBlock, true);
+  assert.strictEqual(res.spamType, 'gibberish');
+
+  // Low entropy detection
+  assert.strictEqual(calculateEntropy('aaaaaaaa'), 0);
+  const ling = analyzeLinguisticProperties('มีน้ำเสียและไฟฟ้าดับ');
+  assert.ok(ling.thaiConsonants > 0);
+  assert.ok(ling.thaiVowels > 0);
+});
+
+runTest('Ticket and User model schemas include all required Anti-Spam & Strike fields and indexes', () => {
+  const Ticket = require('../models/Ticket');
+  const User = require('../models/User');
+
+  // Ticket schema
+  const tPaths = Ticket.schema.paths;
+  assert.ok(tPaths.isSpam, 'isSpam missing in Ticket schema');
+  assert.strictEqual(tPaths.isSpam.instance, 'Boolean');
+  assert.ok(tPaths.spamReason, 'spamReason missing in Ticket schema');
+  assert.ok(tPaths.spamType, 'spamType missing in Ticket schema');
+  assert.deepStrictEqual(tPaths.spamType.enumValues, ['none', 'hard_blocked', 'gibberish', 'test', 'profanity', 'joke', 'out_of_bounds', 'ai_flagged']);
+  assert.ok(tPaths.aiCredibilityScore, 'aiCredibilityScore missing in Ticket schema');
+  assert.ok(tPaths.spamFlag, 'spamFlag missing in Ticket schema');
+  assert.deepStrictEqual(tPaths.spamFlag.enumValues, ['valid', 'junk', 'incomprehensible', 'irrelevant']);
+  assert.ok(tPaths.status.enumValues.includes('spam_quarantine'), 'spam_quarantine missing in Ticket status enum');
+
+  // User schema
+  const uPaths = User.schema.paths;
+  assert.ok(uPaths.spamStrikes, 'spamStrikes missing in User schema');
+  assert.strictEqual(uPaths.spamStrikes.instance, 'Number');
+  assert.ok(uPaths.isSuspended, 'isSuspended missing in User schema');
+  assert.strictEqual(uPaths.isSuspended.instance, 'Boolean');
+  assert.ok(uPaths.suspendedUntil, 'suspendedUntil missing in User schema');
+  assert.ok(uPaths.strikeHistory, 'strikeHistory missing in User schema');
+});
+
+runTest('checkIsSlaBreached excludes quarantined spam tickets from SLA breach calculations', () => {
+  const quarantinedTicket = {
+    status: 'spam_quarantine',
+    slaAssignDeadline: new Date(Date.now() - 3600000), // Expired 1 hour ago
+    slaPauseStatus: 'none',
+    slaBreached: false
+  };
+  assert.strictEqual(checkIsSlaBreached(quarantinedTicket), false);
+});
+
 // ── Summary ──────────────────────────────────────────────────────
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);

@@ -12,7 +12,7 @@
 
 # ResolveNow — AI Assistant Quick Architecture & Reference Guide
 
-> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-20 | Version: V18.2 - Admin Chronological Queue & Today's Metric Sync)
+> เอกสารสรุปสาระสำคัญสำหรับ AI Assistant ในการทำความเข้าใจโครงสร้าง สถาปัตยกรรม และแนวทางการแก้ไขระบบ ResolveNow อย่างรวดเร็วและถูกต้อง แม่นยำ (อัปเดตล่าสุด: 2026-09-30 | Version: V19.0 - Anti-Spam, Prank Detection & Citizen Strike Engine)
 
 ---
 
@@ -20,9 +20,9 @@
 
 1. **Default Port**: รันที่พอร์ต `3001` เสมอ (`http://localhost:3001`) จากคำสั่ง `npm run dev` (ห้ามเปลี่ยนพอร์ตเองเว้นแต่ได้รับคำสั่ง)
 2. **Dedicated Portals (แยกพอร์ทัลตาม URL ชัดเจน)**:
-   - `http://localhost:3001/` : **Citizen Portal** (ประชาชนแจ้งเรื่อง 5 ขั้นตอน, แผนที่ Heatmap, แชทตรง)
+   - `http://localhost:3001/` : **Citizen Portal** (ประชาชนแจ้งเรื่อง 5 ขั้นตอน, แผนที่ Heatmap, แชทตรง, Real-time Anti-Spam Assistant & Strike Warning)
    - `http://localhost:3001/my-tickets` หรือ `/tickets/my` : **My Tickets Dedicated Portal** (หน้าต่างเว็บแยกเรื่องร้องเรียนของฉันทั้งหมด พร้อมระบบตรวจสอบความปลอดภัย 6 ชั้น เข้าถึงจากเมนูขีดสามขีด)
-   - `http://localhost:3001/admin` : **Admin Portal** (ผู้ดูแลระบบ, คิวงาน, มอบหมาย, จัดการช่าง/หมวดหมู่, Inbox, รายงาน, เครื่องมือทดสอบอีเมล)
+   - `http://localhost:3001/admin` : **Admin Portal** (ผู้ดูแลระบบ, คิวงาน, มอบหมาย, จัดการช่าง/หมวดหมู่, Inbox, รายงาน, เครื่องมือทดสอบอีเมล, และ Spam Quarantine Drawer "เรื่องแจ้งเล่นๆ/สแปม" ในเมนูขีดสามขีด)
    - `http://localhost:3001/tech` หรือ `/technician` : **Technician Portal** (ช่างปฏิบัติงาน, รับงาน, อัปโหลด Before/After, บันทึกวัสดุ/ค่าใช้จ่าย, พักเวลา SLA, ใบสั่งงานพร้อมลายเซ็นดิจิทัล)
    - `http://localhost:3001/ceo` : **CEO Dashboard** (ผู้บริหาร, สถิติ SLA, กราฟงบประมาณ, การวิเคราะห์เชิงพื้นที่ District Analytics, Masked PII)
    - `http://localhost:3001/track` : **Public Tracker** (หน้าติดตามสถานะสำหรับประชาชนทั่วไป ค้นหาด้วย Ticket ID)
@@ -37,7 +37,7 @@
    - **Technicians (7 หมวด)**: `tech1@resolvenow.th` ถึง `tech7@resolvenow.th` / รหัสผ่าน: `tech1234`
    - **Citizen (Dev)**: `tenginpb@gmail.com` / `123456`
 5. **Automated Verification Test Suite**:
-   - รันตรวจสอบความถูกต้องของระบบด้วยคำสั่ง: `npm test` หรือ `node scripts/runTests.js` (26 การทดสอบ ครอบคลุม 7 กลุ่มงาน: SLA, Geo, XSS, PDPA, CEO Aggregation, Model Indexes, Cognitive Thai NLP)
+   - รันตรวจสอบความถูกต้องของระบบด้วยคำสั่ง: `npm test` หรือ `node scripts/runTests.js` (39 การทดสอบ ครอบคลุม 9 กลุ่มงาน: SLA, Geo, XSS, PDPA, CEO Aggregation, Model Indexes, Cognitive Thai NLP, AI Dispatcher, และ Anti-Spam / Strike Engine)
 
 ---
 
@@ -81,10 +81,11 @@ ResolveNow/
 │   └── lineAuth.js               ← LINE OAuth2 callback flow
 │
 ├── utils/
-│   └── slaHelper.js              ← รวมศูนย์คำนวณวันหมดอายุ SLA และตรวจ Breach
+│   ├── slaHelper.js              ← รวมศูนย์คำนวณวันหมดอายุ SLA และตรวจ Breach
+│   └── spamFilter.js             ← เครื่องมือวิเคราะห์สแปม, Shannon Entropy, Thai NLP Linguistic, Geofencing, Blacklist
 │
 ├── scripts/
-│   ├── runTests.js               ← Automated Test Runner (26 Unit & Integration Tests)
+│   ├── runTests.js               ← Automated Test Runner (39 Unit & Integration Tests)
 │   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อการทดสอบ
 │
 ├── docs/                         ← เอกสารเชิงวิศวกรรมซอฟต์แวร์ และ Architecture
@@ -95,9 +96,9 @@ ResolveNow/
 │   └── system_architecture.mmd   ← System Architecture & 6-Layer Security Specification
 │
 └── public/
-    ├── index.html                ← Citizen Portal SPA (หน้าแรก)
+    ├── index.html                ← Citizen Portal SPA (หน้าแรก พร้อมระบบเตือนสแปมและทัณฑ์บน)
     ├── my-tickets.html           ← My Tickets Dedicated Portal (หน้าต่างเว็บแยกเรื่องร้องเรียนของฉัน)
-    ├── admin.html                ← Admin Portal (เฉพาะแอดมิน พร้อมเครื่องมือ Email Test)
+    ├── admin.html                ← Admin Portal (เฉพาะแอดมิน พร้อม Spam Quarantine Drawer ในเมนูขีดสามขีด)
     ├── tech.html                 ← Technician Portal (เฉพาะช่าง)
     ├── executive-dashboard.html  ← CEO Dashboard (ผู้บริหาร พร้อม District Analytics & Presentation Mode)
     ├── track.html                ← หน้าค้นหาตั๋วสาธารณะ
@@ -109,10 +110,10 @@ ResolveNow/
         ├── app.js                ← Session state & Global initializations
         ├── ui.js                 ← Utility functions, escapeHTML, Toast, Dynamic Depts, Heatmap
         ├── auth.js               ← Login/Register/OTP flow
-        ├── citizen.js            ← Logic ประชาชน (ส่งตั๋ว, GPS, ประเมินดาว, Reopen)
+        ├── citizen.js            ← Logic ประชาชน (ส่งตั๋ว, GPS, ประเมินดาว, ตรวจสแปม Real-time, ทัณฑ์บน)
         ├── my-tickets.js         ← Controller หน้า /my-tickets (ระบบตรวจสอบความปลอดภัย 6 ชั้น)
         ├── technician.js         ← Logic ช่าง (จัดการงาน, อัปรูป Before/After, บันทึกวัสดุ, พักเวลา SLA, เซ็นใบงาน)
-        ├── admin.js              ← Logic แอดมิน (มอบหมายงาน, กราฟ, จัดการหมวด, รวมตั๋ว, ตรวจสอบเมล)
+        ├── admin.js              ← Logic แอดมิน (มอบหมายงาน, กราฟ, จัดการหมวด, จัดการเรื่องแจ้งเล่น/กู้คืน/ทัณฑ์บน)
         ├── admin-portal.js       ← Session controller & Gate unlock ของ /admin
         ├── tech-portal.js        ← Session controller & Gate unlock ของ /tech
         └── directChat.js         ← Real-time Direct Chat Socket handler
@@ -126,7 +127,7 @@ ResolveNow/
 - **ห้าม** เขียนตรรกะคำนวณวันเวลา SLA หรือตรวจการผิดสัญญาขึ้นมาใหม่ใน Routes
 - ให้เรียกใช้ฟังก์ชันจาก `utils/slaHelper.js` เสมอ:
   - `calcSlaDeadlines(urgency)`: คืนค่า `{ slaAssignDeadline, slaCompleteDeadline }`
-  - `checkIsSlaBreached(ticket)`: ตรวจสอบสถานะการผิดสัญญาแบบแม่นยำ (รองรับการพักเวลา `slaPauseStatus`)
+  - `checkIsSlaBreached(ticket)`: ตรวจสอบสถานะการผิดสัญญาแบบแม่นยำ (รองรับการพักเวลา `slaPauseStatus` และข้ามตั๋ว `spam_quarantine`)
 
 ### กฎด้านความปลอดภัย (Security Rules)
 1. **XSS Protection**: ข้อมูลประเภท Text ที่รับจากผู้ใช้ (ชื่อ, รายละเอียด, คอมเมนต์, วัสดุ, เหตุผล) ต้องคลุมด้วย `xss()` ในฝั่ง Backend และใช้ฟังก์ชัน `escapeHTML()` ในฝั่ง Frontend เสมอ
@@ -163,5 +164,7 @@ ResolveNow/
    - บันทึกชื่อผู้เซ็นรับงาน ลายเซ็นดิจิทัล (Data URL) และดูใบงานผ่าน `GET /api/tickets/:id/work-order`
 6. **Geospatial & District Intelligence (`district`, `subdistrict`)**:
    - สกัดชื่อเขตและแขวงจากข้อความสถานที่โดยอัตโนมัติ รองรับรายงานเชิงพื้นที่ `GET /api/ceo/district-analytics`
-7. **Real-time Synchronization**:
+7. **Anti-Spam, Prank Detection & Citizen Strike Engine (`isSpam`, `spamType`, `spamFlag`, `aiCredibilityScore`, `spam_quarantine`)**:
+   - ระบบ 3 ระดับ: **แบบที่ 1 (Hard Block)** ดักจับการเคาะแป้นพิมพ์มั่ว (Keyboard Smash), ข้อความทดสอบ, คำหยาบคาย หน้าบ้านและ API ทันที (HTTP 400), **แบบที่ 2 (Soft Quarantine)** กักกันข้อความเล่นตลก/มุก/นอกขอบเขต หรือหมุดนอกพิกัดประเทศไทยไว้ที่สถานะ `spam_quarantine` ไม่แจ้งเตือนช่าง ไม่นับ SLA เข้าดูได้จากเมนูขีดสามขีดของ Admin, **แบบที่ 3 (Warning & Strike System)** สะสมประวัติทัณฑ์บนผู้ใช้ หากส่งเรื่องเล่นครบ 3 ครั้งจะถูกระงับการแจ้งเรื่อง 24 ชั่วโมง โดย Admin สามารถปลดแบนหรือกู้คืนเรื่องได้
+8. **Real-time Synchronization**:
    - เมื่อทำการอัปเดตตั๋ว ให้ยิง Socket event `ticket_updated` เสมอ (`emitUpdate(req)`) เพื่อให้แดชบอร์ดทุกพอร์ทัลอัปเดตแบบเรียลไทม์

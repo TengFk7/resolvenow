@@ -13,6 +13,7 @@ const https = require('https');
 
 const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const { analyzeComplaintSpam } = require('../utils/spamFilter');
 
 // ── Cognitive Thai NLP Heuristics Engine (Fallback เมื่อไม่มี API Key หรือ AI ล้มเหลว) ───
 function ruleBasedUrgency(text, category) {
@@ -489,15 +490,41 @@ ${catCtx}
 });
 
 // ─── Smart Cognitive Thai NLP Fallback for Category & Ambiguity ────────
-function ruleBasedClassification(text) {
+function ruleBasedClassification(text, geo = {}) {
+  const spamAnalysis = analyzeComplaintSpam(text, geo || {});
+
+  // Hard Block: severe gibberish, placeholder, keyboard smash, or profanity
+  if (spamAnalysis.isHardBlock) {
+    return {
+      category: 'Road',
+      urgency: 'normal',
+      isAmbiguous: true,
+      confidence: 'low',
+      reason: spamAnalysis.reason || 'ตรวจพบข้อความสแปมหรือข้อความทดสอบ',
+      source: 'rule',
+      aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+      spamFlag: spamAnalysis.spamFlag,
+      isSpam: true,
+      isHardBlock: true,
+      spamReason: spamAnalysis.reason,
+      spamType: spamAnalysis.spamType
+    };
+  }
+
   if (!text || typeof text !== 'string' || text.trim().length < 5) {
     return {
       category: 'Road',
       urgency: 'normal',
       isAmbiguous: true,
       confidence: 'low',
-      reason: 'ข้อความสั้นเกินไป ไม่สามารถระบุหมวดหมู่ปัญหาได้',
-      source: 'rule'
+      reason: spamAnalysis.reason || 'ข้อความสั้นเกินไป ไม่สามารถระบุหมวดหมู่ปัญหาได้',
+      source: 'rule',
+      aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+      spamFlag: spamAnalysis.spamFlag,
+      isSpam: spamAnalysis.isSpam,
+      isHardBlock: false,
+      spamReason: spamAnalysis.reason,
+      spamType: spamAnalysis.spamType
     };
   }
 
@@ -519,7 +546,13 @@ function ruleBasedClassification(text) {
         isAmbiguous: true,
         confidence: 'low',
         reason: 'ข้อความระบุปัญหาคลุมเครือ ไม่มีคำระบุลักษณะปัญหาหรืออาการที่แน่ชัด',
-        source: 'rule'
+        source: 'rule',
+        aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+        spamFlag: spamAnalysis.spamFlag,
+        isSpam: spamAnalysis.isSpam,
+        isHardBlock: false,
+        spamReason: spamAnalysis.reason,
+        spamType: spamAnalysis.spamType
       };
     }
   }
@@ -592,8 +625,14 @@ function ruleBasedClassification(text) {
       urgency: 'normal',
       isAmbiguous: true,
       confidence: 'low',
-      reason: 'ไม่พบคำสำคัญที่ตรงกับหมวดหมู่งานช่างใดๆ ชัดเจน',
-      source: 'rule'
+      reason: spamAnalysis.reason || 'ไม่พบคำสำคัญที่ตรงกับหมวดหมู่งานช่างใดๆ ชัดเจน',
+      source: 'rule',
+      aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+      spamFlag: spamAnalysis.spamFlag,
+      isSpam: spamAnalysis.isSpam,
+      isHardBlock: false,
+      spamReason: spamAnalysis.reason,
+      spamType: spamAnalysis.spamType
     };
   }
 
@@ -605,7 +644,13 @@ function ruleBasedClassification(text) {
       isAmbiguous: true,
       confidence: 'medium',
       reason: `พบประเด็นคาบเกี่ยวระหว่างหลายหมวดหมู่ (${topCat} และหมวดอื่นๆ)`,
-      source: 'rule'
+      source: 'rule',
+      aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+      spamFlag: spamAnalysis.spamFlag,
+      isSpam: spamAnalysis.isSpam,
+      isHardBlock: false,
+      spamReason: spamAnalysis.reason,
+      spamType: spamAnalysis.spamType
     };
   }
 
@@ -616,7 +661,13 @@ function ruleBasedClassification(text) {
     isAmbiguous: false,
     confidence: 'high',
     reason: `จำแนกตรงกับหมวดหมู่ ${topCat} ด้วยระบบ Cognitive Thai NLP`,
-    source: 'rule'
+    source: 'rule',
+    aiCredibilityScore: spamAnalysis.aiCredibilityScore,
+    spamFlag: spamAnalysis.spamFlag,
+    isSpam: spamAnalysis.isSpam,
+    isHardBlock: false,
+    spamReason: spamAnalysis.reason,
+    spamType: spamAnalysis.spamType
   };
 }
 
@@ -645,20 +696,43 @@ const CLASSIFY_PROMPT = `คุณคือระบบ AI ผู้เชี่
 - หากข้อความมีหลายประเด็นชนกันจนแยกไม่ออกว่าช่างฝ่ายไหนควรรับผิดชอบเป็นหลัก ให้ระบุ isAmbiguous: true, confidence: "medium"
 - หากระบุปัญหาและอาการชัดเจน ให้ระบุ isAmbiguous: false, confidence: "high"
 
+การวิเคราะห์ความน่าเชื่อถือและการตรวจจับสแปม (Credibility & Anti-Spam):
+- "aiCredibilityScore" = ตัวเลขจำนวนเต็ม 0 ถึง 100 ประเมินความน่าเชื่อถือ:
+  * 85 - 100 = เรื่องร้องเรียนจริง ระบุปัญหาและผลกระทบชัดเจน
+  * 50 - 80 = เรื่องร้องเรียนจริงแต่ข้อมูลน้อยหรือคลุมเครือ
+  * 0 - 30 = เรื่องเล่นๆ มุกตลก แกล้งส่ง พิมพ์มั่วจากแป้นพิมพ์ (Keyboard smash) หรือข้อความทดสอบระบบ
+- "spamFlag" = จำแนกประเภท:
+  * "valid" = เรื่องร้องเรียนจริง
+  * "junk" = แกล้งส่ง, ข้อความทดสอบ, เคาะแป้นพิมพ์เล่น, ถ้อยคำหยาบคาย
+  * "incomprehensible" = อ่านไม่รู้เรื่อง หรือข้อความไม่สมบูรณ์
+  * "irrelevant" = นอกขอบเขตบริการเมือง (เช่น ปัญหาความรัก, แฟนทิ้ง, ขอยืมเงิน, ขอหวย, การเมือง)
+- "isSpam" = boolean (true หากเป็น junk, incomprehensible หรือ irrelevant)
+- "spamReason" = คำอธิบายสั้นๆ หากเข้าข่ายสแปม หรือ null หากเป็นเรื่องจริง
+
 รูปแบบ JSON ที่ต้องตอบ (Strict JSON):
 {
   "category": "Road",
   "urgency": "medium",
   "isAmbiguous": false,
   "confidence": "high",
-  "reason": "คำอธิบายเหตุผลสั้นๆ"
+  "reason": "คำอธิบายเหตุผลสั้นๆ",
+  "aiCredibilityScore": 95,
+  "spamFlag": "valid",
+  "isSpam": false,
+  "spamReason": null
 }
 
 ข้อความร้องเรียน: "`;
 
-async function classifyComplaint(description) {
+async function classifyComplaint(description, geo = {}) {
+  // Always evaluate heuristic safety guard
+  const heuristicSpam = analyzeComplaintSpam(description, geo || {});
+  if (heuristicSpam.isHardBlock) {
+    return ruleBasedClassification(description, geo);
+  }
+
   if (!description || typeof description !== 'string' || description.trim().length < 5) {
-    return ruleBasedClassification(description);
+    return ruleBasedClassification(description, geo);
   }
 
   const prompt = CLASSIFY_PROMPT + description.replace(/"/g, "'") + '"';
@@ -697,13 +771,25 @@ async function classifyComplaint(description) {
               const validUrgs = ['normal', 'medium', 'urgent'];
               const cat = validCats.includes(parsed.category) ? parsed.category : 'Road';
               const urg = validUrgs.includes(parsed.urgency) ? parsed.urgency : 'normal';
+
+              const isSpam = heuristicSpam.isSpam || Boolean(parsed.isSpam);
+              const spamFlag = heuristicSpam.isSpam ? heuristicSpam.spamFlag : (['valid', 'junk', 'incomprehensible', 'irrelevant'].includes(parsed.spamFlag) ? parsed.spamFlag : 'valid');
+              const aiCredibilityScore = isSpam ? Math.min(heuristicSpam.aiCredibilityScore, Number(parsed.aiCredibilityScore) || 20) : (Number(parsed.aiCredibilityScore) || 95);
+              const spamReason = heuristicSpam.reason || parsed.spamReason || null;
+
               resolve({
                 category: cat,
                 urgency: urg,
                 isAmbiguous: Boolean(parsed.isAmbiguous),
                 confidence: ['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'high',
                 reason: parsed.reason || 'วิเคราะห์ด้วย Gemini Flash',
-                source: 'gemini'
+                source: 'gemini',
+                aiCredibilityScore,
+                spamFlag,
+                isSpam,
+                isHardBlock: heuristicSpam.isHardBlock,
+                spamReason,
+                spamType: heuristicSpam.spamType
               });
             } catch (e) { reject(e); }
           });
@@ -756,13 +842,25 @@ async function classifyComplaint(description) {
               const validUrgs = ['normal', 'medium', 'urgent'];
               const cat = validCats.includes(parsed.category) ? parsed.category : 'Road';
               const urg = validUrgs.includes(parsed.urgency) ? parsed.urgency : 'normal';
+
+              const isSpam = heuristicSpam.isSpam || Boolean(parsed.isSpam);
+              const spamFlag = heuristicSpam.isSpam ? heuristicSpam.spamFlag : (['valid', 'junk', 'incomprehensible', 'irrelevant'].includes(parsed.spamFlag) ? parsed.spamFlag : 'valid');
+              const aiCredibilityScore = isSpam ? Math.min(heuristicSpam.aiCredibilityScore, Number(parsed.aiCredibilityScore) || 20) : (Number(parsed.aiCredibilityScore) || 95);
+              const spamReason = heuristicSpam.reason || parsed.spamReason || null;
+
               resolve({
                 category: cat,
                 urgency: urg,
                 isAmbiguous: Boolean(parsed.isAmbiguous),
                 confidence: ['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'high',
                 reason: parsed.reason || 'วิเคราะห์ด้วย Claude Haiku',
-                source: 'claude'
+                source: 'claude',
+                aiCredibilityScore,
+                spamFlag,
+                isSpam,
+                isHardBlock: heuristicSpam.isHardBlock,
+                spamReason,
+                spamType: heuristicSpam.spamType
               });
             } catch (e) { reject(e); }
           });
@@ -783,14 +881,14 @@ async function classifyComplaint(description) {
 
   // 3. Fallback to Cognitive Thai NLP Heuristics Engine
   console.log(`[AI classify] [Rule-based] fallback for: "${description.slice(0, 50)}"`);
-  return ruleBasedClassification(description);
+  return ruleBasedClassification(description, geo);
 }
 
 // ─── POST /api/ai/classify ─────────────────────────────────────────
 router.post('/classify', async (req, res) => {
   try {
-    const { description } = req.body;
-    const result = await classifyComplaint(description || '');
+    const { description, lat, lng } = req.body;
+    const result = await classifyComplaint(description || '', { lat, lng });
     res.json(result);
   } catch (err) {
     console.error('[AI classify] error:', err);
@@ -798,7 +896,20 @@ router.post('/classify', async (req, res) => {
   }
 });
 
+// ─── POST /api/ai/check-spam ───────────────────────────────────────
+router.post('/check-spam', (req, res) => {
+  try {
+    const { description, lat, lng } = req.body;
+    const result = analyzeComplaintSpam(description || '', { lat, lng });
+    res.json(result);
+  } catch (err) {
+    console.error('[AI check-spam] error:', err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการตรวจสอบข้อความ' });
+  }
+});
+
 module.exports = router;
 module.exports.ruleBasedUrgency = ruleBasedUrgency;
 module.exports.ruleBasedClassification = ruleBasedClassification;
 module.exports.classifyComplaint = classifyComplaint;
+module.exports.analyzeComplaintSpam = analyzeComplaintSpam;

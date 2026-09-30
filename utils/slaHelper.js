@@ -34,7 +34,7 @@ function calcSlaDeadlines(urgency) {
 function checkIsSlaBreached(ticket) {
   if (!ticket) return false;
   if (ticket.slaBreached) return true; // Once breached, remains breached
-  if (ticket.status === 'completed' || ticket.status === 'rejected' || ticket.status === 'merged') {
+  if (ticket.status === 'completed' || ticket.status === 'rejected' || ticket.status === 'merged' || ticket.status === 'spam_quarantine') {
     return false;
   }
   if (ticket.slaPauseStatus === 'paused') {

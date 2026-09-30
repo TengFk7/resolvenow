@@ -21,6 +21,10 @@
 | `lineDisplayName`| String | No | ชื่อโปรไฟล์ที่แสดงบน LINE |
 | `avatar` | String | No | URL ของรูปภาพโปรไฟล์ |
 | `createdViaLine`| Boolean | No | `true` หากสมัครบัญชีใหม่ผ่าน LINE Login |
+| `spamStrikes` | Number | Yes | จำนวนครั้งที่ถูกตักเตือน/ติดทัณฑ์บนจากการแจ้งเรื่องเล่นๆ (Default: 0) |
+| `isSuspended` | Boolean | Yes | บัญชีถูกระงับการแจ้งเรื่องชั่วคราวหรือไม่ (Default: false) |
+| `suspendedUntil`| Date | No | วันเวลาที่สิ้นสุดการระงับบัญชี (ระงับ 24 ชม. เมื่อครบ 3 ครั้ง) |
+| `strikeHistory`| Array[Object] | No | ประวัติการถูกติดทัณฑ์บน `{ reason, ticketId, givenAt }` |
 | `createdAt` | Date | Yes | วันเวลาที่สร้างบัญชี |
 | `updatedAt` | Date | Yes | วันเวลาที่แก้ไขข้อมูลล่าสุด |
 
@@ -50,10 +54,15 @@
 | `lng` | Number | No | พิกัดลองจิจูด |
 | `urgency` | String | Yes | ระดับความเร่งด่วน: `normal`, `medium`, `urgent` |
 | `priorityScore`| Number | Yes | คะแนนความสำคัญ 0-100 (คำนวณร่วมกับ SLA และยอดโหวต) |
-| `status` | String | Yes | สถานะงาน: `pending`, `assigned`, `in_progress`, `completed`, `rejected`, `reopened`, `merged` |
+| `status` | String | Yes | สถานะงาน: `pending`, `assigned`, `in_progress`, `completed`, `rejected`, `reopened`, `merged`, `spam_quarantine` |
 | `assignedTo` | ObjectId | No | ช่างที่ได้รับมอบหมาย อ้างอิง `User._id` |
 | `assignedName` | String | No | ชื่อช่างผู้รับผิดชอบ (Denormalized) |
 | `rejectReason` | String | No | เหตุผลในการปฏิเสธงาน |
+| `isSpam` | Boolean | Yes | ระบุว่าเป็นเรื่องสแปม/แจ้งเล่น/กักกันหรือไม่ (Default: false) |
+| `spamReason` | String | No | เหตุผลการตรวจพบสแปม (เช่น แป้นพิมพ์มั่ว, เล่นตลก, พิกัดนอกประเทศ) |
+| `spamType` | String | Yes | ประเภทสแปม: `none`, `hard_blocked`, `gibberish`, `test`, `profanity`, `joke`, `out_of_bounds`, `ai_flagged` |
+| `aiCredibilityScore` | Number | Yes | คะแนนความน่าเชื่อถือประเมินโดย AI (0-100, Default: 100) |
+| `spamFlag` | String | Yes | ป้ายกำกับสแปม: `valid`, `junk`, `incomprehensible`, `irrelevant` |
 | `citizenImage` | String | No | URL รูปภาพแรกที่ประชาชนแนบ |
 | `citizenImages`| Array[String] | No | รายการ URL รูปภาพทั้งหมดที่ประชาชนแนบ (สูงสุด 5 รูป) |
 | `beforeImage` | String | No | URL ภาพถ่ายก่อนเริ่มซ่อมบำรุง (ช่างอัปโหลด) |
@@ -97,6 +106,7 @@
 - `{ assignedTo: 1, status: 1 }` (ค้นหาตั๋วของช่าง)
 - `{ category: 1, status: 1 }` (กรองตั๋วตามหมวดหมู่และสถานะ)
 - `{ status: 1, createdAt: -1 }` (คิวงาน Admin และ CEO Dashboard)
+- `{ isSpam: 1, status: 1 }` (คิวงานกักกันสแปมและคัดกรองตั๋วช่าง)
 - `{ slaBreached: 1, status: 1 }` (คิวงานตรวจสอบ SLA Breach)
 - `{ chatExpiresAt: 1 }` (Sparse index ล้างแชทหมดอายุ)
 - `{ lat: 1, lng: 1, category: 1 }` (ค้นหาตั๋วซ้ำซ้อนบริเวณใกล้เคียง)

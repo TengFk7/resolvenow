@@ -96,6 +96,18 @@ async function loadAdmin() {
     var ambCount = tks.filter(function (t) { return t.isAmbiguous || t.needsAdminReview; }).length;
     if (ge('sAmbiguous')) animateNum(ge('sAmbiguous'), ambCount);
 
+    // Quarantined spam count (แบบที่ 2: Soft Quarantine)
+    var spamCount = tks.filter(function (t) { return t.status === 'spam_quarantine' || t.isSpam; }).length;
+    var sqBadge = ge('spamQuarantineBadge');
+    if (sqBadge) {
+      if (spamCount > 0) {
+        sqBadge.textContent = spamCount;
+        sqBadge.style.display = 'inline-flex';
+      } else {
+        sqBadge.style.display = 'none';
+      }
+    }
+
     // Pie chart
     var pend = tks.filter(function (t) { return t.status === 'pending'; }).length;
     var inpg = tks.filter(function (t) { return t.status === 'in_progress' || t.status === 'assigned'; }).length;
@@ -532,8 +544,8 @@ function renderAllQueue(tks, filter) {
   var el = ge('allBody');
   var now = new Date();
 
-  // ── Apply filter ──
-  var filtered = tks;
+  // ── Apply filter (Exclude quarantined spam tickets from normal workflow queue) ──
+  var filtered = tks.filter(function (t) { return t.status !== 'spam_quarantine' && !t.isSpam; });
   var filterLabel = null;
   if (filter === 'urgent') {
     filtered = tks.filter(function (t) { return t.priorityScore >= 70 && t.status !== 'completed' && t.status !== 'rejected'; });
@@ -2303,6 +2315,260 @@ async function submitMergeTicket() {
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '🔗 ยืนยันการรวมเคส'; }
     showE('mergeErr', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+  }
+}
+
+/* ─── Spam Quarantine Controller (แบบที่ 2: Soft Quarantine & แบบที่ 3: Strike System) ─── */
+var _quarantineTickets = [];
+var _currentQuarantineFilter = 'all';
+
+async function openSpamQuarantineModal() {
+  var m = ge('mSpamQuarantine');
+  if (m) {
+    m.style.display = 'flex';
+    m.classList.add('on');
+  }
+  await loadSpamQuarantineData();
+}
+
+function closeSpamQuarantineModal() {
+  var m = ge('mSpamQuarantine');
+  if (m) {
+    m.style.display = 'none';
+    m.classList.remove('on');
+  }
+}
+
+async function loadSpamQuarantineData() {
+  try {
+    var res = await fetch('/api/tickets/quarantine/list');
+    if (!res.ok) throw new Error('โหลดรายการสแปมไม่สำเร็จ');
+    var data = await res.json();
+    _quarantineTickets = data.tickets || [];
+
+    var total = _quarantineTickets.length;
+    var sqBadge = ge('spamQuarantineBadge');
+    if (sqBadge) {
+      if (total > 0) {
+        sqBadge.textContent = total;
+        sqBadge.style.display = 'inline-flex';
+      } else {
+        sqBadge.style.display = 'none';
+      }
+    }
+    var totalBadge = ge('sqModalTotalBadge');
+    if (totalBadge) totalBadge.textContent = total + ' เรื่อง';
+
+    var cAll = total;
+    var cJoke = _quarantineTickets.filter(function (t) { return t.spamType === 'joke' || t.spamFlag === 'irrelevant'; }).length;
+    var cGibberish = _quarantineTickets.filter(function (t) { return t.spamType === 'gibberish' || t.spamFlag === 'incomprehensible'; }).length;
+    var cTest = _quarantineTickets.filter(function (t) { return t.spamType === 'test'; }).length;
+    var cGeo = _quarantineTickets.filter(function (t) { return t.spamType === 'out_of_bounds'; }).length;
+
+    if (ge('sqCountAll')) ge('sqCountAll').textContent = cAll;
+    if (ge('sqCountJoke')) ge('sqCountJoke').textContent = cJoke;
+    if (ge('sqCountGibberish')) ge('sqCountGibberish').textContent = cGibberish;
+    if (ge('sqCountTest')) ge('sqCountTest').textContent = cTest;
+    if (ge('sqCountGeo')) ge('sqCountGeo').textContent = cGeo;
+
+    renderQuarantineList();
+  } catch (err) {
+    console.error('[Spam Quarantine] Load error:', err);
+    var container = ge('quarantineListContainer');
+    if (container) {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444">เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + escapeHTML(err.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้') + '</div>';
+    }
+  }
+}
+
+function filterQuarantine(type) {
+  _currentQuarantineFilter = type;
+  var btns = document.querySelectorAll('.sq-filter-btn');
+  btns.forEach(function (btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-filter') === type);
+  });
+  renderQuarantineList();
+}
+
+function renderQuarantineList() {
+  var container = ge('quarantineListContainer');
+  if (!container) return;
+
+  var list = _quarantineTickets;
+  if (_currentQuarantineFilter === 'joke') {
+    list = list.filter(function (t) { return t.spamType === 'joke' || t.spamFlag === 'irrelevant'; });
+  } else if (_currentQuarantineFilter === 'gibberish') {
+    list = list.filter(function (t) { return t.spamType === 'gibberish' || t.spamFlag === 'incomprehensible'; });
+  } else if (_currentQuarantineFilter === 'test') {
+    list = list.filter(function (t) { return t.spamType === 'test'; });
+  } else if (_currentQuarantineFilter === 'out_of_bounds') {
+    list = list.filter(function (t) { return t.spamType === 'out_of_bounds'; });
+  }
+
+  if (!list.length) {
+    container.innerHTML = [
+      '<div style="text-align:center;padding:50px 20px;color:#64748b;background:#fff;border-radius:12px;border:1px dashed #cbd5e1">',
+      '  <div style="font-size:36px;margin-bottom:8px">🎉</div>',
+      '  <div style="font-size:15px;font-weight:700;color:#0f172a">ไม่มีรายการในหมวดนี้</div>',
+      '  <div style="font-size:12px;color:#64748b;margin-top:4px">ไม่มีเรื่องร้องเรียนเล่นๆ หรือสแปมที่ถูกกักกันในขณะนี้</div>',
+      '</div>'
+    ].join('\n');
+    return;
+  }
+
+  var html = '';
+  list.forEach(function (t) {
+    var c = t.citizenDetails || {};
+    var strikes = c.spamStrikes || 0;
+    var isSuspended = c.isSuspended;
+
+    var typeTag = 'สแปมทั่วไป';
+    var badgeClass = 'sq-badge-red';
+    if (t.spamType === 'joke' || t.spamFlag === 'irrelevant') {
+      typeTag = '🎭 มุกตลก / เรื่องส่วนตัว';
+      badgeClass = 'sq-badge-amber';
+    } else if (t.spamType === 'gibberish' || t.spamFlag === 'incomprehensible') {
+      typeTag = '⌨️ พิมพ์มั่ว / ตัวอักษรซ้ำ';
+      badgeClass = 'sq-badge-purple';
+    } else if (t.spamType === 'test') {
+      typeTag = '🧪 ข้อความทดสอบ';
+      badgeClass = 'sq-badge-blue';
+    } else if (t.spamType === 'out_of_bounds') {
+      typeTag = '📍 พิกัดนอกประเทศไทย';
+      badgeClass = 'sq-badge-red';
+    }
+
+    var credibility = t.aiCredibilityScore != null ? t.aiCredibilityScore : 20;
+    var credColor = credibility <= 20 ? '#ef4444' : (credibility <= 50 ? '#f59e0b' : '#10b981');
+
+    var imagesHtml = '';
+    var imgs = (t.citizenImages && t.citizenImages.length) ? t.citizenImages : (t.citizenImage ? [t.citizenImage] : []);
+    if (imgs.length) {
+      imagesHtml = '<div style="display:flex;gap:8px;margin-top:8px;overflow-x:auto">';
+      imgs.forEach(function (url) {
+        imagesHtml += '<img src="' + escapeHTML(url) + '" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid #e2e8f0" onclick="window.open(\'' + escapeHTML(url) + '\', \'_blank\')" title="คลิกเพื่อดูรูปขนาดเต็ม" />';
+      });
+      imagesHtml += '</div>';
+    }
+
+    var citizenId = t.citizenId ? (typeof t.citizenId === 'object' ? t.citizenId._id : t.citizenId) : '';
+
+    html += [
+      '<div class="sq-card">',
+      '  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #f1f5f9;padding-bottom:10px">',
+      '    <div>',
+      '      <div style="display:flex;align-items:center;gap:8px">',
+      '        <span style="font-size:14px;font-weight:800;color:#0f172a">' + escapeHTML(t.ticketId) + '</span>',
+      '        <span class="sq-badge ' + badgeClass + '">' + typeTag + '</span>',
+      '        <span style="font-size:11px;color:#64748b">' + new Date(t.createdAt).toLocaleString('th-TH') + '</span>',
+      '      </div>',
+      '      <div style="font-size:12px;color:#334155;margin-top:4px">',
+      '        <strong>ผู้แจ้ง:</strong> ' + escapeHTML(c.name || t.citizenName || 'ประชาชน') + ' (' + escapeHTML(c.email || '—') + ')',
+      '        ' + (isSuspended ? '<span class="sq-badge sq-badge-red" style="margin-left:6px">🚫 บัญชีถูกระงับ 24 ชม.</span>' : (strikes > 0 ? '<span class="sq-badge sq-badge-amber" style="margin-left:6px">⚠️ ทัณฑ์บน ' + strikes + '/3 ครั้ง</span>' : '<span class="sq-badge sq-badge-green" style="margin-left:6px">✅ ปกติ (0 ครั้ง)</span>')),
+      '      </div>',
+      '    </div>',
+      '    <div style="text-align:right;min-width:140px">',
+      '      <div style="font-size:11px;font-weight:700;color:#475569">ความน่าเชื่อถือ: <span style="color:' + credColor + '">' + credibility + '%</span></div>',
+      '      <div style="width:100%;height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:4px">',
+      '        <div style="width:' + credibility + '%;height:100%;background:' + credColor + ';border-radius:4px"></div>',
+      '      </div>',
+      '    </div>',
+      '  </div>',
+      '  <div>',
+      '    <div style="font-size:12.5px;color:#1e293b;background:#f8fafc;padding:10px 12px;border-radius:8px;border-left:3px solid #ef4444;line-height:1.5">',
+      '      ' + escapeHTML(t.description || '—'),
+      '    </div>',
+      '    <div style="display:flex;align-items:center;gap:12px;font-size:11.5px;color:#64748b;margin-top:6px">',
+      '      <span>📍 ' + escapeHTML(t.location || '—') + '</span>',
+      '      <span>🏷️ หมวด: ' + escapeHTML(t.category || '—') + '</span>',
+      '      <span style="color:#b91c1c">⚠️ สาเหตุที่กักกัน: ' + escapeHTML(t.spamReason || 'ตรวจพบความผิดปกติ') + '</span>',
+      '    </div>',
+      '    ' + imagesHtml,
+      '  </div>',
+      '  <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;border-top:1px dashed #e2e8f0;padding-top:10px">',
+      '    <button type="button" class="btn-action" style="background:#10b981;font-size:12px;padding:6px 12px" onclick="restoreQuarantinedTicket(\'' + t.ticketId + '\')">',
+      '      🔄 กู้คืนเป็นตั๋วปกติ (ส่งช่าง)',
+      '    </button>',
+      '    <button type="button" class="btn-action" style="background:#ef4444;font-size:12px;padding:6px 12px" onclick="deleteQuarantinedTicket(\'' + t.ticketId + '\')">',
+      '      🗑️ ลบทิ้งถาวร',
+      '    </button>',
+      '    ' + (citizenId ? [
+        '    <button type="button" class="btn-secondary" style="color:#334155;border-color:#cbd5e1;font-size:12px;padding:6px 10px" onclick="manageUserStrikesPrompt(\'' + citizenId + '\', \'' + escapeHTML(c.name || 'ประชาชน') + '\', ' + strikes + ', ' + isSuspended + ')">',
+        '      ⚖️ จัดการทัณฑ์บน',
+        '    </button>'
+      ].join('\n') : ''),
+      '  </div>',
+      '</div>'
+    ].join('\n');
+  });
+
+  container.innerHTML = html;
+}
+
+async function restoreQuarantinedTicket(ticketId) {
+  if (!confirm('ยืนยันที่จะกู้คืนตั๋ว ' + ticketId + ' จากถังขยะสแปมกลับเข้าสู่ระบบปกติ?\n(ระบบจะคำนวณวัน SLA ใหม่นับจากปัจจุบัน จ่ายงานให้ช่างประจำหมวด และลดทัณฑ์บนผู้ใช้ 1 ครั้ง)')) {
+    return;
+  }
+  try {
+    var res = await fetch('/api/tickets/' + ticketId + '/quarantine/restore', { method: 'POST' });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาดในการกู้คืน');
+    showToast('✅ กู้คืน ' + ticketId + ' สู่คิวงานปกติสำเร็จ', 'success');
+    loadSpamQuarantineData();
+    if (typeof loadAdmin === 'function') loadAdmin();
+  } catch (e) {
+    showToast(e.message || 'ไม่สามารถกู้คืนตั๋วได้', true);
+  }
+}
+
+async function deleteQuarantinedTicket(ticketId) {
+  if (!confirm('ยืนยันลบตั๋ว ' + ticketId + ' ออกจากระบบถาวร?')) {
+    return;
+  }
+  try {
+    var res = await fetch('/api/tickets/' + ticketId + '/quarantine/delete', { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาดในการลบ');
+    showToast('🗑️ ลบเรื่องร้องเรียนเล่นๆ เรียบร้อยแล้ว', 'success');
+    loadSpamQuarantineData();
+    if (typeof loadAdmin === 'function') loadAdmin();
+  } catch (e) {
+    showToast(e.message || 'ไม่สามารถลบตั๋วได้', true);
+  }
+}
+
+async function manageUserStrikesPrompt(userId, name, currentStrikes, isSuspended) {
+  var promptMsg = 'จัดการทัณฑ์บนผู้ใช้: ' + name + '\n' +
+    'สถานะปัจจุบัน: ทัณฑ์บน ' + currentStrikes + '/3 ครั้ง ' + (isSuspended ? '(🚫 ถูกระงับบัญชี)' : '(✅ ปกติ)') + '\n\n' +
+    'พิมพ์ตัวเลขเพื่อเลือกดำเนินการ:\n' +
+    '1 = รีเซ็ตทัณฑ์บนเป็น 0 และปลดระงับบัญชี\n' +
+    '2 = เพิ่มทัณฑ์บน +1 Strike (หากครบ 3 จะระงับ 24 ชม.)\n' +
+    '3 = ปลดระงับบัญชี (ลดทัณฑ์บนเหลือ 2 ครั้ง)';
+
+  var choice = prompt(promptMsg);
+  if (!choice) return;
+
+  var action = '';
+  if (choice === '1') action = 'reset';
+  else if (choice === '2') action = 'add';
+  else if (choice === '3') action = 'lift_suspension';
+  else {
+    alert('ตัวเลือกไม่ถูกต้อง');
+    return;
+  }
+
+  try {
+    var res = await fetch('/api/tickets/quarantine/user-strikes/' + userId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: action })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาด');
+    showToast('⚖️ ' + data.message, 'success');
+    loadSpamQuarantineData();
+  } catch (e) {
+    showToast(e.message || 'เกิดข้อผิดพลาดในการปรับปรุงทัณฑ์บน', true);
   }
 }
 

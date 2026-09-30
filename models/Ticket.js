@@ -19,10 +19,16 @@ const ticketSchema = new mongoose.Schema({
   lng:           { type: Number, default: null },
   urgency:       { type: String, enum: ['normal', 'medium', 'urgent'], default: 'normal' },
   priorityScore: { type: Number, default: 30 },
-  status:        { type: String, enum: ['pending', 'assigned', 'in_progress', 'completed', 'rejected', 'reopened', 'merged'], default: 'pending' },
+  status:        { type: String, enum: ['pending', 'assigned', 'in_progress', 'completed', 'rejected', 'reopened', 'merged', 'spam_quarantine'], default: 'pending' },
   assignedTo:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   assignedName:  { type: String, default: null },
   rejectReason:  { type: String, default: null },
+  // ── Anti-Spam, Prank & Credibility Filter ──
+  isSpam:             { type: Boolean, default: false, index: true },
+  spamReason:         { type: String, default: null },
+  spamType:           { type: String, enum: ['none', 'hard_blocked', 'gibberish', 'test', 'profanity', 'joke', 'out_of_bounds', 'ai_flagged'], default: 'none' },
+  aiCredibilityScore: { type: Number, default: 95 },
+  spamFlag:           { type: String, enum: ['valid', 'junk', 'incomprehensible', 'irrelevant'], default: 'valid' },
   // ── AI Auto-Dispatch & Ambiguity Detection ──
   isAmbiguous:      { type: Boolean, default: false, index: true },
   needsAdminReview: { type: Boolean, default: false, index: true },
@@ -122,5 +128,6 @@ ticketSchema.index({ slaBreached: 1, status: 1 });          // slaJob breach que
 ticketSchema.index({ chatExpiresAt: 1 }, { sparse: true }); // chat cleanup job
 ticketSchema.index({ lat: 1, lng: 1, category: 1 });        // duplicate detection query
 ticketSchema.index({ needsAdminReview: 1, status: 1 });     // admin ambiguous review queue
+ticketSchema.index({ isSpam: 1, status: 1 });                // spam quarantine queue
 
 module.exports = mongoose.model('Ticket', ticketSchema);
