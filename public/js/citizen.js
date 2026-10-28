@@ -400,9 +400,69 @@ function _setNextBtn1State(analyzing) {
   }
 }
 
+// ── Client-Side In-Memory Cache & AbortController สำหรับประหยัดโควต้า AI API ──
+var _clientAiCache = new Map();
+var _aiAbortController = null;
+
+function _renderAiResult(d) {
+  _aiClassificationResult = d;
+  
+  if (d.isHardBlock || d.isSpam) {
+    ge('urgAiIcon').textContent = '🚫';
+    ge('urgAiLabel').textContent = '🚫 ' + (d.reason || 'ตรวจพบข้อความไม่ถูกต้อง');
+    ge('urgAiLabel').style.color = '#dc2626';
+    ge('urgAiSub').textContent = 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนจริง เพื่อปลดล็อคขั้นตอนแนบรูปภาพ';
+    ge('urgAiBox').style.background = '#fef2f2';
+    ge('urgAiBox').style.borderColor = '#ef4444';
+    _updateStep1NextButton(true, d.reason);
+    return;
+  }
+
+  var urg = d.urgency || 'normal';
+  var cat = d.category || 'Road';
+  _aiDetectedCategory = cat;
+  ge('tUrg').value = urg;
+  
+  var catTH = DEPT[cat] || cat;
+  var catIcon = DEPT_ICON[cat] || '📌';
+  var urgText = { urgent: '🔴 ด่วนมาก (8 ชม.)', medium: '🟡 ด่วน (48 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || urg;
+
+  ge('urgAiIcon').textContent = catIcon;
+  if (d.isAmbiguous) {
+    ge('urgAiLabel').textContent = '⚠️ ข้อความสั้น/คลุมเครือ: รอแอดมินคัดกรอง';
+    ge('urgAiLabel').style.color = '#854d0e';
+    ge('urgAiSub').textContent = 'หมวดหมู่คาดการณ์: ' + catIcon + ' ' + catTH + ' • ความเร่งด่วน: ' + urgText;
+    ge('urgAiBox').style.background = '#fefce8';
+    ge('urgAiBox').style.borderColor = '#facc15';
+  } else {
+    ge('urgAiLabel').textContent = '✅ ตรวจพบ: ' + catIcon + ' ' + catTH + ' • ' + urgText;
+    ge('urgAiLabel').style.color = '#15803d';
+    ge('urgAiSub').textContent = '🤖 ระบบ AI จะจัดส่งช่างฝ่าย' + catTH + ' ให้โดยอัตโนมัติ (ระดับความเร่งด่วน: ' + urgText + ')';
+    if (urg === 'urgent') {
+      ge('urgAiBox').style.background = '#fef2f2';
+      ge('urgAiBox').style.borderColor = '#fca5a5';
+    } else if (urg === 'medium') {
+      ge('urgAiBox').style.background = '#fffbeb';
+      ge('urgAiBox').style.borderColor = '#fde68a';
+    } else {
+      ge('urgAiBox').style.background = '#f0fdf4';
+      ge('urgAiBox').style.borderColor = '#86efac';
+    }
+  }
+  _updateStep1NextButton(false);
+}
+
 function aiSuggestClassification() {
   var descEl = ge('tDesc');
   var desc = descEl ? descEl.value.trim() : '';
+
+  // เคลียร์ Timer เดิม และยกเลิกคำขอ Network ที่ค้างอยู่ทันทีทุกครั้งที่มีการพิมพ์หรือลบ
+  clearTimeout(_urgTimer);
+  if (_aiAbortController) {
+    try { _aiAbortController.abort(); } catch (_) {}
+    _aiAbortController = null;
+  }
+
   if (desc.length < 5) {
     ge('tUrg').value = '';
     _aiDetectedCategory = 'auto';
@@ -421,7 +481,6 @@ function aiSuggestClassification() {
   // ── 1. FAST SYNCHRONOUS CLIENT-SIDE SPAM CHECK (ดักจับทันทีขณะพิมพ์ 0ms) ──
   var clientCheck = clientValidateSpam(desc);
   if (clientCheck.isSpam) {
-    clearTimeout(_urgTimer);
     _aiAnalyzing = false;
     _aiClassificationResult = clientCheck;
     ge('urgAiIcon').textContent = '🚫';
@@ -434,8 +493,9 @@ function aiSuggestClassification() {
     return;
   }
 
-  // ── 2. ข้อความผ่านการตรวจสอบเบื้องต้น: ส่งให้ AI วิเคราะห์ ──
-  clearTimeout(_urgTimer);
+  // ── 2. ไม่ว่าจะลบ พิมพ์ต่อ หรือเป็นข้อความที่เคยวิเคราะห์มาก่อนแล้ว ต้องรอหยุดพิมพ์ 3 วินาทีก่อนเสมอ ──
+  var cacheKey = desc.toLowerCase().replace(/\s+/g, ' ');
+
   _aiAnalyzing = true;
   var btn = ge('wizNextBtn1');
   if (btn) {
@@ -448,62 +508,40 @@ function aiSuggestClassification() {
   ge('urgAiLabel').textContent = 'AI กำลังวิเคราะห์...';
   ge('urgAiLabel').style.color = 'var(--navy)';
   ge('urgAiSub').textContent = 'ระบบกำลังวิเคราะห์หมวดหมู่และความเร่งด่วน...';
+  ge('urgAiBox').style.background = '#f8fafc';
+  ge('urgAiBox').style.borderColor = '#cbd5e1';
+
   _urgTimer = setTimeout(async function () {
     try {
+      // เมื่อหยุดพิมพ์ครบ 3 วินาทีแล้ว ตรวจสอบ Client Cache ก่อน (ถ้ามีดึงมาใช้ 0ms ทันที ประหยัด API)
+      if (_clientAiCache.has(cacheKey)) {
+        _renderAiResult(_clientAiCache.get(cacheKey));
+        return;
+      }
+
+      if (btn) {
+        btn.innerHTML = '⏳ AI กำลังวิเคราะห์...';
+      }
+      ge('urgAiIcon').textContent = '⏳';
+      ge('urgAiLabel').textContent = 'AI กำลังวิเคราะห์...';
+      ge('urgAiSub').textContent = 'ระบบกำลังวิเคราะห์หมวดหมู่และความเร่งด่วน...';
+
+      _aiAbortController = new AbortController();
       var r = await fetch('/api/ai/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc })
+        body: JSON.stringify({ description: desc }),
+        signal: _aiAbortController.signal
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       if (d.error) throw new Error(d.error);
-      _aiClassificationResult = d;
-      
-      if (d.isHardBlock || d.isSpam) {
-        ge('urgAiIcon').textContent = '🚫';
-        ge('urgAiLabel').textContent = '🚫 ' + (d.reason || 'ตรวจพบข้อความไม่ถูกต้อง');
-        ge('urgAiLabel').style.color = '#dc2626';
-        ge('urgAiSub').textContent = 'กรุณากรอกรายละเอียดปัญหาความเดือดร้อนจริง เพื่อปลดล็อคขั้นตอนแนบรูปภาพ';
-        ge('urgAiBox').style.background = '#fef2f2';
-        ge('urgAiBox').style.borderColor = '#ef4444';
-        _updateStep1NextButton(true, d.reason);
-        return;
-      }
 
-      var urg = d.urgency || 'normal';
-      var cat = d.category || 'Road';
-      _aiDetectedCategory = cat;
-      ge('tUrg').value = urg;
-      
-      var catTH = DEPT[cat] || cat;
-      var catIcon = DEPT_ICON[cat] || '📌';
-      var urgText = { urgent: '🔴 ด่วนมาก (8 ชม.)', medium: '🟡 ด่วน (48 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || urg;
-
-      ge('urgAiIcon').textContent = catIcon;
-      if (d.isAmbiguous) {
-        ge('urgAiLabel').textContent = '⚠️ ข้อความสั้น/คลุมเครือ: รอแอดมินคัดกรอง';
-        ge('urgAiLabel').style.color = '#854d0e';
-        ge('urgAiSub').textContent = 'หมวดหมู่คาดการณ์: ' + catIcon + ' ' + catTH + ' • ความเร่งด่วน: ' + urgText;
-        ge('urgAiBox').style.background = '#fefce8';
-        ge('urgAiBox').style.borderColor = '#facc15';
-      } else {
-        ge('urgAiLabel').textContent = '✅ ตรวจพบ: ' + catIcon + ' ' + catTH + ' • ' + urgText;
-        ge('urgAiLabel').style.color = '#15803d';
-        ge('urgAiSub').textContent = '🤖 ระบบ AI จะจัดส่งช่างฝ่าย' + catTH + ' ให้โดยอัตโนมัติ (ระดับความเร่งด่วน: ' + urgText + ')';
-        if (urg === 'urgent') {
-          ge('urgAiBox').style.background = '#fef2f2';
-          ge('urgAiBox').style.borderColor = '#fca5a5';
-        } else if (urg === 'medium') {
-          ge('urgAiBox').style.background = '#fffbeb';
-          ge('urgAiBox').style.borderColor = '#fde68a';
-        } else {
-          ge('urgAiBox').style.background = '#f0fdf4';
-          ge('urgAiBox').style.borderColor = '#86efac';
-        }
-      }
-      _updateStep1NextButton(false);
+      // บันทึกลง Client Cache เพื่อประหยัดโควต้า
+      _clientAiCache.set(cacheKey, d);
+      _renderAiResult(d);
     } catch (e) {
+      if (e.name === 'AbortError') return; // ผู้ใช้พิมพ์ต่ออย่างรวดเร็ว ยกเลิกคำขอเดิมเงียบๆ
       console.warn('[AI classify] error:', e);
       var clientCheck = clientValidateSpam(desc);
       if (clientCheck.isSpam) {
@@ -541,8 +579,9 @@ function aiSuggestClassification() {
       _updateStep1NextButton(false);
     } finally {
       _aiAnalyzing = false;
+      _aiAbortController = null;
     }
-  }, 350);
+  }, 3000);
 }
 
 // Backward compatibility alias

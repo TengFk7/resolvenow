@@ -15,6 +15,40 @@ const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const { analyzeComplaintSpam } = require('../utils/spamFilter');
 
+// ── Server-Side In-Memory LRU Cache for AI Classification (TTL: 2 hours, Max: 1,000) ──
+const CLASSIFY_CACHE = new Map();
+const MAX_CACHE_SIZE = 1000;
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function getCacheKey(desc, geo = {}) {
+  const norm = (desc || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const lat = geo && geo.lat ? Number(geo.lat).toFixed(4) : '';
+  const lng = geo && geo.lng ? Number(geo.lng).toFixed(4) : '';
+  return `${norm}__${lat}_${lng}`;
+}
+
+function getFromCache(key) {
+  const entry = CLASSIFY_CACHE.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    CLASSIFY_CACHE.delete(key);
+    return null;
+  }
+  // Refresh position for LRU
+  CLASSIFY_CACHE.delete(key);
+  CLASSIFY_CACHE.set(key, entry);
+  return { ...entry.data, cached: true };
+}
+
+function setToCache(key, data) {
+  if (!key || !data) return;
+  if (CLASSIFY_CACHE.size >= MAX_CACHE_SIZE) {
+    const oldestKey = CLASSIFY_CACHE.keys().next().value;
+    if (oldestKey) CLASSIFY_CACHE.delete(oldestKey);
+  }
+  CLASSIFY_CACHE.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
+}
+
 // ── Cognitive Thai NLP Heuristics Engine (Fallback เมื่อไม่มี API Key หรือ AI ล้มเหลว) ───
 function ruleBasedUrgency(text, category) {
   if (!text || typeof text !== 'string') {
@@ -406,7 +440,7 @@ ${catCtx}
       const urgency = await new Promise((resolve, reject) => {
         const body = JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0, maxOutputTokens: 1024 }
+          generationConfig: { temperature: 0, maxOutputTokens: 16, thinkingConfig: { thinkingBudget: 0 } }
         });
         const reqC = https.request({
           hostname: 'generativelanguage.googleapis.com',
@@ -810,6 +844,18 @@ async function classifyComplaint(description, geo = {}) {
     };
   }
 
+  const cacheKey = getCacheKey(description, geo);
+  const cachedResult = getFromCache(cacheKey);
+  if (cachedResult) {
+    console.log(`[AI classify] [Cache HIT] "${description.slice(0, 45)}" (ประหยัด 1 AI call)`);
+    return cachedResult;
+  }
+
+  function saveAndReturn(resObj) {
+    if (resObj) setToCache(cacheKey, resObj);
+    return resObj;
+  }
+
   const prompt = CLASSIFY_PROMPT + description.replace(/"/g, "'") + '"';
 
   // 1. Try Gemini
@@ -820,8 +866,9 @@ async function classifyComplaint(description, geo = {}) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 1024,
-            responseMimeType: 'application/json'
+            maxOutputTokens: 512,
+            responseMimeType: 'application/json',
+            thinkingConfig: { thinkingBudget: 0 }
           }
         });
         const reqC = https.request({
@@ -877,7 +924,7 @@ async function classifyComplaint(description, geo = {}) {
         reqC.write(body);
         reqC.end();
       });
-      return result;
+      return saveAndReturn(result);
     } catch (err) {
       console.log(`[AI classify] [Gemini] failed: ${err.message || err}, falling back to Claude...`);
     }
@@ -948,7 +995,7 @@ async function classifyComplaint(description, geo = {}) {
         reqC.write(body);
         reqC.end();
       });
-      return result;
+      return saveAndReturn(result);
     } catch (err) {
       console.log(`[AI classify] [Claude] failed: ${err.message || err}, falling back to rule-based...`);
     }
@@ -956,7 +1003,7 @@ async function classifyComplaint(description, geo = {}) {
 
   // 3. Fallback to Cognitive Thai NLP Heuristics Engine
   console.log(`[AI classify] [Rule-based] fallback for: "${description.slice(0, 50)}"`);
-  return ruleBasedClassification(description, geo);
+  return saveAndReturn(ruleBasedClassification(description, geo));
 }
 
 // ─── POST /api/ai/classify ─────────────────────────────────────────
