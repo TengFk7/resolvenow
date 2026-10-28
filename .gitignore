@@ -1,3 +1,9 @@
 node_modules 
 public/uploads 
 .env
+
+# Internal Markdown Documentation (retained locally, excluded from Git)
+AGENTS.md
+README.md
+SYSTEM_CONTEXT.md
+docs/*.md

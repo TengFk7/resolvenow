@@ -908,9 +908,9 @@ async function loadHeatmap() {
     // Initialize map once
     if (!_publicMap) {
       _publicMap = L.map('publicMapContainer').setView([13.829, 100.551], 11);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap, © CARTO'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
       }).addTo(_publicMap);
     }
     setTimeout(function () { _publicMap.invalidateSize(); }, 200);
