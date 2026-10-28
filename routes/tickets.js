@@ -3184,6 +3184,7 @@ router.post('/quarantine/user-strikes/:userId', requireAuth, async (req, res) =>
       targetUser.spamStrikes = 0;
       targetUser.isSuspended = false;
       targetUser.suspendedUntil = null;
+      ticketCreationWindow.delete(targetUser._id.toString());
     } else if (action === 'add') {
       targetUser.spamStrikes = (targetUser.spamStrikes || 0) + 1;
       if (!targetUser.strikeHistory) targetUser.strikeHistory = [];

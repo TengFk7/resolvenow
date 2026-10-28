@@ -540,6 +540,7 @@ ${catCtx}
             'Content-Length': Buffer.byteLength(body)
           }
         }, (r) => {
+          r.setEncoding('utf8');
           let d = '';
           r.on('data', c => (d += c));
           r.on('end', () => {
@@ -598,6 +599,7 @@ ${catCtx}
             'anthropic-version': '2023-06-01'
           }
         }, (r) => {
+          r.setEncoding('utf8');
           let d = '';
           r.on('data', c => (d += c));
           r.on('end', () => {
@@ -1100,6 +1102,7 @@ async function classifyComplaint(description, geo = {}, imageOpts = null) {
             'Content-Length': Buffer.byteLength(body)
           }
         }, (r) => {
+          r.setEncoding('utf8');
           let d = '';
           r.on('data', c => (d += c));
           r.on('end', () => {
@@ -1180,6 +1183,7 @@ async function classifyComplaint(description, geo = {}, imageOpts = null) {
             'anthropic-version': '2023-06-01'
           }
         }, (r) => {
+          r.setEncoding('utf8');
           let d = '';
           r.on('data', c => (d += c));
           r.on('end', () => {

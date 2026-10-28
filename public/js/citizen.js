@@ -138,12 +138,14 @@ function wizNext(step) {
     if (_citizenImages.length === 0) {
       var pickerBtns = ge('cImgPickerBtns');
       if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
-      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true); return; }
+      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true);
+      return;
+    }
     if (_imgAiAnalyzing) {
       showToast('⏳ กรุณารอ Gemini 2.5 Flash ตรวจสอบรูปภาพสักครู่...', true);
       return;
     }
-    if (_imgVerificationResult && (_imgVerificationResult.isImageBlocked || _imgVerificationResult.imageStatus === 'fake_or_junk' || _imgVerificationResult.imageStatus === 'mismatch')) {
+    if (!_forceQuarantineImageSpam && _imgVerificationResult && (_imgVerificationResult.isImageBlocked || _imgVerificationResult.imageStatus === 'fake_or_junk' || _imgVerificationResult.imageStatus === 'mismatch')) {
       var imgBlockMsg = '🚫 รูปภาพไม่ผ่านการตรวจสอบ: ' + (_imgVerificationResult.imageReason || 'กรุณาแนบรูปถ่ายสถานที่เกิดเหตุจริงที่ตรงกับเรื่องร้องเรียน');
       if (typeof showCenterPopup === 'function') {
         showCenterPopup(imgBlockMsg, 3500, '🚫');
@@ -151,7 +153,6 @@ function wizNext(step) {
         showToast(imgBlockMsg, true);
       }
       _updateStep2NextButton(true, _imgVerificationResult.imageReason);
-      if (false) {
       return;
     }
   }
@@ -614,6 +615,16 @@ function aiSuggestUrgency() {
   aiSuggestClassification();
 }
 
+// Auto-trigger classification if browser restored textarea value on reload
+document.addEventListener('DOMContentLoaded', function () {
+  var descEl = ge('tDesc');
+  if (descEl && descEl.value && descEl.value.trim().length > 0) {
+    var dc = ge('descCount');
+    if (dc) dc.textContent = descEl.value.length;
+    aiSuggestClassification();
+  }
+});
+
 
 /* ── GPS Location Capture ───────────────────────────── */
 function captureGPS() {
@@ -1066,9 +1077,7 @@ function _renderImgAiResult(d) {
       : '🚫 FAKE_OR_MISMATCH (รูปไม่ตรงกับเรื่องที่แจ้งชัดเจน)';
     label.style.color = '#dc2626';
     var reasonText = escapeHTML(d.imageReason || 'กรุณาแนบรูปถ่ายสถานที่เกิดเหตุจริงที่สอดคล้องกับรายละเอียดปัญหา');
-    sub.innerHTML =
-      '<div><strong>(A) บล็อกให้เปลี่ยนรูป:</strong> ' + reasonText + ' (กรุณากด ✕ ลบรูปแล้วแนบรูปสถานที่เกิดเหตุจริง)</div>' +
-      '<div style="margin-top:6px"><button type="button" onclick="forceQuarantineImageNext()" style="background:#fee2e2;color:#991b1b;border:1px solid #f87171;border-radius:6px;padding:4px 8px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:Prompt,sans-serif">⚠️ (B) ยืนยันฝืนส่งรูปนี้ (ส่งเข้ากล่องกักกันสแปม Spam Quarantine + รับทัณฑ์บน Strike)</button></div>';
+    sub.innerHTML = '<div>' + reasonText + ' (กรุณากด ✕ ลบรูปแล้วแนบรูปสถานที่เกิดเหตุจริง)</div>';
     box.style.background = '#fef2f2';
     box.style.borderColor = '#ef4444';
     _updateStep2NextButton(true, d.imageReason || 'รูปภาพไม่ตรงกับที่แจ้ง', false);
@@ -1227,9 +1236,6 @@ async function aiVerifyCitizenImage() {
   } finally {
     _imgAiAnalyzing = false;
     _imgAiAbortController = null;
-  }
-}
-  if (false) {
   }
 }
 
