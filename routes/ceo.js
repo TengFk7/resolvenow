@@ -77,7 +77,7 @@ function extractDistrict(ticket) {
 // GET /api/ceo/tickets - ดึง tickets ทั้งหมดแบบ read-only สำหรับ dashboard
 router.get('/tickets', async (req, res) => {
   try {
-    const tickets = await Ticket.find()
+    const tickets = await Ticket.find({ status: { $ne: 'spam_quarantine' } })
       .select('ticketId category location district subdistrict urgency status slaBreached slaAssignDeadline slaCompleteDeadline slaPauseStatus totalRepairCost materials createdAt updatedAt')
       .lean()
       .sort({ createdAt: -1 });
@@ -108,7 +108,7 @@ router.get('/tickets', async (req, res) => {
 // GET /api/ceo/cost-overview - สรุปงบประมาณและค่าใช้จ่ายซ่อมบำรุง
 router.get('/cost-overview', async (req, res) => {
   try {
-    const tickets = await Ticket.find().select('ticketId category status totalRepairCost materials createdAt updatedAt').lean();
+    const tickets = await Ticket.find({ status: { $ne: 'spam_quarantine' } }).select('ticketId category status totalRepairCost materials createdAt updatedAt').lean();
 
     const now = new Date();
     const curYear = now.getFullYear();
@@ -180,8 +180,8 @@ router.get('/cost-overview', async (req, res) => {
 // สรุปสถิติเชิงพื้นที่แยกตามเขต/แขวง เปรียบเทียบกับงบประมาณซ่อมบำรุง
 router.get('/district-analytics', async (req, res) => {
   try {
-    const tickets = await Ticket.find()
-      .select('ticketId category location district subdistrict status totalRepairCost slaBreached createdAt updatedAt')
+    const tickets = await Ticket.find({ status: { $ne: 'spam_quarantine' } })
+      .select('ticketId category location district subdistrict status totalRepairCost slaBreached slaAssignDeadline slaCompleteDeadline slaPauseStatus createdAt updatedAt')
       .lean();
 
     const districtMap = {};
@@ -278,7 +278,7 @@ router.get('/technicians', async (req, res) => {
     const result = await Promise.all(techs.map(async (u) => {
       const active = await Ticket.countDocuments({
         assignedTo: u._id,
-        status: { $nin: ['completed', 'rejected'] }
+        status: { $nin: ['completed', 'rejected', 'merged', 'spam_quarantine'] }
       });
       const total = await Ticket.countDocuments({ assignedTo: u._id });
       const capacity = active >= 5 ? 100 : active >= 3 ? 75 : active >= 1 ? 40 : 10;

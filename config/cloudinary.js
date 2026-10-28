@@ -82,10 +82,13 @@ function extractPublicId(url) {
   } catch { return null; }
 }
 
-// รับ array ของ Ticket documents → เก็บ public_ids ทั้งหมดแล้ว destroy พร้อมกัน
+// รับ array ของ Ticket documents (หรือ Ticket เดี่ยว) → เก็บ public_ids ทั้งหมดแล้ว destroy พร้อมกัน
 async function purgeTicketImages(tickets) {
+  if (!tickets || !isCloudinaryConfigured()) return;
+  const list = Array.isArray(tickets) ? tickets : [tickets];
   const publicIds = [];
-  for (const t of tickets) {
+  for (const t of list) {
+    if (!t) continue;
     for (const field of ['citizenImage', 'beforeImage', 'afterImage']) {
       const pid = extractPublicId(t[field]);
       if (pid) publicIds.push(pid);

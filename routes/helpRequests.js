@@ -49,7 +49,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
     // IDOR Protection: เฉพาะช่างที่ได้รับมอบหมายงานนี้ หรือ admin เท่านั้นที่ขอความช่วยเหลือได้
-    if (user.role === 'technician' && ticket.assignedTo && ticket.assignedTo.toString() !== user._id.toString()) {
+    if (user.role === 'technician' && (!ticket.assignedTo || ticket.assignedTo.toString() !== user._id.toString())) {
       return res.status(403).json({ error: 'คุณสามารถขอความช่วยเหลือได้เฉพาะเรื่องที่ได้รับมอบหมายเท่านั้น' });
     }
 

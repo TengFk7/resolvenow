@@ -28,14 +28,14 @@ console.log('\n\x1b[1m=== ResolveNow Automated System Verification ===\x1b[0m\n'
 // ── 1. SLA Logic & Deadlines ──────────────────────────────────────
 console.log('\x1b[36m[Group 1: SLA Engine & Breach Detection]\x1b[0m');
 
-runTest('Urgent SLA rule defines 2h assign and 8h complete', () => {
-  assert.strictEqual(SLA_RULES.urgent.assignHours, 2);
-  assert.strictEqual(SLA_RULES.urgent.completeHours, 8);
+runTest('Urgent SLA rule defines 15m (0.25h) assign and 30m (0.5h) complete', () => {
+  assert.strictEqual(SLA_RULES.urgent.assignHours, 0.25);
+  assert.strictEqual(SLA_RULES.urgent.completeHours, 0.5);
 });
 
-runTest('Medium SLA rule defines 8h assign and 48h complete', () => {
-  assert.strictEqual(SLA_RULES.medium.assignHours, 8);
-  assert.strictEqual(SLA_RULES.medium.completeHours, 48);
+runTest('Medium SLA rule defines 6h assign and 12h complete', () => {
+  assert.strictEqual(SLA_RULES.medium.assignHours, 6);
+  assert.strictEqual(SLA_RULES.medium.completeHours, 12);
 });
 
 runTest('Normal SLA rule defines 24h assign and 72h complete', () => {
@@ -46,10 +46,10 @@ runTest('Normal SLA rule defines 24h assign and 72h complete', () => {
 runTest('calcSlaDeadlines returns future dates matching rule hours', () => {
   const now = Date.now();
   const res = calcSlaDeadlines('urgent');
-  const assignDiffHours = Math.round((res.slaAssignDeadline.getTime() - now) / 3600000);
-  const completeDiffHours = Math.round((res.slaCompleteDeadline.getTime() - now) / 3600000);
-  assert.strictEqual(assignDiffHours, 2);
-  assert.strictEqual(completeDiffHours, 8);
+  const assignDiffMins = Math.round((res.slaAssignDeadline.getTime() - now) / 60000);
+  const completeDiffMins = Math.round((res.slaCompleteDeadline.getTime() - now) / 60000);
+  assert.strictEqual(assignDiffMins, 15);
+  assert.strictEqual(completeDiffMins, 30);
 });
 
 runTest('checkIsSlaBreached detects expired pending assignment deadline', () => {

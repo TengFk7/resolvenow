@@ -28,7 +28,7 @@ router.get('/', requireAuth, async (req, res) => {
     const result = await Promise.all(techs.map(async (u) => {
       const active = await Ticket.countDocuments({
         assignedTo: u._id,
-        status: { $nin: ['completed', 'rejected'] }
+        status: { $nin: ['completed', 'rejected', 'merged', 'spam_quarantine'] }
       });
       const total = await Ticket.countDocuments({ assignedTo: u._id });
       const capacity   = active >= 5 ? 100 : active >= 3 ? 75 : active >= 1 ? 40 : 10;
@@ -100,7 +100,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     // Check if tech has active tickets
     const activeCount = await Ticket.countDocuments({
       assignedTo: tech._id,
-      status: { $nin: ['completed', 'rejected'] }
+      status: { $nin: ['completed', 'rejected', 'merged', 'spam_quarantine'] }
     });
     if (activeCount > 0) {
       return res.status(400).json({ error: 'ไม่สามารถลบได้ — ช่างยังมีงานค้าง ' + activeCount + ' งาน' });

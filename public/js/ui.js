@@ -988,6 +988,7 @@ function formatSlaCountdown(deadline) {
   if (diff <= 0) return { text: '🔴 OVERDUE', cls: 'sla-badge-overdue' };
   var hours = Math.floor(diff / 3600000);
   var mins = Math.floor((diff % 3600000) / 60000);
+  if (hours === 0) return { text: '⚡ ' + mins + 'm', cls: 'sla-badge-warn' };
   if (hours < 2) return { text: '⚡ ' + hours + 'h ' + mins + 'm', cls: 'sla-badge-warn' };
   return { text: '✅ ' + hours + 'h ' + mins + 'm', cls: 'sla-badge-ok' };
 }

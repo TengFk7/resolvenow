@@ -414,8 +414,8 @@ router.get('/district-analytics', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'เฉพาะเจ้าหน้าที่และผู้ดูแลระบบ' });
     }
 
-    const tickets = await Ticket.find()
-      .select('ticketId category location district subdistrict status totalRepairCost slaBreached createdAt updatedAt')
+    const tickets = await Ticket.find({ status: { $ne: 'spam_quarantine' } })
+      .select('ticketId category location district subdistrict status totalRepairCost slaBreached slaAssignDeadline slaCompleteDeadline slaPauseStatus createdAt updatedAt')
       .lean();
 
     const districtMap = {};
@@ -524,7 +524,9 @@ router.get('/report/executive-pdf', async (req, res) => {
 
     const { range } = req.query;
     const dr = getDateRange(range || 'this_month');
-    const query = dr.start ? { createdAt: { $gte: dr.start, $lte: dr.end } } : {};
+    const query = dr.start
+      ? { createdAt: { $gte: dr.start, $lte: dr.end }, status: { $ne: 'spam_quarantine' } }
+      : { status: { $ne: 'spam_quarantine' } };
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
 
     const totalCount = tickets.length;
@@ -1012,7 +1014,9 @@ router.get('/report', requireAuth, async (req, res) => {
 
     const { range } = req.query;
     const dr = getDateRange(range);
-    const query = dr.start ? { createdAt: { $gte: dr.start, $lte: dr.end } } : {};
+    const query = dr.start
+      ? { createdAt: { $gte: dr.start, $lte: dr.end }, status: { $ne: 'spam_quarantine' } }
+      : { status: { $ne: 'spam_quarantine' } };
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
 
     res.json({
@@ -1055,7 +1059,9 @@ router.get('/report/excel', requireAuth, async (req, res) => {
 
     const { range } = req.query;
     const dr = getDateRange(range);
-    const query = dr.start ? { createdAt: { $gte: dr.start, $lte: dr.end } } : {};
+    const query = dr.start
+      ? { createdAt: { $gte: dr.start, $lte: dr.end }, status: { $ne: 'spam_quarantine' } }
+      : { status: { $ne: 'spam_quarantine' } };
     const tickets = await Ticket.find(query).sort({ createdAt: -1 });
 
     // Status translation map
@@ -1209,12 +1215,6 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const user = await User.findById(req.session.userId);
     if (!user) return res.status(401).json({ error: 'ไม่พบข้อมูลผู้ใช้' });
 
-    // ── Per-User Rate Limit Guard (ป้องกันการยิงสคริปต์น้ำท่วมฐานข้อมูล) ──
-    const floodErr = checkTicketCreationRateLimit(user._id);
-    if (floodErr) {
-      return res.status(429).json({ error: floodErr });
-    }
-
     // ── Input Type & Length Validations ──
     if (!rawDescription || typeof rawDescription !== 'string')
       return res.status(400).json({ error: 'กรุณากรอกรายละเอียดปัญหา' });
@@ -1245,6 +1245,12 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const validUrgs = ['normal', 'medium', 'urgent'];
     if (urgency && !validUrgs.includes(urgency) && urgency !== 'auto') {
       return res.status(400).json({ error: 'ระดับความเร่งด่วนไม่ถูกต้อง' });
+    }
+
+    // ── Per-User Rate Limit Guard (ป้องกันการยิงสคริปต์น้ำท่วมฐานข้อมูล) ──
+    const floodErr = checkTicketCreationRateLimit(user._id);
+    if (floodErr) {
+      return res.status(429).json({ error: floodErr });
     }
 
     // ── Strike & Suspension Guard (แบบที่ 3: Warning & Strike System) ──
@@ -1898,7 +1904,12 @@ router.get('/public-map', async (req, res) => {
   try {
     const since = new Date();
     since.setDate(since.getDate() - 30); // 30 days
-    const tickets = await Ticket.find({ createdAt: { $gte: since }, lat: { $ne: null }, lng: { $ne: null } })
+    const tickets = await Ticket.find({
+      createdAt: { $gte: since },
+      lat: { $ne: null },
+      lng: { $ne: null },
+      status: { $ne: 'spam_quarantine' }
+    })
       .select('ticketId category lat lng status location upvoteCount createdAt')
       .sort({ createdAt: -1 })
       .limit(200);
@@ -2036,7 +2047,7 @@ router.get('/:id/comments', requireAuth, async (req, res) => {
     if (caller && caller.role === 'citizen' && ticket.citizenId.toString() !== caller._id.toString()) {
       return res.status(403).json({ error: 'ไม่มีสิทธิ์ดูแชทของ Ticket นี้' });
     }
-    if (caller && caller.role === 'technician' && ticket.assignedTo && ticket.assignedTo.toString() !== caller._id.toString()) {
+    if (caller && caller.role === 'technician' && (!ticket.assignedTo || ticket.assignedTo.toString() !== caller._id.toString())) {
       return res.status(403).json({ error: 'ไม่มีสิทธิ์ดูแชทของ Ticket ที่ไม่ได้มอบหมายให้คุณ' });
     }
 
@@ -2074,7 +2085,7 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'ไม่สามารถแสดงความคิดเห็นใน Ticket ของคนอื่นได้' });
 
     // technician can only comment on assigned tickets
-    if (user.role === 'technician' && ticket.assignedTo && ticket.assignedTo.toString() !== user._id.toString())
+    if (user.role === 'technician' && (!ticket.assignedTo || ticket.assignedTo.toString() !== user._id.toString()))
       return res.status(403).json({ error: 'ไม่มีสิทธิ์แสดงความคิดเห็นใน Ticket ที่ไม่ได้มอบหมายให้คุณ' });
 
     const comment = await new Comment({
@@ -3055,7 +3066,9 @@ router.delete('/:id/quarantine/delete', requireAuth, async (req, res) => {
     if (!ticket) return res.status(404).json({ error: 'ไม่พบ Ticket' });
 
     // ลบรูปภาพจาก Cloudinary
-    await purgeTicketImages(ticket);
+    if (isCloudinaryConfigured()) {
+      await purgeTicketImages([ticket]);
+    }
 
     // ลบคอมเมนต์และข้อมูลตั๋ว
     await Comment.deleteMany({ ticketId: ticket.ticketId });
@@ -3078,20 +3091,27 @@ router.post('/quarantine/user-strikes/:userId', requireAuth, async (req, res) =>
       return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' });
     }
 
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(400).json({ error: 'รหัสผู้ใช้ไม่ถูกต้อง' });
+    }
+
     const targetUser = await User.findById(req.params.userId);
     if (!targetUser) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
 
     const { action, reason } = req.body; // 'reset' | 'add' | 'lift_suspension'
+    const cleanReason = reason ? xss(String(reason).trim().slice(0, 500)) : '';
 
     if (action === 'reset') {
       targetUser.spamStrikes = 0;
       targetUser.isSuspended = false;
       targetUser.suspendedUntil = null;
+      ticketCreationWindow.delete(targetUser._id.toString());
     } else if (action === 'add') {
       targetUser.spamStrikes = (targetUser.spamStrikes || 0) + 1;
       if (!targetUser.strikeHistory) targetUser.strikeHistory = [];
       targetUser.strikeHistory.push({
-        reason: reason || 'ผู้ดูแลระบบเพิ่มทัณฑ์บนจากการส่งเรื่องเล่นๆ',
+        reason: cleanReason || 'ผู้ดูแลระบบเพิ่มทัณฑ์บนจากการส่งเรื่องเล่นๆ',
         ticketId: null,
         givenAt: new Date()
       });

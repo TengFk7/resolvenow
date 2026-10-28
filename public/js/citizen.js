@@ -182,7 +182,7 @@ function wizBuildSummary() {
   var desc = ge('tDesc').value.trim();
   var hasGps = ge('tLat').value && ge('tLng').value;
   var urg = ge('tUrg').value || 'normal';
-  var urgTH = { urgent: '🔴 ด่วนมาก (Urgent)', medium: '🟡 ด่วน (Medium)', normal: '🟢 ปกติ (Normal)' }[urg] || '🟢 ปกติ';
+  var urgTH = { urgent: '🔴 ด่วนมาก (โดยด่วนที่สุด 15-30 นาที)', medium: '🟡 ด่วน (ภายใน 6-12 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || '🟢 ปกติ';
   var cat = (_aiDetectedCategory && _aiDetectedCategory !== 'auto') ? _aiDetectedCategory : 'Road';
   var catTH = DEPT[cat] || cat;
   var catIcon = DEPT_ICON[cat] || '🤖';
@@ -425,7 +425,7 @@ function _renderAiResult(d) {
   
   var catTH = DEPT[cat] || cat;
   var catIcon = DEPT_ICON[cat] || '📌';
-  var urgText = { urgent: '🔴 ด่วนมาก (8 ชม.)', medium: '🟡 ด่วน (48 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || urg;
+  var urgText = { urgent: '🔴 ด่วนมาก (โดยด่วนที่สุด 15-30 นาที)', medium: '🟡 ด่วน (ภายใน 6-12 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || urg;
 
   ge('urgAiIcon').textContent = catIcon;
   if (d.isAmbiguous) {

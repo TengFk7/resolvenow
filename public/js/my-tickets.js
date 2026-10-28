@@ -62,16 +62,18 @@ function stTH(st) {
     in_progress: 'กำลังซ่อมบำรุง',
     completed: 'เสร็จสิ้นแล้ว',
     rejected: 'ปฏิเสธเรื่อง',
-    reopened: 'ขอตรวจสอบซ้ำ'
+    reopened: 'ขอตรวจสอบซ้ำ',
+    merged: 'รวมเคสแล้ว',
+    spam_quarantine: 'รอตรวจสอบความถูกต้อง'
   };
   return map[st] || st;
 }
 
 function urgTH(urg) {
   var map = {
-    urgent: '⚡ ด่วนมาก (2h SLA)',
-    medium: '⏰ ด่วน (8h SLA)',
-    normal: '🔵 ปกติ (24h SLA)'
+    urgent: '⚡ ด่วนมาก (15-30 นาที SLA)',
+    medium: '⏰ ด่วน (6-12 ชม. SLA)',
+    normal: '🔵 ปกติ (72 ชม. SLA)'
   };
   return map[urg] || urg;
 }
@@ -442,10 +444,11 @@ function renderTicketGrid(tickets) {
     html += '</div>';
 
     // Card Footer Actions
+    var assignedTech = t.assignedName || t.technicianName;
     html += '<div class="mytk-card-foot" onclick="event.stopPropagation()">';
     html += '<div style="display:flex;align-items:center;gap:6px">';
-    if (t.technicianName) {
-      html += '<span style="font-size:11.5px;color:var(--muted)">👷 ช่าง: <strong>' + escapeHTML(t.technicianName) + '</strong></span>';
+    if (assignedTech) {
+      html += '<span style="font-size:11.5px;color:var(--muted)">👷 ช่าง: <strong>' + escapeHTML(assignedTech) + '</strong></span>';
     } else {
       html += '<span style="font-size:11.5px;color:var(--muted)">⏳ กำลังจัดสรรช่าง</span>';
     }
@@ -505,8 +508,9 @@ function openTD(ticketId) {
   h += '<div class="cg-detail-row"><span class="cg-dl">รายละเอียด:</span><span class="cg-dv">' + escapeHTML(t.description) + '</span></div>';
   h += '<div class="cg-detail-row"><span class="cg-dl">วันที่แจ้ง:</span><span class="cg-dv">' + fmtDate(t.createdAt) + '</span></div>';
 
-  if (t.technicianName) {
-    h += '<div class="cg-detail-row"><span class="cg-dl">ช่างผู้รับผิดชอบ:</span><span class="cg-dv">👷 ' + escapeHTML(t.technicianName) + '</span></div>';
+  var assignedTechDetail = t.assignedName || t.technicianName;
+  if (assignedTechDetail) {
+    h += '<div class="cg-detail-row"><span class="cg-dl">ช่างผู้รับผิดชอบ:</span><span class="cg-dv">👷 ' + escapeHTML(assignedTechDetail) + '</span></div>';
   }
 
   // Before / After Showcase
@@ -599,16 +603,20 @@ async function loadTicketChatMessages(ticketId) {
     }
 
     var h = '';
+    var myUserId = CU ? String(CU.id || CU._id || '') : '';
     comments.forEach(function (c) {
-      var isMe = (CU && c.authorId === CU._id);
-      var roleBadge = c.authorRole === 'technician' ? '👷 ช่าง' : (c.authorRole === 'admin' ? '🛡️ Admin' : '👤 คุณ');
+      var authorId = String(c.userId || c.authorId || '');
+      var authorRole = c.userRole || c.authorRole || 'citizen';
+      var msgText = c.message !== undefined ? c.message : (c.text || '');
+      var isMe = Boolean(myUserId && authorId && authorId === myUserId);
+      var roleBadge = authorRole === 'technician' ? ('👷 ' + escapeHTML(c.userName || 'ช่าง')) : (authorRole === 'admin' ? '🛡️ Admin' : '👤 คุณ');
       var bubbleBg = isMe ? 'var(--blue2)' : 'var(--card-bg)';
       var bubbleColor = isMe ? '#ffffff' : 'var(--text)';
       var align = isMe ? 'flex-end' : 'flex-start';
 
       h += '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:80%;' + (isMe ? 'margin-left:auto' : 'margin-right:auto') + '">';
       h += '<div style="font-size:10.5px;color:var(--muted);margin-bottom:3px">' + roleBadge + ' · ' + fmtDate(c.createdAt) + '</div>';
-      h += '<div style="background:' + bubbleBg + ';color:' + bubbleColor + ';padding:8px 12px;border-radius:12px;font-size:13px;border:1px solid var(--border);word-break:break-word">' + escapeHTML(c.text) + '</div>';
+      h += '<div style="background:' + bubbleBg + ';color:' + bubbleColor + ';padding:8px 12px;border-radius:12px;font-size:13px;border:1px solid var(--border);word-break:break-word">' + escapeHTML(msgText) + '</div>';
       h += '</div>';
     });
 
@@ -630,9 +638,12 @@ async function sendTicketChat() {
     var res = await fetch('/api/tickets/' + _currentChatTicketId + '/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text })
+      body: JSON.stringify({ message: text })
     });
-    if (!res.ok) throw new Error('Send comment failed');
+    if (!res.ok) {
+      var errData = await res.json().catch(function () { return {}; });
+      throw new Error(errData.error || 'Send comment failed');
+    }
     inp.value = '';
     await loadTicketChatMessages(_currentChatTicketId);
   } catch (err) {
@@ -691,10 +702,10 @@ async function submitRating() {
     var btn = ge('btnSubmitRating');
     if (btn) btn.disabled = true;
 
-    var res = await fetch('/api/tickets/' + _currentRatingTicketId + '/rate', {
-      method: 'POST',
+    var res = await fetch('/api/tickets/' + _currentRatingTicketId + '/rating', {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating: _selectedStars, ratingReason: reason })
+      body: JSON.stringify({ rating: _selectedStars, reason: reason })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Rating failed');

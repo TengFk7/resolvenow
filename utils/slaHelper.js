@@ -7,9 +7,9 @@
 // Centralized SLA deadline calculations and breach evaluations
 
 const SLA_RULES = {
-  urgent:  { assignHours: 2,  completeHours: 8  },
-  medium:  { assignHours: 8,  completeHours: 48 },
-  normal:  { assignHours: 24, completeHours: 72 }
+  urgent:  { assignHours: 0.25, completeHours: 0.5 }, // ด่วนมาก: มอบหมาย 15 นาที, ปิดงาน 30 นาที (ไม่เกิน 15-30 นาที)
+  medium:  { assignHours: 6,    completeHours: 12  }, // ด่วน: มอบหมาย 6 ชม., ปิดงาน 12 ชม. (ภายใน 6-12 ชั่วโมง)
+  normal:  { assignHours: 24,   completeHours: 72  }  // ปกติ: มอบหมาย 24 ชม., ปิดงาน 72 ชม.
 };
 
 /**
