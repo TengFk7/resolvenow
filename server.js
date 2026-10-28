@@ -126,8 +126,8 @@ io.on('connection', (socket) => {
   app.use(mongoSanitize());
 
   // ─── General Middleware ───────────────────────────────────────────────
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '2mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(express.static(path.join(__dirname, 'public')));
   // ใช้ mongoose connection ที่มีอยู่แล้ว (ไม่ต้อง connect ใหม่)
   const mongoose = require('mongoose');

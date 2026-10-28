@@ -15,16 +15,103 @@ const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const { analyzeComplaintSpam } = require('../utils/spamFilter');
 
+const crypto = require('crypto');
+
 // ── Server-Side In-Memory LRU Cache for AI Classification (TTL: 2 hours, Max: 1,000) ──
 const CLASSIFY_CACHE = new Map();
 const MAX_CACHE_SIZE = 1000;
 const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-function getCacheKey(desc, geo = {}) {
+function getCacheKey(desc, geo = {}, imageBase64 = null) {
   const norm = (desc || '').trim().toLowerCase().replace(/\s+/g, ' ');
   const lat = geo && geo.lat ? Number(geo.lat).toFixed(4) : '';
   const lng = geo && geo.lng ? Number(geo.lng).toFixed(4) : '';
-  return `${norm}__${lat}_${lng}`;
+  let imgHash = 'noimg';
+  if (imageBase64 && typeof imageBase64 === 'string' && imageBase64.length > 20) {
+    imgHash = crypto.createHash('sha1').update(imageBase64).digest('hex').slice(0, 16);
+  }
+  return `${norm}__${lat}_${lng}__${imgHash}`;
+}
+
+/**
+ * Normalizes and validates an optional base64 image payload for Gemini 2.5 Flash Vision.
+ * Supports Data URLs ("data:image/jpeg;base64,...") or raw Base64 strings.
+ */
+function parseImageInput(imageOpts) {
+  if (!imageOpts) return null;
+  const rawInput = typeof imageOpts === 'string' ? imageOpts : imageOpts.imageBase64;
+  const stats = (typeof imageOpts === 'object' && imageOpts.imageStats) ? imageOpts.imageStats : null;
+
+  if (!rawInput || typeof rawInput !== 'string') {
+    return stats ? { base64: null, mimeType: null, stats } : null;
+  }
+
+  let trimmed = rawInput.trim();
+  let mimeType = (typeof imageOpts === 'object' && imageOpts.imageMimeType) ? imageOpts.imageMimeType : 'image/jpeg';
+
+  const dataUrlMatch = trimmed.match(/^data:(image\/(?:jpeg|jpg|png|webp|gif));base64,([\s\S]+)$/i);
+  if (dataUrlMatch) {
+    mimeType = dataUrlMatch[1].toLowerCase();
+    trimmed = dataUrlMatch[2].trim();
+  }
+  if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedMimes.includes(mimeType)) {
+    mimeType = 'image/jpeg';
+  }
+
+  const cleanBase64 = trimmed.replace(/[\r\n\s]/g, '');
+  // Security boundary: max ~1.5MB base64 string & valid base64 charset
+  if (cleanBase64.length < 32 || cleanBase64.length > 1500000 || !/^[A-Za-z0-9+/=]+$/.test(cleanBase64)) {
+    return stats ? { base64: null, mimeType: null, stats } : null;
+  }
+
+  return { base64: cleanBase64, mimeType, stats };
+}
+
+/**
+ * 0-Token Pixel Heuristic Filter for Pitch-Black (covered lens) or Blank Solid Images.
+ */
+function evaluateImageStatsHeuristic(stats) {
+  if (!stats || typeof stats !== 'object') {
+    return { isFakeOrJunk: false, isUnclear: false, imageVerification: 'MATCH', imageStatus: 'valid', reason: null };
+  }
+  const avg = typeof stats.avgBrightness === 'number' ? stats.avgBrightness : null;
+  const variance = typeof stats.variance === 'number' ? stats.variance : null;
+  const darkRatio = typeof stats.darkRatio === 'number' ? stats.darkRatio : null;
+
+  if (stats.isPitchBlack || (avg !== null && avg < 10 && (variance === null || variance < 15)) || (darkRatio !== null && darkRatio > 0.96)) {
+    return {
+      isFakeOrJunk: true,
+      isUnclear: false,
+      imageVerification: 'FAKE_OR_MISMATCH',
+      imageStatus: 'fake_or_junk',
+      reason: 'ตรวจพบภาพดำมืดสนิทไม่มีรายละเอียด (อาจเกิดจากเอานิ้วปิดกล้องถ่ายมั่วๆ) กรุณาถ่ายภาพสถานที่เกิดเหตุจริง'
+    };
+  }
+
+  if (stats.isBlankSolid || (variance !== null && variance < 2.5)) {
+    return {
+      isFakeOrJunk: true,
+      isUnclear: false,
+      imageVerification: 'FAKE_OR_MISMATCH',
+      imageStatus: 'fake_or_junk',
+      reason: 'ตรวจพบภาพสีล้วนไม่มีรายละเอียดของสถานที่เกิดเหตุ กรุณาถ่ายภาพปัญหาที่พบจริง'
+    };
+  }
+
+  if (stats.isUnclear || (avg !== null && avg < 24 && darkRatio !== null && darkRatio > 0.85)) {
+    return {
+      isFakeOrJunk: false,
+      isUnclear: true,
+      imageVerification: 'UNCLEAR',
+      imageStatus: 'unclear',
+      reason: 'ภาพถ่ายค่อนข้างมืดหรือเห็นรายละเอียดไม่ชัด ระบบจะส่งให้แอดมินช่วยตรวจสอบรูปภาพก่อนจ่ายงานช่าง'
+    };
+  }
+
+  return { isFakeOrJunk: false, isUnclear: false, imageVerification: 'MATCH', imageStatus: 'valid', reason: null };
 }
 
 function getFromCache(key) {
@@ -421,6 +508,8 @@ router.post('/urgency', async (req, res) => {
     });
   }
 
+  const hasValidImage = false;
+  const parsedImg = null;
   const catCtx = CAT_CONTEXT[category] || 'ประเภท: ทั่วไป';
   const prompt = `คุณคือระบบจำแนกระดับความเร่งด่วนของคำร้องเรียนจากประชาชนในไทย ตอบด้วยคำเดียวเท่านั้น: urgent, medium, หรือ normal
 
@@ -466,7 +555,7 @@ ${catCtx}
             } catch (e) { reject(e); }
           });
         });
-        reqC.setTimeout(3500, () => {
+        reqC.setTimeout(hasValidImage ? 7500 : 3500, () => {
           reqC.destroy();
           reject(new Error('Gemini timeout (3.5s)'));
         });
@@ -488,7 +577,15 @@ ${catCtx}
           model: 'claude-3-5-haiku-20241022',
           max_tokens: 8,
           temperature: 0,
-          messages: [{ role: 'user', content: prompt }]
+          messages: [{
+            role: 'user',
+            content: hasValidImage
+              ? [
+                  { type: 'image', source: { type: 'base64', media_type: parsedImg.mimeType, data: parsedImg.base64 } },
+                  { type: 'text', text: prompt }
+                ]
+              : prompt
+          }]
         });
         const reqC = https.request({
           hostname: 'api.anthropic.com',
@@ -516,7 +613,7 @@ ${catCtx}
             } catch (e) { reject(e); }
           });
         });
-        reqC.setTimeout(3500, () => {
+        reqC.setTimeout(hasValidImage ? 7500 : 3500, () => {
           reqC.destroy();
           reject(new Error('Claude timeout (3.5s)'));
         });
@@ -807,7 +904,7 @@ const CLASSIFY_PROMPT = `คุณคือระบบ AI ผู้เชี่
 
 ข้อความร้องเรียน: "`;
 
-async function classifyComplaint(description, geo = {}) {
+async function classifyComplaint(description, geo = {}, imageOpts = null) {
   // ── 1. Fast Anti-Spam Gate: หากตรวจพบว่าเป็นสแปม ตัดจบส่งคืนผลทันที (ไม่ส่ง AI และไม่รัน Fallback) ──
   const heuristicSpam = analyzeComplaintSpam(description, geo || {});
   if (heuristicSpam.isSpam) {
@@ -844,10 +941,31 @@ async function classifyComplaint(description, geo = {}) {
     };
   }
 
-  const cacheKey = getCacheKey(description, geo);
+  // ── 2. Image Pre-Validation & 0-Token Pixel Heuristic Check ──
+  const parsedImg = parseImageInput(imageOpts);
+  if (parsedImg && parsedImg.stats) {
+    const statsCheck = evaluateImageStatsHeuristic(parsedImg.stats);
+    if (statsCheck.isFakeOrJunk) {
+      const baseRule = ruleBasedClassification(description, geo);
+      return {
+        ...baseRule,
+        source: 'image_heuristic',
+        imageVerification: 'FAKE_OR_MISMATCH',
+        imageStatus: 'fake_or_junk',
+        imageMatched: false,
+        isImageBlocked: true,
+        needsAdminReview: false,
+        imageReason: statsCheck.reason,
+        visualDisambiguated: false
+      };
+    }
+  }
+
+  const hasValidImage = Boolean(parsedImg && parsedImg.base64);
+  const cacheKey = getCacheKey(description, geo, hasValidImage ? parsedImg.base64 : null);
   const cachedResult = getFromCache(cacheKey);
   if (cachedResult) {
-    console.log(`[AI classify] [Cache HIT] "${description.slice(0, 45)}" (ประหยัด 1 AI call)`);
+    console.log(`[AI classify] [Cache HIT] "${description.slice(0, 45)}" (${hasValidImage ? 'Text+Image' : 'Text'})`);
     return cachedResult;
   }
 
@@ -856,14 +974,116 @@ async function classifyComplaint(description, geo = {}) {
     return resObj;
   }
 
-  const prompt = CLASSIFY_PROMPT + description.replace(/"/g, "'") + '"';
+  const VISION_PROMPT_ADDON = hasValidImage ? `
 
-  // 1. Try Gemini
+การตรวจสอบรูปภาพที่แนบมาควบคู่กับข้อความ (Multimodal Image Verification ด้วย Gemini 2.5 Flash):
+ผู้ใช้ได้แนบรูปภาพมาพร้อมกับคำร้องเรียน ให้คุณวิเคราะห์รูปภาพและจำแนกผลการตรวจรูป (imageVerification) ออกเป็น 3 ระดับตามเกณฑ์นี้:
+
+ระดับที่ 1: "MATCH" (ภาพสอดคล้อง -> imageStatus = "valid", imageVerification = "MATCH", imageMatched = true)
+   - เห็นสภาพปัญหาตรงตามที่แจ้ง หรือเป็นภาพสถานที่เกิดเหตุจริงที่สอดคล้องกับคำร้องเรียน
+   - รวมถึงกรณี Visual Disambiguation (ช่วยจัดหมวดหมู่แม่นขึ้นเมื่อคนพิมพ์สั้น): หากผู้แจ้งพิมพ์สั้นหรือคลุมเครือ (เช่น "อันตรายมาก ช่วยมาดูด่วน", "ช่วยด้วยครับ มีปัญหาแถวนี้", "ตรงนี้พังช่วยมาดูหน่อย") แต่ในรูปเห็นปัญหาชัดเจน เช่น:
+     * เห็น "สายไฟขาดห้อยลงมา" หรือ "เสาไฟล้ม/ประกายไฟ" -> ฟันธง "category": "Electricity", "urgency": "urgent", "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true ทันที!
+     * เห็น "ท่อประปาแตกน้ำพุ่งท่วม" -> ฟันธง "category": "Water", "urgency": "urgent", "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true
+     * เห็น "ถนนเป็นหลุมบ่อ/ผิวทางพัง" -> ฟันธง "category": "Road", "urgency": "medium" (หรือ "urgent" ถ้าพังยับเยิน), "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true
+     * เห็น "ต้นไม้ล้มขวางทาง/กิ่งไม้หัก" -> ฟันธง "category": "Tree", "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true
+     * เห็น "กองขยะล้น/ขยะตกค้าง" -> ฟันธง "category": "Garbage", "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true
+     * เห็น "งู/สัตว์มีพิษ/รังต่อแตน" -> ฟันธง "category": "Animal", "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true
+     * เห็น "เพลิงไหม้/ควันไฟรุนแรง/อาคารถล่ม" -> ฟันธง "category": "Hazard", "urgency": "urgent", "isAmbiguous": false, "confidence": "high", "imageVerification": "MATCH", "imageStatus": "valid", "visualDisambiguated": true
+
+ระดับที่ 2: "UNCLEAR" (ภาพมืด/เบลอ/ดูยาก -> imageStatus = "unclear", imageVerification = "UNCLEAR", imageMatched = true)
+   - เป็นภาพถ่ายสถานที่จริงตอนกลางคืน มืด เบลอ หรือถ่ายจากมุมกว้าง/ระยะไกลจนมองเห็นตัวปัญหาไม่ชัดเจน แต่ไม่ใช่ภาพแกล้งส่งหรือมีม
+   - ระบบจะอนุโลมไม่บล็อกและไม่หักแต้มผู้ใช้ แต่จะตั้ง needsAdminReview = true, isAmbiguous = true เพื่อส่งเข้าคิวให้ Admin ดูรูปตัดสินใจก่อนส่งช่าง
+
+ระดับที่ 3: "FAKE_OR_MISMATCH" (ไม่ตรงชัดเจน/รูปแกล้ง -> imageVerification = "FAKE_OR_MISMATCH", imageMatched = false)
+   - กรณี 3.1 รูปปลอม / รูปแกล้งส่ง (ให้ระบุ "imageStatus": "fake_or_junk"): รูปมีม (Meme), การ์ตูน/อนิเมะ, ภาพวาด, ภาพแคปหน้าจอมือถือ/เกม/แชท, รูปเซลฟี่ใบหน้าคน, รูปอาหาร/เครื่องดื่ม/สินค้า, ภาพดำมืดสนิทเพราะเอานิ้วปิดกล้องถ่ายมั่วๆ
+   - กรณี 3.2 รูปไม่ตรงกับเรื่องที่แจ้ง Context Mismatch (ให้ระบุ "imageStatus": "mismatch"): เป็นภาพถ่ายจริงแต่คนละเรื่องกับที่พิมพ์แจ้งอย่างสิ้นเชิง เช่น แจ้งว่า "ท่อประปาแตกน้ำท่วม" แต่รูปที่แนบเป็น "รูปต้นไม้แห้งๆ" หรือ "รูปในห้องนอน", แจ้งว่า "ถนนพัง" แต่แนบรูป "โต๊ะอาหาร"
+
+ให้เพิ่มฟิลด์เหล่านี้ใน JSON ที่ตอบกลับด้วยเสมอเมื่อมีรูปภาพ:
+- "imageVerification": "MATCH" | "UNCLEAR" | "FAKE_OR_MISMATCH"
+- "imageStatus": "valid" | "unclear" | "fake_or_junk" | "mismatch"
+- "imageMatched": true หรือ false
+- "imageReason": "อธิบายสั้นๆ ภาษาไทยว่าเห็นอะไรในภาพ และตรงหรือไม่ตรงกับที่แจ้งอย่างไร"
+- "visualDisambiguated": true หรือ false (true เมื่อใช้รูปภาพช่วยระบุหมวดหมู่จากข้อความที่สั้น/คลุมเครือ)
+` : '';
+
+  const textRuleCheck = ruleBasedClassification(description, geo);
+  const prompt = CLASSIFY_PROMPT + VISION_PROMPT_ADDON + '\nข้อความร้องเรียน: "' + description.replace(/"/g, "'") + '"';
+
+  function buildVisionFields(parsed) {
+    if (!hasValidImage) {
+      return {
+        imageVerification: 'NO_IMAGE',
+        imageStatus: 'no_image',
+        imageMatched: true,
+        isImageBlocked: false,
+        needsAdminReview: Boolean(parsed.isAmbiguous),
+        imageReason: null,
+        visualDisambiguated: false
+      };
+    }
+
+    let imageStatus = parsed.imageStatus;
+    const rawVer = String(parsed.imageVerification || '').toUpperCase();
+    if (!['valid', 'fake_or_junk', 'mismatch', 'unclear'].includes(imageStatus)) {
+      if (rawVer === 'UNCLEAR') imageStatus = 'unclear';
+      else if (rawVer === 'FAKE_OR_MISMATCH' || parsed.imageMatched === false) imageStatus = 'mismatch';
+      else imageStatus = 'valid';
+    }
+
+    const imageVerification = (imageStatus === 'fake_or_junk' || imageStatus === 'mismatch')
+      ? 'FAKE_OR_MISMATCH'
+      : (imageStatus === 'unclear' ? 'UNCLEAR' : 'MATCH');
+
+    const isImageBlocked = (imageVerification === 'FAKE_OR_MISMATCH');
+    const imageMatched = !isImageBlocked;
+    const visualDisambiguated = Boolean(
+      parsed.visualDisambiguated ||
+      (textRuleCheck.isAmbiguous && !parsed.isAmbiguous && imageVerification === 'MATCH')
+    );
+    const defaultImgReason = imageStatus === 'fake_or_junk'
+      ? 'ตรวจพบรูปปลอม รูปการ์ตูน มีม ภาพแคปหน้าจอ หรือภาพที่ไม่ใช่ปัญหาสาธารณะ'
+      : imageStatus === 'mismatch'
+        ? 'รูปภาพที่แนบมาไม่สอดคล้องกับรายละเอียดเรื่องที่แจ้ง'
+        : imageStatus === 'unclear'
+          ? 'ภาพถ่ายค่อนข้างมืด เบลอ หรือถ่ายจากระยะไกล รอแอดมินช่วยตรวจสอบรูปภาพก่อนจ่ายงาน'
+          : 'รูปภาพสอดคล้องกับปัญหาที่แจ้ง';
+
+    const isAmbiguous = visualDisambiguated
+      ? false
+      : (imageVerification === 'UNCLEAR' ? true : Boolean(parsed.isAmbiguous));
+    const needsAdminReview = (imageVerification === 'UNCLEAR') || isAmbiguous;
+    const confidence = visualDisambiguated
+      ? 'high'
+      : (imageVerification === 'UNCLEAR' ? 'low' : (['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'high'));
+
+    return {
+      isAmbiguous,
+      needsAdminReview,
+      confidence,
+      imageVerification,
+      imageStatus,
+      imageMatched,
+      isImageBlocked,
+      imageReason: parsed.imageReason || parsed.reason || defaultImgReason,
+      visualDisambiguated
+    };
+  }
+
+  // 1. Try Gemini 2.5 Flash (Multimodal Text + Vision)
   if (GEMINI_KEY) {
     try {
       const result = await new Promise((resolve, reject) => {
+        const geminiParts = [{ text: prompt }];
+        if (hasValidImage) {
+          geminiParts.push({
+            inlineData: {
+              mimeType: parsedImg.mimeType,
+              data: parsedImg.base64
+            }
+          });
+        }
         const body = JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts: geminiParts }],
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 512,
@@ -911,12 +1131,13 @@ async function classifyComplaint(description, geo = {}) {
                 isSpam,
                 isHardBlock: heuristicSpam.isHardBlock,
                 spamReason,
-                spamType: heuristicSpam.spamType
+                spamType: heuristicSpam.spamType,
+                ...buildVisionFields(parsed)
               });
             } catch (e) { reject(e); }
           });
         });
-        reqC.setTimeout(3500, () => {
+        reqC.setTimeout(hasValidImage ? 7500 : 3500, () => {
           reqC.destroy();
           reject(new Error('Gemini timeout (3.5s)'));
         });
@@ -938,7 +1159,15 @@ async function classifyComplaint(description, geo = {}) {
           model: 'claude-3-5-haiku-20241022',
           max_tokens: 256,
           temperature: 0,
-          messages: [{ role: 'user', content: prompt }]
+          messages: [{
+            role: 'user',
+            content: hasValidImage
+              ? [
+                  { type: 'image', source: { type: 'base64', media_type: parsedImg.mimeType, data: parsedImg.base64 } },
+                  { type: 'text', text: prompt }
+                ]
+              : prompt
+          }]
         });
         const reqC = https.request({
           hostname: 'api.anthropic.com',
@@ -982,12 +1211,13 @@ async function classifyComplaint(description, geo = {}) {
                 isSpam,
                 isHardBlock: heuristicSpam.isHardBlock,
                 spamReason,
-                spamType: heuristicSpam.spamType
+                spamType: heuristicSpam.spamType,
+                ...buildVisionFields(parsed)
               });
             } catch (e) { reject(e); }
           });
         });
-        reqC.setTimeout(3500, () => {
+        reqC.setTimeout(hasValidImage ? 7500 : 3500, () => {
           reqC.destroy();
           reject(new Error('Claude timeout (3.5s)'));
         });
@@ -1003,14 +1233,29 @@ async function classifyComplaint(description, geo = {}) {
 
   // 3. Fallback to Cognitive Thai NLP Heuristics Engine
   console.log(`[AI classify] [Rule-based] fallback for: "${description.slice(0, 50)}"`);
-  return saveAndReturn(ruleBasedClassification(description, geo));
+  const fallbackStatsCheck = (parsedImg && parsedImg.stats) ? evaluateImageStatsHeuristic(parsedImg.stats) : null;
+  const isFallbackUnclear = Boolean(fallbackStatsCheck && fallbackStatsCheck.isUnclear);
+  return saveAndReturn({
+    ...textRuleCheck,
+    isAmbiguous: isFallbackUnclear ? true : textRuleCheck.isAmbiguous,
+    needsAdminReview: isFallbackUnclear ? true : Boolean(textRuleCheck.isAmbiguous),
+    confidence: isFallbackUnclear ? 'low' : textRuleCheck.confidence,
+    imageVerification: isFallbackUnclear ? 'UNCLEAR' : (hasValidImage ? 'MATCH' : 'NO_IMAGE'),
+    imageStatus: isFallbackUnclear ? 'unclear' : (hasValidImage ? 'valid' : 'no_image'),
+    imageMatched: true,
+    isImageBlocked: false,
+    imageReason: isFallbackUnclear
+      ? fallbackStatsCheck.reason
+      : (hasValidImage ? 'ตรวจสอบคุณสมบัติภาพเบื้องต้นผ่านเกณฑ์' : null),
+    visualDisambiguated: false
+  });
 }
 
 // ─── POST /api/ai/classify ─────────────────────────────────────────
 router.post('/classify', async (req, res) => {
   try {
-    const { description, lat, lng } = req.body;
-    const result = await classifyComplaint(description || '', { lat, lng });
+    const { description, lat, lng, imageBase64, imageMimeType, imageStats } = req.body;
+    const result = await classifyComplaint(description || '', { lat, lng }, { imageBase64, imageMimeType, imageStats });
     res.json(result);
   } catch (err) {
     console.error('[AI classify] error:', err);
@@ -1021,7 +1266,7 @@ router.post('/classify', async (req, res) => {
 // ─── POST /api/ai/check-spam ───────────────────────────────────────
 router.post('/check-spam', (req, res) => {
   try {
-    const { description, lat, lng } = req.body;
+    const { description, lat, lng, imageBase64, imageMimeType, imageStats } = req.body;
     const result = analyzeComplaintSpam(description || '', { lat, lng });
     res.json(result);
   } catch (err) {
@@ -1035,3 +1280,5 @@ module.exports.ruleBasedUrgency = ruleBasedUrgency;
 module.exports.ruleBasedClassification = ruleBasedClassification;
 module.exports.classifyComplaint = classifyComplaint;
 module.exports.analyzeComplaintSpam = analyzeComplaintSpam;
+module.exports.parseImageInput = parseImageInput;
+module.exports.evaluateImageStatsHeuristic = evaluateImageStatsHeuristic;

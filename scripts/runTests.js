@@ -598,6 +598,39 @@ runTest('analyzeComplaintSpam and ruleBasedClassification block non-civic meanin
   assert.strictEqual(validAmbiguous.isAmbiguous, true);
 });
 
+runTest('Multimodal Vision helpers validate image payloads and detect pitch-black / blank junk images', () => {
+  const { parseImageInput, evaluateImageStatsHeuristic } = require('../routes/ai');
+
+  // 1. Valid Data URL parsing
+  const sampleB64 = 'data:image/jpeg;base64,' + 'A'.repeat(120);
+  const parsed = parseImageInput({ imageBase64: sampleB64 });
+  assert.ok(parsed && parsed.base64.length === 120);
+  assert.strictEqual(parsed.mimeType, 'image/jpeg');
+
+  // 2. Reject invalid / non-base64 payload
+  const badParsed = parseImageInput({ imageBase64: '<script>alert(1)</script>' });
+  assert.strictEqual(badParsed, null);
+
+  // 3. Detect pitch-black image (finger covering camera lens -> FAKE_OR_MISMATCH)
+  const darkCheck = evaluateImageStatsHeuristic({ avgBrightness: 2.1, variance: 1.2, darkRatio: 0.99, isPitchBlack: true });
+  assert.strictEqual(darkCheck.isFakeOrJunk, true);
+  assert.strictEqual(darkCheck.imageVerification, 'FAKE_OR_MISMATCH');
+  assert.strictEqual(darkCheck.imageStatus, 'fake_or_junk');
+
+  // 4. Detect dim/unclear nighttime photo (UNCLEAR -> allow but needsAdminReview)
+  const unclearCheck = evaluateImageStatsHeuristic({ avgBrightness: 19.5, variance: 35.0, darkRatio: 0.90, isPitchBlack: false, isBlankSolid: false, isUnclear: true });
+  assert.strictEqual(unclearCheck.isFakeOrJunk, false);
+  assert.strictEqual(unclearCheck.isUnclear, true);
+  assert.strictEqual(unclearCheck.imageVerification, 'UNCLEAR');
+  assert.strictEqual(unclearCheck.imageStatus, 'unclear');
+
+  // 5. Detect normal outdoor scene stats (MATCH)
+  const validCheck = evaluateImageStatsHeuristic({ avgBrightness: 118.5, variance: 1420.0, darkRatio: 0.08, isPitchBlack: false, isBlankSolid: false });
+  assert.strictEqual(validCheck.isFakeOrJunk, false);
+  assert.strictEqual(validCheck.imageVerification, 'MATCH');
+  assert.strictEqual(validCheck.imageStatus, 'valid');
+});
+
 // ── Summary ──────────────────────────────────────────────────────
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);

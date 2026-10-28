@@ -1215,6 +1215,12 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const user = await User.findById(req.session.userId);
     if (!user) return res.status(401).json({ error: 'ไม่พบข้อมูลผู้ใช้' });
 
+    // ── Per-User Rate Limit Guard (ป้องกันการยิงสคริปต์น้ำท่วมฐานข้อมูล) ──
+    const floodErr = checkTicketCreationRateLimit(user._id);
+    if (floodErr) {
+      return res.status(429).json({ error: floodErr });
+    }
+
     // ── Input Type & Length Validations ──
     if (!rawDescription || typeof rawDescription !== 'string')
       return res.status(400).json({ error: 'กรุณากรอกรายละเอียดปัญหา' });
@@ -1245,12 +1251,6 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const validUrgs = ['normal', 'medium', 'urgent'];
     if (urgency && !validUrgs.includes(urgency) && urgency !== 'auto') {
       return res.status(400).json({ error: 'ระดับความเร่งด่วนไม่ถูกต้อง' });
-    }
-
-    // ── Per-User Rate Limit Guard (ป้องกันการยิงสคริปต์น้ำท่วมฐานข้อมูล) ──
-    const floodErr = checkTicketCreationRateLimit(user._id);
-    if (floodErr) {
-      return res.status(429).json({ error: floodErr });
     }
 
     // ── Strike & Suspension Guard (แบบที่ 3: Warning & Strike System) ──
@@ -1285,10 +1285,64 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     let aiDispatched = false;
     let aiReviewReason = null;
 
-    const autoResult = await classifyComplaint(description, { lat, lng });
+    let parsedImageStats = null;
+    if (req.body.imageStats) {
+      try {
+        parsedImageStats = typeof req.body.imageStats === 'string' ? JSON.parse(req.body.imageStats) : req.body.imageStats;
+      } catch (_) { parsedImageStats = null; }
+    }
+
+    const autoResult = await classifyComplaint(
+      description,
+      { lat, lng },
+      {
+        imageBase64: req.body.imageThumbBase64 || null,
+        imageMimeType: req.body.imageMimeType || 'image/jpeg',
+        imageStats: parsedImageStats
+      }
+    );
+
+    // ── ดักจับระดับที่ 3: FAKE_OR_MISMATCH (รูปปลอม/รูปแกล้งส่ง หรือ รูปไม่ตรงกับเรื่องที่แจ้งอย่างสิ้นเชิง) ──
+    const isFakeOrMismatch = Boolean(
+      autoResult.isImageBlocked ||
+      autoResult.imageVerification === 'FAKE_OR_MISMATCH' ||
+      autoResult.imageStatus === 'fake_or_junk' ||
+      autoResult.imageStatus === 'mismatch'
+    );
+    const imageSpamAction = String(req.body.imageSpamAction || process.env.IMAGE_SPAM_ACTION || 'block').toLowerCase();
+    let isImageSpamQuarantine = false;
+
+    if (isFakeOrMismatch) {
+      if (imageSpamAction === 'quarantine') {
+        // ทางเลือก (B): ส่งเข้ากล่องกักกันสแปม (Spam Quarantine) + แจกทัณฑ์บน (Strike)
+        isImageSpamQuarantine = true;
+      } else {
+        // ทางเลือก (A): บล็อกไม่ให้ส่งพร้อมบอกเหตุผลให้เปลี่ยนรูป (และลบไฟล์ชั่วคราวออกจาก Cloudinary)
+        if (req.files && isCloudinaryConfigured()) {
+          for (const file of req.files) {
+            const publicId = file.filename || file.public_id;
+            if (publicId) cloudinary.uploader.destroy(publicId).catch(() => {});
+          }
+        }
+        const imgBlockMsg = autoResult.imageReason || 'รูปภาพไม่สอดคล้องกับรายละเอียดที่แจ้ง กรุณาแนบรูปถ่ายสถานที่เกิดเหตุจริง';
+        return res.status(400).json({
+          error: `รูปภาพไม่ผ่านการตรวจสอบ: ${imgBlockMsg}`,
+          isImageBlocked: true,
+          imageVerification: 'FAKE_OR_MISMATCH',
+          imageStatus: autoResult.imageStatus || 'mismatch',
+          imageReason: imgBlockMsg
+        });
+      }
+    }
 
     // ── แบบที่ 1: Hard Block (ดักหน้าบ้านและ API ทันที) ──
     if (spamCheck.isHardBlock || autoResult.isHardBlock) {
+      if (req.files && isCloudinaryConfigured()) {
+        for (const file of req.files) {
+          const publicId = file.filename || file.public_id;
+          if (publicId) cloudinary.uploader.destroy(publicId).catch(() => {});
+        }
+      }
       const blockReason = spamCheck.reason || autoResult.spamReason || autoResult.reason || 'ระบบตรวจพบข้อความทดสอบหรือพิมพ์มั่ว';
       return res.status(400).json({
         error: `กรุณากรอกรายละเอียดปัญหาความเดือดร้อนที่เกิดขึ้นจริง (${blockReason})`,
@@ -1298,14 +1352,14 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
       });
     }
 
-    if (!finalCategory || finalCategory === 'auto') {
+    if (!finalCategory || finalCategory === 'auto' || autoResult.visualDisambiguated) {
       finalCategory = autoResult.category || 'Road';
-      if (!finalUrgency || (finalUrgency === 'normal' && autoResult.urgency && autoResult.urgency !== 'normal')) {
+      if (!finalUrgency || autoResult.visualDisambiguated || (finalUrgency === 'normal' && autoResult.urgency && autoResult.urgency !== 'normal')) {
         finalUrgency = autoResult.urgency || 'normal';
       }
       isAmbiguous = autoResult.isAmbiguous;
       aiConfidence = autoResult.confidence;
-      aiReviewReason = autoResult.reason;
+      aiReviewReason = autoResult.imageReason || autoResult.reason;
     } else {
       // Validate category exists if citizen selected manually
       const categoryExists = await Category.findOne({ name: finalCategory });
@@ -1318,6 +1372,15 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
         aiConfidence = 'low';
         aiReviewReason = autoResult.reason;
       }
+    }
+
+    // ── ระดับที่ 2: UNCLEAR (ภาพมืด/เบลอ/ดูยาก แต่ไม่ใช่รูปแกล้ง) ──
+    // อนุโลมไม่บล็อกและไม่หักแต้มผู้ใช้ แต่ตั้ง needsAdminReview: true ส่งเข้าคิวให้ Admin ดูรูปตัดสินใจก่อนส่งช่าง
+    if (autoResult.imageVerification === 'UNCLEAR' || autoResult.imageStatus === 'unclear') {
+      isAmbiguous = true;
+      needsAdminReview = true;
+      aiConfidence = 'low';
+      aiReviewReason = autoResult.imageReason || 'ภาพถ่ายค่อนข้างมืด เบลอ หรือเห็นปัญหาไม่ชัด รอแอดมินตรวจสอบรูปภาพก่อนจ่ายงานช่าง';
     }
 
     let score = finalUrgency === 'urgent' ? 90 : finalUrgency === 'medium' ? 60 : 30;
@@ -1340,13 +1403,28 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     const ticketId = 'TKT-' + String(seq).padStart(5, '0');
 
     // ── ตรวจสอบ Soft Quarantine (แบบที่ 2: Soft Quarantine) ──
-    const isSpam = Boolean(spamCheck.isSpam || autoResult.isSpam);
+    const isSpam = Boolean(spamCheck.isSpam || autoResult.isSpam || isImageSpamQuarantine);
+    const spamType = spamCheck.spamType !== 'none'
+      ? spamCheck.spamType
+      : (isImageSpamQuarantine ? 'ai_flagged' : (autoResult.spamType || 'joke'));
+    const spamFlag = spamCheck.isSpam
+      ? spamCheck.spamFlag
+      : (isImageSpamQuarantine
+          ? (autoResult.imageStatus === 'fake_or_junk' ? 'junk' : 'irrelevant')
+          : (autoResult.spamFlag || 'junk'));
+    const aiCredibilityScore = isSpam
+      ? Math.min(spamCheck.aiCredibilityScore, autoResult.aiCredibilityScore || (isImageSpamQuarantine ? 15 : 100))
+      : (autoResult.aiCredibilityScore || 95);
+    const spamReason = isImageSpamQuarantine
+      ? (`แนบรูปภาพปลอม/ไม่ตรงกับเรื่องที่แจ้ง: ${autoResult.imageReason || 'ตรวจพบรูปแกล้งส่งหรือไม่เกี่ยวข้อง'}`)
+      : (spamCheck.reason || autoResult.spamReason || 'ตรวจพบข้อความเล่นๆ หรือไม่เกี่ยวข้องกับบริการสาธารณะ');
+    if (false) {
     const spamType = spamCheck.spamType !== 'none' ? spamCheck.spamType : (autoResult.spamType || 'joke');
     const spamFlag = spamCheck.isSpam ? spamCheck.spamFlag : (autoResult.spamFlag || 'junk');
     const aiCredibilityScore = isSpam
       ? Math.min(spamCheck.aiCredibilityScore, autoResult.aiCredibilityScore || 100)
       : (autoResult.aiCredibilityScore || 95);
-    const spamReason = spamCheck.reason || autoResult.spamReason || 'ตรวจพบข้อความเล่นๆ หรือไม่เกี่ยวข้องกับบริการสาธารณะ';
+    const _unused2 = spamCheck.reason || autoResult.spamReason || 'ตรวจพบข้อความเล่นๆ หรือไม่เกี่ยวข้องกับบริการสาธารณะ'; }
 
     let initialStatus = 'pending';
     let assignedTo = null;
@@ -1557,21 +1635,21 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     const TRANSITIONS = {
       // technicians: can move forward, accept pending/reopened, or reject
       technician: {
-        pending:     ['assigned', 'in_progress'],
-        assigned:    ['in_progress', 'rejected', 'assigned'],
+        pending: ['assigned', 'in_progress'],
+        assigned: ['in_progress', 'rejected', 'assigned'],
         in_progress: ['completed', 'rejected'],
-        reopened:    ['assigned', 'in_progress', 'rejected'],
-        completed:   [],
-        rejected:    []
+        reopened: ['assigned', 'in_progress', 'rejected'],
+        completed: [],
+        rejected: []
       },
       // admin: can change to any status except backward (but allow override for corrections)
       admin: {
-        pending:     ['assigned', 'rejected', 'in_progress'],
-        assigned:    ['in_progress', 'completed', 'rejected', 'pending'],
+        pending: ['assigned', 'rejected', 'in_progress'],
+        assigned: ['in_progress', 'completed', 'rejected', 'pending'],
         in_progress: ['completed', 'rejected', 'assigned'],
-        reopened:    ['assigned', 'in_progress', 'pending', 'rejected'],
-        completed:   ['in_progress'],   // admin can reopen
-        rejected:    ['pending']        // admin can revert reject
+        reopened: ['assigned', 'in_progress', 'pending', 'rejected'],
+        completed: ['in_progress'],   // admin can reopen
+        rejected: ['pending']        // admin can revert reject
       }
     };
 
@@ -1602,9 +1680,9 @@ router.put('/:id/status', requireAuth, async (req, res) => {
       const actionText = status === 'in_progress' ? 'ช่างรับงานและลงพื้นที่เข้าปฏิบัติงาน' : 'ช่างรับงานและเตรียมลงพื้นที่';
       const updated = await Ticket.findOneAndUpdate(
         { ticketId: req.params.id },
-        { 
-          assignedTo: caller._id, 
-          assignedName: caller.firstName + ' ' + caller.lastName, 
+        {
+          assignedTo: caller._id,
+          assignedName: caller.firstName + ' ' + caller.lastName,
           status: status,
           $push: {
             timeline: {
@@ -2718,126 +2796,126 @@ router.get('/:id/work-order', async (req, res) => {
     const signedDate = ticket.workOrder?.signedAt ? new Date(ticket.workOrder.signedAt).toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' }) : '—';
 
     const html = '<!DOCTYPE html>' +
-'<html lang="th">' +
-'<head>' +
-'  <meta charset="UTF-8" />' +
-'  <title>ใบงานปฏิบัติการและส่งมอบงาน — ' + ticket.ticketId + '</title>' +
-'  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet" />' +
-'  <style>' +
-'    @page { size: A4; margin: 12mm 15mm; }' +
-'    * { box-sizing: border-box; margin: 0; padding: 0; }' +
-'    body { font-family: "Sarabun", sans-serif; background: #f8fafc; color: #1e293b; padding: 24px; font-size: 13px; line-height: 1.5; }' +
-'    .print-container { max-width: 800px; margin: 0 auto; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 32px 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }' +
-'    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; }' +
-'    .logo-area { display: flex; align-items: center; gap: 12px; }' +
-'    .logo-icon { width: 44px; height: 44px; background: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; font-weight: bold; }' +
-'    .title-main { font-size: 18px; font-weight: 700; color: #0f172a; }' +
-'    .title-sub { font-size: 12px; color: #64748b; }' +
-'    .qr-area { text-align: center; }' +
-'    .qr-area img { width: 84px; height: 84px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px; }' +
-'    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }' +
-'    .badge-urgent { background: #fee2e2; color: #991b1b; }' +
-'    .badge-medium { background: #fef3c7; color: #92400e; }' +
-'    .badge-normal { background: #e0f2fe; color: #075985; }' +
-'    .badge-status { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }' +
-'    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }' +
-'    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; }' +
-'    .box-title { font-weight: 700; font-size: 12px; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; }' +
-'    .row { display: flex; margin-bottom: 4px; font-size: 12.5px; }' +
-'    .row-label { width: 110px; color: #64748b; font-weight: 500; flex-shrink: 0; }' +
-'    .row-val { color: #0f172a; font-weight: 600; word-break: break-word; }' +
-'    .photos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }' +
-'    .photo-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; background: #fafafa; }' +
-'    .photo-card img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; }' +
-'    .photo-label { font-size: 11px; font-weight: 600; color: #475569; margin-top: 6px; }' +
-'    .signatures-area { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; }' +
-'    .sig-box { border: 1px dashed #94a3b8; border-radius: 6px; padding: 12px; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; background: #fdfdfd; }' +
-'    .sig-img { max-height: 60px; max-width: 180px; object-fit: contain; }' +
-'    .sig-line { width: 80%; border-bottom: 1px solid #334155; margin: 8px 0 4px; }' +
-'    .print-actions { text-align: center; margin-bottom: 20px; }' +
-'    .btn-print { background: #2563eb; color: #fff; border: none; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }' +
-'    .btn-print:hover { background: #1d4ed8; }' +
-'    @media print {' +
-'      body { background: #fff; padding: 0; }' +
-'      .print-container { border: none; box-shadow: none; padding: 0; max-width: 100%; }' +
-'      .print-actions { display: none !important; }' +
-'    }' +
-'  </style>' +
-'</head>' +
-'<body>' +
-'  <div class="print-actions">' +
-'    <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / บันทึกเป็น PDF (Print Document)</button>' +
-'  </div>' +
-'  <div class="print-container">' +
-'    <div class="header">' +
-'      <div class="logo-area">' +
-'        <div class="logo-icon">RN</div>' +
-'        <div>' +
-'          <div class="title-main">ใบงานปฏิบัติการและส่งมอบงานซ่อมบำรุง</div>' +
-'          <div class="title-sub">ResolveNow Municipal Incident & Work Order Report</div>' +
-'        </div>' +
-'      </div>' +
-'      <div class="qr-area">' +
-'        <img src="' + qrImgUrl + '" alt="QR Code" />' +
-'        <div style="font-size:10px;color:#64748b;margin-top:2px;">สแกนตรวจสอบสถานะ</div>' +
-'      </div>' +
-'    </div>' +
-'    <div class="grid-2">' +
-'      <div class="box">' +
-'        <div class="box-title">ข้อมูลเคสเรื่องร้องเรียน (Ticket Details)</div>' +
-'        <div class="row"><div class="row-label">รหัสเคส:</div><div class="row-val" style="color:#2563eb;font-size:14px">' + ticket.ticketId + '</div></div>' +
-'        <div class="row"><div class="row-label">หมวดหมู่งาน:</div><div class="row-val">' + ticket.category + '</div></div>' +
-'        <div class="row"><div class="row-label">ความเร่งด่วน:</div><div class="row-val"><span class="badge badge-' + ticket.urgency + '">' + (urgMap[ticket.urgency] || ticket.urgency) + '</span></div></div>' +
-'        <div class="row"><div class="row-label">สถานะปัจจุบัน:</div><div class="row-val"><span class="badge badge-status">' + (stMap[ticket.status] || ticket.status) + '</span></div></div>' +
-'        <div class="row"><div class="row-label">วันที่รับแจ้ง:</div><div class="row-val">' + createdDate + '</div></div>' +
-'      </div>' +
-'      <div class="box">' +
-'        <div class="box-title">ข้อมูลสถานที่และเจ้าหน้าที่ (Location & Dispatch)</div>' +
-'        <div class="row"><div class="row-label">ผู้แจ้งเรื่อง:</div><div class="row-val">' + ticket.citizenName + '</div></div>' +
-'        <div class="row"><div class="row-label">สถานที่เกิดเหตุ:</div><div class="row-val">' + ticket.location + '</div></div>' +
-'        ' + (ticket.lat && ticket.lng ? ('<div class="row"><div class="row-label">พิกัด GPS:</div><div class="row-val" style="font-family:monospace">' + ticket.lat.toFixed(5) + ', ' + ticket.lng.toFixed(5) + '</div></div>') : '') +
-'        <div class="row"><div class="row-label">เจ้าหน้าที่รับงาน:</div><div class="row-val">' + (ticket.assignedName || '— ยังไม่ได้มอบหมาย —') + '</div></div>' +
-'        ' + (ticket.slaBreached ? '<div class="row"><div class="row-label">สถานะ SLA:</div><div class="row-val" style="color:#dc2626">เกินกำหนดเวลา (Breached)</div></div>' : '<div class="row"><div class="row-label">สถานะ SLA:</div><div class="row-val" style="color:#16a34a">ภายในกำหนดเวลา (On-Track)</div></div>') +
-'      </div>' +
-'    </div>' +
-'    <div class="box" style="margin-bottom:16px">' +
-'      <div class="box-title">รายละเอียดปัญหาและการแก้ไข (Description & Resolution Notes)</div>' +
-'      <div style="margin: 6px 0; font-size:12.5px; color:#334155;"><strong>รายละเอียดจากผู้แจ้ง:</strong> ' + ticket.description + '</div>' +
-'      ' + (ticket.workOrder?.notes ? ('<div style="margin: 6px 0; font-size:12.5px; color:#0f172a; padding:6px 10px; background:#eff6ff; border-radius:4px;"><strong>บันทึกผลการปฏิบัติงานของช่าง:</strong> ' + ticket.workOrder.notes + '</div>') : '') +
-'    </div>' +
-'    <div class="photos-grid">' +
-'      <div class="photo-card">' +
-'        ' + (ticket.beforeImage || ticket.citizenImage ? ('<img src="' + (ticket.beforeImage || ticket.citizenImage) + '" alt="Before" />') : '<div style="height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">ไม่มีภาพก่อนซ่อม</div>') +
-'        <div class="photo-label">📸 ภาพก่อนดำเนินการซ่อม (Before Action)</div>' +
-'      </div>' +
-'      <div class="photo-card">' +
-'        ' + (ticket.afterImage ? ('<img src="' + ticket.afterImage + '" alt="After" />') : '<div style="height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">ยังไม่มีภาพหลังซ่อม</div>') +
-'        <div class="photo-label">✨ ภาพหลังดำเนินการแล้วเสร็จ (After Action)</div>' +
-'      </div>' +
-'    </div>' +
-'    <div class="signatures-area">' +
-'      <div class="sig-box">' +
-'        <div style="font-weight:600;font-size:12px;color:#475569">เจ้าหน้าที่ผู้ปฏิบัติงาน / ช่างผู้รับผิดชอบ</div>' +
-'        <div style="height:50px;display:flex;align-items:center;justify-content:center;color:#64748b;font-style:italic;">' +
-'          ' + (ticket.assignedName ? ('(ลงชื่อ) ' + ticket.assignedName) : '(ยังไม่ได้รับงาน)') +
-'        </div>' +
-'        <div class="sig-line"></div>' +
-'        <div style="font-size:11px;color:#64748b">วันที่: ' + new Date().toLocaleDateString('th-TH') + '</div>' +
-'      </div>' +
-'      <div class="sig-box">' +
-'        <div style="font-weight:600;font-size:12px;color:#475569">ผู้ตรวจรับมอบงาน / ประชาชนผู้แจ้งเรื่อง</div>' +
-'        ' + (ticket.workOrder?.signatureData ? ('<img src="' + ticket.workOrder.signatureData + '" class="sig-img" alt="Digital Signature" />') : '<div style="height:50px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;">[ ยังไม่ได้ลงนามดิจิทัล ]</div>') +
-'        <div class="sig-line"></div>' +
-'        <div style="font-size:12px;font-weight:600;color:#0f172a">' + (ticket.workOrder?.signedByName || '(ลงชื่อผู้ตรวจรับมอบงาน)') + '</div>' +
-'        <div style="font-size:11px;color:#64748b">วันที่: ' + signedDate + '</div>' +
-'      </div>' +
-'    </div>' +
-'    <div style="margin-top:24px;text-align:center;font-size:10.5px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:10px;">' +
-'      ResolveNow Smart City Incident Dispatch System • เอกสารออกโดยระบบอัตโนมัติ • ' + new Date().toLocaleString('th-TH') +
-'    </div>' +
-'  </div>' +
-'</body>' +
-'</html>';
+      '<html lang="th">' +
+      '<head>' +
+      '  <meta charset="UTF-8" />' +
+      '  <title>ใบงานปฏิบัติการและส่งมอบงาน — ' + ticket.ticketId + '</title>' +
+      '  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet" />' +
+      '  <style>' +
+      '    @page { size: A4; margin: 12mm 15mm; }' +
+      '    * { box-sizing: border-box; margin: 0; padding: 0; }' +
+      '    body { font-family: "Sarabun", sans-serif; background: #f8fafc; color: #1e293b; padding: 24px; font-size: 13px; line-height: 1.5; }' +
+      '    .print-container { max-width: 800px; margin: 0 auto; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 32px 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }' +
+      '    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; }' +
+      '    .logo-area { display: flex; align-items: center; gap: 12px; }' +
+      '    .logo-icon { width: 44px; height: 44px; background: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; font-weight: bold; }' +
+      '    .title-main { font-size: 18px; font-weight: 700; color: #0f172a; }' +
+      '    .title-sub { font-size: 12px; color: #64748b; }' +
+      '    .qr-area { text-align: center; }' +
+      '    .qr-area img { width: 84px; height: 84px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px; }' +
+      '    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11px; }' +
+      '    .badge-urgent { background: #fee2e2; color: #991b1b; }' +
+      '    .badge-medium { background: #fef3c7; color: #92400e; }' +
+      '    .badge-normal { background: #e0f2fe; color: #075985; }' +
+      '    .badge-status { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }' +
+      '    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }' +
+      '    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; }' +
+      '    .box-title { font-weight: 700; font-size: 12px; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; }' +
+      '    .row { display: flex; margin-bottom: 4px; font-size: 12.5px; }' +
+      '    .row-label { width: 110px; color: #64748b; font-weight: 500; flex-shrink: 0; }' +
+      '    .row-val { color: #0f172a; font-weight: 600; word-break: break-word; }' +
+      '    .photos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }' +
+      '    .photo-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; background: #fafafa; }' +
+      '    .photo-card img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; }' +
+      '    .photo-label { font-size: 11px; font-weight: 600; color: #475569; margin-top: 6px; }' +
+      '    .signatures-area { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; }' +
+      '    .sig-box { border: 1px dashed #94a3b8; border-radius: 6px; padding: 12px; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; background: #fdfdfd; }' +
+      '    .sig-img { max-height: 60px; max-width: 180px; object-fit: contain; }' +
+      '    .sig-line { width: 80%; border-bottom: 1px solid #334155; margin: 8px 0 4px; }' +
+      '    .print-actions { text-align: center; margin-bottom: 20px; }' +
+      '    .btn-print { background: #2563eb; color: #fff; border: none; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }' +
+      '    .btn-print:hover { background: #1d4ed8; }' +
+      '    @media print {' +
+      '      body { background: #fff; padding: 0; }' +
+      '      .print-container { border: none; box-shadow: none; padding: 0; max-width: 100%; }' +
+      '      .print-actions { display: none !important; }' +
+      '    }' +
+      '  </style>' +
+      '</head>' +
+      '<body>' +
+      '  <div class="print-actions">' +
+      '    <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / บันทึกเป็น PDF (Print Document)</button>' +
+      '  </div>' +
+      '  <div class="print-container">' +
+      '    <div class="header">' +
+      '      <div class="logo-area">' +
+      '        <div class="logo-icon">RN</div>' +
+      '        <div>' +
+      '          <div class="title-main">ใบงานปฏิบัติการและส่งมอบงานซ่อมบำรุง</div>' +
+      '          <div class="title-sub">ResolveNow Municipal Incident & Work Order Report</div>' +
+      '        </div>' +
+      '      </div>' +
+      '      <div class="qr-area">' +
+      '        <img src="' + qrImgUrl + '" alt="QR Code" />' +
+      '        <div style="font-size:10px;color:#64748b;margin-top:2px;">สแกนตรวจสอบสถานะ</div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="grid-2">' +
+      '      <div class="box">' +
+      '        <div class="box-title">ข้อมูลเคสเรื่องร้องเรียน (Ticket Details)</div>' +
+      '        <div class="row"><div class="row-label">รหัสเคส:</div><div class="row-val" style="color:#2563eb;font-size:14px">' + ticket.ticketId + '</div></div>' +
+      '        <div class="row"><div class="row-label">หมวดหมู่งาน:</div><div class="row-val">' + ticket.category + '</div></div>' +
+      '        <div class="row"><div class="row-label">ความเร่งด่วน:</div><div class="row-val"><span class="badge badge-' + ticket.urgency + '">' + (urgMap[ticket.urgency] || ticket.urgency) + '</span></div></div>' +
+      '        <div class="row"><div class="row-label">สถานะปัจจุบัน:</div><div class="row-val"><span class="badge badge-status">' + (stMap[ticket.status] || ticket.status) + '</span></div></div>' +
+      '        <div class="row"><div class="row-label">วันที่รับแจ้ง:</div><div class="row-val">' + createdDate + '</div></div>' +
+      '      </div>' +
+      '      <div class="box">' +
+      '        <div class="box-title">ข้อมูลสถานที่และเจ้าหน้าที่ (Location & Dispatch)</div>' +
+      '        <div class="row"><div class="row-label">ผู้แจ้งเรื่อง:</div><div class="row-val">' + ticket.citizenName + '</div></div>' +
+      '        <div class="row"><div class="row-label">สถานที่เกิดเหตุ:</div><div class="row-val">' + ticket.location + '</div></div>' +
+      '        ' + (ticket.lat && ticket.lng ? ('<div class="row"><div class="row-label">พิกัด GPS:</div><div class="row-val" style="font-family:monospace">' + ticket.lat.toFixed(5) + ', ' + ticket.lng.toFixed(5) + '</div></div>') : '') +
+      '        <div class="row"><div class="row-label">เจ้าหน้าที่รับงาน:</div><div class="row-val">' + (ticket.assignedName || '— ยังไม่ได้มอบหมาย —') + '</div></div>' +
+      '        ' + (ticket.slaBreached ? '<div class="row"><div class="row-label">สถานะ SLA:</div><div class="row-val" style="color:#dc2626">เกินกำหนดเวลา (Breached)</div></div>' : '<div class="row"><div class="row-label">สถานะ SLA:</div><div class="row-val" style="color:#16a34a">ภายในกำหนดเวลา (On-Track)</div></div>') +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="box" style="margin-bottom:16px">' +
+      '      <div class="box-title">รายละเอียดปัญหาและการแก้ไข (Description & Resolution Notes)</div>' +
+      '      <div style="margin: 6px 0; font-size:12.5px; color:#334155;"><strong>รายละเอียดจากผู้แจ้ง:</strong> ' + ticket.description + '</div>' +
+      '      ' + (ticket.workOrder?.notes ? ('<div style="margin: 6px 0; font-size:12.5px; color:#0f172a; padding:6px 10px; background:#eff6ff; border-radius:4px;"><strong>บันทึกผลการปฏิบัติงานของช่าง:</strong> ' + ticket.workOrder.notes + '</div>') : '') +
+      '    </div>' +
+      '    <div class="photos-grid">' +
+      '      <div class="photo-card">' +
+      '        ' + (ticket.beforeImage || ticket.citizenImage ? ('<img src="' + (ticket.beforeImage || ticket.citizenImage) + '" alt="Before" />') : '<div style="height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">ไม่มีภาพก่อนซ่อม</div>') +
+      '        <div class="photo-label">📸 ภาพก่อนดำเนินการซ่อม (Before Action)</div>' +
+      '      </div>' +
+      '      <div class="photo-card">' +
+      '        ' + (ticket.afterImage ? ('<img src="' + ticket.afterImage + '" alt="After" />') : '<div style="height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">ยังไม่มีภาพหลังซ่อม</div>') +
+      '        <div class="photo-label">✨ ภาพหลังดำเนินการแล้วเสร็จ (After Action)</div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="signatures-area">' +
+      '      <div class="sig-box">' +
+      '        <div style="font-weight:600;font-size:12px;color:#475569">เจ้าหน้าที่ผู้ปฏิบัติงาน / ช่างผู้รับผิดชอบ</div>' +
+      '        <div style="height:50px;display:flex;align-items:center;justify-content:center;color:#64748b;font-style:italic;">' +
+      '          ' + (ticket.assignedName ? ('(ลงชื่อ) ' + ticket.assignedName) : '(ยังไม่ได้รับงาน)') +
+      '        </div>' +
+      '        <div class="sig-line"></div>' +
+      '        <div style="font-size:11px;color:#64748b">วันที่: ' + new Date().toLocaleDateString('th-TH') + '</div>' +
+      '      </div>' +
+      '      <div class="sig-box">' +
+      '        <div style="font-weight:600;font-size:12px;color:#475569">ผู้ตรวจรับมอบงาน / ประชาชนผู้แจ้งเรื่อง</div>' +
+      '        ' + (ticket.workOrder?.signatureData ? ('<img src="' + ticket.workOrder.signatureData + '" class="sig-img" alt="Digital Signature" />') : '<div style="height:50px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;">[ ยังไม่ได้ลงนามดิจิทัล ]</div>') +
+      '        <div class="sig-line"></div>' +
+      '        <div style="font-size:12px;font-weight:600;color:#0f172a">' + (ticket.workOrder?.signedByName || '(ลงชื่อผู้ตรวจรับมอบงาน)') + '</div>' +
+      '        <div style="font-size:11px;color:#64748b">วันที่: ' + signedDate + '</div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div style="margin-top:24px;text-align:center;font-size:10.5px;color:#94a3b8;border-top:1px dashed #e2e8f0;padding-top:10px;">' +
+      '      ResolveNow Smart City Incident Dispatch System • เอกสารออกโดยระบบอัตโนมัติ • ' + new Date().toLocaleString('th-TH') +
+      '    </div>' +
+      '  </div>' +
+      '</body>' +
+      '</html>';
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
@@ -3106,7 +3184,6 @@ router.post('/quarantine/user-strikes/:userId', requireAuth, async (req, res) =>
       targetUser.spamStrikes = 0;
       targetUser.isSuspended = false;
       targetUser.suspendedUntil = null;
-      ticketCreationWindow.delete(targetUser._id.toString());
     } else if (action === 'add') {
       targetUser.spamStrikes = (targetUser.spamStrikes || 0) + 1;
       if (!targetUser.strikeHistory) targetUser.strikeHistory = [];

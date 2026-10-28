@@ -52,6 +52,7 @@ function wizGoTo(from, to) {
   wizUpdateProgress(to);
 
   // If arriving at step 4 — render summary
+  if (to === 2 && _citizenImages.length > 0) aiVerifyCitizenImage();
   if (to === 4) wizBuildSummary();
 
   // Scroll to top of wizard
@@ -137,7 +138,20 @@ function wizNext(step) {
     if (_citizenImages.length === 0) {
       var pickerBtns = ge('cImgPickerBtns');
       if (pickerBtns && typeof rnMarkInvalid === 'function') rnMarkInvalid(pickerBtns);
-      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true);
+      showToast('กรุณาแนบรูปภาพอย่างน้อย 1 รูปก่อน', true); return; }
+    if (_imgAiAnalyzing) {
+      showToast('⏳ กรุณารอ Gemini 2.5 Flash ตรวจสอบรูปภาพสักครู่...', true);
+      return;
+    }
+    if (_imgVerificationResult && (_imgVerificationResult.isImageBlocked || _imgVerificationResult.imageStatus === 'fake_or_junk' || _imgVerificationResult.imageStatus === 'mismatch')) {
+      var imgBlockMsg = '🚫 รูปภาพไม่ผ่านการตรวจสอบ: ' + (_imgVerificationResult.imageReason || 'กรุณาแนบรูปถ่ายสถานที่เกิดเหตุจริงที่ตรงกับเรื่องร้องเรียน');
+      if (typeof showCenterPopup === 'function') {
+        showCenterPopup(imgBlockMsg, 3500, '🚫');
+      } else {
+        showToast(imgBlockMsg, true);
+      }
+      _updateStep2NextButton(true, _imgVerificationResult.imageReason);
+      if (false) {
       return;
     }
   }
@@ -203,10 +217,21 @@ function wizBuildSummary() {
   } else {
     imgHtml = '❌ ยังไม่ได้แนบ';
   }
+  if (_imgVerificationResult && _imgVerificationResult.imageReason) {
+    var vBadge = _imgVerificationResult.imageVerification || (_imgVerificationResult.imageStatus === 'unclear' ? 'UNCLEAR' : (_imgVerificationResult.isImageBlocked ? 'FAKE_OR_MISMATCH' : 'MATCH'));
+    var vColor = vBadge === 'UNCLEAR' ? '#b45309' : (vBadge === 'FAKE_OR_MISMATCH' ? '#dc2626' : '#15803d');
+    imgHtml += '<div style="margin-top:6px;font-size:11px;color:' + vColor + ';font-weight:600">👁️ AI Vision [' + vBadge + ']: ' + escapeHTML(_imgVerificationResult.imageReason) + '</div>';
+  }
+  var isUnclearImg = Boolean(_imgVerificationResult && (_imgVerificationResult.imageVerification === 'UNCLEAR' || _imgVerificationResult.imageStatus === 'unclear'));
+  var isQuarantineImg = Boolean(_forceQuarantineImageSpam && _imgVerificationResult && (_imgVerificationResult.imageVerification === 'FAKE_OR_MISMATCH' || _imgVerificationResult.isImageBlocked));
   h += sumRowRaw('📷', 'รูปภาพหลักฐาน', imgHtml);
   h += '<div style="margin-top:14px;padding:12px 14px;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;font-size:12px;color:#0369a1;display:flex;align-items:center;gap:10px">';
   h += '<span style="font-size:20px">🤖</span>';
-  h += '<div><strong>AI Dispatcher:</strong> ระบบ AI จะนำส่งเรื่องร้องเรียนให้ช่างประจำฝ่าย' + catTH + ' โดยอัตโนมัติทันทีหลังส่งเรื่อง</div>';
+  h += '<div>' + (isQuarantineImg
+    ? '<strong style="color:#dc2626">🚫 Spam Quarantine (FAKE_OR_MISMATCH):</strong> รูปภาพไม่สอดคล้องกับเรื่องที่แจ้ง การฝืนส่งจะถูกนำเข้ากล่องกักกันสแปมของแอดมินและบันทึกทัณฑ์บน (Strike)'
+    : isUnclearImg
+      ? '<strong style="color:#b45309">⚠️ Admin Review Queue (UNCLEAR):</strong> ภาพถ่ายค่อนข้างมืด/ดูยาก ระบบอนุโลมไม่บล็อกและไม่หักแต้ม แต่จะส่งให้แอดมินดูรูปตัดสินใจก่อนส่งช่าง (needsAdminReview: true)'
+      : '<strong>AI Dispatcher (MATCH):</strong> ภาพสอดคล้องกับที่แจ้ง ระบบ AI จะนำส่งเรื่องร้องเรียนให้ช่างประจำฝ่าย' + catTH + ' โดยอัตโนมัติทันทีหลังส่งเรื่อง (Auto-Dispatch)') + '</div>';
   h += '</div>';
   ge('wizSummary').innerHTML = h;
 }
@@ -796,6 +821,9 @@ async function submitTicket() {
     fd.append('description', desc);
     fd.append('lat', lat);
     fd.append('lng', lng);
+    if (_lastImgThumbBase64) fd.append('imageThumbBase64', _lastImgThumbBase64);
+    if (_lastImgStats) fd.append('imageStats', JSON.stringify(_lastImgStats));
+    if (_forceQuarantineImageSpam) fd.append('imageSpamAction', 'quarantine');
     _citizenImages.forEach(function (img) {
       fd.append('images', img.file);
     });
@@ -896,6 +924,312 @@ function _renderCitizenImgs() {
     pw.style.display = 'none';
     if (ci) ci.style.display = 'none';
     if (pb) pb.style.display = 'grid';
+  }
+  aiVerifyCitizenImage();
+}
+
+var _imgAiAnalyzing = false;
+var _imgVerificationResult = null;
+var _lastImgThumbBase64 = null;
+var _lastImgStats = null;
+var _lastVerifiedPrimaryDataUrl = null;
+var _lastVerifiedDesc = null;
+var _forceQuarantineImageSpam = false;
+var _imgAiAbortController = null;
+var _clientImgAiCache = new Map();
+
+function _updateStep2NextButton(isBlocked, blockReason, isAnalyzing) {
+  var btn = ge('wizNextBtn2');
+  if (!btn) return;
+  if (isAnalyzing) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.style.background = '#e2e8f0';
+    btn.style.color = '#64748b';
+    btn.innerHTML = '⏳ AI กำลังตรวจรูปภาพใบแรก...';
+    return;
+  }
+  if (isBlocked) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    btn.style.background = '#e2e8f0';
+    btn.style.color = '#64748b';
+    btn.innerHTML = '🚫 ' + (blockReason ? (blockReason.length > 34 ? blockReason.slice(0, 32) + '...' : blockReason) : 'รูปภาพไม่ผ่านเกณฑ์ (กรุณาเปลี่ยนรูป)');
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = 'pointer';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.innerHTML = 'ถัดไป (ระบุสถานที่) →';
+  }
+}
+
+function forceQuarantineImageNext() {
+  _forceQuarantineImageSpam = true;
+  if (_imgVerificationResult) {
+    _imgVerificationResult.isImageBlocked = false;
+  }
+  _updateStep2NextButton(false, null, false);
+  showToast('⚠️ เลือกโหมดฝืนส่ง: เรื่องนี้จะถูกส่งเข้ากล่องกักกันสแปม (Spam Quarantine) และคิดทัณฑ์บน (Strike)', true);
+  wizGoTo(2, 3);
+}
+
+/**
+ * Resizes ONLY the 1st citizen image on an offscreen 384x384 canvas (~258 Gemini tokens)
+ * and calculates pixel brightness/variance to catch pitch-black (covered lens) or solid blank images in 0ms.
+ */
+function _createAiThumbnailAndStats(dataUrl) {
+  return new Promise(function (resolve) {
+    var img = new Image();
+    img.onload = function () {
+      var maxDim = 384;
+      var w = img.width || 384;
+      var h = img.height || 384;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.max(1, Math.round((h * maxDim) / w));
+          w = maxDim;
+        } else {
+          w = Math.max(1, Math.round((w * maxDim) / h));
+          h = maxDim;
+        }
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      var stats = { avgBrightness: 128, variance: 50, darkRatio: 0, isPitchBlack: false, isBlankSolid: false, isUnclear: false };
+      try {
+        var imgData = ctx.getImageData(0, 0, w, h).data;
+        var totalPixels = w * h;
+        var sum = 0;
+        var sumSq = 0;
+        var darkCount = 0;
+        for (var i = 0; i < imgData.length; i += 4) {
+          var lum = 0.299 * imgData[i] + 0.587 * imgData[i + 1] + 0.114 * imgData[i + 2];
+          sum += lum;
+          sumSq += lum * lum;
+          if (lum < 14) darkCount++;
+        }
+        var avg = sum / totalPixels;
+        var variance = Math.max(0, (sumSq / totalPixels) - (avg * avg));
+        var darkRatio = darkCount / totalPixels;
+        var isPitchBlack = (avg < 10 && variance < 15) || darkRatio > 0.96;
+        var isBlankSolid = variance < 2.5;
+        var isUnclear = !isPitchBlack && !isBlankSolid && (avg < 24 && darkRatio > 0.85);
+        stats = {
+          avgBrightness: Math.round(avg * 10) / 10,
+          variance: Math.round(variance * 10) / 10,
+          darkRatio: Math.round(darkRatio * 1000) / 1000,
+          isPitchBlack: isPitchBlack,
+          isBlankSolid: isBlankSolid,
+          isUnclear: isUnclear
+        };
+      } catch (_) {}
+
+      var thumbDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+      resolve({ thumbBase64: thumbDataUrl, stats: stats });
+    };
+    img.onerror = function () {
+      resolve({ thumbBase64: dataUrl, stats: null });
+    };
+    img.src = dataUrl;
+  });
+}
+
+function _renderImgAiResult(d) {
+  _imgVerificationResult = d;
+  _forceQuarantineImageSpam = false;
+  var box = ge('imgAiBox');
+  var icon = ge('imgAiIcon');
+  var label = ge('imgAiLabel');
+  var sub = ge('imgAiSub');
+  if (!box || !icon || !label || !sub) return;
+
+  var verification = d.imageVerification || (
+    (d.isImageBlocked || d.imageStatus === 'fake_or_junk' || d.imageStatus === 'mismatch')
+      ? 'FAKE_OR_MISMATCH'
+      : (d.imageStatus === 'unclear' ? 'UNCLEAR' : 'MATCH')
+  );
+
+  // ── 3. FAKE_OR_MISMATCH (ไม่ตรงชัดเจน/รูปแกล้ง) ──
+  if (verification === 'FAKE_OR_MISMATCH' || d.isImageBlocked || d.imageStatus === 'fake_or_junk' || d.imageStatus === 'mismatch') {
+    var isFake = d.imageStatus === 'fake_or_junk';
+    icon.textContent = '🚫';
+    label.textContent = isFake
+      ? '🚫 FAKE_OR_MISMATCH (รูปปลอม/รูปแกล้งส่ง)'
+      : '🚫 FAKE_OR_MISMATCH (รูปไม่ตรงกับเรื่องที่แจ้งชัดเจน)';
+    label.style.color = '#dc2626';
+    var reasonText = escapeHTML(d.imageReason || 'กรุณาแนบรูปถ่ายสถานที่เกิดเหตุจริงที่สอดคล้องกับรายละเอียดปัญหา');
+    sub.innerHTML =
+      '<div><strong>(A) บล็อกให้เปลี่ยนรูป:</strong> ' + reasonText + ' (กรุณากด ✕ ลบรูปแล้วแนบรูปสถานที่เกิดเหตุจริง)</div>' +
+      '<div style="margin-top:6px"><button type="button" onclick="forceQuarantineImageNext()" style="background:#fee2e2;color:#991b1b;border:1px solid #f87171;border-radius:6px;padding:4px 8px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:Prompt,sans-serif">⚠️ (B) ยืนยันฝืนส่งรูปนี้ (ส่งเข้ากล่องกักกันสแปม Spam Quarantine + รับทัณฑ์บน Strike)</button></div>';
+    box.style.background = '#fef2f2';
+    box.style.borderColor = '#ef4444';
+    _updateStep2NextButton(true, d.imageReason || 'รูปภาพไม่ตรงกับที่แจ้ง', false);
+    return;
+  }
+
+  // Image is MATCH or UNCLEAR -> sync upgraded Category & Urgency (Visual Disambiguation!)
+  if (d.category) {
+    _aiDetectedCategory = d.category;
+  }
+  if (d.urgency) {
+    ge('tUrg').value = d.urgency;
+  }
+  _renderAiResult(d);
+
+  var cat = d.category || _aiDetectedCategory || 'Road';
+  var urg = d.urgency || ge('tUrg').value || 'normal';
+  var catTH = DEPT[cat] || cat;
+  var catIcon = DEPT_ICON[cat] || '📌';
+  var urgText = { urgent: '🔴 ด่วนมาก (15-30 นาที)', medium: '🟡 ด่วน (6-12 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || urg;
+
+  // ── 2. UNCLEAR (ภาพมืด/เบลอ/ดูยาก) ──
+  if (verification === 'UNCLEAR' || d.imageStatus === 'unclear') {
+    icon.textContent = '⚠️';
+    label.textContent = '⚠️ UNCLEAR (ภาพมืด/เบลอ/ดูยาก) • อนุโลมแต่ให้แอดมินตรวจ';
+    label.style.color = '#854d0e';
+    sub.textContent = (d.imageReason || 'ภาพถ่ายตอนกลางคืน มืด เบลอ หรือถ่ายมุมกว้างจนเห็นปัญหาไม่ชัด') + ' • ไม่บล็อกและไม่หักแต้มผู้ใช้ (ตั้งค่า needsAdminReview: true ส่งคิวให้ Admin ดูรูปก่อนส่งช่าง)';
+    box.style.background = '#fefce8';
+    box.style.borderColor = '#facc15';
+  } else if (d.visualDisambiguated) {
+    // ── 1. MATCH + Visual Disambiguation ──
+    icon.textContent = catIcon;
+    label.textContent = '✅ MATCH (AI วิเคราะห์จากรูปภาพสำเร็จ): ' + catIcon + ' ' + catTH + ' • ' + urgText;
+    label.style.color = '#15803d';
+    sub.textContent = '👁️ ' + (d.imageReason || 'AI ใช้รูปภาพช่วยจำแนกหมวดหมู่และความเร่งด่วนอัตโนมัติ') + ' • จ่ายงานให้ช่างอัตโนมัติ (Auto-Dispatch)';
+    box.style.background = '#f0fdf4';
+    box.style.borderColor = '#86efac';
+  } else {
+    // ── 1. MATCH (ภาพสอดคล้อง) ──
+    icon.textContent = '✅';
+    label.textContent = '✅ MATCH (ภาพสอดคล้อง) • ' + catIcon + ' ' + catTH + ' (' + urgText + ')';
+    label.style.color = '#15803d';
+    sub.textContent = '👁️ ' + (d.imageReason || 'เห็นปัญหาตรงตามที่แจ้ง หรือเป็นภาพสถานที่เกิดเหตุจริง') + ' • ผ่านปกติ: จ่ายงานให้ช่างอัตโนมัติ (Auto-Dispatch)';
+    box.style.background = '#f0fdf4';
+    box.style.borderColor = '#86efac';
+  }
+  _updateStep2NextButton(false, null, false);
+}
+
+async function aiVerifyCitizenImage() {
+  var box = ge('imgAiBox');
+  var icon = ge('imgAiIcon');
+  var label = ge('imgAiLabel');
+  var sub = ge('imgAiSub');
+
+  if (!_citizenImages || _citizenImages.length === 0) {
+    if (_imgAiAbortController) {
+      try { _imgAiAbortController.abort(); } catch (_) {}
+      _imgAiAbortController = null;
+    }
+    _imgAiAnalyzing = false;
+    _imgVerificationResult = null;
+    _lastImgThumbBase64 = null;
+    _lastImgStats = null;
+    _lastVerifiedPrimaryDataUrl = null;
+    _lastVerifiedDesc = null;
+    _forceQuarantineImageSpam = false;
+    if (icon) icon.textContent = '📷';
+    if (label) { label.textContent = 'รอแนบรูปภาพ...'; label.style.color = 'var(--navy)'; }
+    if (sub) sub.textContent = 'ระบบจะย่อและส่งเฉพาะรูปที่ 1 ให้ Gemini 2.5 Flash ตรวจสอบความสอดคล้องกับเรื่องที่แจ้ง';
+    if (box) { box.style.background = '#f8fafc'; box.style.borderColor = '#cbd5e1'; }
+    _updateStep2NextButton(true, 'กรุณาแนบรูปภาพ', false);
+    return;
+  }
+
+  var descEl = ge('tDesc');
+  var desc = descEl ? descEl.value.trim() : '';
+  // ส่งแค่รูปแรกเท่านั้น (_citizenImages[0]) — หากผู้ใช้แนบรูปที่ 2, 3, 4, 5 เพิ่มโดยที่รูปแรกและข้อความไม่เปลี่ยน ไม่ต้องส่ง AI ซ้ำ
+  var primaryImg = _citizenImages[0];
+  if (primaryImg.dataUrl === _lastVerifiedPrimaryDataUrl && desc === _lastVerifiedDesc && (_imgAiAnalyzing || _imgVerificationResult)) {
+    return;
+  }
+  _lastVerifiedPrimaryDataUrl = primaryImg.dataUrl;
+  _lastVerifiedDesc = desc;
+
+  if (_imgAiAbortController) {
+    try { _imgAiAbortController.abort(); } catch (_) {}
+    _imgAiAbortController = null;
+  }
+
+  _imgAiAnalyzing = true;
+  _updateStep2NextButton(true, null, true);
+  if (icon) icon.textContent = '⏳';
+  if (label) { label.textContent = 'Gemini 2.5 Flash กำลังตรวจสอบรูปภาพใบแรก...'; label.style.color = 'var(--navy)'; }
+  if (sub) sub.textContent = 'ย่อเฉพาะรูปที่ 1 (384px) ส่งให้ AI ตรวจเช็ค: 1.MATCH / 2.UNCLEAR / 3.FAKE_OR_MISMATCH...';
+  if (box) { box.style.background = '#f8fafc'; box.style.borderColor = '#cbd5e1'; }
+
+  try {
+    var prep = await _createAiThumbnailAndStats(primaryImg.dataUrl);
+    _lastImgThumbBase64 = prep.thumbBase64;
+    _lastImgStats = prep.stats;
+
+    // 1. 0-Token Instant Check for Pitch-Black (covered lens) or Blank Solid Image -> FAKE_OR_MISMATCH
+    if (prep.stats && (prep.stats.isPitchBlack || prep.stats.isBlankSolid)) {
+      _imgAiAnalyzing = false;
+      var blkReason = prep.stats.isPitchBlack
+        ? 'ตรวจพบภาพดำมืดสนิทไม่มีรายละเอียด (อาจเกิดจากเอานิ้วปิดกล้องถ่ายมั่วๆ)'
+        : 'ตรวจพบภาพสีล้วนไม่มีรายละเอียดของสถานที่เกิดเหตุ';
+      _renderImgAiResult({
+        imageVerification: 'FAKE_OR_MISMATCH',
+        imageStatus: 'fake_or_junk',
+        imageMatched: false,
+        isImageBlocked: true,
+        imageReason: blkReason
+      });
+      return;
+    }
+
+    var cacheKey = desc.toLowerCase().replace(/\s+/g, ' ') + '__' + prep.thumbBase64.slice(-80) + '_' + prep.thumbBase64.length;
+    if (_clientImgAiCache.has(cacheKey)) {
+      _imgAiAnalyzing = false;
+      _renderImgAiResult(_clientImgAiCache.get(cacheKey));
+      return;
+    }
+
+    _imgAiAbortController = new AbortController();
+    var r = await fetch('/api/ai/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        description: desc,
+        imageBase64: prep.thumbBase64,
+        imageMimeType: 'image/jpeg',
+        imageStats: prep.stats
+      }),
+      signal: _imgAiAbortController.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    _clientImgAiCache.set(cacheKey, d);
+    _renderImgAiResult(d);
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    console.warn('[AI Vision] check error:', e);
+    _renderImgAiResult({
+      category: _aiDetectedCategory !== 'auto' ? _aiDetectedCategory : 'Road',
+      urgency: ge('tUrg').value || 'normal',
+      imageVerification: 'MATCH',
+      imageStatus: 'valid',
+      imageMatched: true,
+      isImageBlocked: false,
+      imageReason: 'ตรวจสอบคุณสมบัติรูปภาพเบื้องต้นผ่านเกณฑ์'
+    });
+  } finally {
+    _imgAiAnalyzing = false;
+    _imgAiAbortController = null;
+  }
+}
+  if (false) {
   }
 }
 

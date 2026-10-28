@@ -650,8 +650,23 @@
               </div>
 
               <div class="wiz-nav">
+                <div id="imgAiBoxWrap" style="grid-column:1/-1;width:100%;margin-bottom:14px">
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px">
+                    <span>👁️</span> Gemini 2.5 Flash ตรวจสอบรูปภาพกับเรื่องที่แจ้ง
+                  </div>
+                  <div class="urg-box" id="imgAiBox" style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:var(--transition)">
+                    <span class="urg-icon" id="imgAiIcon" style="font-size:24px">📷</span>
+                    <div style="flex:1">
+                      <div class="urg-label" id="imgAiLabel" style="font-size:13px;font-weight:700;color:var(--navy)">รอแนบรูปภาพ...</div>
+                      <div class="urg-sub" id="imgAiSub" style="font-size:11px;color:var(--muted);margin-top:2px">แนบรูปสถานที่เกิดเหตุจริงเพื่อให้ AI ตรวจสอบความสอดคล้องกับรายละเอียดที่แจ้ง</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wiz-nav">
                 <button class="wiz-back btn-ripple" onclick="wizBack(2)">← ย้อนกลับ</button>
-                <button class="wiz-next btn-ripple" onclick="wizNext(2)">ถัดไป (ระบุสถานที่) →</button>
+                <button class="wiz-next btn-ripple" id="wizNextBtn2" onclick="wizNext(2)" style="opacity:0.5;cursor:not-allowed;background:#e2e8f0;color:#64748b" disabled>ถัดไป (ระบุสถานที่) →</button>
               </div>
             </div>
           </div>
