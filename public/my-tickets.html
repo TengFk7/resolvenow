@@ -684,6 +684,12 @@
       </div>
 
       <div class="mytk-actions">
+        <!-- 6-Layer Security Status Pill -->
+        <button type="button" class="sec-status-pill" id="secHeaderStatusPill" onclick="openSecurityAuditModal()" title="คลิกเพื่อดูรายงานความปลอดภัย 6 ชั้น">
+          <span class="sec-status-dot"></span>
+          <span id="secHeaderPillText">🛡️ 6-Layer Security: Checking...</span>
+        </button>
+
         <!-- Theme Switcher Button -->
         <button type="button" class="mytk-btn-sm" onclick="toggleThemeQuick()" id="btnThemeToggle" title="สลับโหมดมืด/สว่าง">
           🌓
@@ -700,6 +706,45 @@
 
   <!-- ── MAIN CONTENT ── -->
   <main class="mytk-container">
+
+    <!-- ── 5.2 SEQUENTIAL 6-LAYER SECURITY INSPECTION BAR (Pre-flight Check) ── -->
+    <div class="sec-inspection-bar" id="secInspectionBar">
+      <div class="sec-checks-list">
+        <div class="sec-check-item sec-pending" id="secItemSession">
+          <span class="sec-check-icon">🔑</span>
+          <span>Session</span>
+          <span class="sec-check-status" id="chkSession">WAIT</span>
+        </div>
+        <div class="sec-check-item sec-pending" id="secItemAuth">
+          <span class="sec-check-icon">👤</span>
+          <span>Auth</span>
+          <span class="sec-check-status" id="chkAuth">WAIT</span>
+        </div>
+        <div class="sec-check-item sec-pending" id="secItemCsrf">
+          <span class="sec-check-icon">🛡️</span>
+          <span>CSRF</span>
+          <span class="sec-check-status" id="chkCsrf">WAIT</span>
+        </div>
+        <div class="sec-check-item sec-pending" id="secItemXss">
+          <span class="sec-check-icon">🧼</span>
+          <span>XSS</span>
+          <span class="sec-check-status" id="chkXss">WAIT</span>
+        </div>
+        <div class="sec-check-item sec-pending" id="secItemIdor">
+          <span class="sec-check-icon">🔒</span>
+          <span>IDOR</span>
+          <span class="sec-check-status" id="chkIdor">WAIT</span>
+        </div>
+        <div class="sec-check-item sec-pending" id="secItemPdpa">
+          <span class="sec-check-icon">📋</span>
+          <span>PDPA</span>
+          <span class="sec-check-status" id="chkPdpa">WAIT</span>
+        </div>
+      </div>
+      <button type="button" class="mytk-btn-sm" onclick="openSecurityAuditModal()" style="font-size:11.5px;padding:5px 12px">
+        🔍 ดูรายละเอียดความปลอดภัย
+      </button>
+    </div>
 
     <!-- ── KPI SUMMARY CARDS ── -->
     <div class="mytk-kpi-grid">

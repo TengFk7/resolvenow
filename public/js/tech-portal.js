@@ -200,10 +200,14 @@ function showTechGate() {
   if (appPage) appPage.style.display = 'none';
   if (authPage) authPage.style.display = 'none';
   if (gate) {
-    gate.classList.remove('gate-closing');
+    gate.classList.remove('gate-closing', 'vault-zoom-out');
     gate.style.display = 'flex';
   }
-  if (card) card.classList.remove('gate-shake');
+  if (card) {
+    card.classList.remove('gate-shake', 'vault-unlocked');
+    var lockIco = card.querySelector('.gate-input-icon');
+    if (lockIco) lockIco.textContent = '🔒';
+  }
   if (err) err.style.display = 'none';
 
   var wasLoggedIn = (sessionStorage.getItem('rn_tech_logged_in') === '1');
@@ -231,10 +235,10 @@ function hideTechGate() {
     if (authPage) authPage.style.display = 'flex';
     return;
   }
-  gate.classList.add('gate-closing');
+  gate.classList.add('gate-closing', 'vault-zoom-out');
   setTimeout(function () {
     gate.style.display = 'none';
-    gate.classList.remove('gate-closing');
+    gate.classList.remove('gate-closing', 'vault-zoom-out');
     if (authPage) {
       authPage.style.display = 'flex';
       var card = authPage.querySelector('.ac');
@@ -244,7 +248,7 @@ function hideTechGate() {
       var em = ge('tEmail');
       if (em) setTimeout(function () { em.focus(); }, 100);
     }
-  }, 320);
+  }, 560);
 }
 
 async function unlockTechGate() {
@@ -306,11 +310,16 @@ async function unlockTechGate() {
 
     _techGateUnlocking = true;
 
-    // Success!
+    // Success! Unlock padlock shackle first, then zoom through vault door
     if (err) err.style.display = 'none';
+    if (card) {
+      card.classList.add('vault-unlocked');
+      var lockIco = card.querySelector('.gate-input-icon');
+      if (lockIco) lockIco.textContent = '🔓';
+    }
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+      btn.innerHTML = '<span>🔓 ปลดล็อคสำเร็จ!</span>';
     }
     if (inp) inp.blur();
 
@@ -333,13 +342,13 @@ async function unlockTechGate() {
         _techPendingResumeUser = null;
       }
       if (gate) {
-        gate.classList.add('gate-closing');
+        gate.classList.add('gate-closing', 'vault-zoom-out');
         setTimeout(function () {
           gate.style.display = 'none';
-          gate.classList.remove('gate-closing');
+          gate.classList.remove('gate-closing', 'vault-zoom-out');
           _techGateUnlocking = false;
           enterTechApp(false);
-        }, 320);
+        }, 560);
       } else {
         _techGateUnlocking = false;
         enterTechApp(false);
@@ -349,7 +358,7 @@ async function unlockTechGate() {
       _techGateUnlocking = false;
       hideTechGate();
     }
-  }, 250);
+  }, 380);
 
   } catch (e) {
     _techGateUnlocking = false;

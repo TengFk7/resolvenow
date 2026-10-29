@@ -1110,8 +1110,9 @@ function renderTicketTimelineHtml(timeline) {
     var role = ev.actorRole || 'system';
     var icon = actionIcons[ev.action] || '📌';
     var roleLabel = roleLabels[role] || role;
+    var delaySec = (0.1 + i * 0.1).toFixed(2);
 
-    h += '<div class="rn-tl-item">';
+    h += '<div class="rn-tl-item subway-seq-item" style="animation-delay:' + delaySec + 's">';
     h += '<div class="rn-tl-node ' + role + '" title="' + roleLabel + '"></div>';
     h += '<div class="rn-tl-content">';
     h += '<div class="rn-tl-header">';

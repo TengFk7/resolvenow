@@ -164,10 +164,14 @@ function showAdminGate() {
   if (appPage) appPage.style.display = 'none';
   if (authPage) authPage.style.display = 'none';
   if (gate) {
-    gate.classList.remove('gate-closing');
+    gate.classList.remove('gate-closing', 'vault-zoom-out');
     gate.style.display = 'flex';
   }
-  if (card) card.classList.remove('gate-shake');
+  if (card) {
+    card.classList.remove('gate-shake', 'vault-unlocked');
+    var lockIco = card.querySelector('.gate-input-icon');
+    if (lockIco) lockIco.textContent = '🔒';
+  }
   if (err) err.style.display = 'none';
   if (btn) {
     btn.disabled = false;
@@ -186,10 +190,10 @@ function hideAdminGate() {
     if (authPage) authPage.style.display = 'flex';
     return;
   }
-  gate.classList.add('gate-closing');
+  gate.classList.add('gate-closing', 'vault-zoom-out');
   setTimeout(function () {
     gate.style.display = 'none';
-    gate.classList.remove('gate-closing');
+    gate.classList.remove('gate-closing', 'vault-zoom-out');
     if (authPage) {
       authPage.style.display = 'flex';
       var card = authPage.querySelector('.ac');
@@ -199,7 +203,7 @@ function hideAdminGate() {
       var em = ge('aEmail');
       if (em) setTimeout(function () { em.focus(); }, 100);
     }
-  }, 320);
+  }, 560);
 }
 
 async function unlockAdminGate() {
@@ -255,17 +259,22 @@ async function unlockAdminGate() {
       return;
     }
 
-    // Success!
+    // Success! Unlock padlock shackle first, then zoom through vault door
     if (err) err.style.display = 'none';
+    if (card) {
+      card.classList.add('vault-unlocked');
+      var lockIco = card.querySelector('.gate-input-icon');
+      if (lockIco) lockIco.textContent = '🔓';
+    }
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span>✓ ปลดล็อคสำเร็จ!</span>';
+      btn.innerHTML = '<span>🔓 ปลดล็อคสำเร็จ!</span>';
     }
     if (inp) inp.blur();
 
     setTimeout(function () {
       hideAdminGate();
-    }, 250);
+    }, 380);
 
   } catch (e) {
     if (btn) {

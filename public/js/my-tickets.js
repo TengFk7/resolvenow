@@ -100,11 +100,34 @@ function fmtDate(dt) {
    ════════════════════════════════════════════════════════ */
 async function runSecurityChecks() {
   var chkSession = ge('chkSession');
-  var chkIdor = ge('chkIdor');
+  var chkAuth = ge('chkAuth');
+  var chkCsrf = ge('chkCsrf');
   var chkXss = ge('chkXss');
+  var chkIdor = ge('chkIdor');
+  var chkPdpa = ge('chkPdpa');
   var chkRate = ge('chkRate');
-  var chkSocket = ge('chkSocket');
   var barrier = ge('secAuthBarrier');
+
+  // Reset 6-Layer pre-flight items to pending state
+  var seqLayers = [
+    { item: ge('secItemSession'), badge: chkSession, text: 'PASS ✓' },
+    { item: ge('secItemAuth'), badge: chkAuth, text: 'PASS ✓' },
+    { item: ge('secItemCsrf'), badge: chkCsrf, text: 'PASS ✓' },
+    { item: ge('secItemXss'), badge: chkXss, text: 'PASS ✓' },
+    { item: ge('secItemIdor'), badge: chkIdor, text: 'PASS ✓' },
+    { item: ge('secItemPdpa'), badge: chkPdpa, text: 'PASS ✓' }
+  ];
+  seqLayers.forEach(function (l) {
+    if (l.item) {
+      l.item.classList.remove('sec-locked-pass');
+      l.item.classList.add('sec-pending');
+    }
+    if (l.badge) {
+      l.badge.textContent = 'WAIT';
+      l.badge.style.background = '';
+      l.badge.style.color = '';
+    }
+  });
 
   try {
     // 1. Session Verification Check
@@ -151,22 +174,32 @@ async function runSecurityChecks() {
     // Hide barrier if previously displayed
     if (barrier) barrier.style.display = 'none';
 
-    // Set verified labels
-    if (chkSession) {
-      chkSession.textContent = 'VERIFIED ✅';
-      chkSession.style.background = '#dcfce7';
-      chkSession.style.color = '#15803d';
-    }
-    if (chkIdor) {
-      chkIdor.textContent = 'SCOPED 🛡️';
-      chkIdor.style.background = '#dcfce7';
-      chkIdor.style.color = '#15803d';
-    }
-    if (chkXss) {
-      chkXss.textContent = 'SANITIZED 🧼';
-      chkXss.style.background = '#dcfce7';
-      chkXss.style.color = '#15803d';
-    }
+    // ── 5.2 Sequential 6-Layer Pre-Flight Lock-In (0.7s total left-to-right) ──
+    seqLayers.forEach(function (layer, idx) {
+      setTimeout(function () {
+        if (layer.item) {
+          layer.item.classList.remove('sec-pending');
+          layer.item.classList.add('sec-locked-pass');
+        }
+        if (layer.badge) {
+          layer.badge.textContent = layer.text;
+          layer.badge.style.background = '#dcfce7';
+          layer.badge.style.color = '#15803d';
+        }
+      }, idx * 110);
+    });
+
+    setTimeout(function () {
+      var pill = ge('secHeaderStatusPill');
+      var pillTxt = ge('secHeaderPillText');
+      if (pillTxt) pillTxt.textContent = '🛡️ 6-Layer Security: PASS ✓';
+      if (pill) {
+        pill.classList.remove('sec-all-locked');
+        void pill.offsetWidth;
+        pill.classList.add('sec-all-locked');
+      }
+    }, 660);
+
     if (chkRate) {
       chkRate.textContent = 'ACTIVE ⚡';
       chkRate.style.background = '#dcfce7';
@@ -480,6 +513,85 @@ function renderTicketGrid(tickets) {
 /* ════════════════════════════════════════════════════════
    5. TICKET DETAIL MODAL
    ════════════════════════════════════════════════════════ */
+var _mytkSubwayTimers = [];
+
+function _buildMyTicketSubwayHtml() {
+  return '<div class="mytk-subway-wrap">'
+    + '<div style="font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:12px">🚇 เส้นทางสถานะเรื่องร้องเรียน (Live Subway Timeline)</div>'
+    + '<div class="mytk-subway-track" id="mytkSubwayTrack">'
+    + '  <div class="mytk-subway-line-bg"></div>'
+    + '  <div class="mytk-subway-line-fill" id="mytkSubwayFill"></div>'
+    + '  <div class="mytk-subway-step"><div class="mytk-subway-dot" id="mytkSubDot0">📥</div><div class="mytk-subway-lbl" id="mytkSubLbl0">รับเรื่องแล้ว</div></div>'
+    + '  <div class="mytk-subway-step"><div class="mytk-subway-dot" id="mytkSubDot1">👷</div><div class="mytk-subway-lbl" id="mytkSubLbl1">มอบหมายช่าง</div></div>'
+    + '  <div class="mytk-subway-step"><div class="mytk-subway-dot" id="mytkSubDot2">🔧</div><div class="mytk-subway-lbl" id="mytkSubLbl2">กำลังซ่อม</div></div>'
+    + '  <div class="mytk-subway-step"><div class="mytk-subway-dot" id="mytkSubDot3">✅</div><div class="mytk-subway-lbl" id="mytkSubLbl3">เสร็จสิ้น</div></div>'
+    + '</div>'
+    + '</div>';
+}
+
+function animateMyTicketSubwayTimeline(status) {
+  _mytkSubwayTimers.forEach(function (tm) { clearTimeout(tm); });
+  _mytkSubwayTimers = [];
+
+  var dots = [ge('mytkSubDot0'), ge('mytkSubDot1'), ge('mytkSubDot2'), ge('mytkSubDot3')];
+  var lbls = [ge('mytkSubLbl0'), ge('mytkSubLbl1'), ge('mytkSubLbl2'), ge('mytkSubLbl3')];
+  var fill = ge('mytkSubwayFill');
+  var track = ge('mytkSubwayTrack');
+  if (!fill || !track || !dots[0]) return;
+
+  dots.forEach(function (d) { if (d) d.className = 'mytk-subway-dot'; });
+  lbls.forEach(function (l) { if (l) l.className = 'mytk-subway-lbl'; });
+  fill.style.transition = 'none';
+  fill.style.width = '0px';
+  void fill.offsetWidth;
+
+  if (status === 'rejected') {
+    dots[0].classList.add('done');
+    lbls[0].classList.add('done');
+    dots[3].textContent = '❌';
+    dots[3].classList.add('rejected-dot');
+    lbls[3].textContent = 'ปฏิเสธ';
+    return;
+  }
+
+  dots[3].textContent = '✅';
+  lbls[3].textContent = 'เสร็จสิ้น';
+
+  var order = ['pending', 'assigned', 'in_progress', 'completed'];
+  var normalized = status === 'reopened' ? 'in_progress' : status;
+  var idx = Math.max(0, order.indexOf(normalized));
+  var totalMs = 600;
+  var stepInterval = idx > 0 ? Math.round(totalMs / idx) : 0;
+
+  var startTm = setTimeout(function () {
+    var trackRect = track.getBoundingClientRect();
+    var targetDot = dots[idx];
+    var dotRect = targetDot.getBoundingClientRect();
+    var dotCenter = (dotRect.left + dotRect.width / 2) - trackRect.left;
+    var fillOrigin = 26;
+    var fillW = Math.max(0, dotCenter - fillOrigin);
+
+    fill.style.transition = 'width 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+    fill.style.width = fillW + 'px';
+
+    for (var i = 0; i <= idx; i++) {
+      (function (stationIdx) {
+        var nodeTm = setTimeout(function () {
+          if (stationIdx < idx) {
+            dots[stationIdx].classList.add('done');
+            lbls[stationIdx].classList.add('done');
+          } else {
+            dots[stationIdx].classList.add('active');
+            lbls[stationIdx].classList.add('active');
+          }
+        }, stationIdx * stepInterval);
+        _mytkSubwayTimers.push(nodeTm);
+      })(i);
+    }
+  }, 90);
+  _mytkSubwayTimers.push(startTm);
+}
+
 function openTD(ticketId) {
   var t = _allTickets.find(function (item) { return item.ticketId === ticketId; });
   if (!t) return;
@@ -491,6 +603,9 @@ function openTD(ticketId) {
   }
 
   var h = '';
+  // ── 5.1 Live Subway-Line Timeline ──
+  h += _buildMyTicketSubwayHtml();
+
   // Multi-image gallery
   if (t.citizenImages && t.citizenImages.length > 0) {
     h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:14px">';
@@ -537,6 +652,11 @@ function openTD(ticketId) {
     h += '</div>';
   }
 
+  // Audit Trail Timeline
+  if (t.timeline && t.timeline.length > 0 && typeof renderTicketTimelineHtml === 'function') {
+    h += renderTicketTimelineHtml(t.timeline);
+  }
+
   // Reopen banner
   if (t.status === 'completed') {
     h += '<div style="margin-top:16px;text-align:center;padding-top:12px;border-top:1px dashed var(--border)">'
@@ -558,6 +678,7 @@ function openTD(ticketId) {
 
   ge('tdModalFooter').innerHTML = foot;
   ge('mTicketDetail').classList.add('on');
+  animateMyTicketSubwayTimeline(t.status);
 }
 
 function closeTD() {

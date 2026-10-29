@@ -11,6 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
+  <link rel="stylesheet" href="/css/animations.css" />
   <style>
     /* ── Variables (matching main theme) ─────────────────── */
     :root {
@@ -1594,13 +1595,14 @@
 
       const sorted = timeline.slice().sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
 
-      sorted.forEach(ev => {
+      sorted.forEach((ev, evIdx) => {
         const role = ev.actorRole || 'system';
         const icon = roleIcons[role] || '📌';
         const d = ev.timestamp ? new Date(ev.timestamp) : null;
         const timeStr = d ? `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '—';
+        const delaySec = (0.12 + evIdx * 0.11).toFixed(2);
 
-        h += '<div class="track-tl-row">';
+        h += '<div class="track-tl-row subway-seq-item" style="animation-delay:' + delaySec + 's">';
         h += '<div class="track-tl-dot ' + role + '"></div>';
         h += '<div class="track-tl-card">';
         h += '<div class="track-tl-actor"><span>' + icon + ' ' + (ev.actorName || 'เจ้าหน้าที่') + '</span><span style="color:#64748b;font-size:10px">' + timeStr + '</span></div>';
@@ -1621,24 +1623,29 @@
       box.innerHTML = h;
     }
 
+    let _trackSubwayTimers = [];
     function updateTimeline(status) {
       const dots = [ge('tlDot0'), ge('tlDot1'), ge('tlDot2'), ge('tlDot3')];
       const labels = [ge('tlLabel0'), ge('tlLabel1'), ge('tlLabel2'), ge('tlLabel3')];
       const fill = ge('timelineFill');
 
-      // Reset
-      dots.forEach(d => { d.className = 'tl-dot' });
-      labels.forEach(l => { l.className = 'tl-label' });
+      _trackSubwayTimers.forEach(t => clearTimeout(t));
+      _trackSubwayTimers = [];
+
+      // Reset line & stations immediately
+      dots.forEach(d => { d.className = 'tl-dot'; });
+      labels.forEach(l => { l.className = 'tl-label'; });
+      fill.style.transition = 'none';
+      fill.style.width = '0px';
+      void fill.offsetWidth;
 
       if (status === 'rejected') {
-        // Show rejected state — only first dot done, last dot is red
-        dots[0].classList.add('done');
+        dots[0].classList.add('done', 'tl-dot-pop');
         labels[0].classList.add('done');
         dots[3].textContent = '❌';
-        dots[3].classList.add('rejected-dot');
+        dots[3].classList.add('rejected-dot', 'tl-dot-pop');
         labels[3].textContent = 'ปฏิเสธ';
         labels[3].style.color = 'var(--r)';
-        fill.style.width = '0%';
         return;
       }
 
@@ -1647,35 +1654,37 @@
       labels[3].textContent = 'เสร็จสิ้น';
       labels[3].style.color = '';
 
-      const idx = STATUS_ORDER.indexOf(status);
+      const idx = Math.max(0, STATUS_ORDER.indexOf(status));
+      const totalDurationMs = 600; // 0.6s Subway-Line draw spec
+      const stepInterval = idx > 0 ? Math.round(totalDurationMs / idx) : 0;
 
-      for (let i = 0; i < dots.length; i++) {
-        if (i < idx) {
-          dots[i].classList.add('done');
-          labels[i].classList.add('done');
-        } else if (i === idx) {
-          dots[i].classList.add('active');
-          labels[i].classList.add('active');
-        }
-      }
-
-      // Animate fill after a short delay — measure actual dot positions
-      setTimeout(() => {
+      // Start sequential Subway-Line draw after card enters layout
+      const startTimer = setTimeout(() => {
         const activeDot = dots[idx];
-        const fillEl = fill;
-        const trackEl = fillEl.parentElement; // .timeline
-
+        const trackEl = fill.parentElement; // .timeline
         const trackRect = trackEl.getBoundingClientRect();
         const dotRect = activeDot.getBoundingClientRect();
-
-        // Center of the active dot relative to the fill's left origin (left:20px)
         const dotCenter = (dotRect.left + dotRect.width / 2) - trackRect.left;
-        const fillOrigin = 20; // matches CSS left:20px on ::before / .timeline-fill
+        const fillOrigin = 20;
         const fillWidth = Math.max(0, dotCenter - fillOrigin);
 
-        fillEl.style.width = fillWidth + 'px';
-      }, 400);
+        fill.style.transition = 'width 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+        fill.style.width = fillWidth + 'px';
 
+        for (let i = 0; i <= idx; i++) {
+          const nodeTimer = setTimeout(() => {
+            if (i < idx) {
+              dots[i].classList.add('done', 'tl-dot-pop');
+              labels[i].classList.add('done');
+            } else {
+              dots[i].classList.add('active', 'tl-dot-pop');
+              labels[i].classList.add('active');
+            }
+          }, i * stepInterval);
+          _trackSubwayTimers.push(nodeTimer);
+        }
+      }, 140);
+      _trackSubwayTimers.push(startTimer);
     }
 
     // ── Search Again ─────────────────────────────────────────

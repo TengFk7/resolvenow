@@ -27,33 +27,75 @@ var WIZ_TRANS = {
   4: { fwd: ['exit-left', 'enter-right'], bwd: ['exit-right', 'enter-left'] }
 };
 
+var _wizHeightTimer = null;
+
 function wizGoTo(from, to) {
   var isForward = to > from;
   var fromEl = ge('wiz' + from);
   var toEl = ge('wiz' + to);
   if (!fromEl || !toEl) return;
 
+  // Pre-build summary before measuring target height when entering Step 4
+  if (to === 4) wizBuildSummary();
+
+  // ── 1.5 Liquid Height Morphing ──
+  var vp = ge('stepViewport');
+  var startH = 0;
+  var targetH = 0;
+  if (vp) {
+    clearTimeout(_wizHeightTimer);
+    startH = vp.offsetHeight || fromEl.offsetHeight;
+    toEl.style.position = 'absolute';
+    toEl.style.visibility = 'hidden';
+    toEl.style.display = 'block';
+    toEl.style.width = '100%';
+    targetH = toEl.offsetHeight;
+    toEl.style.display = '';
+    toEl.style.visibility = '';
+    toEl.style.position = '';
+    toEl.style.width = '';
+
+    if (startH > 0 && targetH > 0) {
+      vp.style.height = startH + 'px';
+      vp.classList.add('liquid-morph');
+      void vp.offsetHeight; // force reflow
+    }
+  }
+
   var trans = WIZ_TRANS[from] || WIZ_TRANS[1];
   var exitCls = isForward ? trans.fwd[0] : trans.bwd[0];
   var enterCls = isForward ? trans.fwd[1] : trans.bwd[1];
 
-  // Exit current step
+  // Exit current step & smoothly morph viewport height
   fromEl.classList.add(exitCls);
+  if (vp && startH > 0 && targetH > 0) {
+    requestAnimationFrame(function () {
+      vp.style.height = targetH + 'px';
+    });
+  }
+
   setTimeout(function () {
     fromEl.classList.remove('active', exitCls);
     // Enter new step
     toEl.classList.add('active', enterCls);
+    if (to === 2 && _citizenImages.length > 0) {
+      _triggerOpticalGlassSweep();
+    }
     setTimeout(function () {
       toEl.classList.remove(enterCls);
     }, 500);
-  }, 340);
+  }, 320);
+
+  if (vp) {
+    _wizHeightTimer = setTimeout(function () {
+      vp.style.height = '';
+    }, 800);
+  }
 
   _curStep = to;
   wizUpdateProgress(to);
 
-  // If arriving at step 4 — render summary
   if (to === 2 && _citizenImages.length > 0) aiVerifyCitizenImage();
-  if (to === 4) wizBuildSummary();
 
   // Scroll to top of wizard
   var prog = ge('stepProgress');
@@ -176,17 +218,28 @@ function wizBack(step) {
 }
 
 function wizUpdateProgress(step) {
-  // Fill bar: 0% at step 1, 100% at step 5
+  // Fill bar: 0% at step 1, 100% at step 4
   var pct = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
   var fill = ge('stepFill');
   if (fill) fill.style.width = pct + '%';
 
-  // Dots
+  // Dots with self-drawing SVG checkmark when completed
   document.querySelectorAll('.step-dot').forEach(function (d) {
     var s = parseInt(d.getAttribute('data-step'));
+    var span = d.querySelector('span');
+    var wasDone = d.classList.contains('done');
     d.classList.remove('on', 'done');
-    if (s === step) d.classList.add('on');
-    else if (s < step) d.classList.add('done');
+    if (s === step) {
+      d.classList.add('on');
+      if (span) span.innerHTML = String(s);
+    } else if (s < step) {
+      d.classList.add('done');
+      if (span && (!wasDone || !span.querySelector('.step-check-svg'))) {
+        span.innerHTML = '<svg class="step-check-svg" viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true"><path d="M4.5 10.5L8.2 14.2L15.5 6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+    } else {
+      if (span) span.innerHTML = String(s);
+    }
   });
 }
 
@@ -898,6 +951,40 @@ async function submitTicket() {
   }
 }
 
+/* ── 1.3 Glass Optical Focus Helpers ────────────────── */
+var _currentOpticalState = 'focusing';
+var _currentOpticalHudText = '🔍 OPTICAL FOCUS • กำลังล็อคโฟกัสตรวจสอบภาพ...';
+
+function _triggerOpticalGlassSweep() {
+  var frame = ge('cPrimaryImgFrame');
+  if (!frame) return;
+  frame.classList.remove('sheen-once', 'is-focusing');
+  void frame.offsetWidth; // force reflow to replay refractive sheen + bracket lock
+  frame.classList.add('sheen-once');
+}
+
+function _setOpticalFocusState(state, hudText) {
+  _currentOpticalState = state || 'focusing';
+  if (hudText) _currentOpticalHudText = hudText;
+  var frame = ge('cPrimaryImgFrame');
+  var pill = ge('cOpticalHudPill');
+  if (pill && _currentOpticalHudText) {
+    pill.textContent = _currentOpticalHudText;
+  }
+  if (!frame) return;
+  frame.classList.remove('is-focusing', 'is-locked-match', 'is-locked-unclear', 'is-locked-mismatch', 'sheen-once');
+  void frame.offsetWidth;
+  if (state === 'focusing') {
+    frame.classList.add('is-focusing');
+  } else if (state === 'match') {
+    frame.classList.add('is-locked-match', 'sheen-once');
+  } else if (state === 'unclear') {
+    frame.classList.add('is-locked-unclear', 'sheen-once');
+  } else if (state === 'mismatch') {
+    frame.classList.add('is-locked-mismatch', 'sheen-once');
+  }
+}
+
 /* ── Image Preview (before upload) ──────────────────── */
 function _renderCitizenImgs() {
   var pw = ge('cImgPreviewWrap');
@@ -910,9 +997,22 @@ function _renderCitizenImgs() {
     _citizenImages.forEach(function (img, idx) {
       var flexBasis = _citizenImages.length === 1 ? '100%' : 'calc(50% - 4px)';
       var maxH = _citizenImages.length === 1 ? '220px' : '150px';
-      html += '<div style="position:relative;flex:1 1 ' + flexBasis + ';min-width:100px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">';
+      var isPrimary = idx === 0;
+      var optCls = isPrimary ? ' class="rn-optical-frame is-focusing" id="cPrimaryImgFrame"' : '';
+      html += '<div' + optCls + ' style="position:relative;flex:1 1 ' + flexBasis + ';min-width:100px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">';
       html += '<img src="' + img.dataUrl + '" style="width:100%;height:' + maxH + ';object-fit:cover;display:block" />';
-      html += '<button type="button" onclick="removeCitizenImg(' + idx + ')" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>';
+      if (isPrimary) {
+        html += '<div class="optical-glass-sheen"></div>';
+        html += '<div class="optical-focus-brackets">'
+          + '<span class="opt-corner tl"></span>'
+          + '<span class="opt-corner tr"></span>'
+          + '<span class="opt-corner bl"></span>'
+          + '<span class="opt-corner br"></span>'
+          + '<span class="opt-reticle"></span>'
+          + '</div>';
+        html += '<div class="optical-hud-pill" id="cOpticalHudPill">' + escapeHTML(_currentOpticalHudText) + '</div>';
+      }
+      html += '<button type="button" onclick="removeCitizenImg(' + idx + ')" style="position:absolute;top:6px;right:6px;z-index:6;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.65);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>';
       html += '</div>';
     });
 
@@ -920,6 +1020,9 @@ function _renderCitizenImgs() {
     pw.style.display = 'flex';
     if (ci) { ci.innerHTML = 'แนบแล้ว <b>' + _citizenImages.length + '/5</b> รูป'; ci.style.display = 'block'; }
     if (pb) pb.style.display = _citizenImages.length >= 5 ? 'none' : 'grid';
+    if (_imgVerificationResult && !_imgAiAnalyzing) {
+      _setOpticalFocusState(_currentOpticalState, _currentOpticalHudText);
+    }
   } else {
     pw.innerHTML = '';
     pw.style.display = 'none';
@@ -1070,6 +1173,7 @@ function _renderImgAiResult(d) {
     sub.innerHTML = '<div>' + reasonText + ' (กรุณากด ✕ ลบรูปแล้วแนบรูปสถานที่เกิดเหตุจริง)</div>';
     box.style.background = '#fef2f2';
     box.style.borderColor = '#ef4444';
+    _setOpticalFocusState('mismatch', '🚫 FOCUS REJECT • รูปไม่ตรงกับเรื่องที่แจ้ง');
     _updateStep2NextButton(true, d.imageReason || 'รูปภาพไม่ตรงกับที่แจ้ง', false);
     return;
   }
@@ -1097,6 +1201,7 @@ function _renderImgAiResult(d) {
     sub.textContent = (d.imageReason || 'ภาพถ่ายตอนกลางคืน มืด เบลอ หรือถ่ายมุมกว้างจนเห็นปัญหาไม่ชัด') + ' • ไม่บล็อกและไม่หักแต้มผู้ใช้ (ตั้งค่า needsAdminReview: true ส่งคิวให้ Admin ดูรูปก่อนส่งช่าง)';
     box.style.background = '#fefce8';
     box.style.borderColor = '#facc15';
+    _setOpticalFocusState('unclear', '⚠️ LOW-LIGHT FOCUS • ภาพมืด/เบลอ รอแอดมินตรวจ');
   } else if (d.visualDisambiguated) {
     // ── 1. MATCH + Visual Disambiguation ──
     icon.textContent = catIcon;
@@ -1105,6 +1210,7 @@ function _renderImgAiResult(d) {
     sub.textContent = '👁️ ' + (d.imageReason || 'AI ใช้รูปภาพช่วยจำแนกหมวดหมู่และความเร่งด่วนอัตโนมัติ') + ' • จ่ายงานให้ช่างอัตโนมัติ (Auto-Dispatch)';
     box.style.background = '#f0fdf4';
     box.style.borderColor = '#86efac';
+    _setOpticalFocusState('match', '🎯 AF-LOCK • ' + catTH + ' (โฟกัสชัดเจน)');
   } else {
     // ── 1. MATCH (ภาพสอดคล้อง) ──
     icon.textContent = '✅';
@@ -1113,6 +1219,7 @@ function _renderImgAiResult(d) {
     sub.textContent = '👁️ ' + (d.imageReason || 'เห็นปัญหาตรงตามที่แจ้ง หรือเป็นภาพสถานที่เกิดเหตุจริง') + ' • ผ่านปกติ: จ่ายงานให้ช่างอัตโนมัติ (Auto-Dispatch)';
     box.style.background = '#f0fdf4';
     box.style.borderColor = '#86efac';
+    _setOpticalFocusState('match', '🎯 AF-LOCK • ภาพสอดคล้องชัดเจน');
   }
   _updateStep2NextButton(false, null, false);
 }
@@ -1135,6 +1242,8 @@ async function aiVerifyCitizenImage() {
     _lastVerifiedPrimaryDataUrl = null;
     _lastVerifiedDesc = null;
     _forceQuarantineImageSpam = false;
+    _currentOpticalState = 'focusing';
+    _currentOpticalHudText = '🔍 OPTICAL FOCUS • กำลังล็อคโฟกัสตรวจสอบภาพ...';
     if (icon) icon.textContent = '📷';
     if (label) { label.textContent = 'รอแนบรูปภาพ...'; label.style.color = 'var(--navy)'; }
     if (sub) sub.textContent = 'ระบบจะย่อและส่งเฉพาะรูปที่ 1 ให้ Gemini 2.5 Flash ตรวจสอบความสอดคล้องกับเรื่องที่แจ้ง';
@@ -1159,6 +1268,7 @@ async function aiVerifyCitizenImage() {
   }
 
   _imgAiAnalyzing = true;
+  _setOpticalFocusState('focusing', '🔍 OPTICAL FOCUS • กำลังล็อคโฟกัสตรวจสอบภาพ...');
   _updateStep2NextButton(true, null, true);
   if (icon) icon.textContent = '⏳';
   if (label) { label.textContent = 'Gemini 2.5 Flash กำลังตรวจสอบรูปภาพใบแรก...'; label.style.color = 'var(--navy)'; }
@@ -1582,127 +1692,208 @@ function cgToggle(ticketId) {
   if (card) card.classList.add('cg-card--active');
 }
 
-/* ── Submit Success Overlay Animation ───────────────── */
+/* ── 1.1 Physical Ticket Stamp & Flight (Submit Success Animation) ───── */
 function _showSubmitSuccess(ticketId, onDone) {
+  var safeTicketId = escapeHTML(ticketId || 'TKT-00000');
+  var descVal = (ge('tDesc') ? ge('tDesc').value.trim() : '') || 'แจ้งเรื่องร้องเรียน';
+  var shortDesc = descVal.length > 68 ? descVal.slice(0, 66) + '…' : descVal;
+  var cat = (_aiDetectedCategory && _aiDetectedCategory !== 'auto') ? _aiDetectedCategory : 'Road';
+  var catTH = (typeof DEPT !== 'undefined' && DEPT[cat]) ? DEPT[cat] : cat;
+  var catIcon = (typeof DEPT_ICON !== 'undefined' && DEPT_ICON[cat]) ? DEPT_ICON[cat] : '📋';
+  var urg = ge('tUrg') ? (ge('tUrg').value || 'normal') : 'normal';
+  var urgLabel = { urgent: '🔴 ด่วนมาก (15-30 นาที)', medium: '🟡 ด่วน (6-12 ชม.)', normal: '🟢 ปกติ (72 ชม.)' }[urg] || '🟢 ปกติ';
+  var locVal = _gpsAddress || 'พิกัด GPS ที่ระบุ';
+  var shortLoc = locVal.length > 48 ? locVal.slice(0, 46) + '…' : locVal;
+  var nowStr = new Date().toLocaleString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  // Measure target Hamburger Menu button (☰) in top-right header
+  var hbgBtn = document.querySelector('#normalApp .hbg-btn') || document.querySelector('.hbg-btn');
+  var hbgRect = (hbgBtn && hbgBtn.offsetWidth > 0)
+    ? hbgBtn.getBoundingClientRect()
+    : { top: 12, left: Math.max(20, window.innerWidth - 58), width: 42, height: 42 };
+
   var ov = document.createElement('div');
   ov.id = 'submitSuccessOverlay';
   ov.style.cssText = [
     'position:fixed;inset:0;z-index:9000',
     'display:flex;flex-direction:column;align-items:center;justify-content:center',
-    'background:linear-gradient(160deg,#07111f 0%,#0c1e3a 50%,#101627 100%)',
-    'padding:40px 24px;text-align:center;overflow:hidden'
+    'background:rgba(10, 22, 40, 0.78)',
+    'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)',
+    'padding:24px 18px;text-align:center;overflow:hidden'
   ].join(';');
 
-  // ── Orb system (3 orbs — track.html / login style) ──
-  var ssOrbData = [
-    {
-      color: 'radial-gradient(circle at 40% 40%,rgba(52,211,153,.5) 0%,rgba(16,185,129,.22) 40%,transparent 70%)',
-      size: '500px', top: '-12%', left: '-10%', dur: '20s', delay: '0s',
-      tx1: '55px', ty1: '-35px', tx2: '100px', ty2: '25px', tx3: '35px', ty3: '-55px'
-    },
-    {
-      color: 'radial-gradient(circle at 40% 40%,rgba(96,165,250,.35) 0%,rgba(37,99,235,.15) 40%,transparent 70%)',
-      size: '420px', top: '40%', left: '55%', dur: '26s', delay: '-8s',
-      tx1: '-65px', ty1: '45px', tx2: '-110px', ty2: '-28px', tx3: '-45px', ty3: '65px'
-    },
-    {
-      color: 'radial-gradient(circle at 40% 40%,rgba(45,212,191,.3) 0%,rgba(20,184,166,.13) 45%,transparent 70%)',
-      size: '340px', top: '65%', left: '8%', dur: '18s', delay: '-4s',
-      tx1: '45px', ty1: '-55px', tx2: '80px', ty2: '18px', tx3: '28px', ty3: '-75px'
-    }
-  ];
-  var ssOrbHtml = '';
-  ssOrbData.forEach(function (o) {
-    ssOrbHtml += '<div style="position:absolute;border-radius:50%;pointer-events:none;'
-      + 'width:' + o.size + ';height:' + o.size + ';'
-      + 'top:' + o.top + ';left:' + o.left + ';'
-      + 'background:' + o.color + ';'
-      + 'filter:blur(60px);opacity:0;'
-      + 'animation:ssOrbDrift ' + o.dur + ' ' + o.delay + ' ease-in-out infinite;'
-      + '--tx1:' + o.tx1 + ';--ty1:' + o.ty1 + ';'
-      + '--tx2:' + o.tx2 + ';--ty2:' + o.ty2 + ';'
-      + '--tx3:' + o.tx3 + ';--ty3:' + o.ty3 + ';"></div>';
-  });
-
-  // ── Sparkle micro-dots (tri-color) ──
-  var ssSparkHtml = '';
-  var spCols = ['#34d399', '#06b6d4', 'rgba(255,255,255,.65)'];
-  for (var i = 0; i < 20; i++) {
-    var sz = (Math.random() * 4 + 2).toFixed(1);
-    var tp = (Math.random() * 100).toFixed(1);
-    var lf = (Math.random() * 100).toFixed(1);
-    var dl = (Math.random() * 2.5).toFixed(2);
-    var dr = (Math.random() * 2 + 1.8).toFixed(2);
-    ssSparkHtml += '<div style="position:absolute;top:' + tp + '%;left:' + lf + '%;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + spCols[i % 3] + ';opacity:0;animation:ssSpark ' + dr + 's ease-in-out ' + dl + 's infinite;pointer-events:none"></div>';
+  // Generate crisp barcode bars for the paper ticket stub
+  var barcodeBars = '';
+  var barWidths = [3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 4, 2, 1, 2, 3, 1, 2, 1, 3, 2, 4, 1, 2];
+  for (var bi = 0; bi < barWidths.length; bi++) {
+    var bw = barWidths[bi];
+    var bh = (bi % 4 === 0) ? 26 : 22;
+    barcodeBars += '<span style="display:inline-block;width:' + bw + 'px;height:' + bh + 'px;background:#1e293b;margin-right:2px;border-radius:1px"></span>';
   }
 
   ov.innerHTML = [
-    '<style>',
-    '@keyframes ssOrbDrift{0%{opacity:0;transform:translate(0,0) scale(1)}8%{opacity:1}25%{opacity:.85;transform:translate(var(--tx1),var(--ty1)) scale(1.06)}50%{opacity:.7;transform:translate(var(--tx2),var(--ty2)) scale(.96)}75%{opacity:.85;transform:translate(var(--tx3),var(--ty3)) scale(1.04)}92%{opacity:1}100%{opacity:0;transform:translate(0,0) scale(1)}}',
-    '@keyframes ssSpark{0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:.85;transform:scale(1) translateY(-14px)}}',
-    '@keyframes ssRingPop{0%{opacity:0;transform:scale(.25)}60%{transform:scale(1.1)}80%{transform:scale(.97)}100%{opacity:1;transform:scale(1)}}',
-    '@keyframes ssPathDraw{from{stroke-dashoffset:50}to{stroke-dashoffset:0}}',
-    '@keyframes ssTitleUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}',
-    '@keyframes ssRipple{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.2);opacity:0}}',
-    '@keyframes ssBarGrow{from{width:0}to{width:130px}}',
-    '@keyframes ssDotsBounce{0%,80%,100%{transform:scale(0);opacity:0}40%{transform:scale(1);opacity:1}}',
-    '</style>',
-    ssOrbHtml,
-    ssSparkHtml,
-    // ── Content (z-index:2 ลอยเหนือ orbs) ──
-    '<div style="position:relative;z-index:2;text-align:center">',
-    // Ripple rings + checkmark ring
-    '  <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:24px">',
-    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(52,211,153,.5);animation:ssRipple 1.8s ease-out .1s infinite"></div>',
-    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(52,211,153,.35);animation:ssRipple 1.8s ease-out .6s infinite"></div>',
-    '    <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid rgba(52,211,153,.2);animation:ssRipple 1.8s ease-out 1.1s infinite"></div>',
-    '    <div style="width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,rgba(52,211,153,.18),rgba(6,182,212,.1));border:2.5px solid rgba(52,211,153,.6);display:flex;align-items:center;justify-content:center;animation:ssRingPop .65s cubic-bezier(.34,1.56,.64,1) .05s both;filter:drop-shadow(0 0 18px rgba(52,211,153,.5))">',
-    '      <svg viewBox="0 0 52 52" fill="none" width="46" height="46">',
-    '        <circle cx="26" cy="26" r="23" stroke="rgba(52,211,153,.2)" stroke-width="1.5"/>',
-    '        <polyline class="ss-path" points="13,27 22,36 39,17"',
-    '          stroke="#34d399" stroke-width="3.5"',
-    '          stroke-linecap="round" stroke-linejoin="round" fill="none"',
-    '          style="stroke-dasharray:50;stroke-dashoffset:50;animation:ssPathDraw .55s cubic-bezier(.22,1,.36,1) .55s forwards"/>',
-    '      </svg>',
+    // ── Top-Right Hamburger Menu Catcher Proxy (aligned with real .hbg-btn) ──
+    '<div id="rnHbgCatcher" class="rn-hbg-catcher" style="position:fixed;top:' + Math.round(hbgRect.top) + 'px;left:' + Math.round(hbgRect.left) + 'px;width:' + Math.round(hbgRect.width) + 'px;height:' + Math.round(hbgRect.height) + 'px;border-radius:12px;background:#1e293b;border:1.5px solid rgba(255,255,255,0.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,0.35);transition:all 0.25s ease">',
+    '  <span style="width:18px;height:2px;background:#fff;border-radius:2px;display:block"></span>',
+    '  <span style="width:18px;height:2px;background:#fff;border-radius:2px;display:block"></span>',
+    '  <span style="width:18px;height:2px;background:#fff;border-radius:2px;display:block"></span>',
+    '  <span id="rnCatcherBadge" style="position:absolute;top:-6px;right:-6px;background:#10b981;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;border:2px solid #0a1628;transform:scale(0);transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1)">+1</span>',
+    '</div>',
+    '<div id="rnCatcherHint" style="position:fixed;top:' + Math.round(hbgRect.top + hbgRect.height + 10) + 'px;right:' + Math.max(12, Math.round(window.innerWidth - (hbgRect.left + hbgRect.width))) + 'px;background:#065f46;color:#ecfdf5;border:1px solid #34d399;border-radius:12px;padding:8px 14px;font-size:12px;font-weight:700;z-index:20;box-shadow:0 10px 26px rgba(0,0,0,0.35);opacity:0;transform:translateY(-8px) scale(0.95);transition:all 0.32s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none">',
+    '  📥 เก็บตั๋ว <span style="color:#6ee7b7">' + safeTicketId + '</span> เข้าเมนู ☰ แล้ว!',
+    '</div>',
+
+    // ── Paper Complaint Ticket Stage ──
+    '<div id="rnTicketStage" class="rn-paper-ticket-stage">',
+    '  <!-- Main Ticket Body (flies to menu) -->',
+    '  <div id="rnTicketMain" class="rn-paper-ticket-main">',
+    '    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid #e2dccb;padding-bottom:10px;margin-bottom:12px">',
+    '      <div style="display:flex;align-items:center;gap:7px">',
+    '        <span style="font-size:18px">🏛️</span>',
+    '        <div>',
+    '          <div style="font-size:11px;font-weight:800;letter-spacing:0.6px;color:#0f172a;text-transform:uppercase">ResolveNow Official Slip</div>',
+    '          <div style="font-size:10px;color:#64748b;font-weight:600">ใบรับแจ้งเรื่องร้องเรียนอิเล็กทรอนิกส์</div>',
+    '        </div>',
+    '      </div>',
+    '      <span style="background:#0f172a;color:#f8fafc;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:0.5px">' + safeTicketId + '</span>',
+    '    </div>',
+
+    '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">',
+    '      <div style="background:#f4f1e6;border-radius:8px;padding:7px 10px">',
+    '        <div style="font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase">หมวดหมู่</div>',
+    '        <div style="font-size:12px;font-weight:700;color:#0f172a;margin-top:2px">' + catIcon + ' ' + escapeHTML(catTH) + '</div>',
+    '      </div>',
+    '      <div style="background:#f4f1e6;border-radius:8px;padding:7px 10px">',
+    '        <div style="font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase">ความเร่งด่วน</div>',
+    '        <div style="font-size:11.5px;font-weight:700;color:#0f172a;margin-top:2px">' + urgLabel + '</div>',
+    '      </div>',
+    '    </div>',
+
+    '    <div style="background:#f8f6ee;border:1px solid #e7e2d3;border-radius:8px;padding:8px 10px;margin-bottom:8px">',
+    '      <div style="font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase">รายละเอียดเรื่องร้องเรียน</div>',
+    '      <div style="font-size:12px;font-weight:600;color:#1e293b;margin-top:2px;line-height:1.4">' + escapeHTML(shortDesc) + '</div>',
+    '    </div>',
+
+    '    <div style="font-size:11px;color:#475569;display:flex;align-items:center;gap:5px">',
+    '      <span>📍</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHTML(shortLoc) + '</span>',
+    '    </div>',
+
+    '    <!-- Physical Rubber Stamp -->',
+    '    <div id="rnRubberStamp" class="rn-rubber-stamp">',
+    '      <div style="font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">RECEIVED • รับเรื่องแล้ว</div>',
+    '      <div style="font-size:16px;font-weight:900;letter-spacing:1px;margin:1px 0;font-family:Inter,Prompt,sans-serif">' + safeTicketId + '</div>',
+    '      <div style="font-size:8.5px;font-weight:700;letter-spacing:0.6px">AUTO-DISPATCHED ✓</div>',
     '    </div>',
     '  </div>',
-    // Title
-    '  <div style="font-size:26px;font-weight:800;color:#fff;font-family:Prompt,sans-serif;animation:ssTitleUp .5s ease .35s both">ส่งสำเร็จแล้ว! 🎉</div>',
-    // Ticket ID badge
-    '  <div style="display:inline-block;margin-top:10px;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);border-radius:10px;padding:6px 18px;font-size:15px;font-weight:700;color:#34d399;letter-spacing:1px;font-family:Inter,Prompt,sans-serif;animation:ssTitleUp .5s ease .5s both">' + ticketId + '</div>',
-    // Subtitle
-    '  <div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:14px;line-height:1.8;animation:ssTitleUp .5s ease .65s both">เรื่องร้องเรียนของคุณถูกบันทึกแล้ว<br>ระบบกำลังเตรียมรับเรื่องใหม่...</div>',
-    // Progress bar
-    '  <div style="width:0;height:3px;border-radius:99px;background:linear-gradient(90deg,#34d399,#06b6d4,rgba(255,255,255,.2));margin:20px auto 0;animation:ssBarGrow .7s cubic-bezier(.22,1,.36,1) .8s both;box-shadow:0 0 14px rgba(52,211,153,.5)"></div>',
-    // Dots
-    '  <div style="display:flex;justify-content:center;gap:6px;margin-top:16px">',
-    '    <span style="width:8px;height:8px;border-radius:50%;background:#34d399;display:inline-block;animation:ssDotsBounce 1.4s ease-in-out .9s infinite"></span>',
-    '    <span style="width:8px;height:8px;border-radius:50%;background:#06b6d4;display:inline-block;animation:ssDotsBounce 1.4s ease-in-out 1.0s infinite"></span>',
-    '    <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);display:inline-block;animation:ssDotsBounce 1.4s ease-in-out 1.1s infinite"></span>',
+
+    '  <!-- Perforation Line -->',
+    '  <div id="rnTicketPerf" class="rn-paper-ticket-perf">',
+    '    <div class="rn-perf-dashed-line"></div>',
     '  </div>',
+
+    '  <!-- Bottom Receipt Stub (tears off) -->',
+    '  <div id="rnTicketStub" class="rn-paper-ticket-stub">',
+    '    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">',
+    '      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:0.5px">CITIZEN COPY • ต้นขั้วผู้แจ้ง</span>',
+    '      <span style="font-size:10px;font-weight:600;color:#64748b">' + escapeHTML(nowStr) + '</span>',
+    '    </div>',
+    '    <div style="display:flex;align-items:center;justify-content:center;padding:4px 0">' + barcodeBars + '</div>',
+    '  </div>',
+    '</div>',
+
+    // ── Status Caption Below Ticket ──
+    '<div id="rnTicketCaption" style="margin-top:20px;font-size:14px;font-weight:700;color:#f8fafc;letter-spacing:0.2px;z-index:5;transition:all 0.25s ease">',
+    '  กำลังออกใบรับแจ้งเรื่องร้องเรียน...',
     '</div>'
   ].join('');
 
   document.body.appendChild(ov);
 
-  // Fade in immediately
+  // Fade in overlay
   ov.style.opacity = '0';
-  ov.style.transition = 'opacity .3s ease';
+  ov.style.transition = 'opacity 0.22s ease';
   requestAnimationFrame(function () {
     requestAnimationFrame(function () {
       ov.style.opacity = '1';
     });
   });
 
-  // After 2.8s — fade out then call onDone
+  // Phase 1 (240ms): Rubber Stamp slams down onto the ticket + tactile impact shake
   setTimeout(function () {
-    ov.style.transition = 'opacity .45s ease';
+    var stamp = ge('rnRubberStamp');
+    var stage = ge('rnTicketStage');
+    var cap = ge('rnTicketCaption');
+    if (stamp) stamp.classList.add('stamp-active');
+    if (cap) cap.innerHTML = '✅ ประทับตรารับเรื่อง <span style="color:#34d399">' + safeTicketId + '</span> เรียบร้อย!';
+    setTimeout(function () {
+      if (stage) stage.classList.add('impact-shake');
+    }, 150);
+  }, 240);
+
+  // Phase 2 (1050ms): Tear along the perforation line
+  setTimeout(function () {
+    var stub = ge('rnTicketStub');
+    var perf = ge('rnTicketPerf');
+    var cap = ge('rnTicketCaption');
+    if (stub) stub.classList.add('torn-off');
+    if (perf) {
+      perf.style.transition = 'opacity 0.25s ease';
+      perf.style.opacity = '0';
+    }
+    if (cap) cap.innerHTML = '✂️ ฉีกตั๋วส่งเข้าเมนูเรื่องร้องเรียนของฉัน...';
+  }, 1050);
+
+  // Phase 3 (1460ms): Shrink & fly along curved arc into top-right Hamburger Menu (☰)
+  setTimeout(function () {
+    var mainCard = ge('rnTicketMain');
+    var catcher = ge('rnHbgCatcher');
+    if (mainCard && catcher) {
+      var mRect = mainCard.getBoundingClientRect();
+      var cRect = catcher.getBoundingClientRect();
+      var dx = (cRect.left + cRect.width / 2) - (mRect.left + mRect.width / 2);
+      var dy = (cRect.top + cRect.height / 2) - (mRect.top + mRect.height / 2);
+      mainCard.style.setProperty('--fly-x', Math.round(dx) + 'px');
+      mainCard.style.setProperty('--fly-y', Math.round(dy) + 'px');
+      mainCard.classList.add('flying-to-menu');
+    }
+  }, 1460);
+
+  // Phase 4 (2140ms): Ticket lands in Hamburger Menu -> Bounce menu + show badge & hint!
+  setTimeout(function () {
+    var catcher = ge('rnHbgCatcher');
+    var badge = ge('rnCatcherBadge');
+    var hint = ge('rnCatcherHint');
+    var cap = ge('rnTicketCaption');
+    if (catcher) {
+      catcher.style.borderColor = '#34d399';
+      catcher.style.background = '#065f46';
+      catcher.classList.add('hbg-catch-bounce');
+    }
+    if (hbgBtn) {
+      hbgBtn.classList.remove('hbg-catch-bounce');
+      void hbgBtn.offsetWidth;
+      hbgBtn.classList.add('hbg-catch-bounce');
+    }
+    if (badge) badge.style.transform = 'scale(1)';
+    if (hint) {
+      hint.style.opacity = '1';
+      hint.style.transform = 'translateY(0) scale(1)';
+    }
+    if (cap) {
+      cap.innerHTML = '🎉 บันทึกสำเร็จ! กดปุ่มเมนู <b>☰</b> มุมขวาบนเพื่อดูตั๋วของคุณได้ทันที';
+    }
+  }, 2140);
+
+  // Phase 5 (2900ms): Fade out overlay and call onDone
+  setTimeout(function () {
+    ov.style.transition = 'opacity 0.38s ease';
     ov.style.opacity = '0';
     setTimeout(function () {
       if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (hbgBtn) hbgBtn.classList.remove('hbg-catch-bounce');
       if (typeof onDone === 'function') onDone();
-    }, 450);
-  }, 2800);
+    }, 390);
+  }, 2900);
 }
 
 /* ══════════════════════════════════════════

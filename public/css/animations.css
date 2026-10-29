@@ -614,3 +614,802 @@
     transition-duration: .01ms !important;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SIGNATURE ANIMATIONS SUITE (5 Human-Crafted Tactile Animations)
+   1.1 Physical Ticket Stamp & Flight (Citizen Step 4 Submit)
+   1.3 Glass Optical Focus (Citizen Step 2 Image Verification)
+   1.5 Liquid Height Morphing & SVG Checkmark Draw (Citizen Wizard)
+   5.1 Live Subway-Line Timeline (/track & /my-tickets)
+   5.2 Sequential Security Lock-In (/my-tickets 6-Layer & Vault Gate Unlock)
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1.5 Liquid Height Morphing & SVG Checkmark Draw ───────────────────── */
+#stepViewport.liquid-morph {
+  transition: height 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: height;
+}
+
+@keyframes rnStepCheckDraw {
+  0% {
+    stroke-dashoffset: 24;
+    opacity: 0.4;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes rnStepDotDonePop {
+  0%   { transform: scale(0.82); }
+  55%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+.step-dot.done span {
+  animation: rnStepDotDonePop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.step-dot.done span svg.step-check-svg {
+  display: block;
+  overflow: visible;
+}
+
+.step-dot.done span svg.step-check-svg path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: rnStepCheckDraw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.06s forwards;
+}
+
+/* ── 1.3 Glass Optical Focus (DSLR Refractive Sheen & Viewfinder Brackets) ── */
+.rn-optical-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  isolation: isolate;
+}
+
+.optical-glass-sheen {
+  position: absolute;
+  inset: -20% -40%;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    112deg,
+    transparent 22%,
+    rgba(255, 255, 255, 0.05) 38%,
+    rgba(255, 255, 255, 0.62) 49%,
+    rgba(240, 249, 255, 0.78) 51%,
+    rgba(255, 255, 255, 0.08) 62%,
+    transparent 78%
+  );
+  transform: translateX(-120%) skewX(-14deg);
+  opacity: 0;
+}
+
+@keyframes opticalGlassSweep {
+  0% {
+    transform: translateX(-115%) skewX(-14deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateX(115%) skewX(-14deg);
+    opacity: 0;
+  }
+}
+
+.rn-optical-frame.is-focusing .optical-glass-sheen,
+.rn-optical-frame.sheen-once .optical-glass-sheen {
+  animation: opticalGlassSweep 1.05s cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+}
+
+.optical-focus-brackets {
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  z-index: 4;
+  transition: inset 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+
+@keyframes opticalBracketContract {
+  0% {
+    inset: 24px;
+    opacity: 0.35;
+  }
+  55% {
+    inset: 8px;
+    opacity: 1;
+  }
+  78% {
+    inset: 13px;
+  }
+  100% {
+    inset: 10px;
+    opacity: 1;
+  }
+}
+
+.rn-optical-frame.is-focusing .optical-focus-brackets,
+.rn-optical-frame.sheen-once .optical-focus-brackets {
+  animation: opticalBracketContract 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.opt-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: rgba(255, 255, 255, 0.92);
+  border-style: solid;
+  border-width: 0;
+  filter: drop-shadow(0 1px 3px rgba(10, 22, 40, 0.55));
+  transition: border-color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.opt-corner.tl {
+  top: 0;
+  left: 0;
+  border-top-width: 2.5px;
+  border-left-width: 2.5px;
+  border-top-left-radius: 4px;
+}
+
+.opt-corner.tr {
+  top: 0;
+  right: 0;
+  border-top-width: 2.5px;
+  border-right-width: 2.5px;
+  border-top-right-radius: 4px;
+}
+
+.opt-corner.bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 2.5px;
+  border-left-width: 2.5px;
+  border-bottom-left-radius: 4px;
+}
+
+.opt-corner.br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 2.5px;
+  border-right-width: 2.5px;
+  border-bottom-right-radius: 4px;
+}
+
+/* Center subtle optical crosshair reticle */
+.opt-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%) scale(1);
+  border: 1.5px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(10, 22, 40, 0.35);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.opt-reticle::before,
+.opt-reticle::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.opt-reticle::before {
+  top: 50%;
+  left: -4px;
+  right: -4px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.opt-reticle::after {
+  left: 50%;
+  top: -4px;
+  bottom: -4px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+/* Focus Lock Color States */
+.rn-optical-frame.is-locked-match .opt-corner {
+  border-color: #34d399;
+}
+.rn-optical-frame.is-locked-match .opt-reticle {
+  border-color: #34d399;
+  transform: translate(-50%, -50%) scale(0.78);
+  opacity: 0;
+}
+
+.rn-optical-frame.is-locked-unclear .opt-corner {
+  border-color: #fbbf24;
+}
+.rn-optical-frame.is-locked-unclear .opt-reticle {
+  border-color: #fbbf24;
+  transform: translate(-50%, -50%) scale(0.85);
+  opacity: 0;
+}
+
+.rn-optical-frame.is-locked-mismatch .opt-corner {
+  border-color: #f87171;
+}
+.rn-optical-frame.is-locked-mismatch .opt-reticle {
+  border-color: #f87171;
+}
+
+.optical-hud-pill {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(10, 22, 40, 0.68);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  transition: all 0.28s ease;
+}
+
+.rn-optical-frame.is-locked-match .optical-hud-pill {
+  background: rgba(6, 78, 59, 0.82);
+  border-color: rgba(52, 211, 153, 0.55);
+  color: #a7f3d0;
+}
+
+.rn-optical-frame.is-locked-unclear .optical-hud-pill {
+  background: rgba(120, 53, 15, 0.82);
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #fde68a;
+}
+
+.rn-optical-frame.is-locked-mismatch .optical-hud-pill {
+  background: rgba(127, 29, 29, 0.86);
+  border-color: rgba(248, 113, 113, 0.6);
+  color: #fecaca;
+}
+
+/* ── 1.1 Physical Ticket Stamp & Flight (Citizen Step 4 Submit) ────────── */
+@keyframes rnTicketCardAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92) rotateX(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
+@keyframes rnStampSlam {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.85) rotate(-18deg);
+    filter: blur(2px);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.92) rotate(-7deg);
+    filter: blur(0);
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(1.04) rotate(-8.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-8deg);
+  }
+}
+
+@keyframes rnTicketImpactShake {
+  0%   { transform: scale(1) translateY(0); }
+  25%  { transform: scale(0.962) translateY(6px) rotate(-0.8deg); }
+  55%  { transform: scale(1.012) translateY(-2px) rotate(0.4deg); }
+  80%  { transform: scale(0.995) translateY(1px); }
+  100% { transform: scale(1) translateY(0) rotate(0deg); }
+}
+
+@keyframes rnStubTearOff {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  35% {
+    transform: translateY(10px) translateX(4px) rotate(2.8deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(54px) translateX(12px) rotate(7deg);
+    opacity: 0;
+  }
+}
+
+@keyframes rnTicketArcFlight {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  22% {
+    transform: translate3d(calc(var(--fly-x, 120px) * 0.14), -28px, 0) scale(0.82) rotate(-5deg);
+    opacity: 1;
+  }
+  58% {
+    transform: translate3d(calc(var(--fly-x, 120px) * 0.56), calc(var(--fly-y, -240px) * 0.68 - 34px), 0) scale(0.42) rotate(9deg);
+    opacity: 0.96;
+  }
+  88% {
+    transform: translate3d(calc(var(--fly-x, 120px) * 0.94), calc(var(--fly-y, -240px) * 0.96), 0) scale(0.15) rotate(16deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(var(--fly-x, 120px), var(--fly-y, -240px), 0) scale(0.05) rotate(22deg);
+    opacity: 0;
+  }
+}
+
+@keyframes rnHbgCatchBounce {
+  0%   { transform: scale(1); }
+  28%  { transform: scale(1.32, 0.82) translateY(3px); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.35), 0 8px 24px rgba(16, 185, 129, 0.45); }
+  56%  { transform: scale(0.9, 1.14) translateY(-3px); }
+  78%  { transform: scale(1.08, 0.96); }
+  100% { transform: scale(1); }
+}
+
+.hbg-btn.hbg-catch-bounce,
+.rn-hbg-catcher.hbg-catch-bounce {
+  animation: rnHbgCatchBounce 0.56s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+.rn-paper-ticket-stage {
+  position: relative;
+  width: 100%;
+  max-width: 370px;
+  perspective: 1100px;
+  z-index: 5;
+  animation: rnTicketCardAppear 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rn-paper-ticket-stage.impact-shake {
+  animation: rnTicketImpactShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.rn-paper-ticket-main {
+  position: relative;
+  background: #fdfcf7;
+  color: #0f172a;
+  border-radius: 18px 18px 4px 4px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2dccb;
+  border-bottom: none;
+  text-align: left;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.rn-paper-ticket-main.flying-to-menu {
+  animation: rnTicketArcFlight 0.76s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Perforation Divider with Left/Right Semicircle Cutouts */
+.rn-paper-ticket-perf {
+  position: relative;
+  height: 18px;
+  background: #fdfcf7;
+  border-left: 1px solid #e2dccb;
+  border-right: 1px solid #e2dccb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.rn-paper-ticket-perf::before,
+.rn-paper-ticket-perf::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0a1628;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.rn-paper-ticket-perf::before {
+  left: -11px;
+  box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.rn-paper-ticket-perf::after {
+  right: -11px;
+  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.rn-perf-dashed-line {
+  width: calc(100% - 28px);
+  border-top: 2.5px dashed #cbd5e1;
+  position: relative;
+}
+
+.rn-paper-ticket-stub {
+  position: relative;
+  background: #f5f2e8;
+  color: #334155;
+  border-radius: 4px 4px 18px 18px;
+  padding: 14px 22px 18px;
+  border: 1px solid #e2dccb;
+  border-top: none;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+  transform-origin: top left;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.rn-paper-ticket-stub.torn-off {
+  animation: rnStubTearOff 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Rubber Stamp */
+.rn-rubber-stamp {
+  position: absolute;
+  top: 54%;
+  left: 56%;
+  transform: translate(-50%, -50%) scale(2.8) rotate(-18deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  border: 3.5px solid #059669;
+  outline: 1.5px solid rgba(5, 150, 105, 0.55);
+  outline-offset: -6px;
+  border-radius: 10px;
+  padding: 8px 16px;
+  background: rgba(236, 253, 245, 0.9);
+  color: #047857;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.22);
+  mix-blend-mode: multiply;
+}
+
+.rn-rubber-stamp.stamp-active {
+  animation: rnStampSlam 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── 5.1 Live Subway-Line Timeline (/track & /my-tickets) ──────────────── */
+@keyframes subwayDotPopIn {
+  0% {
+    transform: scale(0.45);
+    opacity: 0.3;
+  }
+  65% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes subwayActivePopIn {
+  0% {
+    transform: scale(0.5);
+  }
+  65% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes subwayRadarWave {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+}
+
+.tl-dot.tl-dot-pop {
+  animation: subwayDotPopIn 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tl-dot.active.tl-dot-pop {
+  animation: subwayActivePopIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tl-dot.active,
+.mytk-subway-dot.active {
+  position: relative;
+}
+
+.tl-dot.active::after,
+.mytk-subway-dot.active::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #22c55e;
+  pointer-events: none;
+  animation: subwayRadarWave 1.75s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Horizontal Subway Timeline inside /my-tickets Modal */
+.mytk-subway-wrap {
+  margin: 4px 0 18px;
+  padding: 16px 14px 14px;
+  background: var(--surface-alt, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.mytk-subway-track {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 6px;
+}
+
+.mytk-subway-line-bg {
+  position: absolute;
+  top: 19px;
+  left: 26px;
+  right: 26px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  z-index: 0;
+}
+
+[data-theme="dark"] .mytk-subway-line-bg {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.mytk-subway-line-fill {
+  position: absolute;
+  top: 19px;
+  left: 26px;
+  height: 4px;
+  width: 0px;
+  background: linear-gradient(90deg, #2563eb, #10b981);
+  border-radius: 99px;
+  z-index: 1;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
+.mytk-subway-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.mytk-subway-dot {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  background: var(--card-bg, #ffffff);
+  border: 2.5px solid #cbd5e1;
+  color: var(--muted);
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mytk-subway-dot.done {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.28);
+  animation: subwayDotPopIn 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.mytk-subway-dot.active {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: #4ade80;
+  color: #fff;
+  transform: scale(1.12);
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.38);
+  animation: subwayActivePopIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.mytk-subway-dot.rejected-dot {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #f87171;
+  color: #fff;
+}
+
+.mytk-subway-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.25;
+  transition: color 0.25s ease;
+}
+
+.mytk-subway-lbl.done {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.mytk-subway-lbl.active {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+/* Staggered Vertical Activity Audit Trail nodes */
+@keyframes rnSubwayVerticalNodeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.rn-tl-item.subway-seq-item,
+.track-tl-row.subway-seq-item {
+  opacity: 0;
+  animation: rnSubwayVerticalNodeIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── 5.2 Sequential Security Lock-In (6-Layer Pre-Flight & Vault Gate) ── */
+@keyframes secPreFlightLockIn {
+  0% {
+    transform: scale(0.84) translateY(3px);
+    opacity: 0.45;
+  }
+  60% {
+    transform: scale(1.12) translateY(-1px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes secPillAllLockedPulse {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50%  { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.sec-check-item {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.sec-check-item.sec-pending {
+  opacity: 0.48;
+}
+
+.sec-check-item.sec-pending .sec-check-status {
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+.sec-check-item.sec-locked-pass {
+  opacity: 1;
+  animation: secPreFlightLockIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sec-check-item.sec-locked-pass .sec-check-status {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.22);
+}
+
+.sec-status-pill.sec-all-locked {
+  animation: secPillAllLockedPulse 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Security Gate Mechanical Padlock Shackle Unlock & Vault Door Zoom-Through */
+@keyframes padlockShackleUnlock {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  45% {
+    transform: translateY(-6px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-6px) translateX(4px) rotate(28deg);
+  }
+}
+
+@keyframes vaultCardZoomThrough {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(0.97) translateY(2px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.38) translateY(-12px);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes vaultOverlaySplitFade {
+  0% {
+    opacity: 1;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.gate-padlock-svg {
+  overflow: visible;
+  display: block;
+}
+
+.gate-padlock-svg .padlock-shackle {
+  transform-origin: 17px 11px;
+  transition: stroke 0.3s ease;
+}
+
+.portal-gate-card.vault-unlocked .gate-padlock-svg .padlock-shackle {
+  animation: padlockShackleUnlock 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  stroke: #34d399 !important;
+}
+
+.portal-gate-card.vault-unlocked .gate-padlock-svg .padlock-body {
+  stroke: #34d399 !important;
+  fill: rgba(16, 185, 129, 0.22) !important;
+  transition: all 0.25s ease;
+}
+
+.portal-gate-card.vault-unlocked .portal-gate-icon-wrap {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.22)) !important;
+  border-color: rgba(52, 211, 153, 0.65) !important;
+  box-shadow: 0 0 28px rgba(16, 185, 129, 0.45) !important;
+  transform: scale(1.08);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.portal-gate-overlay.vault-zoom-out {
+  animation: vaultOverlaySplitFade 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  pointer-events: none !important;
+}
+
+.portal-gate-overlay.vault-zoom-out .portal-gate-card {
+  animation: vaultCardZoomThrough 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
