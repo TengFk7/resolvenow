@@ -223,17 +223,7 @@ function wizBuildSummary() {
     var vColor = vBadge === 'UNCLEAR' ? '#b45309' : (vBadge === 'FAKE_OR_MISMATCH' ? '#dc2626' : '#15803d');
     imgHtml += '<div style="margin-top:6px;font-size:11px;color:' + vColor + ';font-weight:600">👁️ AI Vision [' + vBadge + ']: ' + escapeHTML(_imgVerificationResult.imageReason) + '</div>';
   }
-  var isUnclearImg = Boolean(_imgVerificationResult && (_imgVerificationResult.imageVerification === 'UNCLEAR' || _imgVerificationResult.imageStatus === 'unclear'));
-  var isQuarantineImg = Boolean(_forceQuarantineImageSpam && _imgVerificationResult && (_imgVerificationResult.imageVerification === 'FAKE_OR_MISMATCH' || _imgVerificationResult.isImageBlocked));
   h += sumRowRaw('📷', 'รูปภาพหลักฐาน', imgHtml);
-  h += '<div style="margin-top:14px;padding:12px 14px;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;font-size:12px;color:#0369a1;display:flex;align-items:center;gap:10px">';
-  h += '<span style="font-size:20px">🤖</span>';
-  h += '<div>' + (isQuarantineImg
-    ? '<strong style="color:#dc2626">🚫 Spam Quarantine (FAKE_OR_MISMATCH):</strong> รูปภาพไม่สอดคล้องกับเรื่องที่แจ้ง การฝืนส่งจะถูกนำเข้ากล่องกักกันสแปมของแอดมินและบันทึกทัณฑ์บน (Strike)'
-    : isUnclearImg
-      ? '<strong style="color:#b45309">⚠️ Admin Review Queue (UNCLEAR):</strong> ภาพถ่ายค่อนข้างมืด/ดูยาก ระบบอนุโลมไม่บล็อกและไม่หักแต้ม แต่จะส่งให้แอดมินดูรูปตัดสินใจก่อนส่งช่าง (needsAdminReview: true)'
-      : '<strong>AI Dispatcher (MATCH):</strong> ภาพสอดคล้องกับที่แจ้ง ระบบ AI จะนำส่งเรื่องร้องเรียนให้ช่างประจำฝ่าย' + catTH + ' โดยอัตโนมัติทันทีหลังส่งเรื่อง (Auto-Dispatch)') + '</div>';
-  h += '</div>';
   ge('wizSummary').innerHTML = h;
 }
 

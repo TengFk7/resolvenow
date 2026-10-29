@@ -280,7 +280,8 @@ function notifyNewTicket(ticket) {
       { icon: '\uD83D\uDCCD', label: 'สถานที่', value: ticket.location || '-' },
       { icon: '\u26A0\uFE0F', label: 'รายละเอียด', value: (ticket.description || '-').slice(0, 60) + ((ticket.description || '').length > 60 ? '...' : '') },
       { icon: '\u23F1\uFE0F', label: 'ความเร่งด่วน', value: urgencyLabel },
-      { icon: '\uD83D\uDC64', label: 'ผู้แจ้ง', value: ticket.citizenName || '-' }
+      { icon: '\uD83D\uDC64', label: 'ผู้แจ้ง', value: ticket.citizenName || '-' },
+      ...(ticket.assignedName ? [{ icon: '\uD83D\uDC77', label: 'ช่างผู้รับผิดชอบ', value: ticket.assignedName }] : [])
     ],
     footerBtns: BASE_URL ? [{ label: '\uD83D\uDD17 เข้าระบบมอบหมายงาน', url: BASE_URL, style: 'primary', color: T.btnBlue }] : []
   });
@@ -291,7 +292,8 @@ function notifyNewTicket(ticket) {
     rows: [
       { icon: '\uD83D\uDCCB', label: 'Ticket ID', value: ticket.ticketId },
       { icon: '\uD83D\uDCCD', label: 'สถานที่', value: ticket.location || '-' },
-      { icon: '\u23F1\uFE0F', label: 'ความเร่งด่วน', value: urgencyLabel }
+      { icon: '\u23F1\uFE0F', label: 'ความเร่งด่วน', value: urgencyLabel },
+      ...(ticket.assignedName ? [{ icon: '\uD83D\uDC77', label: 'ช่างผู้รับผิดชอบ', value: ticket.assignedName }] : [])
     ],
     footerBtns: trackLink ? [{ label: '\uD83D\uDD0D ติดตามสถานะ', url: trackLink, style: 'primary', color: T.btnBlue }] : []
   });

@@ -1577,11 +1577,7 @@ router.post('/', requireAuth, upload.array('images', 5), async (req, res) => {
     }).save();
 
     if (!isSpam) {
-      if (assignedTo) {
-        notifyAssigned(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyAssigned error:', e));
-      } else {
-        notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
-      }
+      notifyNewTicket(formatTicket(ticket, user._id)).catch(e => console.error('[LINE] notifyNewTicket error:', e));
     }
 
     emitUpdate(req);
@@ -3114,11 +3110,7 @@ router.post('/:id/quarantine/restore', requireAuth, async (req, res) => {
 
     await ticket.save();
 
-    if (ticket.assignedTo) {
-      notifyAssigned(formatTicket(ticket, caller._id)).catch(e => console.error('[LINE] restore notifyAssigned error:', e));
-    } else {
-      notifyNewTicket(formatTicket(ticket, caller._id)).catch(e => console.error('[LINE] restore notifyNewTicket error:', e));
-    }
+    notifyNewTicket(formatTicket(ticket, caller._id)).catch(e => console.error('[LINE] restore notifyNewTicket error:', e));
 
     emitUpdate(req);
 
