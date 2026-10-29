@@ -100,34 +100,10 @@ function fmtDate(dt) {
    ════════════════════════════════════════════════════════ */
 async function runSecurityChecks() {
   var chkSession = ge('chkSession');
-  var chkAuth = ge('chkAuth');
-  var chkCsrf = ge('chkCsrf');
-  var chkXss = ge('chkXss');
   var chkIdor = ge('chkIdor');
-  var chkPdpa = ge('chkPdpa');
+  var chkXss = ge('chkXss');
   var chkRate = ge('chkRate');
   var barrier = ge('secAuthBarrier');
-
-  // Reset 6-Layer pre-flight items to pending state
-  var seqLayers = [
-    { item: ge('secItemSession'), badge: chkSession, text: 'PASS ✓' },
-    { item: ge('secItemAuth'), badge: chkAuth, text: 'PASS ✓' },
-    { item: ge('secItemCsrf'), badge: chkCsrf, text: 'PASS ✓' },
-    { item: ge('secItemXss'), badge: chkXss, text: 'PASS ✓' },
-    { item: ge('secItemIdor'), badge: chkIdor, text: 'PASS ✓' },
-    { item: ge('secItemPdpa'), badge: chkPdpa, text: 'PASS ✓' }
-  ];
-  seqLayers.forEach(function (l) {
-    if (l.item) {
-      l.item.classList.remove('sec-locked-pass');
-      l.item.classList.add('sec-pending');
-    }
-    if (l.badge) {
-      l.badge.textContent = 'WAIT';
-      l.badge.style.background = '';
-      l.badge.style.color = '';
-    }
-  });
 
   try {
     // 1. Session Verification Check
@@ -174,32 +150,22 @@ async function runSecurityChecks() {
     // Hide barrier if previously displayed
     if (barrier) barrier.style.display = 'none';
 
-    // ── 5.2 Sequential 6-Layer Pre-Flight Lock-In (0.7s total left-to-right) ──
-    seqLayers.forEach(function (layer, idx) {
-      setTimeout(function () {
-        if (layer.item) {
-          layer.item.classList.remove('sec-pending');
-          layer.item.classList.add('sec-locked-pass');
-        }
-        if (layer.badge) {
-          layer.badge.textContent = layer.text;
-          layer.badge.style.background = '#dcfce7';
-          layer.badge.style.color = '#15803d';
-        }
-      }, idx * 110);
-    });
-
-    setTimeout(function () {
-      var pill = ge('secHeaderStatusPill');
-      var pillTxt = ge('secHeaderPillText');
-      if (pillTxt) pillTxt.textContent = '🛡️ 6-Layer Security: PASS ✓';
-      if (pill) {
-        pill.classList.remove('sec-all-locked');
-        void pill.offsetWidth;
-        pill.classList.add('sec-all-locked');
-      }
-    }, 660);
-
+    // Set verified labels
+    if (chkSession) {
+      chkSession.textContent = 'VERIFIED ✅';
+      chkSession.style.background = '#dcfce7';
+      chkSession.style.color = '#15803d';
+    }
+    if (chkIdor) {
+      chkIdor.textContent = 'SCOPED 🛡️';
+      chkIdor.style.background = '#dcfce7';
+      chkIdor.style.color = '#15803d';
+    }
+    if (chkXss) {
+      chkXss.textContent = 'SANITIZED 🧼';
+      chkXss.style.background = '#dcfce7';
+      chkXss.style.color = '#15803d';
+    }
     if (chkRate) {
       chkRate.textContent = 'ACTIVE ⚡';
       chkRate.style.background = '#dcfce7';
