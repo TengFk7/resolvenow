@@ -195,6 +195,7 @@ io.on('connection', (socket) => {
   app.use('/api/track', require('./routes/track'));
   app.use('/auth/line', require('./routes/lineAuth'));
   app.use('/api/line', require('./routes/lineBot'));
+  app.use('/api/line-inquiries', require('./routes/lineInquiries'));
 
   // ─── LIFF Rating Page ──────────────────────────────────────────
   app.get('/liff-rating', (req, res) => {

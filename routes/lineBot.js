@@ -8,20 +8,29 @@
 // รองรับ:
 // 1. Live Ticket Tracking เฉพาะเจ้าของเคส (PDPA Compliant) พร้อม Flex Message
 // 2. Gemini 2.5 Flash Citizen Support AI พร้อม Conversation Memory & Strict Guardrails
-// 3. Diagnostic & Inspection Endpoint สำหรับตรวจสอบการรับ-ส่งข้อความสด
+// 3. Smart Service Navigator (เมนูนำทางบริการประชาชน)
+// 4. AI Handoff ส่งเรื่องต่อให้ Admin Portal พร้อมแจ้งเตือน Socket.IO สด
+// 5. Diagnostic & Inspection Endpoint สำหรับตรวจสอบการรับ-ส่งข้อความสด
 
 const express = require('express');
 const router = express.Router();
 const Ticket = require('../models/Ticket');
 const User = require('../models/User');
+const LineInquiry = require('../models/LineInquiry');
 const {
   validateLineSignature,
   replyLineMessage,
   buildTicketFlexMessage,
   buildUnauthorizedMessage,
-  buildNoTicketsMessage
+  buildNoTicketsMessage,
+  buildServiceNavigatorFlexMessage,
+  getLineUserProfile
 } = require('../config/lineBotService');
 const { askCitizenAI } = require('../utils/lineAiAgent');
+
+// ── In-Memory State สำหรับติดตามผู้ใช้ที่กำลังส่งเรื่องให้ Admin ────────
+const PENDING_INQUIRIES = new Map();
+const INQUIRY_TTL_MS = 15 * 60 * 1000; // 15 นาที
 
 // ── In-Memory Ring Buffer สำหรับ Diagnostic Logs (เก็บ 20 รายการล่าสุด) ──
 const DEBUG_LOGS = [];
@@ -109,7 +118,41 @@ router.post('/webhook', async (req, res) => {
 
       if (!replyToken || !text) continue;
 
-      // ── Intent 1: ตรวจจับเลขตั๋ว TKT-xxxxx ─────────────────────
+      // ── ตรวจสอบว่าผู้ใช้กำลังอยู่ในขั้นตอน "พิมพ์เรื่องส่งต่อให้ Admin" หรือไม่ ──
+      const pendingInquiry = PENDING_INQUIRIES.get(lineUserId);
+      if (pendingInquiry && (Date.now() - pendingInquiry.startedAt < INQUIRY_TTL_MS)) {
+        if (/ยกเลิก|cancel|ไม่เอาแล้ว/i.test(text)) {
+          PENDING_INQUIRIES.delete(lineUserId);
+          const cancelMsg = 'ยกเลิกการส่งเรื่องถึงเจ้าหน้าที่เรียบร้อยแล้วครับ หากต้องการสอบถามเรื่องอื่น สามารถพิมพ์ถามผมได้เลยนะครับ 😊';
+          const replyResult = await replyLineMessage(replyToken, cancelMsg);
+          recordDiagnosticEvent({ lineUserId, userText: text, intent: 'admin_handoff_cancelled', replyResult });
+          continue;
+        }
+
+        // ประมวลผลบันทึกเรื่องส่งต่อให้ Admin
+        await handleCitizenInquirySubmission(req, replyToken, lineUserId, text);
+        PENDING_INQUIRIES.delete(lineUserId);
+        continue;
+      }
+
+      // ── Intent 1: Smart Service Navigator (ติดต่อสอบถาม / ขอสอบถาม / เมนู) ──
+      if (/ติดต่อสอบถาม|ขอสอบถาม|ต้องการสอบถาม|เมนู|menu|บริการ/i.test(text)) {
+        const navFlex = buildServiceNavigatorFlexMessage();
+        const replyResult = await replyLineMessage(replyToken, navFlex);
+        recordDiagnosticEvent({ lineUserId, userText: text, intent: 'service_navigator', replyResult });
+        continue;
+      }
+
+      // ── Intent 2: ขอยื่นเรื่องติดต่อเจ้าหน้าที่ (Admin Handoff Trigger) ──────
+      if (/ติดต่อเจ้าหน้าที่|คุยกับแอดมิน|ติดต่อแอดมิน|คุยกับคน|แจ้งแอดมิน/i.test(text)) {
+        PENDING_INQUIRIES.set(lineUserId, { startedAt: Date.now() });
+        const promptMsg = 'รับทราบครับ! เพื่อให้เจ้าหน้าที่แอดมินดูแลและประสานงานให้คุณได้อย่างรวดเร็ว กรุณาพิมพ์แจ้ง "เรื่องที่ต้องการติดต่อหรือปัญหาที่พบ" และ "เบอร์โทรศัพท์ติดต่อกลับ (ถ้าสะดวก)" เข้ามาในแชตนี้ได้เลยครับ 📝\n\n(หากต้องการยกเลิก สามารถพิมพ์ว่า "ยกเลิก" ได้ครับ)';
+        const replyResult = await replyLineMessage(replyToken, promptMsg);
+        recordDiagnosticEvent({ lineUserId, userText: text, intent: 'admin_handoff_initiated', replyResult });
+        continue;
+      }
+
+      // ── Intent 3: ตรวจจับเลขตั๋ว TKT-xxxxx ─────────────────────
       const ticketMatch = text.match(/(TKT-\d+)/i);
       if (ticketMatch) {
         const targetTicketId = ticketMatch[1].toUpperCase();
@@ -117,13 +160,13 @@ router.post('/webhook', async (req, res) => {
         continue;
       }
 
-      // ── Intent 2: ตรวจจับคำขอเช็ค "เรื่องของฉัน / สถานะของฉัน" ────
+      // ── Intent 4: ตรวจจับคำขอเช็ค "เรื่องของฉัน / สถานะของฉัน" ────
       if (/เรื่องของฉัน|สถานะของฉัน|ติดตามเรื่อง|ตั๋วของฉัน|เรื่องที่แจ้ง/i.test(text)) {
         await handleMyTicketsList(replyToken, lineUserId, text);
         continue;
       }
 
-      // ── Intent 3: คำถามทั่วไป ส่งให้ Citizen AI ตอบ ─────────────
+      // ── Intent 5: คำถามทั่วไป ส่งให้ Citizen AI ตอบ ─────────────
       console.log(`[LINE Webhook] Calling Gemini AI for: "${text}"...`);
       const aiReply = await askCitizenAI(text, lineUserId);
       console.log(`[LINE Webhook] Gemini AI generated reply (${aiReply.length} chars). Sending to LINE...`);
@@ -146,6 +189,58 @@ router.post('/webhook', async (req, res) => {
     }
   }
 });
+
+/**
+ * บันทึกข้อความและข้อมูลติดต่อของประชาชนส่งต่อให้ Admin Portal
+ */
+async function handleCitizenInquirySubmission(req, replyToken, lineUserId, text) {
+  try {
+    const phoneMatch = text.match(/(0\d{8,9}|\+66\d{8,9})/);
+    const phone = phoneMatch ? phoneMatch[1] : null;
+
+    // ดึงโปรไฟล์ LINE (ถ้ามีสิทธิ์)
+    const profile = await getLineUserProfile(lineUserId);
+
+    const inquiry = await LineInquiry.create({
+      lineUserId,
+      displayName: profile?.displayName || 'ผู้ใช้งาน LINE',
+      pictureUrl: profile?.pictureUrl || null,
+      phone,
+      message: text,
+      status: 'pending'
+    });
+
+    // ส่งสัญญาณเตือน Socket.IO เข้าห้อง admin_dm แบบเรียลไทม์
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin_dm').emit('line_inquiry_new', {
+        _id: inquiry._id,
+        lineUserId: inquiry.lineUserId,
+        displayName: inquiry.displayName,
+        pictureUrl: inquiry.pictureUrl,
+        phone: inquiry.phone,
+        message: inquiry.message,
+        status: inquiry.status,
+        createdAt: inquiry.createdAt
+      });
+    }
+
+    const confirmMsg = '✅ ส่งเรื่องถึงเจ้าหน้าที่แอดมินเรียบร้อยแล้วครับ!\n\nเจ้าหน้าที่จะตรวจสอบข้อมูลและตอบกลับทางแชต LINE นี้ หรือติดต่อกลับตามเบอร์โทรศัพท์โดยเร็วที่สุดครับ (วันและเวลาทำการ จ.-ศ. 08:30 - 16:30 น.)';
+    const replyResult = await replyLineMessage(replyToken, confirmMsg);
+
+    recordDiagnosticEvent({
+      lineUserId,
+      userText: text,
+      intent: 'admin_inquiry_submitted',
+      inquiryId: inquiry._id,
+      phone,
+      replyResult
+    });
+  } catch (err) {
+    console.error('[LINE Webhook] handleCitizenInquirySubmission error:', err);
+    await replyLineMessage(replyToken, 'ขออภัยครับ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองส่งใหม่อีกครั้ง');
+  }
+}
 
 /**
  * จัดการตรวจสอบและแสดงผลตั๋วร้องเรียน (Strict Ownership / PDPA Check)

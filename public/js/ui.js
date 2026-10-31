@@ -723,6 +723,34 @@ if (typeof io !== 'undefined') {
   socket.on('dm_message', function (msg) {
     if (typeof _handleIncomingDm === 'function') _handleIncomingDm(msg);
   });
+
+  // ── LINE Inquiry real-time ──
+  socket.on('line_inquiry_new', function (data) {
+    if (typeof showToast === 'function') {
+      showToast('📲 มีข้อความติดต่อใหม่จาก LINE: ' + (data.displayName || 'ประชาชน'), 'info');
+    }
+    var badge = document.getElementById('lineInquiriesBadge');
+    if (badge) {
+      var cur = parseInt(badge.textContent || '0', 10);
+      badge.textContent = cur + 1;
+      badge.style.display = 'inline-flex';
+    }
+    if (typeof loadLineInquiries === 'function') {
+      var modal = document.getElementById('mLineInquiries');
+      if (modal && modal.style.display !== 'none') {
+        loadLineInquiries();
+      }
+    }
+  });
+
+  socket.on('line_inquiry_updated', function () {
+    if (typeof loadLineInquiries === 'function') {
+      var modal = document.getElementById('mLineInquiries');
+      if (modal && modal.style.display !== 'none') {
+        loadLineInquiries();
+      }
+    }
+  });
 }
 
 

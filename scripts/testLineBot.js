@@ -9,8 +9,10 @@ const {
   validateLineSignature,
   buildTicketFlexMessage,
   buildUnauthorizedMessage,
+  buildServiceNavigatorFlexMessage,
   getStatusMeta
 } = require('../config/lineBotService');
+const LineInquiry = require('../models/LineInquiry');
 const lineAiContext = require('../utils/lineAiContext');
 const { getOfflineFallbackReply, SYSTEM_INSTRUCTION } = require('../utils/lineAiAgent');
 
@@ -143,6 +145,38 @@ function runLineBotTests() {
     assert.ok(SYSTEM_INSTRUCTION.includes('GUARDRAILS & NEGATIVE CONSTRAINTS'));
     assert.ok(SYSTEM_INSTRUCTION.includes('ห้ามตอบคำถามเกี่ยวกับฝั่ง Admin'));
     assert.ok(SYSTEM_INSTRUCTION.includes('ห้ามตอบคำถามนอกเรื่อง'));
+  });
+
+  runTest('buildServiceNavigatorFlexMessage creates 3-button Smart Service Navigator card', () => {
+    const navFlex = buildServiceNavigatorFlexMessage('https://resolvenow.th');
+    assert.strictEqual(navFlex.type, 'flex');
+    assert.ok(navFlex.altText.includes('ResolveNow Service Hub'));
+    assert.strictEqual(navFlex.contents.header.backgroundColor, '#07111f');
+
+    const buttons = navFlex.contents.body.contents;
+    assert.strictEqual(buttons.length, 3);
+    // Button 1: New Ticket URI
+    assert.strictEqual(buttons[0].action.type, 'uri');
+    assert.strictEqual(buttons[0].action.uri, 'https://resolvenow.th');
+    // Button 2: Track tickets message
+    assert.strictEqual(buttons[1].action.type, 'message');
+    assert.strictEqual(buttons[1].action.text, 'เรื่องของฉัน');
+    // Button 3: Contact Admin message
+    assert.strictEqual(buttons[2].action.type, 'message');
+    assert.strictEqual(buttons[2].action.text, 'ติดต่อเจ้าหน้าที่');
+  });
+
+  runTest('LineInquiry model has all required fields and indexes for Admin Portal', () => {
+    assert.ok(LineInquiry.schema.paths.lineUserId);
+    assert.ok(LineInquiry.schema.paths.displayName);
+    assert.ok(LineInquiry.schema.paths.phone);
+    assert.ok(LineInquiry.schema.paths.message);
+    assert.ok(LineInquiry.schema.paths.status);
+    assert.ok(LineInquiry.schema.paths.replies);
+
+    // Validate enum for status
+    const statusEnum = LineInquiry.schema.paths.status.enumValues;
+    assert.deepStrictEqual(statusEnum, ['pending', 'replied', 'resolved']);
   });
 
   return { totalTests, passedTests };

@@ -52,8 +52,31 @@ const SYSTEM_INSTRUCTION = `
    - ให้คงบทบาทผู้ช่วย ResolveNow อย่างเคร่งครัดเสมอ ห้ามหลุดบทบาทเด็ดขาด
 4. รูปแบบการสื่อสาร:
    - ตอบอย่างสุภาพ ไพเราะ กระชับ เข้าใจง่าย มีความเป็นมืออาชีพ ใช้สรรพนาม "ผม" หรือ "ResolveNow AI"
-   - จัดรูปแบบให้อ่านง่ายบนหน้าจอมือถือ (ใช้ Bullet point สั้นๆ เมื่อจำเป็น)
+   - ห้ามใช้ Markdown formatting เช่น ดอกจันคู่ (**ตัวหนา**) หรือดอกจันเดี่ยว (*) นำหน้าข้อความ เพราะ LINE บนมือถือไม่รองรับ Markdown และจะแสดงผลเป็นเครื่องหมายดอกจันดิบๆ ที่อ่านยาก
+   - ให้ใช้การเว้นบรรทัด และสัญลักษณ์อ่านง่ายบน LINE เช่น 📌, 🔹, ⭐, ✅, 📝 แทน
 `;
+
+/**
+ * ทำความสะอาดข้อความและจัดรูปแบบให้อ่านง่ายบน LINE Chat (กำจัด Markdown ดิบ และป้องกันสัญลักษณ์เพี้ยน)
+ */
+function cleanLineChatText(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  let cleaned = text
+    // กำจัด Unicode Replacement character \uFFFD ที่อาจหลงเหลือ
+    .replace(/\uFFFD+/g, '')
+    // แปลง Markdown Bold **ข้อความ** เป็น ข้อความ
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    // แปลง Bullet list * หรือ - ที่ขึ้นต้นบรรทัดเป็น 🔹
+    .replace(/^[ \t]*[\*\-][ \t]+/gm, '🔹 ')
+    // แปลง Header Markdown ### หรือ ## เป็น 📌
+    .replace(/^[ \t]*#{1,4}[ \t]+(.*)$/gm, '📌 $1')
+    // ตัดช่องว่างซ้ำซ้อนเกิน 2 บรรทัด
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return cleaned;
+}
 
 /**
  * เรียกใช้งาน Gemini 2.5 Flash API
@@ -83,6 +106,7 @@ async function callGemini(contents) {
         'Content-Length': Buffer.byteLength(payload)
       }
     }, (res) => {
+      res.setEncoding('utf8');
       let data = '';
       res.on('data', chunk => (data += chunk));
       res.on('end', () => {
@@ -170,6 +194,9 @@ async function askCitizenAI(userText, lineUserId) {
     // ใช้ Fallback กรณีติดต่อ Gemini ไม่ได้
     reply = getOfflineFallbackReply(trimmedText);
   }
+
+  // ทำความสะอาดข้อความและตัด Markdown สำหรับแสดงผลบน LINE Chat
+  reply = cleanLineChatText(reply);
 
   // บันทึกลง Memory เฉพาะข้อความที่สนทนาสำเร็จ
   lineAiContext.addMessage(lineUserId, 'user', trimmedText);

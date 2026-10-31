@@ -339,12 +339,300 @@ function buildNoTicketsMessage(baseUrl = BASE_URL) {
   ];
 }
 
+/**
+ * ดึงข้อมูลโปรไฟล์ผู้ใช้งาน LINE จาก LINE Messaging API
+ * @param {string} lineUserId 
+ * @returns {Promise<{displayName: string, pictureUrl: string|null}|null>}
+ */
+async function getLineUserProfile(lineUserId) {
+  if (!TOKEN || !lineUserId) return null;
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.line.me',
+      path: `/v2/bot/profile/${encodeURIComponent(lineUserId)}`,
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + TOKEN
+      }
+    }, (res) => {
+      res.setEncoding('utf8');
+      let data = '';
+      res.on('data', chunk => (data += chunk));
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const parsed = JSON.parse(data);
+            resolve({
+              displayName: parsed.displayName || 'ผู้ใช้งาน LINE',
+              pictureUrl: parsed.pictureUrl || null
+            });
+          } catch (e) {
+            resolve(null);
+          }
+        } else {
+          resolve(null);
+        }
+      });
+    });
+
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+/**
+ * สร้าง Flex Message: Smart Service Navigator (การ์ดนำทางบริการประชาชน)
+ * @param {string} [baseUrl] 
+ * @returns {Object} LINE Flex Message Object
+ */
+function buildServiceNavigatorFlexMessage(baseUrl = BASE_URL) {
+  return {
+    type: 'flex',
+    altText: '🏛️ ResolveNow Service Hub — เมนูบริการประชาชนอัจฉริยะ',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.headerBg,
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'text',
+            text: '🏛️ ResolveNow Service Hub',
+            size: 'xs',
+            color: T.brand,
+            weight: 'bold'
+          },
+          {
+            type: 'text',
+            text: 'ยินดีต้อนรับสู่ระบบบริการประชาชน',
+            weight: 'bold',
+            size: 'md',
+            color: T.title,
+            margin: 'sm'
+          },
+          {
+            type: 'text',
+            text: 'เลือกบริการที่ต้องการ หรือพิมพ์สอบถามกับ AI ได้ตลอด 24 ชม.',
+            size: 'xs',
+            color: T.textMuted,
+            margin: 'xs'
+          }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.bodyBg,
+        paddingAll: '16px',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: T.btnBlue,
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📝 1. แจ้งเรื่องร้องเรียนใหม่',
+              uri: baseUrl
+            }
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: T.btnGold,
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '🔍 2. เช็คสถานะเรื่องของฉัน',
+              text: 'เรื่องของฉัน'
+            }
+          },
+          {
+            type: 'button',
+            style: 'primary',
+            color: T.btnGreen,
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '💬 3. ติดต่อเจ้าหน้าที่ / ส่งเรื่อง',
+              text: 'ติดต่อเจ้าหน้าที่'
+            }
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.footerBg,
+        paddingAll: '12px',
+        contents: [
+          {
+            type: 'text',
+            text: '💡 ทิป: สามารถพิมพ์สอบถามปัญหา หรือพิมพ์เลขตั๋ว TKT-xxxxx ได้ทันทีครับ',
+            size: 'xxs',
+            color: T.textMuted,
+            wrap: true,
+            align: 'center'
+          }
+        ]
+      }
+    }
+  };
+}
+
+/**
+ * ส่ง Push Message ตอบกลับจากแอดมินไปยังแชต LINE ของประชาชน
+ * @param {string} lineUserId 
+ * @param {string} adminName 
+ * @param {string} replyText 
+ * @param {string} [baseUrl] 
+ * @returns {Promise<{success: boolean, statusCode: number, error?: string}>}
+ */
+async function pushAdminReplyToCitizen(lineUserId, adminName, replyText, baseUrl = BASE_URL) {
+  if (!TOKEN || !lineUserId || !replyText) {
+    return { success: false, statusCode: 0, error: 'Missing parameters' };
+  }
+
+  const dateStr = new Date().toLocaleDateString('th-TH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const flexMessage = {
+    type: 'flex',
+    altText: `💬 ข้อความตอบกลับจากเจ้าหน้าที่: ${adminName}`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.headerBg,
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            contents: [
+              {
+                type: 'text',
+                text: '🏛️ ResolveNow Admin',
+                size: 'xs',
+                color: T.brand,
+                weight: 'bold'
+              },
+              {
+                type: 'text',
+                text: dateStr,
+                size: 'xs',
+                color: T.textMuted,
+                align: 'end'
+              }
+            ]
+          },
+          {
+            type: 'text',
+            text: `💬 ตอบกลับจาก ${adminName || 'เจ้าหน้าที่แอดมิน'}`,
+            weight: 'bold',
+            size: 'md',
+            color: T.title,
+            margin: 'sm'
+          }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.bodyBg,
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'text',
+            text: replyText,
+            color: T.value,
+            size: 'sm',
+            wrap: true
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.footerBg,
+        paddingAll: '12px',
+        contents: [
+          {
+            type: 'button',
+            style: 'link',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🌐 เปิดเว็บไซต์ ResolveNow',
+              uri: baseUrl
+            }
+          }
+        ]
+      }
+    }
+  };
+
+  const body = JSON.stringify({
+    to: lineUserId,
+    messages: [flexMessage]
+  });
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.line.me',
+      path: '/v2/bot/message/push',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Authorization': 'Bearer ' + TOKEN,
+        'Content-Length': Buffer.byteLength(body, 'utf8')
+      }
+    }, (res) => {
+      res.setEncoding('utf8');
+      let data = '';
+      res.on('data', chunk => (data += chunk));
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          console.log('[LINE Bot] Push admin reply succeeded to', lineUserId);
+          resolve({ success: true, statusCode: 200 });
+        } else {
+          console.error('[LINE Bot] Push admin reply failed:', res.statusCode, data);
+          resolve({ success: false, statusCode: res.statusCode, error: data });
+        }
+      });
+    });
+
+    req.on('error', (e) => {
+      console.error('[LINE Bot] Push admin reply error:', e.message);
+      resolve({ success: false, statusCode: 0, error: e.message });
+    });
+
+    req.write(body, 'utf8');
+    req.end();
+  });
+}
+
 module.exports = {
   validateLineSignature,
   replyLineMessage,
   buildTicketFlexMessage,
   buildUnauthorizedMessage,
   buildNoTicketsMessage,
+  buildServiceNavigatorFlexMessage,
+  pushAdminReplyToCitizen,
+  getLineUserProfile,
   getStatusMeta
 };
 

@@ -2572,3 +2572,228 @@ async function manageUserStrikesPrompt(userId, name, currentStrikes, isSuspended
   }
 }
 
+
+
+/* ─── LINE Inquiries Controller (ข้อความติดต่อจาก LINE OA) ─── */
+var _lineInquiries = [];
+var _currentInquiryFilter = 'all';
+
+async function openLineInquiriesModal() {
+  var m = ge('mLineInquiries');
+  if (m) {
+    m.style.display = 'flex';
+    m.classList.add('on');
+  }
+  await loadLineInquiries();
+}
+
+function closeLineInquiriesModal() {
+  var m = ge('mLineInquiries');
+  if (m) {
+    m.style.display = 'none';
+    m.classList.remove('on');
+  }
+}
+
+async function loadLineInquiries(filter) {
+  if (filter) _currentInquiryFilter = filter;
+  try {
+    var res = await fetch('/api/line-inquiries?status=' + encodeURIComponent(_currentInquiryFilter));
+    if (!res.ok) throw new Error('โหลดรายการข้อความจาก LINE ไม่สำเร็จ');
+    var data = await res.json();
+    _lineInquiries = data.inquiries || [];
+
+    // Update unread badge
+    var unread = data.unreadCount || 0;
+    updateLineInquiryBadge(unread);
+
+    // Update counts
+    if (ge('liCountAll')) ge('liCountAll').textContent = _lineInquiries.length;
+    var cPending = _lineInquiries.filter(function (i) { return i.status === 'pending'; }).length;
+    var cReplied = _lineInquiries.filter(function (i) { return i.status === 'replied'; }).length;
+    var cResolved = _lineInquiries.filter(function (i) { return i.status === 'resolved'; }).length;
+
+    if (ge('liCountPending')) ge('liCountPending').textContent = cPending;
+    if (ge('liCountReplied')) ge('liCountReplied').textContent = cReplied;
+    if (ge('liCountResolved')) ge('liCountResolved').textContent = cResolved;
+    if (ge('lineInquiriesTotalBadge')) ge('lineInquiriesTotalBadge').textContent = _lineInquiries.length + ' ข้อความ';
+
+    renderLineInquiries();
+  } catch (err) {
+    console.error('[LineInquiries] Load error:', err);
+    var container = ge('lineInquiriesListContainer');
+    if (container) {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444">เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + escapeHTML(err.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้') + '</div>';
+    }
+  }
+}
+
+function updateLineInquiryBadge(count) {
+  var badge = ge('lineInquiriesBadge');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+function filterLineInquiries(filter) {
+  _currentInquiryFilter = filter;
+  var btns = document.querySelectorAll('[data-inquiry-filter]');
+  btns.forEach(function (b) {
+    if (b.getAttribute('data-inquiry-filter') === filter) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+  loadLineInquiries(filter);
+}
+
+function renderLineInquiries() {
+  var container = ge('lineInquiriesListContainer');
+  if (!container) return;
+
+  if (_lineInquiries.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--muted)">' +
+      '<div style="font-size:36px;margin-bottom:10px">📭</div>' +
+      '<div>ไม่มีข้อความติดต่อจาก LINE ในหมวดหมู่นี้</div></div>';
+    return;
+  }
+
+  var html = _lineInquiries.map(function (inq) {
+    var statusBadge = '';
+    if (inq.status === 'pending') {
+      statusBadge = '<span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">⏳ รอดำเนินการ</span>';
+    } else if (inq.status === 'replied') {
+      statusBadge = '<span style="background:#dbeafe;color:#2563eb;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">💬 ตอบกลับแล้ว</span>';
+    } else {
+      statusBadge = '<span style="background:#d1fae5;color:#059669;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">✅ ปิดเรื่องแล้ว</span>';
+    }
+
+    var dateStr = new Date(inq.createdAt).toLocaleDateString('th-TH', {
+      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    var avatar = inq.pictureUrl
+      ? '<img src="' + escapeHTML(inq.pictureUrl) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #10b981">'
+      : '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">L</div>';
+
+    var phoneHtml = inq.phone
+      ? '<a href="tel:' + escapeHTML(inq.phone) + '" style="display:inline-flex;align-items:center;gap:4px;color:#2563eb;text-decoration:none;font-weight:600;font-size:12px;background:#eff6ff;padding:3px 8px;border-radius:6px;border:1px solid #bfdbfe">' +
+        '📞 ' + escapeHTML(inq.phone) + ' (กดโทรออก)</a>'
+      : '<span style="color:var(--muted);font-size:11px">ไม่ได้ระบุเบอร์โทร</span>';
+
+    // Thread of replies
+    var repliesHtml = '';
+    if (inq.replies && inq.replies.length > 0) {
+      repliesHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:8px">' +
+        inq.replies.map(function (r) {
+          var rDate = new Date(r.sentAt).toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+          return '<div style="background:#f0fdf4;border-left:3px solid #10b981;padding:8px 12px;border-radius:6px;font-size:12px">' +
+            '<div style="display:flex;justify-content:space-between;color:#065f46;font-weight:600;margin-bottom:2px">' +
+              '<span>👤 ' + escapeHTML(r.adminName || 'Admin') + ' (ตอบเข้า LINE)</span>' +
+              '<span style="font-size:10px;color:var(--muted)">' + rDate + '</span>' +
+            '</div>' +
+            '<div style="color:#1e293b">' + escapeHTML(r.message) + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }
+
+    return [
+      '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border:1px solid var(--border);display:flex;flex-direction:column;gap:10px">',
+      '  <div style="display:flex;align-items:center;justify-content:space-between">',
+      '    <div style="display:flex;align-items:center;gap:10px">',
+      '      ' + avatar,
+      '      <div>',
+      '        <div style="font-weight:700;font-size:14px;color:var(--navy);display:flex;align-items:center;gap:6px">',
+      '          <span>' + escapeHTML(inq.displayName || 'ผู้ใช้งาน LINE') + '</span>',
+      '          <span style="font-size:9.5px;background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:4px;font-weight:600">LINE OA</span>',
+      '        </div>',
+      '        <div style="font-size:11px;color:var(--muted)">' + dateStr + '</div>',
+      '      </div>',
+      '    </div>',
+      '    <div style="display:flex;align-items:center;gap:8px">',
+      '      ' + statusBadge,
+      '      <button class="btn-ripple" onclick="toggleLineInquiryStatus(\'' + inq._id + '\', \'' + (inq.status === 'resolved' ? 'pending' : 'resolved') + '\')" style="background:none;border:1px solid var(--border);padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer">',
+      '        ' + (inq.status === 'resolved' ? '🔄 เปิดใหม่' : '✅ ปิดเรื่อง'),
+      '      </button>',
+      '    </div>',
+      '  </div>',
+      '  <div style="background:#f8fafc;padding:12px;border-radius:8px;font-size:13px;color:#1e293b;border-left:3px solid #3b82f6;line-height:1.5">',
+      '    ' + escapeHTML(inq.message),
+      '  </div>',
+      '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">',
+      '    <div>' + phoneHtml + '</div>',
+      '  </div>',
+      '  ' + repliesHtml,
+      '  <!-- Reply Input Box -->',
+      '  <div style="display:flex;gap:8px;margin-top:4px">',
+      '    <input type="text" id="replyInput_' + inq._id + '" placeholder="พิมพ์ข้อความตอบกลับส่งตรงเข้า LINE..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px" onkeydown="if(event.key===\'Enter\') sendLineInquiryReply(\'' + inq._id + '\')">',
+      '    <button class="btn btn-primary btn-ripple" onclick="sendLineInquiryReply(\'' + inq._id + '\')" style="padding:8px 16px;font-size:12px;background:#10b981;border-color:#10b981;display:flex;align-items:center;gap:4px">',
+      '      <span>ส่งเข้า LINE</span> ↗️',
+      '    </button>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
+  }).join('\n');
+
+  container.innerHTML = html;
+}
+
+async function sendLineInquiryReply(id) {
+  var input = ge('replyInput_' + id);
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text) {
+    showToast('กรุณากรอกข้อความตอบกลับ', 'warning');
+    return;
+  }
+
+  try {
+    var res = await fetch('/api/line-inquiries/' + id + '/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ replyMessage: text })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'ตอบกลับไม่สำเร็จ');
+
+    showToast('✅ ส่งคำตอบเข้าแชต LINE ประชาชนสำเร็จแล้ว', 'success');
+    input.value = '';
+    loadLineInquiries();
+  } catch (err) {
+    showToast(err.message || 'เกิดข้อผิดพลาดในการส่งข้อความ', true);
+  }
+}
+
+async function toggleLineInquiryStatus(id, newStatus) {
+  try {
+    var res = await fetch('/api/line-inquiries/' + id + '/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'เปลี่ยนสถานะไม่สำเร็จ');
+
+    showToast('ปรับปรุงสถานะเรียบร้อยแล้ว', 'success');
+    loadLineInquiries();
+  } catch (err) {
+    showToast(err.message || 'เกิดข้อผิดพลาดในการเปลี่ยนสถานะ', true);
+  }
+}
+
+// Hook startup badge check
+if (typeof window !== 'undefined') {
+  setTimeout(function () {
+    fetch('/api/line-inquiries?status=pending')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && typeof d.unreadCount === 'number') updateLineInquiryBadge(d.unreadCount); })
+      .catch(function () {});
+  }, 2000);
+}
