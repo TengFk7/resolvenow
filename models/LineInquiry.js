@@ -33,6 +33,35 @@ const lineInquirySchema = new mongoose.Schema({
     default: 'pending',
     index: true
   },
+  isActiveSession: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
+  lastActivityAt: {
+    type: Date,
+    default: Date.now,
+    index: true
+  },
+  messages: [{
+    sender: {
+      type: String,
+      enum: ['citizen', 'admin'],
+      required: true
+    },
+    senderName: {
+      type: String,
+      default: ''
+    },
+    text: {
+      type: String,
+      required: true
+    },
+    sentAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   replies: [{
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -57,6 +86,6 @@ const lineInquirySchema = new mongoose.Schema({
 
 lineInquirySchema.index({ createdAt: -1 });
 lineInquirySchema.index({ status: 1, createdAt: -1 });
+lineInquirySchema.index({ lineUserId: 1, isActiveSession: 1, lastActivityAt: -1 });
 
 module.exports = mongoose.model('LineInquiry', lineInquirySchema);
-

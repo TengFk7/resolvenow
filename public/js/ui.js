@@ -743,6 +743,20 @@ if (typeof io !== 'undefined') {
     }
   });
 
+  socket.on('line_inquiry_message', function (data) {
+    if (data && data.sender === 'citizen') {
+      if (typeof showToast === 'function') {
+        showToast('💬 ประชาชนส่งข้อความใน LINE: ' + (data.text && data.text.length > 30 ? data.text.substring(0, 30) + '...' : (data.text || '')), 'info');
+      }
+    }
+    if (typeof loadLineInquiries === 'function') {
+      var modal = document.getElementById('mLineInquiries');
+      if (modal && modal.style.display !== 'none') {
+        loadLineInquiries();
+      }
+    }
+  });
+
   socket.on('line_inquiry_updated', function () {
     if (typeof loadLineInquiries === 'function') {
       var modal = document.getElementById('mLineInquiries');

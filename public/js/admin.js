@@ -2658,20 +2658,26 @@ function renderLineInquiries() {
   if (!container) return;
 
   if (_lineInquiries.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--muted)">' +
-      '<div style="font-size:36px;margin-bottom:10px">📭</div>' +
-      '<div>ไม่มีข้อความติดต่อจาก LINE ในหมวดหมู่นี้</div></div>';
+    container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted)">' +
+      '<div style="font-size:42px;margin-bottom:12px">📭</div>' +
+      '<div style="font-size:15px;font-weight:600;color:var(--navy);margin-bottom:4px">ไม่มีข้อความติดต่อจาก LINE ในหมวดนี้</div>' +
+      '<div style="font-size:12px">เมื่อประชาชนพิมพ์ข้อความติดต่อเจ้าหน้าที่ จะปรากฏที่นี่แบบเรียลไทม์</div></div>';
     return;
   }
 
   var html = _lineInquiries.map(function (inq) {
+    var isLive = inq.isActiveSession !== false && inq.status !== 'resolved';
+
     var statusBadge = '';
-    if (inq.status === 'pending') {
-      statusBadge = '<span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">⏳ รอดำเนินการ</span>';
-    } else if (inq.status === 'replied') {
-      statusBadge = '<span style="background:#dbeafe;color:#2563eb;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">💬 ตอบกลับแล้ว</span>';
+    if (isLive) {
+      statusBadge = '<span style="background:rgba(16,185,129,0.12);color:#059669;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px">' +
+        '<span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 8px #10b981"></span>' +
+        '🟢 กำลังสนทนาสด' +
+      '</span>';
     } else {
-      statusBadge = '<span style="background:#d1fae5;color:#059669;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">✅ ปิดเรื่องแล้ว</span>';
+      statusBadge = '<span style="background:#f1f5f9;color:#64748b;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">' +
+        '✅ จบการสนทนาแล้ว' +
+      '</span>';
     }
 
     var dateStr = new Date(inq.createdAt).toLocaleDateString('th-TH', {
@@ -2679,62 +2685,115 @@ function renderLineInquiries() {
     });
 
     var avatar = inq.pictureUrl
-      ? '<img src="' + escapeHTML(inq.pictureUrl) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #10b981">'
-      : '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">L</div>';
+      ? '<img src="' + escapeHTML(inq.pictureUrl) + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid #10b981;box-shadow:0 2px 6px rgba(16,185,129,0.2)">'
+      : '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;box-shadow:0 2px 6px rgba(16,185,129,0.25)">L</div>';
 
     var phoneHtml = inq.phone
-      ? '<a href="tel:' + escapeHTML(inq.phone) + '" style="display:inline-flex;align-items:center;gap:4px;color:#2563eb;text-decoration:none;font-weight:600;font-size:12px;background:#eff6ff;padding:3px 8px;border-radius:6px;border:1px solid #bfdbfe">' +
-        '📞 ' + escapeHTML(inq.phone) + ' (กดโทรออก)</a>'
-      : '<span style="color:var(--muted);font-size:11px">ไม่ได้ระบุเบอร์โทร</span>';
+      ? '<a href="tel:' + escapeHTML(inq.phone) + '" style="display:inline-flex;align-items:center;gap:6px;color:#2563eb;text-decoration:none;font-weight:600;font-size:12px;background:rgba(37,99,235,0.08);padding:4px 12px;border-radius:20px;border:1px solid rgba(37,99,235,0.2);transition:all 0.2s">' +
+        '📞 ' + escapeHTML(inq.phone) + ' (แตะเพื่อโทรออก)</a>'
+      : '<span style="color:var(--muted);font-size:11.5px;padding:4px 8px">ไม่ได้ระบุเบอร์โทร</span>';
 
-    // Thread of replies
-    var repliesHtml = '';
-    if (inq.replies && inq.replies.length > 0) {
-      repliesHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:8px">' +
-        inq.replies.map(function (r) {
-          var rDate = new Date(r.sentAt).toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
-          return '<div style="background:#f0fdf4;border-left:3px solid #10b981;padding:8px 12px;border-radius:6px;font-size:12px">' +
-            '<div style="display:flex;justify-content:space-between;color:#065f46;font-weight:600;margin-bottom:2px">' +
-              '<span>👤 ' + escapeHTML(r.adminName || 'Admin') + ' (ตอบเข้า LINE)</span>' +
-              '<span style="font-size:10px;color:var(--muted)">' + rDate + '</span>' +
-            '</div>' +
-            '<div style="color:#1e293b">' + escapeHTML(r.message) + '</div>' +
-          '</div>';
-        }).join('') +
-      '</div>';
+    // รวบรวมข้อความแชตเรียงตามลำดับเวลา (Multi-turn Chat Bubbles)
+    var allMsgs = [];
+    if (inq.messages && inq.messages.length > 0) {
+      allMsgs = inq.messages;
+    } else {
+      // Fallback ถ้ายังไม่มี messages array: เอาข้อความแรก + replies
+      if (inq.message) {
+        allMsgs.push({
+          sender: 'citizen',
+          senderName: inq.displayName || 'ประชาชน',
+          text: inq.message,
+          sentAt: inq.createdAt
+        });
+      }
+      if (inq.replies && inq.replies.length > 0) {
+        inq.replies.forEach(function (r) {
+          allMsgs.push({
+            sender: 'admin',
+            senderName: r.adminName || 'Admin',
+            text: r.message,
+            sentAt: r.sentAt
+          });
+        });
+      }
     }
 
+    var chatBubblesHtml = allMsgs.map(function (m) {
+      var tStr = new Date(m.sentAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+      if (m.sender === 'admin') {
+        // Admin Bubble (ชิดขวา, สี Navy หรู, ขอบโค้งมน)
+        return [
+          '<div style="display:flex;justify-content:flex-end;gap:8px;align-items:flex-end;margin-bottom:8px">',
+          '  <div style="max-width:82%;background:linear-gradient(135deg,#0c1e3a,#07111f);color:#e2eeff;padding:10px 15px;border-radius:16px 16px 4px 16px;box-shadow:0 3px 10px rgba(7,17,31,0.25);font-size:13px;line-height:1.5;border:1px solid #1e3a6e">',
+          '    <div style="font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:4px">',
+          '      <span>👤 ' + escapeHTML(m.senderName || 'เจ้าหน้าที่ Admin') + '</span>',
+          '      <span style="font-size:9px;background:rgba(251,191,36,0.15);padding:1px 5px;border-radius:4px">ส่งเข้า LINE</span>',
+          '    </div>',
+          '    <div style="word-break:break-word">' + escapeHTML(m.text) + '</div>',
+          '    <div style="font-size:9.5px;color:#6b8aad;margin-top:4px;text-align:right">' + tStr + '</div>',
+          '  </div>',
+          '</div>'
+        ].join('\n');
+      } else {
+        // Citizen Bubble (ชิดซ้าย, สีนุ่มสบายตา, ขอบโค้งมน)
+        return [
+          '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px">',
+          '  <div style="max-width:82%;background:#f1f5f9;color:#1e293b;padding:10px 15px;border-radius:16px 16px 16px 4px;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:13px;line-height:1.5;border:1px solid #e2e8f0">',
+          '    <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:2px">👤 ' + escapeHTML(m.senderName || inq.displayName || 'ประชาชน') + '</div>',
+          '    <div style="word-break:break-word">' + escapeHTML(m.text) + '</div>',
+          '    <div style="font-size:9.5px;color:#94a3b8;margin-top:4px;text-align:right">' + tStr + '</div>',
+          '  </div>',
+          '</div>'
+        ].join('\n');
+      }
+    }).join('\n');
+
+    // ปุ่มควบคุมการจบแชต (สไตล์ Modern Pill)
+    var actionBtn = isLive
+      ? '<button class="btn-ripple" onclick="endLineInquiryChat(\'' + inq._id + '\')" style="background:rgba(239,68,68,0.08);color:#dc2626;border:1px solid rgba(239,68,68,0.25);padding:6px 15px;border-radius:20px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:all 0.2s">' +
+          '<span>🛑 จบการสนทนา</span>' +
+        '</button>'
+      : '<button class="btn-ripple" onclick="toggleLineInquiryStatus(\'' + inq._id + '\', \'pending\')" style="background:rgba(16,185,129,0.08);color:#059669;border:1px solid rgba(16,185,129,0.25);padding:6px 15px;border-radius:20px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:all 0.2s">' +
+          '<span>🔄 เปิดคุยใหม่</span>' +
+        '</button>';
+
     return [
-      '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border:1px solid var(--border);display:flex;flex-direction:column;gap:10px">',
-      '  <div style="display:flex;align-items:center;justify-content:space-between">',
-      '    <div style="display:flex;align-items:center;gap:10px">',
+      '<div style="background:#ffffff;border-radius:18px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.05);border:1px solid rgba(226,232,240,0.8);display:flex;flex-direction:column;gap:14px">',
+      '  <!-- Top Bar: User info & Actions -->',
+      '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">',
+      '    <div style="display:flex;align-items:center;gap:12px">',
       '      ' + avatar,
       '      <div>',
-      '        <div style="font-weight:700;font-size:14px;color:var(--navy);display:flex;align-items:center;gap:6px">',
+      '        <div style="font-weight:700;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:6px">',
       '          <span>' + escapeHTML(inq.displayName || 'ผู้ใช้งาน LINE') + '</span>',
-      '          <span style="font-size:9.5px;background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:4px;font-weight:600">LINE OA</span>',
+      '          <span style="font-size:9.5px;background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.3px">LINE OA</span>',
       '        </div>',
-      '        <div style="font-size:11px;color:var(--muted)">' + dateStr + '</div>',
+      '        <div style="font-size:11px;color:var(--muted);margin-top:2px">เริ่มติดต่อ: ' + dateStr + '</div>',
       '      </div>',
       '    </div>',
       '    <div style="display:flex;align-items:center;gap:8px">',
       '      ' + statusBadge,
-      '      <button class="btn-ripple" onclick="toggleLineInquiryStatus(\'' + inq._id + '\', \'' + (inq.status === 'resolved' ? 'pending' : 'resolved') + '\')" style="background:none;border:1px solid var(--border);padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer">',
-      '        ' + (inq.status === 'resolved' ? '🔄 เปิดใหม่' : '✅ ปิดเรื่อง'),
-      '      </button>',
+      '      ' + actionBtn,
       '    </div>',
       '  </div>',
-      '  <div style="background:#f8fafc;padding:12px;border-radius:8px;font-size:13px;color:#1e293b;border-left:3px solid #3b82f6;line-height:1.5">',
-      '    ' + escapeHTML(inq.message),
+      '',
+      '  <!-- Contact info bar -->',
+      '  <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:#f8fafc;border-radius:12px;border:1px solid #edf2f7">',
+      '    ' + phoneHtml,
+      '    <span style="color:var(--muted);font-size:11px">• แอดมินสามารถพิมพ์คุยโต้ตอบสดผ่านแชตด้านล่างนี้ได้ตลอดเวลา</span>',
       '  </div>',
-      '  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">',
-      '    <div>' + phoneHtml + '</div>',
+      '',
+      '  <!-- Chat Conversation Container -->',
+      '  <div id="chatThread_' + inq._id + '" style="background:#fafbfc;border-radius:14px;padding:16px;max-height:360px;overflow-y:auto;border:1px solid #eef2f6">',
+      '    ' + chatBubblesHtml,
       '  </div>',
-      '  ' + repliesHtml,
-      '  <!-- Reply Input Box -->',
-      '  <div style="display:flex;gap:8px;margin-top:4px">',
-      '    <input type="text" id="replyInput_' + inq._id + '" placeholder="พิมพ์ข้อความตอบกลับส่งตรงเข้า LINE..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px" onkeydown="if(event.key===\'Enter\') sendLineInquiryReply(\'' + inq._id + '\')">',
-      '    <button class="btn btn-primary btn-ripple" onclick="sendLineInquiryReply(\'' + inq._id + '\')" style="padding:8px 16px;font-size:12px;background:#10b981;border-color:#10b981;display:flex;align-items:center;gap:4px">',
+      '',
+      '  <!-- Modern Reply Input Box -->',
+      '  <div style="display:flex;gap:8px;align-items:center;background:#f8fafc;padding:6px 6px 6px 16px;border-radius:26px;border:1.5px solid var(--border);box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);transition:border-color 0.2s">',
+      '    <input type="text" id="replyInput_' + inq._id + '" placeholder="พิมพ์ข้อความตอบกลับส่งเข้า LINE สด..." style="flex:1;background:transparent;border:none;outline:none;font-size:13px;color:#0f172a" onkeydown="if(event.key===\'Enter\') sendLineInquiryReply(\'' + inq._id + '\')">',
+      '    <button class="btn-ripple" onclick="sendLineInquiryReply(\'' + inq._id + '\')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;padding:9px 20px;border-radius:22px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);transition:transform 0.15s">',
       '      <span>ส่งเข้า LINE</span> ↗️',
       '    </button>',
       '  </div>',
@@ -2743,6 +2802,29 @@ function renderLineInquiries() {
   }).join('\n');
 
   container.innerHTML = html;
+
+  // Auto-scroll all chat threads to bottom
+  _lineInquiries.forEach(function (inq) {
+    var thread = ge('chatThread_' + inq._id);
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  });
+}
+
+async function endLineInquiryChat(id) {
+  if (!confirm('ยืนยันที่จะ "จบการสนทนา" กับประชาชนคนนี้?\n\n(ระบบจะส่งข้อความแจ้งประชาชนว่าสิ้นสุดการสนทนาแล้ว และสลับคืนสู่โหมด AI อัตโนมัติ)')) {
+    return;
+  }
+
+  try {
+    var res = await fetch('/api/line-inquiries/' + id + '/close', { method: 'POST' });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'ปิดการสนทนาไม่สำเร็จ');
+
+    showToast('✅ จบการสนทนาและส่งข้อความแจ้งประชาชนเรียบร้อยแล้ว', 'success');
+    loadLineInquiries();
+  } catch (err) {
+    showToast(err.message || 'เกิดข้อผิดพลาด', true);
+  }
 }
 
 async function sendLineInquiryReply(id) {

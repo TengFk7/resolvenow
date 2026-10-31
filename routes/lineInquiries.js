@@ -5,12 +5,13 @@
 
 // ─── routes/lineInquiries.js ──────────────────────────────────
 // API สำหรับผู้ดูแลระบบ (Admin Portal) ในการจัดการข้อความติดต่อจาก LINE OA
+// รองรับ Live Two-Way Chat และการปิดการสนทนา (End Chat)
 
 const express = require('express');
 const router = express.Router();
 const LineInquiry = require('../models/LineInquiry');
 const User = require('../models/User');
-const { pushAdminReplyToCitizen } = require('../config/lineBotService');
+const { pushAdminReplyToCitizen, pushAdminEndChatNotification } = require('../config/lineBotService');
 const xss = require('xss');
 
 // ── Middleware ตรวจสอบสิทธิ์ Admin ──────────────────────────────
@@ -76,22 +77,42 @@ router.post('/:id/reply', requireAdmin, async (req, res) => {
     // 1. ส่ง Push Message เข้าแชต LINE ของประชาชนโดยตรง
     const pushResult = await pushAdminReplyToCitizen(inquiry.lineUserId, adminName, replyMessage);
 
-    // 2. บันทึกประวัติคำตอบลงฐานข้อมูล
+    // 2. บันทึกประวัติคำตอบลงฐานข้อมูล (ทั้ง replies และ messages array)
+    const now = new Date();
     inquiry.replies.push({
       adminId: req.session.userId,
       adminName,
       message: replyMessage,
-      sentAt: new Date()
+      sentAt: now
     });
+
+    if (!inquiry.messages) inquiry.messages = [];
+    inquiry.messages.push({
+      sender: 'admin',
+      senderName: adminName,
+      text: replyMessage,
+      sentAt: now
+    });
+
     inquiry.status = 'replied';
+    inquiry.isActiveSession = true;
+    inquiry.lastActivityAt = now;
     await inquiry.save();
 
-    // 3. ยิง Socket.IO แจ้งเตือนแอดมินคนอื่นที่เปิดหน้านี้อยู่
+    // 3. ยิง Socket.IO แจ้งเตือนแอดมินคนอื่นที่เปิดหน้านี้อยู่แบบ Real-time
     const io = req.app.get('io');
     if (io) {
+      io.to('admin_dm').emit('line_inquiry_message', {
+        inquiryId: inquiry._id,
+        sender: 'admin',
+        senderName: adminName,
+        text: replyMessage,
+        sentAt: now
+      });
       io.to('admin_dm').emit('line_inquiry_updated', {
         inquiryId: inquiry._id,
         status: inquiry.status,
+        isActiveSession: inquiry.isActiveSession,
         replies: inquiry.replies
       });
     }
@@ -107,7 +128,50 @@ router.post('/:id/reply', requireAdmin, async (req, res) => {
   }
 });
 
-// ── PATCH /api/line-inquiries/:id/status (เปลี่ยนสถานะ เช่น เสร็จสิ้น) ──
+// ── POST /api/line-inquiries/:id/close (แอดมินกดจบการสนทนา & ส่งแจ้งเตือน) ──
+router.post('/:id/close', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const inquiry = await LineInquiry.findById(id);
+    if (!inquiry) {
+      return res.status(404).json({ error: 'ไม่พบรายการข้อความนี้' });
+    }
+
+    // ดึงชื่อของ Admin
+    let adminName = req.session.firstName ? `${req.session.firstName} ${req.session.lastName || ''}`.trim() : 'เจ้าหน้าที่แอดมิน';
+
+    // 1. ส่ง Push Message แจ้งจบการสนทนาไปยัง LINE ประชาชน
+    await pushAdminEndChatNotification(inquiry.lineUserId, adminName);
+
+    // 2. ปิด Session และเปลี่ยนสถานะเป็น resolved
+    inquiry.isActiveSession = false;
+    inquiry.status = 'resolved';
+    inquiry.lastActivityAt = new Date();
+    await inquiry.save();
+
+    // 3. แจ้งเตือน Socket.IO ให้หน้าจอ Admin ปรับสถานะทันที
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin_dm').emit('line_inquiry_updated', {
+        inquiryId: inquiry._id,
+        status: 'resolved',
+        isActiveSession: false
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'จบการสนทนาและส่งข้อความแจ้งประชาชนเรียบร้อยแล้ว',
+      inquiry
+    });
+  } catch (err) {
+    console.error('[LineInquiries] Close session error:', err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการปิดการสนทนา' });
+  }
+});
+
+// ── PATCH /api/line-inquiries/:id/status (เปลี่ยนสถานะ เช่น เปิดใหม่) ──
 router.patch('/:id/status', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -117,9 +181,17 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
     }
 
+    const updateData = { status };
+    if (status === 'resolved') {
+      updateData.isActiveSession = false;
+    } else {
+      updateData.isActiveSession = true;
+      updateData.lastActivityAt = new Date();
+    }
+
     const inquiry = await LineInquiry.findByIdAndUpdate(
       id,
-      { status },
+      updateData,
       { new: true }
     );
 
@@ -132,6 +204,7 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       io.to('admin_dm').emit('line_inquiry_updated', {
         inquiryId: inquiry._id,
         status: inquiry.status,
+        isActiveSession: inquiry.isActiveSession,
         replies: inquiry.replies
       });
     }
@@ -147,4 +220,3 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
-

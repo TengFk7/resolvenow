@@ -135,6 +135,47 @@ router.post('/webhook', async (req, res) => {
         continue;
       }
 
+      // ── ตรวจสอบว่าผู้ใช้กำลังอยู่ใน "โหมดคุยสดกับเจ้าหน้าที่ (Live Admin Chat Session)" หรือไม่ ──
+      const activeInquiry = await LineInquiry.findOne({
+        lineUserId,
+        isActiveSession: true,
+        lastActivityAt: { $gt: new Date(Date.now() - 15 * 60 * 1000) }
+      });
+
+      if (activeInquiry) {
+        console.log(`[LINE Webhook] Active live chat for ${lineUserId}. Forwarding to Admin: "${text}"`);
+        activeInquiry.messages.push({
+          sender: 'citizen',
+          senderName: activeInquiry.displayName || 'ประชาชน',
+          text,
+          sentAt: new Date()
+        });
+        activeInquiry.status = 'pending';
+        activeInquiry.lastActivityAt = new Date();
+        await activeInquiry.save();
+
+        const io = req.app.get('io');
+        if (io) {
+          io.to('admin_dm').emit('line_inquiry_message', {
+            inquiryId: activeInquiry._id,
+            sender: 'citizen',
+            senderName: activeInquiry.displayName,
+            text,
+            sentAt: new Date()
+          });
+        }
+
+        recordDiagnosticEvent({
+          lineUserId,
+          userText: text,
+          intent: 'live_admin_chat_forwarded',
+          inquiryId: activeInquiry._id
+        });
+
+        // จบการทำงานในรอบนี้ทันที ไม่ส่งต่อให้ AI ตอบแทรก!
+        continue;
+      }
+
       // ── Intent 1: Smart Service Navigator (ติดต่อสอบถาม / ขอสอบถาม / เมนู) ──
       if (/ติดต่อสอบถาม|ขอสอบถาม|ต้องการสอบถาม|เมนู|menu|บริการ/i.test(text)) {
         const navFlex = buildServiceNavigatorFlexMessage();
@@ -207,7 +248,15 @@ async function handleCitizenInquirySubmission(req, replyToken, lineUserId, text)
       pictureUrl: profile?.pictureUrl || null,
       phone,
       message: text,
-      status: 'pending'
+      status: 'pending',
+      isActiveSession: true,
+      lastActivityAt: new Date(),
+      messages: [{
+        sender: 'citizen',
+        senderName: profile?.displayName || 'ผู้ใช้งาน LINE',
+        text,
+        sentAt: new Date()
+      }]
     });
 
     // ส่งสัญญาณเตือน Socket.IO เข้าห้อง admin_dm แบบเรียลไทม์

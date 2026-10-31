@@ -173,6 +173,9 @@ function runLineBotTests() {
     assert.ok(LineInquiry.schema.paths.message);
     assert.ok(LineInquiry.schema.paths.status);
     assert.ok(LineInquiry.schema.paths.replies);
+    assert.ok(LineInquiry.schema.paths.messages);
+    assert.ok(LineInquiry.schema.paths.isActiveSession);
+    assert.ok(LineInquiry.schema.paths.lastActivityAt);
 
     // Validate enum for status
     const statusEnum = LineInquiry.schema.paths.status.enumValues;

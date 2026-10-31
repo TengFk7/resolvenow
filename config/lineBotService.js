@@ -624,6 +624,135 @@ async function pushAdminReplyToCitizen(lineUserId, adminName, replyText, baseUrl
   });
 }
 
+/**
+ * ส่งการแจ้งเตือนเมื่อเจ้าหน้าที่แอดมินกด "จบการสนทนา"
+ * @param {string} lineUserId 
+ * @param {string} adminName 
+ * @param {string} [baseUrl] 
+ * @returns {Promise<{success: boolean, statusCode: number, error?: string}>}
+ */
+async function pushAdminEndChatNotification(lineUserId, adminName, baseUrl = BASE_URL) {
+  if (!TOKEN || !lineUserId) return { success: false, statusCode: 0, error: 'Missing parameters' };
+
+  const flexMessage = {
+    type: 'flex',
+    altText: '✅ การสนทนากับเจ้าหน้าที่เสร็จสิ้นแล้ว',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.headerBg,
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            contents: [
+              {
+                type: 'text',
+                text: '🏛️ ResolveNow Service',
+                size: 'xs',
+                color: T.brand,
+                weight: 'bold'
+              }
+            ]
+          },
+          {
+            type: 'text',
+            text: '✅ สิ้นสุดการสนทนากับเจ้าหน้าที่',
+            weight: 'bold',
+            size: 'md',
+            color: T.btnGreen,
+            margin: 'sm'
+          }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.bodyBg,
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'text',
+            text: `เจ้าหน้าที่ (${adminName || 'Admin'}) ได้ปิดและสรุปการสนทนาเรียบร้อยแล้วครับ ขอบคุณที่ติดต่อ ResolveNow`,
+            color: T.value,
+            size: 'sm',
+            wrap: true
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+            color: T.sep
+          },
+          {
+            type: 'text',
+            text: '🤖 ขณะนี้ระบบได้สลับกลับสู่โหมด AI อัจฉริยะแล้ว คุณสามารถพิมพ์สอบถามการใช้งานระบบ หรือส่งเรื่องร้องเรียนใหม่ได้ตลอด 24 ชม. ครับ',
+            color: T.textMuted,
+            size: 'xs',
+            wrap: true,
+            margin: 'md'
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: T.footerBg,
+        paddingAll: '12px',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: T.btnBlue,
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '🌐 เปิดเว็บไซต์ ResolveNow',
+              uri: baseUrl
+            }
+          }
+        ]
+      }
+    }
+  };
+
+  const body = JSON.stringify({
+    to: lineUserId,
+    messages: [flexMessage]
+  });
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.line.me',
+      path: '/v2/bot/message/push',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Authorization': 'Bearer ' + TOKEN,
+        'Content-Length': Buffer.byteLength(body, 'utf8')
+      }
+    }, (res) => {
+      res.setEncoding('utf8');
+      let data = '';
+      res.on('data', chunk => (data += chunk));
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          resolve({ success: true, statusCode: 200 });
+        } else {
+          resolve({ success: false, statusCode: res.statusCode, error: data });
+        }
+      });
+    });
+
+    req.on('error', (e) => resolve({ success: false, statusCode: 0, error: e.message }));
+    req.write(body, 'utf8');
+    req.end();
+  });
+}
+
 module.exports = {
   validateLineSignature,
   replyLineMessage,
@@ -632,6 +761,7 @@ module.exports = {
   buildNoTicketsMessage,
   buildServiceNavigatorFlexMessage,
   pushAdminReplyToCitizen,
+  pushAdminEndChatNotification,
   getLineUserProfile,
   getStatusMeta
 };
