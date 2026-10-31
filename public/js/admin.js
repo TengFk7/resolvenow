@@ -2667,16 +2667,23 @@ function renderLineInquiries() {
 
   var html = _lineInquiries.map(function (inq) {
     var isLive = inq.isActiveSession !== false && inq.status !== 'resolved';
+    var isTakeoverActive = isLive && inq.adminTakeoverUntil && (new Date(inq.adminTakeoverUntil).getTime() > Date.now());
 
     var statusBadge = '';
-    if (isLive) {
-      statusBadge = '<span style="background:rgba(16,185,129,0.12);color:#059669;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px">' +
-        '<span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 8px #10b981"></span>' +
-        '🟢 กำลังสนทนาสด' +
-      '</span>';
-    } else {
+    if (!isLive) {
       statusBadge = '<span style="background:#f1f5f9;color:#64748b;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">' +
         '✅ จบการสนทนาแล้ว' +
+      '</span>';
+    } else if (isTakeoverActive) {
+      var remainingMins = Math.max(1, Math.ceil((new Date(inq.adminTakeoverUntil).getTime() - Date.now()) / 60000));
+      statusBadge = '<span style="background:rgba(16,185,129,0.12);color:#059669;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px">' +
+        '<span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 8px #10b981"></span>' +
+        '🟢 แอดมินคุยสดอยู่ (AI ปิดชั่วคราวอีก ' + remainingMins + ' นาที)' +
+      '</span>';
+    } else {
+      statusBadge = '<span style="background:rgba(245,158,11,0.12);color:#d97706;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px">' +
+        '<span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;box-shadow:0 0 8px #f59e0b"></span>' +
+        '⏳ รอดำเนินการ (AI ช่วยตอบชั่วคราว)' +
       '</span>';
     }
 

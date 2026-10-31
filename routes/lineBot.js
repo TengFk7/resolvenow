@@ -135,45 +135,82 @@ router.post('/webhook', async (req, res) => {
         continue;
       }
 
-      // ── ตรวจสอบว่าผู้ใช้กำลังอยู่ใน "โหมดคุยสดกับเจ้าหน้าที่ (Live Admin Chat Session)" หรือไม่ ──
-      const activeInquiry = await LineInquiry.findOne({
+      // ── ตรวจสอบโหมดแอดมินดูแลสด (Admin Takeover): ปิด AI 15 นาทีหลังจากแอดมินกดตอบกลับ ──
+      const activeTakeoverInquiry = await LineInquiry.findOne({
         lineUserId,
         isActiveSession: true,
-        lastActivityAt: { $gt: new Date(Date.now() - 15 * 60 * 1000) }
-      });
+        adminTakeoverUntil: { $gt: new Date() } // อยู่ในช่วง 15 นาทีหลังจากแอดมินตอบ
+      }).sort({ lastActivityAt: -1 });
 
-      if (activeInquiry) {
-        console.log(`[LINE Webhook] Active live chat for ${lineUserId}. Forwarding to Admin: "${text}"`);
-        activeInquiry.messages.push({
+      if (activeTakeoverInquiry) {
+        console.log(`[LINE Webhook] Citizen ${lineUserId} message during Admin Takeover (AI Muted 15m): "${text}"`);
+        activeTakeoverInquiry.messages.push({
           sender: 'citizen',
-          senderName: activeInquiry.displayName || 'ประชาชน',
+          senderName: activeTakeoverInquiry.displayName || 'ประชาชน',
           text,
           sentAt: new Date()
         });
-        activeInquiry.status = 'pending';
-        activeInquiry.lastActivityAt = new Date();
-        await activeInquiry.save();
+        activeTakeoverInquiry.status = 'pending';
+        activeTakeoverInquiry.lastActivityAt = new Date();
+        // ขยายเวลาดูแลต่ออีก 15 นาทีจากการสนทนาล่าสุด
+        activeTakeoverInquiry.adminTakeoverUntil = new Date(Date.now() + 15 * 60 * 1000);
+        await activeTakeoverInquiry.save();
 
         const io = req.app.get('io');
         if (io) {
           io.to('admin_dm').emit('line_inquiry_message', {
-            inquiryId: activeInquiry._id,
+            inquiryId: activeTakeoverInquiry._id,
             sender: 'citizen',
-            senderName: activeInquiry.displayName,
+            senderName: activeTakeoverInquiry.displayName,
             text,
             sentAt: new Date()
+          });
+          io.to('admin_dm').emit('line_inquiry_updated', {
+            inquiryId: activeTakeoverInquiry._id,
+            status: activeTakeoverInquiry.status,
+            isActiveSession: activeTakeoverInquiry.isActiveSession,
+            adminTakeoverUntil: activeTakeoverInquiry.adminTakeoverUntil
           });
         }
 
         recordDiagnosticEvent({
           lineUserId,
           userText: text,
-          intent: 'live_admin_chat_forwarded',
-          inquiryId: activeInquiry._id
+          intent: 'admin_takeover_live_forwarded',
+          inquiryId: activeTakeoverInquiry._id
         });
 
-        // จบการทำงานในรอบนี้ทันที ไม่ส่งต่อให้ AI ตอบแทรก!
+        // AI ถูกปิดชั่วคราว 15 นาที: จบการทำงานไม่ส่งต่อให้ AI ตอบแทรก!
         continue;
+      }
+
+      // หากประชาชนมีเคสรอแอดมินอยู่ แต่แอดมินยังไม่ได้กดตอบ (หรือเกิน 15 นาทีแล้ว):
+      // บันทึกข้อความลง Thread ให้แอดมินเห็นด้วย แต่ปล่อยให้ AI ตอบกลับไปก่อนเพื่อไม่ให้ประชาชนรอนาน
+      const waitingInquiry = await LineInquiry.findOne({
+        lineUserId,
+        isActiveSession: true,
+        status: { $in: ['pending', 'replied'] }
+      }).sort({ lastActivityAt: -1 });
+      if (waitingInquiry) {
+        waitingInquiry.messages.push({
+          sender: 'citizen',
+          senderName: waitingInquiry.displayName || 'ประชาชน',
+          text,
+          sentAt: new Date()
+        });
+        waitingInquiry.lastActivityAt = new Date();
+        await waitingInquiry.save();
+
+        const io = req.app.get('io');
+        if (io) {
+          io.to('admin_dm').emit('line_inquiry_message', {
+            inquiryId: waitingInquiry._id,
+            sender: 'citizen',
+            senderName: waitingInquiry.displayName,
+            text,
+            sentAt: new Date()
+          });
+        }
       }
 
       // ── Intent 1: Smart Service Navigator (ติดต่อสอบถาม / ขอสอบถาม / เมนู) ──
@@ -241,6 +278,12 @@ async function handleCitizenInquirySubmission(req, replyToken, lineUserId, text)
 
     // ดึงโปรไฟล์ LINE (ถ้ามีสิทธิ์)
     const profile = await getLineUserProfile(lineUserId);
+
+    // ปิด active session เดิมของผู้ใช้นี้ (ถ้ามี) ก่อนเริ่มเคสใหม่
+    await LineInquiry.updateMany(
+      { lineUserId, isActiveSession: true },
+      { isActiveSession: false, adminTakeoverUntil: null }
+    );
 
     const inquiry = await LineInquiry.create({
       lineUserId,

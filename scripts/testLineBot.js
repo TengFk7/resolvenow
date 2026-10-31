@@ -180,6 +180,39 @@ function runLineBotTests() {
     // Validate enum for status
     const statusEnum = LineInquiry.schema.paths.status.enumValues;
     assert.deepStrictEqual(statusEnum, ['pending', 'replied', 'resolved']);
+    assert.ok(LineInquiry.schema.paths.adminTakeoverUntil);
+  });
+
+  runTest('Admin Takeover & 15-minute AI Mute lifecycle functions accurately', () => {
+    const inquiry = new LineInquiry({
+      lineUserId: 'U_test_user_takeover_999',
+      displayName: 'คุณสมชาย',
+      message: 'ต้องการสอบถามเรื่องน้ำไม่ไหลครับ',
+      status: 'pending',
+      isActiveSession: true,
+      adminTakeoverUntil: null,
+      messages: [{ sender: 'citizen', text: 'ต้องการสอบถามเรื่องน้ำไม่ไหลครับ' }]
+    });
+
+    // 1. Before Admin replies: takeover is false, AI is free to assist
+    assert.strictEqual(!inquiry.adminTakeoverUntil || new Date(inquiry.adminTakeoverUntil) <= new Date(), true);
+
+    // 2. Admin replies: takeover set for 15 minutes, AI is muted
+    const now = new Date();
+    inquiry.status = 'replied';
+    inquiry.adminTakeoverUntil = new Date(now.getTime() + 15 * 60 * 1000);
+    assert.strictEqual(inquiry.adminTakeoverUntil > new Date(), true);
+
+    // 3. Citizen replies during takeover: remaining time is ~15m
+    const remainingMins = Math.ceil((new Date(inquiry.adminTakeoverUntil).getTime() - Date.now()) / 60000);
+    assert.ok(remainingMins >= 14 && remainingMins <= 15);
+
+    // 4. Admin closes chat: takeover is revoked and session ends
+    inquiry.isActiveSession = false;
+    inquiry.adminTakeoverUntil = null;
+    inquiry.status = 'resolved';
+    assert.strictEqual(inquiry.adminTakeoverUntil, null);
+    assert.strictEqual(inquiry.isActiveSession, false);
   });
 
   return { totalTests, passedTests };

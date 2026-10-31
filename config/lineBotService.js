@@ -94,11 +94,12 @@ async function replyLineMessage(replyToken, messages) {
       path: '/v2/bot/message/reply',
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer ' + TOKEN,
-        'Content-Length': Buffer.byteLength(body)
+        'Content-Length': Buffer.byteLength(body, 'utf8')
       }
     }, (res) => {
+      res.setEncoding('utf8');
       let data = '';
       res.on('data', chunk => (data += chunk));
       res.on('end', () => {

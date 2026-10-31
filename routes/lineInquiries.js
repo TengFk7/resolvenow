@@ -97,6 +97,8 @@ router.post('/:id/reply', requireAdmin, async (req, res) => {
     inquiry.status = 'replied';
     inquiry.isActiveSession = true;
     inquiry.lastActivityAt = now;
+    // ปิด AI ชั่วคราว 15 นาทีหลังจากแอดมินตอบกลับ
+    inquiry.adminTakeoverUntil = new Date(now.getTime() + 15 * 60 * 1000);
     await inquiry.save();
 
     // 3. ยิง Socket.IO แจ้งเตือนแอดมินคนอื่นที่เปิดหน้านี้อยู่แบบ Real-time
@@ -113,6 +115,7 @@ router.post('/:id/reply', requireAdmin, async (req, res) => {
         inquiryId: inquiry._id,
         status: inquiry.status,
         isActiveSession: inquiry.isActiveSession,
+        adminTakeoverUntil: inquiry.adminTakeoverUntil,
         replies: inquiry.replies
       });
     }
@@ -146,6 +149,7 @@ router.post('/:id/close', requireAdmin, async (req, res) => {
 
     // 2. ปิด Session และเปลี่ยนสถานะเป็น resolved
     inquiry.isActiveSession = false;
+    inquiry.adminTakeoverUntil = null; // คืนสู่โหมด AI ทันที
     inquiry.status = 'resolved';
     inquiry.lastActivityAt = new Date();
     await inquiry.save();
@@ -156,7 +160,8 @@ router.post('/:id/close', requireAdmin, async (req, res) => {
       io.to('admin_dm').emit('line_inquiry_updated', {
         inquiryId: inquiry._id,
         status: 'resolved',
-        isActiveSession: false
+        isActiveSession: false,
+        adminTakeoverUntil: null
       });
     }
 
@@ -184,6 +189,7 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
     const updateData = { status };
     if (status === 'resolved') {
       updateData.isActiveSession = false;
+      updateData.adminTakeoverUntil = null;
     } else {
       updateData.isActiveSession = true;
       updateData.lastActivityAt = new Date();
@@ -205,6 +211,7 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
         inquiryId: inquiry._id,
         status: inquiry.status,
         isActiveSession: inquiry.isActiveSession,
+        adminTakeoverUntil: inquiry.adminTakeoverUntil,
         replies: inquiry.replies
       });
     }

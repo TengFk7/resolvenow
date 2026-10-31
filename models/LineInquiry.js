@@ -38,6 +38,11 @@ const lineInquirySchema = new mongoose.Schema({
     default: true,
     index: true
   },
+  adminTakeoverUntil: {
+    type: Date,
+    default: null,
+    index: true
+  },
   lastActivityAt: {
     type: Date,
     default: Date.now,
@@ -87,5 +92,6 @@ const lineInquirySchema = new mongoose.Schema({
 lineInquirySchema.index({ createdAt: -1 });
 lineInquirySchema.index({ status: 1, createdAt: -1 });
 lineInquirySchema.index({ lineUserId: 1, isActiveSession: 1, lastActivityAt: -1 });
+lineInquirySchema.index({ lineUserId: 1, adminTakeoverUntil: -1 });
 
 module.exports = mongoose.model('LineInquiry', lineInquirySchema);
