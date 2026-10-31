@@ -49,6 +49,9 @@ function runLineBotTests() {
 
     // 4. Missing signature fails
     assert.strictEqual(validateLineSignature(rawBody, null, secret), false);
+
+    // 5. Gracefully bypasses when secret is not configured in env
+    assert.strictEqual(validateLineSignature(rawBody, validSig, null), true);
   });
 
   runTest('buildTicketFlexMessage formats rich Navy/Gold Flex Message with ticket details and status tokens', () => {

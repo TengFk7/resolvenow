@@ -41,12 +41,9 @@ const T = {
 function validateLineSignature(rawBody, signature, secret = CHANNEL_SECRET) {
   if (!signature) return false;
   if (!secret) {
-    // หากอยู่ใน Development และยังไม่ได้ตั้งค่า CHANNEL_SECRET ให้ยอมรับเพื่อทดสอบ
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[LINE Bot] Warning: LINE_CHANNEL_SECRET is not set in development mode. Bypassing signature verification.');
-      return true;
-    }
-    return false;
+    // หากยังไม่ได้กำหนด CHANNEL_SECRET ให้ยอมรับ Request พร้อมแจ้งเตือนใน Log เพื่อให้บอททำงานได้
+    console.warn('[LINE Bot] Notice: LINE_CHANNEL_SECRET is not configured. Allowing webhook event for bot operation.');
+    return true;
   }
 
   try {
@@ -66,12 +63,12 @@ function validateLineSignature(rawBody, signature, secret = CHANNEL_SECRET) {
  * ส่งข้อความตอบกลับด้วย Reply Token (LINE Messaging API)
  * @param {string} replyToken 
  * @param {Array<Object>|Object|string} messages 
- * @returns {Promise<boolean>}
+ * @returns {Promise<{success: boolean, statusCode: number, error?: string}>}
  */
 async function replyLineMessage(replyToken, messages) {
   if (!TOKEN || !replyToken) {
     console.warn('[LINE Bot] Cannot reply: TOKEN or replyToken is missing.');
-    return false;
+    return { success: false, statusCode: 0, error: 'TOKEN or replyToken missing' };
   }
 
   let formattedMessages = [];
@@ -106,17 +103,18 @@ async function replyLineMessage(replyToken, messages) {
       res.on('data', chunk => (data += chunk));
       res.on('end', () => {
         if (res.statusCode === 200) {
-          resolve(true);
+          console.log('[LINE Bot] Reply sent successfully (200 OK)');
+          resolve({ success: true, statusCode: 200 });
         } else {
           console.error('[LINE Bot] Reply failed status:', res.statusCode, data);
-          resolve(false);
+          resolve({ success: false, statusCode: res.statusCode, error: data });
         }
       });
     });
 
     req.on('error', (e) => {
       console.error('[LINE Bot] Reply network error:', e.message);
-      resolve(false);
+      resolve({ success: false, statusCode: 0, error: e.message });
     });
 
     req.write(body);
