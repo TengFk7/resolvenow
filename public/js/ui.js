@@ -749,6 +749,10 @@ if (typeof io !== 'undefined') {
         showToast('💬 ประชาชนส่งข้อความใน LINE: ' + (data.text && data.text.length > 30 ? data.text.substring(0, 30) + '...' : (data.text || '')), 'info');
       }
     }
+    if (typeof appendLineInquiryMessageRealtime === 'function') {
+      appendLineInquiryMessageRealtime(data);
+      return;
+    }
     if (typeof loadLineInquiries === 'function') {
       var modal = document.getElementById('mLineInquiries');
       if (modal && modal.style.display !== 'none') {
@@ -757,7 +761,8 @@ if (typeof io !== 'undefined') {
     }
   });
 
-  socket.on('line_inquiry_updated', function () {
+  socket.on('line_inquiry_updated', function (data) {
+    if (typeof updateLineInquiryRealtime === 'function') updateLineInquiryRealtime(data);
     if (typeof loadLineInquiries === 'function') {
       var modal = document.getElementById('mLineInquiries');
       if (modal && modal.style.display !== 'none') {

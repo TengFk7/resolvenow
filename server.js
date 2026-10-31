@@ -91,6 +91,9 @@ io.on('connection', (socket) => {
   // citizen join their own room so admin can push to them
   // admin join admin_dm room so citizen can push to admin
   socket.on('dm_join', async (data) => {
+    if (!socket.request.session?.userId && socket.request.session?.reload) {
+      await new Promise(r => socket.request.session.reload(() => r()));
+    }
     const sessionUserId = socket.request.session?.userId;
     if (!sessionUserId) return;
 
@@ -104,6 +107,7 @@ io.on('connection', (socket) => {
       if (!user) return;
       if (user.role === 'admin') {
         socket.join('admin_dm');
+        console.log(`[Socket] Admin ${sessionUserId} joined "admin_dm" room on socket ${socket.id}`);
       } else if (user.role === 'citizen') {
         socket.join('citizen_dm_' + sessionUserId);
       }

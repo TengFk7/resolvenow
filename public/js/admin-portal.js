@@ -49,6 +49,8 @@ function initAdminSocket() {
   if (socket) return; // already initialized
 
   socket = io();
+  window.socket = socket;
+  if (CU) window.CU = CU;
 
   socket.on('connect', function () {
     _socketConnected = true;
@@ -58,6 +60,11 @@ function initAdminSocket() {
       if (typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
     }
   });
+
+  if (socket.connected && CU && CU.role === 'admin') {
+    socket.emit('dm_join', { role: 'admin', userId: CU.id || CU._id });
+    if (typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
+  }
 
   socket.on('disconnect', function () {
     _socketConnected = false;
@@ -79,6 +86,46 @@ function initAdminSocket() {
   if (typeof initDirectChatSocket === 'function' && CU) {
     initDirectChatSocket(socket, CU);
   }
+
+  // ── LINE Inquiry real-time events for Admin ──
+  socket.on('line_inquiry_new', function (data) {
+    if (typeof showToast === 'function') {
+      showToast('📲 มีข้อความติดต่อใหม่จาก LINE: ' + (data.displayName || 'ประชาชน'), 'info');
+    }
+    var badge = document.getElementById('lineInquiriesBadge');
+    if (badge) {
+      var cur = parseInt(badge.textContent || '0', 10);
+      badge.textContent = cur + 1;
+      badge.style.display = 'inline-flex';
+    }
+    if (typeof refreshLineInquiriesSilently === 'function') {
+      refreshLineInquiriesSilently();
+    } else if (typeof loadLineInquiries === 'function') {
+      loadLineInquiries();
+    }
+  });
+
+  socket.on('line_inquiry_message', function (data) {
+    if (data && data.sender === 'citizen') {
+      if (typeof showToast === 'function') {
+        showToast('💬 ข้อความจาก LINE (' + (data.senderName || 'ประชาชน') + '): ' +
+          (data.text && data.text.length > 35 ? data.text.substring(0, 35) + '...' : (data.text || '')), 'info');
+      }
+    }
+    if (typeof appendLineInquiryMessageRealtime === 'function') {
+      appendLineInquiryMessageRealtime(data);
+    } else if (typeof loadLineInquiries === 'function') {
+      loadLineInquiries();
+    }
+  });
+
+  socket.on('line_inquiry_updated', function (data) {
+    if (typeof updateLineInquiryRealtime === 'function') {
+      updateLineInquiryRealtime(data);
+    } else if (typeof loadLineInquiries === 'function') {
+      loadLineInquiries();
+    }
+  });
 }
 
 function startAdminHeartbeat() {
@@ -373,6 +420,8 @@ async function doAdminLogin() {
     }
 
     CU = data.user;
+    window.CU = CU;
+    if (socket) socket.disconnect().connect();
     sessionStorage.setItem('rn_admin_logged_in', '1');
     enterAdminApp(true);
 

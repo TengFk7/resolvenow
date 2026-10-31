@@ -2577,6 +2577,8 @@ async function manageUserStrikesPrompt(userId, name, currentStrikes, isSuspended
 /* ─── LINE Inquiries Controller (ข้อความติดต่อจาก LINE OA) ─── */
 var _lineInquiries = [];
 var _currentInquiryFilter = 'all';
+var _lineInquiriesAutoPollTimer = null;
+var _lineInquiryDrafts = {};
 
 async function openLineInquiriesModal() {
   var m = ge('mLineInquiries');
@@ -2584,10 +2586,31 @@ async function openLineInquiriesModal() {
     m.style.display = 'flex';
     m.classList.add('on');
   }
+  // Ensure Admin socket is registered in admin_dm room
+  if (window.socket && window.CU && window.CU.role === 'admin') {
+    window.socket.emit('dm_join', { role: 'admin', userId: window.CU.id || window.CU._id });
+  }
+
   await loadLineInquiries();
+
+  // Active real-time safety net: Silent poll every 4.5 seconds while open
+  if (_lineInquiriesAutoPollTimer) clearInterval(_lineInquiriesAutoPollTimer);
+  _lineInquiriesAutoPollTimer = setInterval(function () {
+    var modal = ge('mLineInquiries');
+    if (!modal || modal.style.display === 'none') {
+      clearInterval(_lineInquiriesAutoPollTimer);
+      _lineInquiriesAutoPollTimer = null;
+      return;
+    }
+    refreshLineInquiriesSilently();
+  }, 4500);
 }
 
 function closeLineInquiriesModal() {
+  if (_lineInquiriesAutoPollTimer) {
+    clearInterval(_lineInquiriesAutoPollTimer);
+    _lineInquiriesAutoPollTimer = null;
+  }
   var m = ge('mLineInquiries');
   if (m) {
     m.style.display = 'none';
@@ -2799,7 +2822,7 @@ function renderLineInquiries() {
       '',
       '  <!-- Modern Reply Input Box -->',
       '  <div style="display:flex;gap:8px;align-items:center;background:#f8fafc;padding:6px 6px 6px 16px;border-radius:26px;border:1.5px solid var(--border);box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);transition:border-color 0.2s">',
-      '    <input type="text" id="replyInput_' + inq._id + '" placeholder="พิมพ์ข้อความตอบกลับส่งเข้า LINE สด..." style="flex:1;background:transparent;border:none;outline:none;font-size:13px;color:#0f172a" onkeydown="if(event.key===\'Enter\') sendLineInquiryReply(\'' + inq._id + '\')">',
+      '    <input type="text" id="replyInput_' + inq._id + '" value="' + escapeHTML(_lineInquiryDrafts[inq._id] || '') + '" oninput="_lineInquiryDrafts[\'' + inq._id + '\']=this.value" placeholder="พิมพ์ข้อความตอบกลับส่งเข้า LINE สด..." style="flex:1;background:transparent;border:none;outline:none;font-size:13px;color:#0f172a" onkeydown="if(event.key===\'Enter\') sendLineInquiryReply(\'' + inq._id + '\')">',
       '    <button class="btn-ripple" onclick="sendLineInquiryReply(\'' + inq._id + '\')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;padding:9px 20px;border-radius:22px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);transition:transform 0.15s">',
       '      <span>ส่งเข้า LINE</span> ↗️',
       '    </button>',
@@ -2815,6 +2838,124 @@ function renderLineInquiries() {
     var thread = ge('chatThread_' + inq._id);
     if (thread) thread.scrollTop = thread.scrollHeight;
   });
+}
+
+/**
+ * เพิ่มข้อความใหม่ลงในห้องสนทนาของประชาชนคนนั้นทันทีโดยไม่ต้องโหลดใหม่ทั้งหน้า
+ */
+function appendLineInquiryMessageRealtime(data) {
+  if (!data || !data.inquiryId) return;
+
+  var thread = ge('chatThread_' + data.inquiryId);
+  var tStr = new Date(data.sentAt || Date.now()).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  // 1. เพิ่มลงโครงสร้างข้อมูลภายใน (in-memory)
+  var inq = _lineInquiries.find(function (i) { return String(i._id) === String(data.inquiryId); });
+  if (inq) {
+    if (!inq.messages) inq.messages = [];
+    var isDuplicate = inq.messages.some(function (m) {
+      return m.sender === data.sender && m.text === data.text &&
+        Math.abs(new Date(m.sentAt).getTime() - new Date(data.sentAt || Date.now()).getTime()) < 3000;
+    });
+    if (!isDuplicate) {
+      inq.messages.push({
+        sender: data.sender,
+        senderName: data.senderName,
+        text: data.text,
+        sentAt: data.sentAt || new Date()
+      });
+      inq.lastActivityAt = new Date();
+    }
+  }
+
+  // 2. ถ้าช่องแชตแสดงอยู่บนหน้าจอ ให้ต่อ Bubble ทันทีพร้อมแอนิเมชัน
+  if (thread) {
+    var bubbleHtml = '';
+    if (data.sender === 'admin') {
+      bubbleHtml = [
+        '<div style="display:flex;justify-content:flex-end;gap:8px;align-items:flex-end;margin-bottom:8px;animation:fadeIn 0.25s ease">',
+        '  <div style="max-width:82%;background:linear-gradient(135deg,#0c1e3a,#07111f);color:#e2eeff;padding:10px 15px;border-radius:16px 16px 4px 16px;box-shadow:0 3px 10px rgba(7,17,31,0.25);font-size:13px;line-height:1.5;border:1px solid #1e3a6e">',
+        '    <div style="font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:4px">',
+        '      <span>👤 ' + escapeHTML(data.senderName || 'เจ้าหน้าที่ Admin') + '</span>',
+        '      <span style="font-size:9px;background:rgba(251,191,36,0.15);padding:1px 5px;border-radius:4px">ส่งเข้า LINE</span>',
+        '    </div>',
+        '    <div style="word-break:break-word">' + escapeHTML(data.text) + '</div>',
+        '    <div style="font-size:9.5px;color:#6b8aad;margin-top:4px;text-align:right">' + tStr + '</div>',
+        '  </div>',
+        '</div>'
+      ].join('\n');
+    } else {
+      bubbleHtml = [
+        '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;animation:fadeIn 0.25s ease">',
+        '  <div style="max-width:82%;background:#f1f5f9;color:#1e293b;padding:10px 15px;border-radius:16px 16px 16px 4px;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:13px;line-height:1.5;border:1px solid #e2e8f0">',
+        '    <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:2px">👤 ' + escapeHTML(data.senderName || 'ประชาชน') + '</div>',
+        '    <div style="word-break:break-word">' + escapeHTML(data.text) + '</div>',
+        '    <div style="font-size:9.5px;color:#94a3b8;margin-top:4px;text-align:right">' + tStr + '</div>',
+        '  </div>',
+        '</div>'
+      ].join('\n');
+    }
+
+    thread.insertAdjacentHTML('beforeend', bubbleHtml);
+    thread.scrollTop = thread.scrollHeight;
+  } else {
+    // หากยังไม่ได้เปิดดูการ์ดนั้น ให้รีเฟรชรายการแบบเงียบๆ
+    refreshLineInquiriesSilently();
+  }
+}
+
+/**
+ * อัปเดตสถานะของเคสแบบเรียลไทม์
+ */
+function updateLineInquiryRealtime(data) {
+  if (!data || !data.inquiryId) return;
+
+  var inq = _lineInquiries.find(function (i) { return String(i._id) === String(data.inquiryId); });
+  if (inq) {
+    if (data.status) inq.status = data.status;
+    if (typeof data.isActiveSession === 'boolean') inq.isActiveSession = data.isActiveSession;
+    if (data.adminTakeoverUntil !== undefined) inq.adminTakeoverUntil = data.adminTakeoverUntil;
+  }
+}
+
+/**
+ * ดึงข้อมูลข้อความใหม่แบบเงียบๆ เบื้องหลัง โดยไม่ล้าง input ที่แอดมินกำลังพิมพ์ค้างไว้
+ */
+async function refreshLineInquiriesSilently() {
+  try {
+    var res = await fetch('/api/line-inquiries?status=' + encodeURIComponent(_currentInquiryFilter));
+    if (!res.ok) return;
+    var data = await res.json();
+    var newInquiries = data.inquiries || [];
+
+    newInquiries.forEach(function (newInq) {
+      var oldInq = _lineInquiries.find(function (o) { return String(o._id) === String(newInq._id); });
+      var thread = ge('chatThread_' + newInq._id);
+
+      if (thread && newInq.messages) {
+        var oldLen = oldInq && oldInq.messages ? oldInq.messages.length : 0;
+        if (newInq.messages.length > oldLen) {
+          var newMsgs = newInq.messages.slice(oldLen);
+          newMsgs.forEach(function (m) {
+            appendLineInquiryMessageRealtime({
+              inquiryId: newInq._id,
+              sender: m.sender,
+              senderName: m.senderName,
+              text: m.text,
+              sentAt: m.sentAt
+            });
+          });
+        }
+      }
+    });
+
+    _lineInquiries = newInquiries;
+    if (typeof data.unreadCount === 'number') {
+      updateLineInquiryBadge(data.unreadCount);
+    }
+  } catch (e) {
+    // silent catch
+  }
 }
 
 async function endLineInquiryChat(id) {
@@ -2854,6 +2995,7 @@ async function sendLineInquiryReply(id) {
 
     showToast('✅ ส่งคำตอบเข้าแชต LINE ประชาชนสำเร็จแล้ว', 'success');
     input.value = '';
+    if (_lineInquiryDrafts) delete _lineInquiryDrafts[id];
     loadLineInquiries();
   } catch (err) {
     showToast(err.message || 'เกิดข้อผิดพลาดในการส่งข้อความ', true);
