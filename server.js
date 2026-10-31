@@ -126,7 +126,12 @@ io.on('connection', (socket) => {
   app.use(mongoSanitize());
 
   // ─── General Middleware ───────────────────────────────────────────────
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.json({
+    limit: '2mb',
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    }
+  }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(express.static(path.join(__dirname, 'public')));
   // ใช้ mongoose connection ที่มีอยู่แล้ว (ไม่ต้อง connect ใหม่)
@@ -189,6 +194,7 @@ io.on('connection', (socket) => {
   app.use('/api/ceo', require('./routes/ceo')); // CEO read-only dashboard API
   app.use('/api/track', require('./routes/track'));
   app.use('/auth/line', require('./routes/lineAuth'));
+  app.use('/api/line', require('./routes/lineBot'));
 
   // ─── LIFF Rating Page ──────────────────────────────────────────
   app.get('/liff-rating', (req, res) => {

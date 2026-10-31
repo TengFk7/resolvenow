@@ -632,6 +632,11 @@ runTest('Multimodal Vision helpers validate image payloads and detect pitch-blac
 });
 
 // ── Summary ──────────────────────────────────────────────────────
+const { runLineBotTests } = require('./testLineBot');
+const lineBotResult = runLineBotTests();
+totalTests += lineBotResult.totalTests;
+passedTests += lineBotResult.passedTests;
+
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);
 console.log(`Passed: \x1b[32m${passedTests}\x1b[0m`);
