@@ -187,9 +187,11 @@ function formatTamperBanner(details = {}) {
 function formatStartupBanner(port = 3001) {
   const line = '='.repeat(80);
   const p = port || 3001;
+  const title = 'ResolveNow';
+  const centeredTitle = ' '.repeat(Math.floor((line.length - title.length) / 2)) + title;
   return [
     '\x1b[36m' + line + '\x1b[0m',
-    '  \x1b[1mResolveNow — Smart City Complaint & Work Order Management Platform\x1b[0m',
+    `  \x1b[1m${centeredTitle.slice(2)}\x1b[0m`,
     `  \x1b[32m✔ Developer :\x1b[0m ${DEVELOPER_ATTRIBUTION}`,
     `  \x1b[32m✔ Integrity :\x1b[0m [SECURE - SHA256 VERIFIED: ${INTEGRITY_SIGNATURES.sha256.slice(0, 16)}...] (Port ${p})`,
     '\x1b[36m' + line + '\x1b[0m'
