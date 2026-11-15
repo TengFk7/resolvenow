@@ -180,7 +180,7 @@ function formatTamperBanner(details = {}) {
 }
 
 /**
- * Formats formatted ASCII banner printing developer attribution, watermark status, and URLs.
+ * Formats formatted ASCII banner printing developer attribution and watermark status.
  * @param {number|string} [port=3001]
  * @returns {string}
  */
@@ -191,14 +191,7 @@ function formatStartupBanner(port = 3001) {
     '\x1b[36m' + line + '\x1b[0m',
     '  \x1b[1mResolveNow — Smart City Complaint & Work Order Management Platform\x1b[0m',
     `  \x1b[32m✔ Developer :\x1b[0m ${DEVELOPER_ATTRIBUTION}`,
-    `  \x1b[32m✔ Integrity :\x1b[0m [SECURE - SHA256 VERIFIED: ${INTEGRITY_SIGNATURES.sha256.slice(0, 16)}...]`,
-    `  \x1b[32m✔ Portals   :\x1b[0m`,
-    `    • Citizen Portal      : http://localhost:${p}/`,
-    `    • My Tickets Dedicated: http://localhost:${p}/my-tickets`,
-    `    • Admin Portal        : http://localhost:${p}/admin`,
-    `    • Technician Portal   : http://localhost:${p}/tech`,
-    `    • CEO Dashboard       : http://localhost:${p}/ceo`,
-    `    • Public Tracker      : http://localhost:${p}/track`,
+    `  \x1b[32m✔ Integrity :\x1b[0m [SECURE - SHA256 VERIFIED: ${INTEGRITY_SIGNATURES.sha256.slice(0, 16)}...] (Port ${p})`,
     '\x1b[36m' + line + '\x1b[0m'
   ].join('\n');
 }
