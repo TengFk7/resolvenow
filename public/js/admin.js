@@ -257,9 +257,16 @@ function renderTechStatus(techs) {
 function renderQueue(tks, techs) {
   var el = ge('queueBody');
   var mobEl = ge('queueMobList');
+  var qContainer = ge('queueTableContainer');
+  var dashGrid = document.querySelector('#pageDashboard .dash-grid');
   if (!tks.length) {
     el.innerHTML = '<tr><td colspan="9" class="empty">🎉 ไม่มีงานรอการอนุมัติ</td></tr>';
-    if (mobEl) mobEl.innerHTML = '<div class="empty" style="text-align:center;padding:24px;color:var(--muted)">🎉 ไม่มีงานรอการอนุมัติ</div>';
+    if (mobEl) {
+      mobEl.innerHTML = '<div class="empty" style="text-align:center;padding:24px;color:var(--muted)">🎉 ไม่มีงานรอการอนุมัติ</div>';
+      mobEl.style.maxHeight = '';
+    }
+    if (qContainer) qContainer.style.maxHeight = '';
+    if (dashGrid) dashGrid.style.height = '';
     return;
   }
   var h = '';    // desktop table html
@@ -356,6 +363,40 @@ function renderQueue(tks, techs) {
   el.innerHTML = h;
   if (mobEl) mobEl.innerHTML = mh;
   for (var k = 0; k < tks.length; k++) autoSelect(tks[k], techs);
+  if (qContainer || mobEl) {
+    requestAnimationFrame(function () {
+      if (qContainer) {
+        var rows = el.querySelectorAll('tr');
+        if (rows.length > 10) {
+          var theadEl = qContainer.querySelector('thead');
+          var hSum = theadEl ? theadEl.offsetHeight : 40;
+          for (var r = 0; r < 10; r++) hSum += rows[r].offsetHeight;
+          var panelHead = qContainer.parentElement ? qContainer.parentElement.querySelector('.panel-head') : null;
+          var headH = panelHead ? panelHead.offsetHeight : 58;
+          if (dashGrid && window.innerWidth > 1360) {
+            qContainer.style.maxHeight = '';
+            dashGrid.style.height = (headH + hSum + 4) + 'px';
+          } else {
+            if (dashGrid) dashGrid.style.height = '';
+            if (hSum > 100) qContainer.style.maxHeight = (hSum + 2) + 'px';
+          }
+        } else {
+          if (dashGrid) dashGrid.style.height = '';
+          qContainer.style.maxHeight = '';
+        }
+      }
+      if (mobEl) {
+        var cards = mobEl.querySelectorAll('.queue-mob-card');
+        if (cards.length > 10) {
+          var mSum = 12;
+          for (var m = 0; m < 10; m++) mSum += cards[m].offsetHeight + 12;
+          if (mSum > 100) mobEl.style.maxHeight = mSum + 'px';
+        } else {
+          mobEl.style.maxHeight = '';
+        }
+      }
+    });
+  }
 }
 
 /* ── Auto-Select Best Tech ───────────────────────────── */

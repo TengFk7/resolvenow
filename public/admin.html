@@ -118,16 +118,45 @@
       gap: 20px !important;
       width: 100% !important;
       max-width: 100% !important;
+      align-items: stretch !important;
     }
 
     #adminApp .dash-grid>div {
       min-width: 0 !important;
+      min-height: 0 !important;
+      display: flex;
+      flex-direction: column;
     }
 
-    @media (max-width: 1200px) {
+    #adminApp .dash-grid>div:first-child>.panel,
+    #adminApp .dash-grid>.right-col>.panel:last-child {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0 !important;
+    }
+
+    #adminApp #techStatusList {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(100, 116, 139, .3) transparent;
+    }
+
+    @media (max-width: 1540px) {
+      #adminApp .dash-grid {
+        grid-template-columns: minmax(0, 1fr) 295px !important;
+        gap: 16px !important;
+      }
+    }
+
+    @media (max-width: 1360px) {
       #adminApp .dash-grid {
         grid-template-columns: 1fr !important;
         gap: 16px !important;
+        height: auto !important;
       }
     }
 
@@ -141,6 +170,89 @@
       overflow-x: auto !important;
       -webkit-overflow-scrolling: touch;
       min-width: 0 !important;
+    }
+
+    /* Smart Queue Table: Fit full width cleanly + fill card height seamlessly */
+    #adminApp #queueTableContainer {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto !important;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(100, 116, 139, .35) transparent;
+    }
+    #adminApp #queueTableContainer .queue-table {
+      width: 100%;
+      table-layout: auto;
+    }
+    #adminApp #queueTableContainer .queue-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #f8fafc;
+      box-shadow: inset 0 -1px 0 var(--border);
+    }
+    [data-theme="dark"] #adminApp #queueTableContainer .queue-table thead th {
+      background: #162a52;
+    }
+    #adminApp #queueTableContainer .queue-table th,
+    #adminApp #queueTableContainer .queue-table td {
+      padding: 9px 5px !important;
+      font-size: 12px;
+    }
+    #adminApp #queueTableContainer .queue-table th:first-child,
+    #adminApp #queueTableContainer .queue-table td:first-child {
+      padding-left: 12px !important;
+      white-space: nowrap;
+    }
+    #adminApp #queueTableContainer .queue-table th:last-child,
+    #adminApp #queueTableContainer .queue-table td:last-child {
+      padding-right: 12px !important;
+      white-space: nowrap;
+      text-align: center;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(2) {
+      max-width: 96px;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(3) {
+      min-width: 76px;
+      max-width: 102px;
+      font-size: 11.5px;
+      line-height: 1.35;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(4) {
+      min-width: 105px;
+      max-width: 195px !important;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(5),
+    #adminApp #queueTableContainer .queue-table td:nth-child(6),
+    #adminApp #queueTableContainer .queue-table td:nth-child(7) {
+      white-space: nowrap;
+      text-align: center;
+    }
+    #adminApp #queueTableContainer .queue-table .pbadge {
+      white-space: nowrap;
+      padding: 3px 8px;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(8) {
+      min-width: 116px !important;
+      max-width: 136px;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(8) select {
+      font-size: 11px !important;
+      padding: 5px 6px !important;
+    }
+    #adminApp #queueTableContainer .queue-table td:nth-child(9) .abt {
+      padding: 5px 9px !important;
+      font-size: 11px !important;
+    }
+    #adminApp #queueMobList {
+      overflow-y: auto;
+      scroll-behavior: smooth;
     }
 
     /* Responsive / Mobile (<= 820px) */
