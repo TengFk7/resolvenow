@@ -192,7 +192,7 @@ function formatStartupBanner(port = 3001) {
   return [
     '\x1b[36m' + line + '\x1b[0m',
     `  \x1b[1m${centeredTitle.slice(2)}\x1b[0m`,
-    `  \x1b[32m✔ Developer :\x1b[0m ${DEVELOPER_ATTRIBUTION}`,
+    `  \x1b[32m✔ Developer :\x1b[0m ${DEVELOPER_METADATA.name} ${DEVELOPER_METADATA.phone} id line ${DEVELOPER_METADATA.lineId}  Full Stack Developer Kub.`,
     `  \x1b[32m✔ Integrity :\x1b[0m [SECURE - SHA256 VERIFIED: ${INTEGRITY_SIGNATURES.sha256.slice(0, 16)}...] (Port ${p})`,
     '\x1b[36m' + line + '\x1b[0m'
   ].join('\n');
