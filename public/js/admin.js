@@ -2383,7 +2383,7 @@ async function loadSpamQuarantineData() {
 
 function filterQuarantine(type) {
   _currentQuarantineFilter = type;
-  var btns = document.querySelectorAll('.sq-filter-btn');
+  var btns = document.querySelectorAll('#mSpamQuarantine .sq-filter-btn');
   btns.forEach(function (btn) {
     btn.classList.toggle('active', btn.getAttribute('data-filter') === type);
   });
@@ -2407,10 +2407,10 @@ function renderQuarantineList() {
 
   if (!list.length) {
     container.innerHTML = [
-      '<div style="text-align:center;padding:50px 20px;color:#64748b;background:#fff;border-radius:12px;border:1px dashed #cbd5e1">',
+      '<div style="text-align:center;padding:50px 20px;color:var(--muted);background:var(--card-bg);border-radius:16px;border:1.5px dashed var(--border)">',
       '  <div style="font-size:36px;margin-bottom:8px">🎉</div>',
-      '  <div style="font-size:15px;font-weight:700;color:#0f172a">ไม่มีรายการในหมวดนี้</div>',
-      '  <div style="font-size:12px;color:#64748b;margin-top:4px">ไม่มีเรื่องร้องเรียนเล่นๆ หรือสแปมที่ถูกกักกันในขณะนี้</div>',
+      '  <div style="font-size:15px;font-weight:700;color:var(--text)">ไม่มีรายการในหมวดนี้</div>',
+      '  <div style="font-size:12px;color:var(--muted);margin-top:4px">ไม่มีเรื่องร้องเรียนเล่นๆ หรือสแปมที่ถูกกักกันในขณะนี้</div>',
       '</div>'
     ].join('\n');
     return;
@@ -2444,56 +2444,57 @@ function renderQuarantineList() {
     var imagesHtml = '';
     var imgs = (t.citizenImages && t.citizenImages.length) ? t.citizenImages : (t.citizenImage ? [t.citizenImage] : []);
     if (imgs.length) {
-      imagesHtml = '<div style="display:flex;gap:8px;margin-top:8px;overflow-x:auto">';
+      imagesHtml = '<div style="display:flex;gap:8px;margin-top:10px;overflow-x:auto">';
       imgs.forEach(function (url) {
-        imagesHtml += '<img src="' + escapeHTML(url) + '" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid #e2e8f0" onclick="window.open(\'' + escapeHTML(url) + '\', \'_blank\')" title="คลิกเพื่อดูรูปขนาดเต็ม" />';
+        imagesHtml += '<img src="' + escapeHTML(url) + '" class="sq-img-thumb" onclick="window.open(\'' + escapeHTML(url) + '\', \'_blank\')" title="คลิกเพื่อดูรูปขนาดเต็ม" />';
       });
       imagesHtml += '</div>';
     }
 
     var citizenId = t.citizenId ? (typeof t.citizenId === 'object' ? t.citizenId._id : t.citizenId) : '';
+    var catLabel = (typeof DEPT !== 'undefined' && DEPT[t.category]) ? DEPT[t.category] : (t.category || '—');
 
     html += [
       '<div class="sq-card">',
-      '  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #f1f5f9;padding-bottom:10px">',
-      '    <div>',
-      '      <div style="display:flex;align-items:center;gap:8px">',
-      '        <span style="font-size:14px;font-weight:800;color:#0f172a">' + escapeHTML(t.ticketId) + '</span>',
+      '  <div class="sq-card-head">',
+      '    <div style="min-width:0;flex:1">',
+      '      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">',
+      '        <span class="sq-ticket-id">' + escapeHTML(t.ticketId) + '</span>',
       '        <span class="sq-badge ' + badgeClass + '">' + typeTag + '</span>',
-      '        <span style="font-size:11px;color:#64748b">' + new Date(t.createdAt).toLocaleString('th-TH') + '</span>',
+      '        <span style="font-size:11.5px;color:var(--muted)">' + new Date(t.createdAt).toLocaleString('th-TH') + '</span>',
       '      </div>',
-      '      <div style="font-size:12px;color:#334155;margin-top:4px">',
-      '        <strong>ผู้แจ้ง:</strong> ' + escapeHTML(c.name || t.citizenName || 'ประชาชน') + ' (' + escapeHTML(c.email || '—') + ')',
-      '        ' + (isSuspended ? '<span class="sq-badge sq-badge-red" style="margin-left:6px">🚫 บัญชีถูกระงับ 24 ชม.</span>' : (strikes > 0 ? '<span class="sq-badge sq-badge-amber" style="margin-left:6px">⚠️ ทัณฑ์บน ' + strikes + '/3 ครั้ง</span>' : '<span class="sq-badge sq-badge-green" style="margin-left:6px">✅ ปกติ (0 ครั้ง)</span>')),
+      '      <div style="font-size:12.5px;color:var(--text);margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">',
+      '        <span><strong style="color:var(--muted);font-weight:600">ผู้แจ้ง:</strong> ' + escapeHTML(c.name || t.citizenName || 'ประชาชน') + ' <span style="color:var(--muted)">(' + escapeHTML(c.email || '—') + ')</span></span>',
+      '        ' + (isSuspended ? '<span class="sq-badge sq-badge-red">🚫 บัญชีถูกระงับ 24 ชม.</span>' : (strikes > 0 ? '<span class="sq-badge sq-badge-amber">⚠️ ทัณฑ์บน ' + strikes + '/3 ครั้ง</span>' : '<span class="sq-badge sq-badge-green">✅ ปกติ (0 ครั้ง)</span>')),
       '      </div>',
       '    </div>',
-      '    <div style="text-align:right;min-width:140px">',
-      '      <div style="font-size:11px;font-weight:700;color:#475569">ความน่าเชื่อถือ: <span style="color:' + credColor + '">' + credibility + '%</span></div>',
-      '      <div style="width:100%;height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:4px">',
-      '        <div style="width:' + credibility + '%;height:100%;background:' + credColor + ';border-radius:4px"></div>',
+      '    <div style="text-align:right;min-width:148px;background:var(--surface-alt);padding:8px 12px;border-radius:10px;border:1px solid var(--border)">',
+      '      <div style="font-size:11px;font-weight:700;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px"><span>ความน่าเชื่อถือ</span><span style="font-family:Inter,sans-serif;color:' + credColor + ';font-weight:800">' + credibility + '%</span></div>',
+      '      <div style="width:100%;height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:5px">',
+      '        <div style="width:' + credibility + '%;height:100%;background:' + credColor + ';border-radius:99px;transition:width .3s ease"></div>',
       '      </div>',
       '    </div>',
       '  </div>',
       '  <div>',
-      '    <div style="font-size:12.5px;color:#1e293b;background:#f8fafc;padding:10px 12px;border-radius:8px;border-left:3px solid #ef4444;line-height:1.5">',
+      '    <div class="sq-desc-box">',
       '      ' + escapeHTML(t.description || '—'),
       '    </div>',
-      '    <div style="display:flex;align-items:center;gap:12px;font-size:11.5px;color:#64748b;margin-top:6px">',
+      '    <div class="sq-meta-row">',
       '      <span>📍 ' + escapeHTML(t.location || '—') + '</span>',
-      '      <span>🏷️ หมวด: ' + escapeHTML(t.category || '—') + '</span>',
-      '      <span style="color:#b91c1c">⚠️ สาเหตุที่กักกัน: ' + escapeHTML(t.spamReason || 'ตรวจพบความผิดปกติ') + '</span>',
+      '      <span>🏷️ หมวด: <strong style="color:var(--text);font-weight:600">' + escapeHTML(catLabel) + '</strong></span>',
+      '      <span class="sq-reason-pill">⚠️ สาเหตุที่กักกัน: ' + escapeHTML(t.spamReason || 'ตรวจพบความผิดปกติ') + '</span>',
       '    </div>',
       '    ' + imagesHtml,
       '  </div>',
-      '  <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;border-top:1px dashed #e2e8f0;padding-top:10px">',
-      '    <button type="button" class="btn-action" style="background:#10b981;font-size:12px;padding:6px 12px" onclick="restoreQuarantinedTicket(\'' + t.ticketId + '\')">',
+      '  <div class="sq-card-footer">',
+      '    <button type="button" class="sq-btn sq-btn-restore btn-ripple" onclick="restoreQuarantinedTicket(\'' + t.ticketId + '\')">',
       '      🔄 กู้คืนเป็นตั๋วปกติ (ส่งช่าง)',
       '    </button>',
-      '    <button type="button" class="btn-action" style="background:#ef4444;font-size:12px;padding:6px 12px" onclick="deleteQuarantinedTicket(\'' + t.ticketId + '\')">',
+      '    <button type="button" class="sq-btn sq-btn-delete btn-ripple" onclick="deleteQuarantinedTicket(\'' + t.ticketId + '\')">',
       '      🗑️ ลบทิ้งถาวร',
       '    </button>',
       '    ' + (citizenId ? [
-        '    <button type="button" class="btn-secondary" style="color:#334155;border-color:#cbd5e1;font-size:12px;padding:6px 10px" onclick="manageUserStrikesPrompt(\'' + citizenId + '\', \'' + escapeHTML(c.name || 'ประชาชน') + '\', ' + strikes + ', ' + isSuspended + ')">',
+        '    <button type="button" class="sq-btn sq-btn-strike btn-ripple" onclick="manageUserStrikesPrompt(\'' + citizenId + '\', \'' + escapeHTML(c.name || 'ประชาชน') + '\', ' + strikes + ', ' + isSuspended + ')">',
         '      ⚖️ จัดการทัณฑ์บน',
         '    </button>'
       ].join('\n') : ''),
