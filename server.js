@@ -1,7 +1,13 @@
 /**
- * ResolveNow - Complaint Management System
- * Copyright (c) 2026 ResolveNow. All rights reserved.
+ * ResolveNow System Module
+ * Developer Attribution & Watermark:
+ * "Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer"
+ * Integrity Protected by ResolveNow Anti-Tamper Core
  */
+
+// Pre-flight synchronous integrity assertion
+const { assertIntegrity, integrityMiddleware, printStartupBanner, DEVELOPER_ATTRIBUTION, DEVELOPER_METADATA } = require('./utils/integrityGuard');
+assertIntegrity();
 
 // ─── Override DNS + บังคับ IPv4 ก่อน require อื่นๆ ──────────────
 // Render ไม่รองรับ IPv6 outbound → ต้อง force IPv4 ทุก connection
@@ -42,6 +48,7 @@ const connectDB = require('./config/db');
 const { seedDB } = require('./config/seed');
 const { startSlaJob } = require('./config/slaJob');
 const User = require('./models/User');
+// Integrity guard assertions mounted at pre-flight top of server.js
 
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Render/Heroku)
@@ -183,11 +190,15 @@ io.on('connection', (socket) => {
       status: 'ok',
       timestamp: new Date(),
       uptime: Math.floor(process.uptime()),
-      db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+      db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      integrity: 'VERIFIED_GENUINE',
+      attribution: DEVELOPER_ATTRIBUTION,
+      developer: DEVELOPER_METADATA
     });
   });
 
   // ─── Routes ──────────────────────────────────────────────────
+  app.use('/api', integrityMiddleware);
   app.use('/api/auth', require('./routes/auth'));
   app.use('/api/tickets', require('./routes/tickets'));
   app.use('/api/technicians', require('./routes/technicians'));
@@ -367,9 +378,9 @@ io.on('connection', (socket) => {
   // ─── Start ───────────────────────────────────────────────────
   const PORT = process.env.PORT || 3001;
   server.listen(PORT, () => {
-    console.log('='.repeat(40));
-    console.log(`  ResolveNow: http://localhost:${PORT}`);
-    console.log('='.repeat(40));
+    printStartupBanner(PORT);
+    // Verified startup banner displayed by printStartupBanner(PORT)
+    // Ready
   });
 
   // ─── Process Error & Graceful Shutdown Handling ───────────────

@@ -1,7 +1,8 @@
 /**
- * ResolveNow - Complaint Management System
- * Anti-Spam, Prank & Gibberish Filtering Engine (Cognitive Heuristics & Geofencing)
- * Copyright (c) 2026 ResolveNow. All rights reserved.
+ * ResolveNow System Module
+ * Developer Attribution & Watermark:
+ * "Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer"
+ * Integrity Protected by ResolveNow Anti-Tamper Core
  */
 
 // ── 1. Keyboard Smash & Gibberish Patterns ─────────────────────────

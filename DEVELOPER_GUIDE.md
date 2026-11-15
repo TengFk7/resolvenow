@@ -1,5 +1,5 @@
 # 🛠️ ResolveNow — Developer Guide & System Architecture
-> **สำหรับทีมพัฒนา (Developers & Maintainers)** | อัปเดตล่าสุด: 2026-10 | ระบบรับแจ้งเรื่องร้องเรียนและบริหารงานซ่อมบำรุงเมืองอัจฉริยะ (Smart City Work Order Platform)
+> **สำหรับทีมพัฒนา (Developers & Maintainers)** | อัปเดตล่าสุด: 2026-11 | Version: V20.2 (Developer Attribution, Multi-Layer Cryptographic Anti-Tamper Integrity Guard [SHA-256/SHA-512], Dual Database/Route Interlocks, 59 Automated Tests in 11 Groups)
 
 ---
 
@@ -62,7 +62,8 @@
   - Internal Fallback: **Cognitive Thai NLP Heuristics Engine (5-Layer Classification)** ทำงานได้ 100% แม้ไม่มี API Key
 - **Frontend UI**: Vanilla HTML5, Modern CSS3 (Glassmorphism, 3D Transitions), Vanilla JavaScript ES6+ (ไร้ Framework ขนาดใหญ่ เพื่อความเร็วสูงสุด)
 - **Maps & GIS**: Leaflet.js + OpenStreetMap Nominatim Reverse Geocoding
-- **Quality Assurance**: Automated Verification Test Suite (`scripts/runTests.js` 43 Test Cases ใน 9 กลุ่มงาน)
+- **Anti-Tamper & Integrity Protection**: `utils/integrityGuard.js` (Cryptographic Dual SHA-256/SHA-512 Hash Checksums, Constant-time equality, Pre-flight/DB/API Interlocks, Process Halt on tampering)
+- **Quality Assurance**: Automated Verification Test Suite (`scripts/runTests.js` 59 Test Cases ใน 11 กลุ่มงาน + `scripts/testIntegrity.js` 7 Test Cases)
 
 ---
 
@@ -105,10 +106,12 @@ ResolveNow/
 │
 ├── utils/
 │   ├── slaHelper.js              ← ฟังก์ชันคำนวณ SLA และตรวจจับ SLA Breach (แหล่งความจริงเดียวของระบบ)
-│   └── spamFilter.js             ← ตัวกรองสแปม, Shannon Entropy, ตรวจคำหยาบ, Geofencing, และ Strike Engine
+│   ├── spamFilter.js             ← ตัวกรองสแปม, Shannon Entropy, ตรวจคำหยาบ, Geofencing, และ Strike Engine
+│   └── integrityGuard.js         ← กลไกตรวจสอบลายน้ำ Cryptographic Dual-Hash (SHA-256/SHA-512) & Anti-Tamper
 │
 ├── scripts/
-│   ├── runTests.js               ← Automated Test Suite (43 Unit & Integration Tests ใน 9 หมวดงาน)
+│   ├── runTests.js               ← Automated Test Suite (59 Unit & Integration Tests ใน 11 หมวดงาน)
+│   ├── testIntegrity.js          ← Integrity & Tamper Simulation Test Suite (7 การทดสอบความถูกต้องของลายน้ำ)
 │   └── seedMockTickets.js        ← สคริปต์สร้างตั๋วจำลองเพื่อใช้ทดสอบระบบ
 │
 └── public/
@@ -186,8 +189,9 @@ LINE_LOGIN_CALLBACK_URL=http://localhost:3001/api/auth/line/callback
 ### ขั้นตอนที่ 3: รันการทดสอบความถูกต้องของระบบ (Automated Tests)
 ```bash
 npm test
+node scripts/testIntegrity.js
 ```
-*(ต้องผ่านครบ 44 การทดสอบ โดยไม่มีข้อผิดพลาด)*
+*(ต้องผ่านครบ 59 การทดสอบใน npm test และ 7 การทดสอบใน testIntegrity โดยไม่มีข้อผิดพลาด)*
 
 ### ขั้นตอนที่ 4: เริ่มรันเซิร์ฟเวอร์
 ```bash
@@ -252,6 +256,18 @@ npm start
   - **Layer 4: Semantic Keyword Fallback**
   - **Layer 5: Category Base Fallback**
 
+### 5) ระบบลายน้ำผู้พัฒนาและการรักษาความสมบูรณ์ของระบบ (Developer Attribution & Anti-Tamper Standard)
+- **ข้อความลายน้ำที่เป็นทางการ (Canonical String)**:
+  `"Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer"`
+- **กลไกการป้องกัน (Cryptographic Dual-Hash Verification)**:
+  - ใช้ `utils/integrityGuard.js` ทำการตรวจ SHA-256 และ SHA-512 Hash Checksum แบบ Constant-Time (`crypto.timingSafeEqual`) พร้อม `Object.freeze()` ป้องกันการแก้ไขหน่วยความจำ
+  - มี Interlock 3 ชั้น: Pre-flight Boot ใน `server.js`, Database Interlock ใน `config/db.js`, และ Express Route Middleware
+  - **หากข้อความลายน้ำถูกลบ แก้ไข หรือตัดทอนแม้แต่ตัวอักษรเดียว**: ระบบจะแสดง Alert สีแดงและสั่งปิดตัวทันที (`process.exit(1)`) ทำให้เซิร์ฟเวอร์เปิดใช้งานไม่ได้
+- **มาตรฐานเมื่อสร้างไฟล์หรือพัฒนาฟีเจอร์ใหม่**:
+  - ไฟล์ Backend ใหม่ (`routes/`, `models/`, `utils/`, `config/`): ต้องมี Header Docstring เครดิตผู้พัฒนาบนสุดของไฟล์เสมอ
+  - ไฟล์ Frontend ใหม่ (`public/*.html`): ต้องมี Header Comment และ `<meta name="author" content="...">` เครดิตผู้พัฒนา
+  - รัน `npm test` และ `node scripts/testIntegrity.js` ทุกครั้งเพื่อให้มั่นใจว่าระบบไม่เกิด Regression
+
 ---
 
 ## 8. สรุป API Endpoints สำคัญ (Key REST APIs)
@@ -290,9 +306,10 @@ npm start
 
 ## 9. การทดสอบระบบ (Automated Test Suite)
 
-ระบบมีชุดทดสอบอัตโนมัติ 43 Test Cases ครอบคลุม 9 กลุ่มงานสำคัญ รันผ่านคำสั่ง:
+ระบบมีชุดทดสอบอัตโนมัติ 59 Test Cases ครอบคลุม 11 กลุ่มงานสำคัญ พร้อมชุดทดสอบความสมบูรณ์ของลายน้ำ 7 Test Cases รันผ่านคำสั่ง:
 ```bash
 npm test
+node scripts/testIntegrity.js
 ```
 
 **กลุ่มงานที่ได้รับการทดสอบ**:
@@ -302,9 +319,11 @@ npm test
 4. **PDPA Masking Tests**: การปกปิดชื่อ-นามสกุล เบอร์โทร และอีเมลของประชาชนใน CEO Dashboard
 5. **CEO Financial Aggregation Tests**: การคำนวณงบประมาณและผลรวมค่าใช้จ่ายวัสดุซ่อมบำรุง
 6. **Mongoose Compound Indexes Tests**: การตรวจสอบ Index สำคัญเพื่อประสิทธิภาพ Query
-7. **Cognitive Thai NLP Tests**: ตรวจสอบความถูกต้องของการจัดระดับความเร่งด่วน 5 เลเยอร์
+7. **Cognitive Thai NLP Tests**: ตรวจสอบความถูกต้องของการจัดระดับความเร่งด่วน 5 เลเยอร์ (134 Heuristic Assertions)
 8. **AI Dispatcher Heuristics Tests**: การเลือกช่างที่เหมาะสมที่สุดตามภาระงาน (Workload Capacity)
 9. **Anti-Spam & Strike Engine Tests**: การตรวจจับ Entropy, คำหยาบ, Geofencing และระบบระงับสิทธิ์
+10. **LINE Inquiries & Messaging Tests**: การจัดเก็บข้อความสอบถามและประวัติการสนทนาทาง LINE
+11. **Anti-Tamper & Integrity Protection Suite**: ตรวจสอบความถูกต้องของโมดูล Integrity Guard, การคำนวณ Dual Hash, Immutability Sealing, และการทดสอบจำลอง Subprocess Halting เมื่อตรวจพบการดัดแปลงลายน้ำ
 
 ---
 *จัดทำขึ้นเพื่อให้ทีมนักพัฒนาสามารถเข้าใจโครงสร้างและต่อยอดระบบ ResolveNow ได้อย่างรวดเร็ว ปลอดภัย และถูกต้องตามมาตรฐานวิศวกรรมซอฟต์แวร์*

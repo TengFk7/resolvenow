@@ -1,6 +1,8 @@
 /**
- * ResolveNow - Complaint Management System
- * Copyright (c) 2026 ResolveNow. All rights reserved.
+ * ResolveNow System Module
+ * Developer Attribution & Watermark:
+ * "Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer"
+ * Integrity Protected by ResolveNow Anti-Tamper Core
  */
 
 const mongoose = require('mongoose');
@@ -10,6 +12,10 @@ const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
 async function connectDB(retries = 3, delayMs = 3000) {
+  // Secondary database connection integrity interlock
+  const { assertIntegrity } = require('../utils/integrityGuard');
+  assertIntegrity();
+
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     console.error('❌ MONGODB_URI ไม่ได้ตั้งค่าใน .env');

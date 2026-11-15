@@ -2,6 +2,7 @@
   "name": "resolvenow",
   "version": "1.0.0",
   "description": "ระบบรับแจ้งเรื่องร้องเรียน ResolveNow",
+  "author": "Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

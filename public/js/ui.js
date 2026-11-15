@@ -1,5 +1,7 @@
 /**
  * ResolveNow - Complaint Management System
+ * Developer Attribution & Watermark:
+ * "Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer"
  * Copyright (c) 2026 ResolveNow. All rights reserved.
  */
 
@@ -12,7 +14,72 @@
    • Clock
    • Status / Priority helpers
    • Image modal / Change-password modal
+   • Developer attribution & console watermark
    ───────────────────────────────────────────── */
+
+/* ── Developer Attribution & System Watermark ─────────────────── */
+(function initResolveNowDeveloperAttribution() {
+  'use strict';
+  if (typeof window === 'undefined') return;
+
+  // 1. Immutable Developer Runtime Object
+  if (!window.__RESOLVENOW_DEVELOPER__) {
+    var devMetadata = {
+      name: 'Chatayodom Choikhuea',
+      phone: '0970543528',
+      lineId: 'rapbeerteng555teng55',
+      role: 'Full Stack Developer',
+      watermark: 'Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer'
+    };
+
+    try {
+      Object.defineProperty(devMetadata, 'toString', {
+        value: function () { return this.watermark; },
+        enumerable: false,
+        writable: false,
+        configurable: false
+      });
+    } catch (_e) {}
+
+    try {
+      Object.freeze(devMetadata);
+    } catch (_e) {}
+
+    try {
+      Object.defineProperty(window, '__RESOLVENOW_DEVELOPER__', {
+        value: devMetadata,
+        writable: false,
+        configurable: false,
+        enumerable: true
+      });
+    } catch (_e) {
+      window.__RESOLVENOW_DEVELOPER__ = devMetadata;
+    }
+  }
+
+  // 2. DevTools Console Watermark Banner (printed once on initial load)
+  if (typeof console !== 'undefined' && typeof console.log === 'function' && !window.__RESOLVENOW_BANNER_PRINTED__) {
+    window.__RESOLVENOW_BANNER_PRINTED__ = true;
+
+    var headerStyle = 'background: #0f172a; color: #e5a93b; font-weight: bold; font-size: 12px; padding: 5px 10px; border-radius: 4px 0 0 4px; border: 1px solid #334155;';
+    var badgeStyle = 'background: #064e3b; color: #34d399; font-weight: bold; font-size: 11px; padding: 5px 10px; border-radius: 0 4px 4px 0; border: 1px solid #334155; border-left: none;';
+    var labelStyle = 'color: #e5a93b; font-weight: bold; font-size: 11px; line-height: 1.6;';
+    var valStyle = 'color: #f1f5f9; font-size: 11px; line-height: 1.6;';
+    var highlightStyle = 'color: #38bdf8; font-weight: bold; font-size: 11px; line-height: 1.6;';
+    var watermarkLabelStyle = 'color: #10b981; font-weight: bold; font-size: 11px; line-height: 1.6;';
+    var watermarkValStyle = 'color: #cbd5e1; font-size: 10.5px; font-style: italic; line-height: 1.6;';
+
+    console.log(
+      '%c🏛️ ResolveNow Smart City Platform%c✔ INTEGRITY VERIFIED',
+      headerStyle,
+      badgeStyle
+    );
+    console.log('%c👨‍💻 Full Stack Developer : %cChatayodom Choikhuea', labelStyle, highlightStyle);
+    console.log('%c📞 Contact / Phone     : %c0970543528', labelStyle, valStyle);
+    console.log('%c💬 LINE ID             : %crapbeerteng555teng55', labelStyle, highlightStyle);
+    console.log('%c🛡️ Watermark Status    : %cChatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer', watermarkLabelStyle, watermarkValStyle);
+  }
+})();
 
 /* ── Utilities ───────────────────────────────────────── */
 // FIX-2.1: escapeHTML นิยามครั้งเดียวที่นี่ (ลบ duplicate ที่บรรทัด 144 ออกแล้ว)

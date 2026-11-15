@@ -637,6 +637,12 @@ const lineBotResult = runLineBotTests();
 totalTests += lineBotResult.totalTests;
 passedTests += lineBotResult.passedTests;
 
+// ── Group 11: Developer Attribution & Anti-Tamper Integrity Protection ──
+const { runIntegrityTests } = require('./testIntegrity');
+const integrityResult = runIntegrityTests();
+totalTests += integrityResult.totalTests;
+passedTests += integrityResult.passedTests;
+
 console.log('\n\x1b[1m=== Test Results Summary ===\x1b[0m');
 console.log(`Total:  ${totalTests}`);
 console.log(`Passed: \x1b[32m${passedTests}\x1b[0m`);
