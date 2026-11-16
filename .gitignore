@@ -7,3 +7,6 @@ AGENTS.md
 README.md
 SYSTEM_CONTEXT.md
 docs/*.md
+
+# AI agent working artifacts
+.agents/
