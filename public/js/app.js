@@ -251,86 +251,68 @@ function enterApp() {
   var guard = document.getElementById('linePreloadGuard');
   if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
 
+  // Strict Citizen-only guard for User Portal (/)
+  if (!CU || CU.role !== 'citizen') {
+    CU = null;
+    sessionStorage.removeItem('rn_logged_in');
+    showAuth();
+    if (typeof showE === 'function') {
+      showE('authErr', 'บัญชีเจ้าหน้าที่/ผู้ดูแลระบบไม่สามารถเข้าใช้งานผ่านหน้าประชาชนได้');
+    }
+    return;
+  }
+
   ge('authPage').style.display = 'none';
   clearAppIntervals(); // BUG-001: clear any previous intervals before creating new ones
 
-  // ── สลับ portal ทันที (ก่อน Welcome Splash แสดง) เพื่อให้มั่นใจว่า adminApp ถูกซ่อนและ normalApp พร้อม ──
-  if (CU.role === 'admin') {
-    ge('adminApp').style.display = 'flex';
-    ge('normalApp').style.display = 'none';
-    var adminInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
-    ge('adminAv').textContent = adminInit.toUpperCase();
-    ge('adminName').textContent = CU.firstName + (CU.lastName ? ' ' + CU.lastName : '');
-    showPage('dashboard');
-    loadAdmin();
-    _adminInterval = setInterval(function () {
-      if (!_socketConnected) loadAdmin();
-    }, 30000);
-    // Poll admin DM unread on load
-    if (typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
+  ge('normalApp').style.display = 'flex';
+  ge('adminApp').style.display = 'none';
 
+  var hAv = ge('hAv');
+  if (CU.avatar) {
+    hAv.outerHTML = '<img class="linepic" id="hAv" src="' + CU.avatar + '" alt="avatar" />';
   } else {
-    ge('normalApp').style.display = 'flex';
-    ge('adminApp').style.display = 'none';
+    var userInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
+    ge('hAv').textContent = userInit.toUpperCase();
+  }
+  ge('hName').textContent = CU.firstName + (CU.lastName && CU.lastName !== '-' ? ' ' + CU.lastName : '');
+  ge('secCitizen').style.display = 'block';
+  ge('secTech').style.display = 'none';
 
-    var hAv = ge('hAv');
-    if (CU.avatar) {
-      hAv.outerHTML = '<img class="linepic" id="hAv" src="' + CU.avatar + '" alt="avatar" />';
+  // Strike Warning Banner (แบบที่ 3: Warning & Strike System)
+  var strikeBanner = ge('citizenStrikeWarningBanner');
+  var strikeText = ge('citizenStrikeWarningText');
+  if (strikeBanner && strikeText) {
+    if (CU.spamStrikes > 0) {
+      strikeBanner.style.display = 'flex';
+      strikeText.textContent = CU.isSuspended
+        ? '🚫 บัญชีของคุณถูกระงับชั่วคราว 24 ชม. เนื่องจากมีประวัติส่งเรื่องเล่นๆ ครบ 3 ครั้ง'
+        : '⚠️ คุณมีประวัติส่งเรื่องเล่นๆ (ทัณฑ์บน ' + CU.spamStrikes + '/3 ครั้ง) หากครบ 3 ครั้งจะถูกระงับการแจ้งเรื่องชั่วคราว';
     } else {
-      var userInit = CU.firstName[0] + (CU.lastName && CU.lastName[0] ? CU.lastName[0] : '');
-      ge('hAv').textContent = userInit.toUpperCase();
+      strikeBanner.style.display = 'none';
     }
-    ge('hName').textContent = CU.firstName + (CU.lastName && CU.lastName !== '-' ? ' ' + CU.lastName : '');
-    ge('secCitizen').style.display = CU.role === 'citizen' ? 'block' : 'none';
-    ge('secTech').style.display = CU.role === 'technician' ? 'block' : 'none';
+  }
 
-    // Strike Warning Banner (แบบที่ 3: Warning & Strike System)
-    var strikeBanner = ge('citizenStrikeWarningBanner');
-    var strikeText = ge('citizenStrikeWarningText');
-    if (strikeBanner && strikeText) {
-      if (CU && CU.role === 'citizen' && CU.spamStrikes > 0) {
-        strikeBanner.style.display = 'flex';
-        strikeText.textContent = CU.isSuspended
-          ? '🚫 บัญชีของคุณถูกระงับชั่วคราว 24 ชม. เนื่องจากมีประวัติส่งเรื่องเล่นๆ ครบ 3 ครั้ง'
-          : '⚠️ คุณมีประวัติส่งเรื่องเล่นๆ (ทัณฑ์บน ' + CU.spamStrikes + '/3 ครั้ง) หากครบ 3 ครั้งจะถูกระงับการแจ้งเรื่องชั่วคราว';
-      } else {
-        strikeBanner.style.display = 'none';
-      }
-    }
+  loadTickets();
+  _ticketsInterval = setInterval(function () {
+    if (!_socketConnected) loadTickets();
+  }, 30000);
 
-    loadTickets();
-    _ticketsInterval = setInterval(function () {
-      if (!_socketConnected) loadTickets();
-    }, 30000);
-    if (CU.role === 'technician') {
-      loadHelpRequests();
-      _helpInterval = setInterval(function () {
-        if (!_socketConnected) loadHelpRequests();
-      }, 30000);
-    }
-    // ── Show DM Cloud FAB for citizen + join socket DM room ──
-    if (CU.role === 'citizen' && typeof showDmCloudFab === 'function') {
-      showDmCloudFab();
-    }
-    // Join socket DM room (may reconnect after CU is ready)
-    if (typeof socket !== 'undefined' && socket && socket.connected) {
-      socket.emit('dm_join', { role: CU.role, userId: CU.id || CU._id });
-      if (CU.role === 'admin' && typeof refreshAdminDmUnread === 'function') refreshAdminDmUnread();
-    }
+  // ── Show DM Cloud FAB for citizen + join socket DM room ──
+  if (typeof showDmCloudFab === 'function') {
+    showDmCloudFab();
+  }
+  // Join socket DM room (may reconnect after CU is ready)
+  if (typeof socket !== 'undefined' && socket && socket.connected) {
+    socket.emit('dm_join', { role: CU.role, userId: CU.id || CU._id });
   }
 
   // Load categories from DB to populate DEPT/DEPT_ICON dynamically
   loadCategories();
 
   // ── แสดง Welcome Splash ก่อนสุด (ปิดหน้าจอทันที ก่อนโหลดข้อมูล) ──
-  if (CU.role === 'admin') {
-    showWelcomeSplash('admin', CU.firstName, null);
-  } else if (CU.role === 'technician') {
-    showWelcomeSplash('technician', CU.firstName, null);
-  } else if (CU.role === 'citizen') {
-    var _dn = CU.lineDisplayName || CU.firstName || 'คุณ';
-    showWelcomeSplash('citizen', _dn, null, CU.avatar || null);
-  }
+  var _dn = CU.lineDisplayName || CU.firstName || 'คุณ';
+  showWelcomeSplash('citizen', _dn, null, CU.avatar || null);
 }
 
 /* ── Load Ticket Data (citizen/tech) ─────────────────── */
@@ -373,6 +355,7 @@ async function loadTickets() {
       invalid_state: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
       token_failed: 'ไม่สามารถยืนยัน LINE token ได้',
       profile_failed: 'ไม่สามารถดึงข้อมูล LINE profile ได้',
+      unauthorized_portal: 'บัญชีนี้ไม่สามารถเข้าใช้งานผ่านหน้าประชาชนได้',
       server_error: 'เกิดข้อผิดพลาดบน server กรุณาลองใหม่'
     };
     console.warn('[App] LINE error param:', lineErr);

@@ -132,8 +132,8 @@ async function runSecurityChecks() {
 
     CU = data;
 
-    // Verify role authorization (Citizen, Admin, Technician)
-    if (CU.role !== 'citizen' && CU.role !== 'admin' && CU.role !== 'technician') {
+    // Verify role authorization (Citizen only)
+    if (CU.role !== 'citizen') {
       if (barrier) {
         barrier.style.display = 'flex';
         var bBox = barrier.querySelector('.sec-barrier-box');
@@ -928,7 +928,7 @@ async function doQuickLogin() {
     var res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, password: password, remember: true })
+      body: JSON.stringify({ email: email, password: password, remember: true, portal: 'citizen' })
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || 'เข้าสู่ระบบไม่สำเร็จ');

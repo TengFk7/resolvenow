@@ -475,7 +475,7 @@ async function doTechLogin() {
 
     if (data.user.role !== 'technician') {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      return showE('techAuthErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      return showE('techAuthErr', 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานพอร์ทัลช่างปฏิบัติงาน');
     }
 
     CU = data.user;

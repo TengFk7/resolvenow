@@ -632,6 +632,47 @@ runTest('Multimodal Vision helpers validate image payloads and detect pitch-blac
 });
 
 // ── Summary ──────────────────────────────────────────────────────
+// ── Group 12: Portal Isolation & Security Gate Verification ─────
+console.log('\n\x1b[36m[Group 12: Portal Isolation & Security Gate Verification]\x1b[0m');
+
+runTest('Portal login enforces strict 1-to-1 role isolation (blocks admin/tech on citizen portal)', () => {
+  const { evaluatePortalLogin } = require('../routes/auth');
+
+  // Citizen portal allows only citizen
+  assert.strictEqual(evaluatePortalLogin('citizen', 'citizen', {}).allowed, true);
+  assert.strictEqual(evaluatePortalLogin('admin', 'citizen', { admin: true }).allowed, false);
+  assert.strictEqual(evaluatePortalLogin('admin', 'citizen', { admin: true }).status, 403);
+  assert.strictEqual(evaluatePortalLogin('technician', 'citizen', { tech: true }).allowed, false);
+  assert.strictEqual(evaluatePortalLogin('technician', 'citizen', { tech: true }).status, 403);
+
+  // Omitted portal defaults safely to citizen (prevents bypass via missing portal field)
+  assert.strictEqual(evaluatePortalLogin('citizen', undefined, {}).allowed, true);
+  assert.strictEqual(evaluatePortalLogin('admin', undefined, { admin: true }).allowed, false);
+  assert.strictEqual(evaluatePortalLogin('technician', '', { tech: true }).allowed, false);
+
+  // Unknown portal is rejected with 400
+  const unknownRes = evaluatePortalLogin('admin', 'superuser', { admin: true });
+  assert.strictEqual(unknownRes.allowed, false);
+  assert.strictEqual(unknownRes.status, 400);
+
+  // Admin portal requires unlocked admin gate AND admin role
+  const adminNoGate = evaluatePortalLogin('admin', 'admin', {});
+  assert.strictEqual(adminNoGate.allowed, false);
+  assert.strictEqual(adminNoGate.gateRequired, true);
+  assert.strictEqual(evaluatePortalLogin('admin', 'admin', { admin: true }).allowed, true);
+  assert.strictEqual(evaluatePortalLogin('citizen', 'admin', { admin: true }).allowed, false);
+  assert.strictEqual(evaluatePortalLogin('technician', 'admin', { admin: true }).allowed, false);
+
+  // Tech portal requires unlocked tech gate AND technician role (blocks admin and citizen)
+  const techNoGate = evaluatePortalLogin('technician', 'tech', {});
+  assert.strictEqual(techNoGate.allowed, false);
+  assert.strictEqual(techNoGate.gateRequired, true);
+  assert.strictEqual(evaluatePortalLogin('technician', 'tech', { tech: true }).allowed, true);
+  assert.strictEqual(evaluatePortalLogin('technician', 'technician', { technician: true }).allowed, true);
+  assert.strictEqual(evaluatePortalLogin('admin', 'tech', { tech: true, admin: true }).allowed, false);
+  assert.strictEqual(evaluatePortalLogin('citizen', 'tech', { tech: true }).allowed, false);
+});
+
 const { runLineBotTests } = require('./testLineBot');
 const lineBotResult = runLineBotTests();
 totalTests += lineBotResult.totalTests;

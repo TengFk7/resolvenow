@@ -96,6 +96,11 @@ router.get('/callback', async (req, res) => {
       });
     }
 
+    if (user.role !== 'citizen') {
+      console.warn('[LINE Login] Blocked non-citizen LINE login attempt:', user.email, user.role);
+      return res.redirect('/?line_error=unauthorized_portal');
+    }
+
     // เจอ user แล้ว → อัปเดต avatar + เข้าระบบทันที
     user.avatar = pictureUrl || user.avatar;
     user.lineDisplayName = displayName;

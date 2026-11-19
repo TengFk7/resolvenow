@@ -97,20 +97,8 @@ async function doLogin() {
     if (!res.ok) {
       return showE('authErr', data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
-    if (data.user && data.user.role === 'admin') {
-      sessionStorage.setItem('rn_admin_logged_in', '1');
-      sessionStorage.setItem('rn_admin_gate_unlocked', '1');
-      window.location.href = '/admin';
-      return;
-    }
-    if (data.user && data.user.role === 'technician') {
-      sessionStorage.setItem('rn_tech_logged_in', '1');
-      sessionStorage.setItem('rn_tech_gate_unlocked', '1');
-      window.location.href = '/tech';
-      return;
-    }
-    if (data.user && data.user.role !== 'citizen') {
-      return showE('authErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    if (!data.user || data.user.role !== 'citizen') {
+      return showE('authErr', 'บัญชีเจ้าหน้าที่/ผู้ดูแลระบบไม่สามารถเข้าใช้งานผ่านหน้าประชาชนได้');
     }
     CU = data.user;
     sessionStorage.setItem('rn_logged_in', '1'); // mark: ยังอยู่ใน session

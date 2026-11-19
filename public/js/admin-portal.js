@@ -407,16 +407,7 @@ async function doAdminLogin() {
 
     if (data.user.role !== 'admin') {
       if (btn) { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
-      if (data.user.role === 'citizen') {
-        return showE('adminAuthErr', 'บัญชีนี้เป็นบัญชีประชาชน (Citizen) ไม่สามารถเข้าสู่ระบบผู้ดูแลระบบได้ กรุณาใช้ admin@resolvenow.th');
-      }
-      if (data.user.role === 'technician') {
-        sessionStorage.setItem('rn_tech_logged_in', '1');
-        sessionStorage.setItem('rn_tech_gate_unlocked', '1');
-        window.location.href = '/tech';
-        return;
-      }
-      return showE('adminAuthErr', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      return showE('adminAuthErr', 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานพอร์ทัลผู้ดูแลระบบ');
     }
 
     CU = data.user;

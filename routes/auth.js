@@ -209,21 +209,90 @@ router.post('/register', async (req, res) => {
   }
 });
 
+const PORTAL_ROLE_MAP = Object.freeze({
+  citizen: 'citizen',
+  admin: 'admin',
+  tech: 'technician',
+  technician: 'technician'
+});
+
+/**
+ * Evaluates whether an authenticated user with `userRole` is permitted to log
+ * into the requested `portal`, enforcing strict 1-to-1 portal-role isolation
+ * and server-side Security Gate verification for admin/tech portals.
+ *
+ * @param {string} userRole
+ * @param {string} [portal='citizen']
+ * @param {Object} [gateUnlocked={}]
+ * @returns {{ allowed: boolean, status?: number, error?: string, gateRequired?: boolean, expectedRole?: string, normalizedPortal?: string }}
+ */
+function evaluatePortalLogin(userRole, portal, gateUnlocked = {}) {
+  const hasPortalParam = typeof portal === 'string' && portal.trim().length > 0;
+  const normalizedPortal = hasPortalParam ? portal.trim().toLowerCase() : 'citizen';
+  const expectedRole = PORTAL_ROLE_MAP[normalizedPortal];
+
+  if (!expectedRole) {
+    return {
+      allowed: false,
+      status: 400,
+      error: 'พอร์ทัลที่ร้องขอไม่ถูกต้อง',
+      normalizedPortal
+    };
+  }
+
+  if (expectedRole === 'admin' && !gateUnlocked?.admin) {
+    return {
+      allowed: false,
+      status: 403,
+      error: 'กรุณาปลดล็อค Security Gate ของผู้ดูแลระบบก่อนเข้าสู่ระบบ',
+      gateRequired: true,
+      expectedRole,
+      normalizedPortal
+    };
+  }
+
+  if (expectedRole === 'technician' && !(gateUnlocked?.tech || gateUnlocked?.technician)) {
+    return {
+      allowed: false,
+      status: 403,
+      error: 'กรุณาปลดล็อค Security Gate ของช่างปฏิบัติงานก่อนเข้าสู่ระบบ',
+      gateRequired: true,
+      expectedRole,
+      normalizedPortal
+    };
+  }
+
+  if (userRole !== expectedRole) {
+    const portalLabel = expectedRole === 'citizen'
+      ? 'หน้าสำหรับประชาชน'
+      : expectedRole === 'admin'
+        ? 'พอร์ทัลผู้ดูแลระบบ'
+        : 'พอร์ทัลช่างปฏิบัติงาน';
+    return {
+      allowed: false,
+      status: 403,
+      error: `บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานผ่าน${portalLabel}`,
+      expectedRole,
+      normalizedPortal
+    };
+  }
+
+  return {
+    allowed: true,
+    expectedRole,
+    normalizedPortal
+  };
+}
+
 // ─── POST /api/auth/login ────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { email, password, remember, portal } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง' });
-
-    // Portal role mapping — แต่ละ Portal กำหนดสิทธิ์การเข้าถึง
-    const PORTAL_ROLE_MAP = {
-      citizen: 'citizen',
-      admin: 'admin',
-      tech: 'technician',
-      technician: 'technician'
-    };
-    const expectedRole = PORTAL_ROLE_MAP[portal];
+    if (portal !== undefined && portal !== null && typeof portal !== 'string') {
+      return res.status(400).json({ error: 'รูปแบบพอร์ทัลไม่ถูกต้อง' });
+    }
 
     let emailClean = email.toLowerCase().trim();
     if (emailClean === 'admin') emailClean = 'admin@resolvenow.th';
@@ -245,27 +314,16 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    // Role check logic:
-    // 1. Admin มีสิทธิ์เข้าใช้งานได้ทุก Portal (admin, tech, citizen)
-    // 2. Technician เข้าใช้งาน tech และ citizen ได้
-    // 3. Citizen เข้าใช้งาน citizen ได้
-    // 4. หากไม่ได้ระบุ portal ให้ยึดตาม role ของผู้ใช้
-    const targetPortalRole = portal ? PORTAL_ROLE_MAP[portal] : (user ? user.role : 'citizen');
-    let roleAllowed = false;
-    if (user) {
-      if (user.role === 'admin') {
-        roleAllowed = true;
-      } else if (!portal || targetPortalRole === 'citizen') {
-        roleAllowed = true;
-      } else if (targetPortalRole === 'technician' && user.role === 'technician') {
-        roleAllowed = true;
-      } else if (targetPortalRole === user.role) {
-        roleAllowed = true;
-      }
+    if (!user || !pwMatch) {
+      return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    if (!user || !pwMatch || !roleAllowed) {
-      return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+    // Strict 1-to-1 Portal ↔ Role isolation & Security Gate verification
+    const portalAccess = evaluatePortalLogin(user.role, portal, req.session?.gateUnlocked);
+    if (!portalAccess.allowed) {
+      const payload = { error: portalAccess.error };
+      if (portalAccess.gateRequired) payload.gateRequired = true;
+      return res.status(portalAccess.status || 403).json(payload);
     }
 
     req.session.userId = user._id.toString();
@@ -401,8 +459,8 @@ router.get('/gate-status', (req, res) => {
   const portal = (req.query.portal || 'general').toLowerCase().trim();
   const isUnlocked = Boolean(
     req.session?.gateUnlocked?.[portal] ||
-    (portal === 'admin' && req.session?.role === 'admin') ||
-    ((portal === 'tech' || portal === 'technician') && req.session?.role === 'technician')
+    (portal === 'technician' && req.session?.gateUnlocked?.tech) ||
+    (portal === 'tech' && req.session?.gateUnlocked?.technician)
   );
   res.json({ portal, unlocked: isUnlocked });
 });
@@ -839,5 +897,6 @@ router.post('/admin-unlink-all', requireAdmin, async (req, res) => {
   }
 });
 
+router.evaluatePortalLogin = evaluatePortalLogin;
 module.exports = router;
 
