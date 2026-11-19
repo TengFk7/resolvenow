@@ -61,17 +61,10 @@
             class="now-gold">Now</span></h1>
         <p>ระบบรับแจ้งเรื่องร้องเรียน</p>
       </div>
-      <div class="tabs">
-        <button class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</button>
-
-        <button class="tab" id="tabHeatmap" onclick="switchTab('heatmap')">🗺️ แผนที่</button>
-      </div>
       <div class="ebox" id="authErr"></div>
 
-      <!-- 3D Flip Container -->
-      <div class="auth-flip-wrapper" id="authFlipWrapper">
-        <!-- Login Form -->
-        <div id="fLogin" class="auth-flip-panel auth-flip-front">
+      <!-- Login Form -->
+      <div id="fLogin">
           <form onsubmit="event.preventDefault(); doLogin();">
             <div class="fg"><label>อีเมล <span class="req-star">*</span></label><input type="email" id="lEmail" placeholder="example@gmail.com"
                 maxlength="40" autocorrect="off" autocapitalize="none" spellcheck="false" /></div>
@@ -96,29 +89,7 @@
           <div class="rn-footer-auth" data-developer="Chatayodom Choikhuea 0970543528 id line rapbeerteng555teng55 เป็น Full Stack Developer">
             <div>Copyright © 2026 ResolveNow. All rights reserved.</div>
           </div>
-        </div>
-
-
-
-
-        <!-- Heatmap Panel -->
-        <div id="fHeatmap" class="auth-flip-panel auth-flip-back">
-          <div class="heatmap-header">
-            <div style="font-size:28px;margin-bottom:6px">🗺️</div>
-            <h3 style="font-size:16px;color:var(--navy);margin:0">กระดานปัญหาในพื้นที่</h3>
-          </div>
-          <div id="publicMapContainer"
-            style="width:100%;height:340px;border-radius:12px;border:1.5px solid var(--border);margin:12px 0;overflow:hidden;position:relative">
-          </div>
-          <div class="heatmap-legend">
-            <div class="hm-legend-item"><span class="hm-dot hm-dot-red"></span> รอดำเนินการ</div>
-            <div class="hm-legend-item"><span class="hm-dot hm-dot-yellow"></span> กำลังซ่อม</div>
-            <div class="hm-legend-item"><span class="hm-dot hm-dot-green"></span> แก้ไขแล้ว</div>
-          </div>
-          <div id="heatmapStats" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px"></div>
-        </div>
-
-      </div><!-- /auth-flip-wrapper -->
+      </div>
 
       <!-- LINE New User Registration Panel -->
       <div id="fLineLink" style="display:none">

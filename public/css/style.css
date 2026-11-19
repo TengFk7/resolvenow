@@ -6316,7 +6316,16 @@ select.is-invalid,
   transition: transform .38s cubic-bezier(.4, 0, .2, 1);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, .35) transparent;
+}
+
+.side-drawer > * {
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .side-drawer {
@@ -6447,7 +6456,7 @@ select.is-invalid,
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
+  flex: 1 0 auto;
 }
 
 .drawer-item {

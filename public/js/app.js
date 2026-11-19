@@ -414,10 +414,8 @@ async function loadTickets() {
 
         // ── STEP 2: ตั้งค่า DOM ทั้งหมดพร้อมกัน (sync, ก่อน paint) ──
 
-        // ซ่อน tabs + panels อื่นทันที
-        var tabsEl = document.querySelector('.tabs');
-        if (tabsEl) tabsEl.style.display = 'none';
-        ['fLogin', 'fReg', 'fSearch', 'fHeatmap'].forEach(function (id) {
+        // ซ่อน panels อื่นทันที
+        ['fLogin', 'fReg', 'fSearch'].forEach(function (id) {
           var el = ge(id); if (el) el.style.display = 'none';
         });
         var otpEl = ge('fOtp'); if (otpEl) otpEl.style.display = 'none';

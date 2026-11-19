@@ -5,122 +5,14 @@
 
 /* ─────────────────────────────────────────────
    public/js/auth.js — Authentication Logic
-   • Tab switching
-   • Register → Send OTP → Verify OTP
    • Login / Logout / Change Password
+   • LINE Link Registration & OTP
    ───────────────────────────────────────────── */
 
 /* ── Internal OTP State ──────────────────────────────────── */
 var _otpToken = null;      // token จากเซิร์ฟเวอร์
 var _otpTimerInterval = null;
 var _otpLocked = false;    // ล็อคหลังผิด 3 ครั้ง
-
-/* ── Tab Switching — 3D Flip Animation ───────────── */
-var _currentTab = 'login';
-var _switching = false;
-
-// panel id map
-var _panelId = { login: 'fLogin', heatmap: 'fHeatmap' };
-var _tabId = { login: 'tabLogin', heatmap: 'tabHeatmap' };
-
-function switchTab(t) {
-  if (t === _currentTab || _switching) return;
-  _switching = true;
-  hideE('authErr');
-
-  var fromEl = ge(_panelId[_currentTab]);
-  var toEl = ge(_panelId[t]);
-  var wrapper = ge('authFlipWrapper');
-
-  // Update tab active state
-  Object.keys(_tabId).forEach(function (k) {
-    var tabEl = ge(_tabId[k]);
-    if (tabEl) tabEl.className = 'tab' + (k === t ? ' on' : '');
-  });
-
-  // Ensure all other panels are completely hidden to prevent leaks (BUG-015)
-  Object.keys(_panelId).forEach(function (k) {
-    if (k !== _currentTab && k !== t) {
-      var el = ge(_panelId[k]);
-      if (el) {
-        el.style.display = 'none';
-        el.classList.remove('lift-out', 'lift-in', 'sink-out', 'sink-in');
-      }
-    }
-  });
-
-  var outClass, inClass;
-  // Determine direction based on tab order: login < heatmap
-  var tabOrder = { login: 0, heatmap: 1 };
-  if (tabOrder[t] > tabOrder[_currentTab]) {
-    outClass = 'lift-out'; inClass = 'lift-in';
-  } else {
-    outClass = 'sink-out'; inClass = 'sink-in';
-  }
-
-  // ① Measure BOTH heights before touching the DOM
-  var fromH = fromEl.offsetHeight;
-
-  // Temporarily render toEl off-screen to measure its height
-  toEl.style.position = 'absolute';
-  toEl.style.visibility = 'hidden';
-  toEl.style.display = 'block';
-  var toH = toEl.offsetHeight;
-  toEl.style.display = 'none';
-  toEl.style.visibility = '';
-  toEl.style.position = '';
-
-  // ② Lock wrapper at current height
-  wrapper.style.height = fromH + 'px';
-
-  // ③ Pull fromEl out of flow so wrapper height change never yanks it
-  fromEl.style.position = 'absolute';
-  fromEl.style.top = '0';
-  fromEl.style.left = '0';
-  fromEl.style.width = '100%';
-
-  // ④ Start exit animation
-  fromEl.classList.remove('lift-out', 'lift-in', 'sink-out', 'sink-in');
-  fromEl.classList.add(outClass);
-
-  // ⑤ Smoothly resize wrapper to destination height
-  requestAnimationFrame(function () {
-    requestAnimationFrame(function () {
-      wrapper.style.height = toH + 'px';
-    });
-  });
-
-  // ⑥ After exit finishes: swap panels
-  setTimeout(function () {
-    fromEl.style.display = 'none';
-    fromEl.style.position = '';
-    fromEl.style.top = '';
-    fromEl.style.left = '';
-    fromEl.style.width = '';
-    fromEl.classList.remove(outClass);
-
-    toEl.style.display = 'block';
-    toEl.classList.remove('lift-out', 'lift-in', 'sink-out', 'sink-in');
-    toEl.classList.add(inClass);
-
-    // ⑦ Release after enter animation completes
-    setTimeout(function () {
-      toEl.classList.remove(inClass);
-      wrapper.style.height = '';
-      _switching = false;
-      // auto-focus search input
-      if (t === 'search') {
-        var sq = ge('srchQ');
-        if (sq) sq.focus();
-      }
-      if (t === 'heatmap') {
-        loadHeatmap();
-      }
-    }, 500);
-  }, 330);
-
-  _currentTab = t;
-}
 
 
 
@@ -363,14 +255,9 @@ async function doLogout() {
 
         // ── BUG-FIX: Reset สถานะ auth panels ทั้งหมด ──
         // ต้องซ่อนทุก panel ก่อน แล้ว show แค่ fLogin
-        // (switchTab('login') จะ return ทันทีถ้า _currentTab === 'login' แล้ว)
-        var tabsEl = document.querySelector('.tabs');
-        if (tabsEl) tabsEl.style.display = '';
-        ['fLogin', 'fLineLink', 'fLineLinkOtp', 'fHeatmap'].forEach(function (pid) {
+        ['fLogin', 'fLineLink', 'fLineLinkOtp'].forEach(function (pid) {
           var pel = ge(pid); if (pel) pel.style.display = 'none';
         });
-        _currentTab = 'login';
-        _switching = false;
 
         // ── แสดงหน้า login ──
         var ap = ge('authPage');
